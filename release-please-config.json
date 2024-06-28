@@ -1,0 +1,10 @@
+{
+    "separate-pull-requests": true,
+    "packages": {
+        "hardware/backplane": {
+            "component": "backplane",
+            "include-component-in-tag": true,
+            "release-type": "simple"
+        }
+    }
+}
