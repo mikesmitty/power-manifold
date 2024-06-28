@@ -5,6 +5,11 @@
             "component": "backplane",
             "include-component-in-tag": true,
             "release-type": "simple"
+        },
+        "hardware/charger-module": {
+            "component": "charger-module",
+            "include-component-in-tag": true,
+            "release-type": "simple"
         }
     }
 }
