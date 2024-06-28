@@ -1,0 +1,114 @@
+%TF.GenerationSoftware,KiCad,Pcbnew,8.0.3*%
+%TF.CreationDate,2024-06-27T21:22:13-04:00*%
+%TF.ProjectId,rp2040-mgmt-module,72703230-3430-42d6-9d67-6d742d6d6f64,v0.0.0*%
+%TF.SameCoordinates,Original*%
+%TF.FileFunction,Copper,L2,Inr*%
+%TF.FilePolarity,Positive*%
+%FSLAX46Y46*%
+G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+G04 Created by KiCad (PCBNEW 8.0.3) date 2024-06-27 21:22:13*
+%MOMM*%
+%LPD*%
+G01*
+G04 APERTURE LIST*
+G04 Aperture macros list*
+%AMRoundRect*
+0 Rectangle with rounded corners*
+0 $1 Rounding radius*
+0 $2 $3 $4 $5 $6 $7 $8 $9 X,Y pos of 4 corners*
+0 Add a 4 corners polygon primitive as box body*
+4,1,4,$2,$3,$4,$5,$6,$7,$8,$9,$2,$3,0*
+0 Add four circle primitives for the rounded corners*
+1,1,$1+$1,$2,$3*
+1,1,$1+$1,$4,$5*
+1,1,$1+$1,$6,$7*
+1,1,$1+$1,$8,$9*
+0 Add four rect primitives between the rounded corners*
+20,1,$1+$1,$2,$3,$4,$5,0*
+20,1,$1+$1,$4,$5,$6,$7,0*
+20,1,$1+$1,$6,$7,$8,$9,0*
+20,1,$1+$1,$8,$9,$2,$3,0*%
+G04 Aperture macros list end*
+%TA.AperFunction,ComponentPad*%
+%ADD10RoundRect,0.250500X-0.499500X0.499500X-0.499500X-0.499500X0.499500X-0.499500X0.499500X0.499500X0*%
+%TD*%
+%TA.AperFunction,ComponentPad*%
+%ADD11C,1.500000*%
+%TD*%
+%TA.AperFunction,ComponentPad*%
+%ADD12C,2.500000*%
+%TD*%
+%TA.AperFunction,ComponentPad*%
+%ADD13R,1.700000X1.700000*%
+%TD*%
+%TA.AperFunction,ComponentPad*%
+%ADD14O,1.700000X1.700000*%
+%TD*%
+%TA.AperFunction,ComponentPad*%
+%ADD15O,1.350000X1.700000*%
+%TD*%
+%TA.AperFunction,ComponentPad*%
+%ADD16O,1.100000X1.500000*%
+%TD*%
+%TA.AperFunction,ViaPad*%
+%ADD17C,0.600000*%
+%TD*%
+G04 APERTURE END LIST*
+D10*
+%TO.N,unconnected-(J3-TD+-Pad1)*%
+%TO.C,J3*%
+X12560000Y-7645000D03*
+D11*
+%TO.N,unconnected-(J3-TD--Pad2)*%
+X15100000Y-8905000D03*
+%TO.N,unconnected-(J3-RD+-Pad3)*%
+X12560000Y-10185000D03*
+%TO.N,unconnected-(J3-TCT-Pad4)*%
+X15100000Y-11445000D03*
+%TO.N,unconnected-(J3-RCT-Pad5)*%
+X12560000Y-12725000D03*
+%TO.N,unconnected-(J3-RD--Pad6)*%
+X15100000Y-13985000D03*
+%TO.N,unconnected-(J3-NC-Pad7)*%
+X12560000Y-15265000D03*
+%TO.N,unconnected-(J3-Pad8)*%
+X15100000Y-16525000D03*
+%TO.N,unconnected-(J3-Pad9)*%
+X1300000Y-5460000D03*
+%TO.N,unconnected-(J3-Pad10)*%
+X1300000Y-8000000D03*
+%TO.N,unconnected-(J3-Pad11)*%
+X1300000Y-16170000D03*
+%TO.N,unconnected-(J3-Pad12)*%
+X1300000Y-18710000D03*
+D12*
+%TO.N,unconnected-(J3-PadSH)*%
+X9250000Y-4340000D03*
+X9250000Y-19830000D03*
+%TD*%
+D13*
+%TO.N,/SWCLK*%
+%TO.C,J4*%
+X50700000Y-16560000D03*
+D14*
+%TO.N,GND*%
+X50700000Y-19100000D03*
+%TO.N,/SWD*%
+X50700000Y-21640000D03*
+%TD*%
+D15*
+%TO.N,GND*%
+%TO.C,J2*%
+X54830000Y-22280000D03*
+D16*
+X55140000Y-19280000D03*
+X59980000Y-19280000D03*
+D15*
+X60290000Y-22280000D03*
+%TD*%
+D17*
+%TO.N,+1V1*%
+X48325000Y-11600000D03*
+X45675000Y-12500000D03*
+%TD*%
+M02*

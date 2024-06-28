@@ -15,6 +15,11 @@
             "component": "pi-pico-mgmt-module",
             "include-component-in-tag": true,
             "release-type": "simple"
+        },
+        "hardware/rp2040-mgmt-module": {
+            "component": "rp2040-mgmt-module",
+            "include-component-in-tag": true,
+            "release-type": "simple"
         }
     }
 }
