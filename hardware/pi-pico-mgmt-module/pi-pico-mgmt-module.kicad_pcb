@@ -1308,7 +1308,7 @@
 			(pintype "power_in")
 			(uuid "f85dd95f-78a5-459e-974b-d57911b2077e")
 		)
-		(model "/Users/michaelsmith/git/electronics-projects/usb-pd-psu/Libraries/W5500 Footprint/W5100SEVBPICO--3DModel-STEP-269445.STEP"
+		(model "${KIPRJMOD}/../libraries/W5500 Footprint/W5100SEVBPICO--3DModel-STEP-269445.STEP"
 			(offset
 				(xyz 0 -12 0)
 			)
