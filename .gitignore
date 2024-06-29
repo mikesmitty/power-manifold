@@ -1,2 +1,4 @@
 hardware/**/*-backups
+hardware/**/*_old
+hardware/**/*auto*save*
 **/*.lck
