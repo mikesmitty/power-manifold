@@ -26,6 +26,7 @@ jobs:
           json: true
 
       - name: Update KiCad revisions
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           cat <<EOF
           ${{ steps.changed-files.outputs.all_changed_files }}
@@ -46,6 +47,7 @@ jobs:
           TITLE: ${{ github.event.pull_request.title }}
 
       - name: Commit changes
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: EndBug/add-and-commit@v9
         with:
           default_author: github_actor
