@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/mikesmitty/pdusb/compare/rp2040-mgmt-module-v0.2.0...rp2040-mgmt-module-v0.3.0) (2024-07-01)
+
+
+### Features
+
+* add pcb labels ([9c31c85](https://github.com/mikesmitty/pdusb/commit/9c31c85c5588734c0f8cb24f46a7b92215036b89))
+
 ## [0.2.0](https://github.com/mikesmitty/pdusb/compare/rp2040-mgmt-module-v0.1.0...rp2040-mgmt-module-v0.2.0) (2024-07-01)
 
 
