@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.6.0...charger-module-v0.7.0) (2024-07-01)
+
+
+### Features
+
+* add swd circuits for firmware updates ([3fe7ef4](https://github.com/mikesmitty/pdusb/commit/3fe7ef4b14e35cb9b6d7b5f8920c50c7c5d31d5d))
+* add swd lines to connector ([0cbfca7](https://github.com/mikesmitty/pdusb/commit/0cbfca78ad04f3e7deddfba9d1997bf1806fe2ab))
+* add switch to access onboard rp2040 through charge plug ([3fe7ef4](https://github.com/mikesmitty/pdusb/commit/3fe7ef4b14e35cb9b6d7b5f8920c50c7c5d31d5d))
+* add usb switch for rp2040 usb port ([0cbfca7](https://github.com/mikesmitty/pdusb/commit/0cbfca78ad04f3e7deddfba9d1997bf1806fe2ab))
+
 ## [0.6.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.5.0...charger-module-v0.6.0) (2024-06-29)
 
 
