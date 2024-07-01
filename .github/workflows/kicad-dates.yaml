@@ -1,9 +1,7 @@
 on:
   push:
-    paths:
-      - '*.kicad_sch'
-      - '*.kicad_pcb'
-  pull_request:
+    branches:
+      - main
     paths:
       - '*.kicad_sch'
       - '*.kicad_pcb'
@@ -19,7 +17,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
       - name: Get changed PCB files
