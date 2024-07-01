@@ -77,7 +77,7 @@ jobs:
         with:
           board: ${{ matrix.files }}
           config: ./${{ steps.get-paths.outputs.kicad-dir }}/cad.kibot.yaml
-          dir: ${{ runner.temp }}
+          dir: ${{ steps.get-paths.outputs.project-dir }}/CAD/
           cache3D: YES
           verbose: 4
 
@@ -89,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.get-paths.outputs.module-name }}
-          path: "${{ runner.temp }}/*.step"
+          path: "${{ steps.get-paths.outputs.project-dir }}/CAD/*.step"
           overwrite: true
 
   push-changes:
