@@ -1,4 +1,4 @@
-23650647561030754
+23652367340707524
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -64434,6 +64434,13 @@ Diode
 0
 6
 6
+Local Library
+TS3USB3000RSER
+TS3USB3000RSER-3
+Integrated Circuit
+0
+10
+10
 Local Library
 USB_C_14P_VERT_XUNPU
 
