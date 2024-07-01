@@ -31,7 +31,7 @@ jobs:
       any-changed: ${{ steps.changed-files.outputs.any_changed }}
       matrix: ${{ steps.changed-files.outputs.all_changed_files }}
 
-  export:
+  export-cad:
     if: ${{ fromJson(needs.get-changed-files.outputs.any-changed) }}
     needs: get-changed-files
 
@@ -65,6 +65,10 @@ jobs:
           KICAD_DIR="$(dirname "${{ matrix.files }}")"
           echo "kicad-dir=$KICAD_DIR" >> "$GITHUB_OUTPUT"
 
+          # Get the name of the hardware module
+          MODULE_NAME="$(basename $(dirname $KICAD_DIR))"
+          echo "module-name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
+
           # Get the parent project directory
           PROJECT_DIR="$(dirname "${KICAD_DIR}")"
           echo "project-dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
@@ -74,7 +78,7 @@ jobs:
         with:
           board: ${{ matrix.files }}
           config: ./${{ steps.get-paths.outputs.kicad-dir }}/cad.kibot.yaml
-          dir: ${{ steps.get-paths.outputs.project-dir }}/CAD/
+          dir: ${{ runner.temp }}
           cache3D: YES
           verbose: 4
 
@@ -82,9 +86,33 @@ jobs:
         run: |
           rm -fv ${{ steps.get-paths.outputs.project-dir }}/CAD/*.log
 
+      - name: Store exported CAD files
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.get-paths.outputs.module-name }}
+          path: "${{ runner.temp }}/*.step"
+          overwrite: true
+
+  push-changes:
+    needs: export-cad
+
+    name: Render PCB
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: hardware/CAD/
+
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
         with:
-          add: ${{ steps.get-paths.outputs.project-dir }}/CAD/
+          add: hardware/CAD/
           default_author: github_actor
           message: "chore: KiBot CAD update"
