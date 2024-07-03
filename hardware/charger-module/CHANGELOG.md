@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.7.0...charger-module-v0.7.1) (2024-07-03)
+
+
+### Bug Fixes
+
+* can't forget the pull-ups ([38f5258](https://github.com/mikesmitty/pdusb/commit/38f52583257ef937b0b6ace3cdfb33ebec99fc47))
+
 ## [0.7.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.6.0...charger-module-v0.7.0) (2024-07-01)
 
 
