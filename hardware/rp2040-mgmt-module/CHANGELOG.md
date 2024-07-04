@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/mikesmitty/pdusb/compare/rp2040-mgmt-module-v0.3.1...rp2040-mgmt-module-v0.3.2) (2024-07-04)
+
+
+### Bug Fixes
+
+* fix incorrect part numbers ([7d5589f](https://github.com/mikesmitty/pdusb/commit/7d5589fe6c76b37504af899d7f41072b2987b070))
+
 ## [0.3.1](https://github.com/mikesmitty/pdusb/compare/rp2040-mgmt-module-v0.3.0...rp2040-mgmt-module-v0.3.1) (2024-07-03)
 
 
