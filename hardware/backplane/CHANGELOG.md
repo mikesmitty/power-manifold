@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/mikesmitty/pdusb/compare/backplane-v0.5.1...backplane-v0.5.2) (2024-07-04)
+
+
+### Bug Fixes
+
+* add rotation corrections ([#23](https://github.com/mikesmitty/pdusb/issues/23)) ([d28bfbb](https://github.com/mikesmitty/pdusb/commit/d28bfbb0f5f295293d51a52142758b1be5bae77d))
+
 ## [0.5.1](https://github.com/mikesmitty/pdusb/compare/backplane-v0.5.0...backplane-v0.5.1) (2024-07-03)
 
 
