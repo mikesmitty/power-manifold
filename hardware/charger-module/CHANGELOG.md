@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.0...charger-module-v0.8.1) (2024-07-04)
+
+
+### Bug Fixes
+
+* add rotation corrections ([#23](https://github.com/mikesmitty/pdusb/issues/23)) ([d28bfbb](https://github.com/mikesmitty/pdusb/commit/d28bfbb0f5f295293d51a52142758b1be5bae77d))
+
 ## [0.8.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.7.1...charger-module-v0.8.0) (2024-07-04)
 
 
