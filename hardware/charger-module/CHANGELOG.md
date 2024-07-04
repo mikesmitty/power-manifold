@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.1...charger-module-v0.8.2) (2024-07-04)
+
+
+### Bug Fixes
+
+* fix incorrect part numbers ([7d5589f](https://github.com/mikesmitty/pdusb/commit/7d5589fe6c76b37504af899d7f41072b2987b070))
+
 ## [0.8.1](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.0...charger-module-v0.8.1) (2024-07-04)
 
 
