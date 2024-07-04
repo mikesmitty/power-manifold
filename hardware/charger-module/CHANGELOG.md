@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.7.1...charger-module-v0.8.0) (2024-07-04)
+
+
+### Features
+
+* add amplifier to current signal ([cd6c652](https://github.com/mikesmitty/pdusb/commit/cd6c6524c9f327b2ad43f052ae8103018f5e6368))
+
 ## [0.7.1](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.7.0...charger-module-v0.7.1) (2024-07-03)
 
 
