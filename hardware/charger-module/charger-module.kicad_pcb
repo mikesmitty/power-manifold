@@ -933,7 +933,7 @@
 			(pintype "passive")
 			(uuid "5b4eae04-cf27-4d47-90e0-39afb1a07331")
 		)
-		(model "${KICAD8_3DMODEL_DIR}/Connector_USB.3dshapes/USB_C_Receptacle_XKB_U262-16XN-4BVC11.wrl"
+		(model "${KICAD8_3DMODEL_DIR}/Connector_USB.3dshapes/USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal.step"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -2103,6 +2103,17 @@
 			(pintype "passive")
 			(thermal_bridge_angle 45)
 			(uuid "bf27c63e-1183-488d-9273-d367ffa1d14d")
+		)
+		(model "${KICAD8_3DMODEL_DIR}/Button_Switch_SMD.3dshapes/SW_Tactile_SPST_NO_Straight_CK_PTS636Sx25SMTRLFS.step"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
 		)
 	)
 	(footprint "Package_TO_SOT_SMD:SOT-23"
@@ -10523,7 +10534,7 @@
 		(path "/eef336e8-53ce-495d-8cdc-2f09e2d398bf")
 		(sheetname "Root")
 		(sheetfile "charger-module.kicad_sch")
-		(attr smd exclude_from_pos_files exclude_from_bom dnp)
+		(attr smd)
 		(fp_line
 			(start -2.4 -2.875)
 			(end -2.4 -2.275)
@@ -14977,16 +14988,15 @@
 			(pintype "power_in")
 			(uuid "85a10f29-58ec-4056-a9b8-2a1fc5e07f11")
 		)
-		(model "${KICAD8_3DMODEL_DIR}/LED_THT.3dshapes/LED_D5.0mm-4_RGB_Wide_Pins.wrl"
-			(hide yes)
+		(model "${KIPRJMOD}/4691.step"
 			(offset
-				(xyz 0 0 0)
+				(xyz 1.37 -0.4 0)
 			)
 			(scale
 				(xyz 1 1 1)
 			)
 			(rotate
-				(xyz 0 0 0)
+				(xyz -90 0 0)
 			)
 		)
 	)
@@ -17732,6 +17742,17 @@
 			(pintype "passive")
 			(thermal_bridge_angle 45)
 			(uuid "d2699c21-93e4-4e8c-a9c6-cdb995b62575")
+		)
+		(model "${KICAD8_3DMODEL_DIR}/Button_Switch_SMD.3dshapes/SW_Tactile_SPST_NO_Straight_CK_PTS636Sx25SMTRLFS.step"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
 		)
 	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"

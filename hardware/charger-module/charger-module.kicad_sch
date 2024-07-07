@@ -20428,9 +20428,9 @@
 		(at 198.12 64.77 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "eef336e8-53ce-495d-8cdc-2f09e2d398bf")
 		(property "Reference" "U4"
