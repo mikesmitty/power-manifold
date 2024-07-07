@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/mikesmitty/pdusb/compare/backplane-v0.5.2...backplane-v0.6.0) (2024-07-07)
+
+
+### Features
+
+* add 5v fan headers to backplane ([#31](https://github.com/mikesmitty/pdusb/issues/31)) ([44fe18b](https://github.com/mikesmitty/pdusb/commit/44fe18beaf30929cd54f240da6189cc2349ec306))
+
 ## [0.5.2](https://github.com/mikesmitty/pdusb/compare/backplane-v0.5.1...backplane-v0.5.2) (2024-07-04)
 
 
