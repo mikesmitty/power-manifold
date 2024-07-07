@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.3](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.2...charger-module-v0.8.3) (2024-07-07)
+
+
+### Bug Fixes
+
+* fix opamp feedback resistor value ([51daa8c](https://github.com/mikesmitty/pdusb/commit/51daa8c1bc127483105343635c577d885270d42c))
+* remove mosfet ([#30](https://github.com/mikesmitty/pdusb/issues/30)) ([f38021d](https://github.com/mikesmitty/pdusb/commit/f38021d279a5d4fb5c75b13646da387f04ae2dde))
+
 ## [0.8.2](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.1...charger-module-v0.8.2) (2024-07-04)
 
 
