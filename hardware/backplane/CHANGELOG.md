@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/mikesmitty/pdusb/compare/backplane-v0.6.0...backplane-v0.7.0) (2024-07-08)
+
+
+### Features
+
+* shrink charger module outline ([051fecc](https://github.com/mikesmitty/pdusb/commit/051fecc27901af27a6ce28e297dd4c0b121d335f))
+
 ## [0.6.0](https://github.com/mikesmitty/pdusb/compare/backplane-v0.5.2...backplane-v0.6.0) (2024-07-07)
 
 
