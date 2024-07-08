@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.3...charger-module-v0.9.0) (2024-07-08)
+
+
+### Features
+
+* shrink charger module outline ([051fecc](https://github.com/mikesmitty/pdusb/commit/051fecc27901af27a6ce28e297dd4c0b121d335f))
+
 ## [0.8.3](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.2...charger-module-v0.8.3) (2024-07-07)
 
 
