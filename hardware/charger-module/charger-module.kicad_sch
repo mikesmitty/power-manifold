@@ -6,7 +6,7 @@
 	(paper "A3")
 	(title_block
 		(date "2024-06-26")
-		(rev "v0.8.3")
+		(rev "v0.9.0")
 	)
 	(lib_symbols
 		(symbol "Connector:Bus_PCI_Express_x1"
