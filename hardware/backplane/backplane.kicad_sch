@@ -8838,7 +8838,7 @@
 		(at 207.01 99.06 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -8897,7 +8897,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 207.01 99.06 0)
 			(effects
 				(font
@@ -8934,6 +8934,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 207.01 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 207.01 99.06 0)
 			(effects
 				(font
@@ -9064,7 +9073,7 @@
 		(at 259.08 99.06 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -9123,7 +9132,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 259.08 99.06 0)
 			(effects
 				(font
@@ -9160,6 +9169,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 259.08 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 259.08 99.06 0)
 			(effects
 				(font
@@ -9396,6 +9414,24 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x03, script generated"
+			(at 76.2 68.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C163036"
+			(at 76.2 68.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "2.54;0;180"
 			(at 76.2 68.58 0)
 			(effects
 				(font
@@ -10034,7 +10070,7 @@
 		(at 207.01 166.37 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -10093,7 +10129,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 207.01 166.37 0)
 			(effects
 				(font
@@ -10130,6 +10166,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 207.01 166.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 207.01 166.37 0)
 			(effects
 				(font
@@ -10589,6 +10634,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C86503"
+			(at 193.04 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "2.54;0;0"
+			(at 193.04 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "2a27425c-b5aa-40a8-afa9-24be666c5625")
 		)
@@ -10612,7 +10675,7 @@
 		(at 259.08 166.37 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -10671,7 +10734,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 259.08 166.37 0)
 			(effects
 				(font
@@ -10708,6 +10771,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 259.08 166.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 259.08 166.37 0)
 			(effects
 				(font
@@ -10981,7 +11053,7 @@
 		(at 311.15 166.37 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -11040,7 +11112,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 311.15 166.37 0)
 			(effects
 				(font
@@ -11077,6 +11149,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 311.15 166.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 311.15 166.37 0)
 			(effects
 				(font
@@ -11786,6 +11867,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C86503"
+			(at 233.68 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "2.54;0;0"
+			(at 233.68 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "29757285-965e-4fb8-94a1-69819c243f5e")
 		)
@@ -11942,7 +12041,7 @@
 		(at 62.23 166.37 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -12001,7 +12100,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 62.23 166.37 0)
 			(effects
 				(font
@@ -12038,6 +12137,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 62.23 166.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 62.23 166.37 0)
 			(effects
 				(font
@@ -12168,7 +12276,7 @@
 		(at 363.22 99.06 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -12227,7 +12335,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 363.22 99.06 0)
 			(effects
 				(font
@@ -12264,6 +12372,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 363.22 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 363.22 99.06 0)
 			(effects
 				(font
@@ -12502,6 +12619,24 @@
 			)
 		)
 		(property "Description" "Fan, tacho output, 3-pin connector"
+			(at 213.36 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C86503"
+			(at 213.36 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "2.54;0;0"
 			(at 213.36 38.1 0)
 			(effects
 				(font
@@ -13310,7 +13445,7 @@
 		(at 363.22 166.37 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -13369,7 +13504,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 363.22 166.37 0)
 			(effects
 				(font
@@ -13406,6 +13541,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 363.22 166.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 363.22 166.37 0)
 			(effects
 				(font
@@ -13813,7 +13957,7 @@
 		(at 311.15 99.06 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -13872,7 +14016,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" ""
+		(property "LCSC" "C404113"
 			(at 311.15 99.06 0)
 			(effects
 				(font
@@ -13909,6 +14053,15 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 311.15 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "-2.1;0.05;0"
 			(at 311.15 99.06 0)
 			(effects
 				(font
