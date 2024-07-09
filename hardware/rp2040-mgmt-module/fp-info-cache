@@ -1,4 +1,4 @@
-23650647561030754
+23655806968435760
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -64358,6 +64358,20 @@ FL_B82793C0104N201
 4
 4
 Local Library
+HOT_SURFACE
+
+
+0
+0
+0
+Local Library
+HOT_SURFACE_SMALL
+
+
+0
+0
+0
+Local Library
 LED_Neopixel_Side_Light_SK6812
 LED, diameter 5.0mm, 4 pins, WP154A4, https://www.kingbright.com/attachments/file/psearch/000/00/00/L-154A4SUREQBFZGEW(Ver.11A).pdf
 LED diameter 5.0mm 2 pins diameter 5.0mm 3 pins diameter 5.0mm 4 pins RGB RGBLED
@@ -64434,6 +64448,13 @@ Diode
 0
 6
 6
+Local Library
+TS3USB3000RSER
+TS3USB3000RSER-3
+Integrated Circuit
+0
+10
+10
 Local Library
 USB_C_14P_VERT_XUNPU
 
