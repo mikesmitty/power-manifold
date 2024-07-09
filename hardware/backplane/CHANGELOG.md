@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0](https://github.com/mikesmitty/pdusb/compare/backplane-v0.6.0...backplane-v0.7.0) (2024-07-09)
+
+
+### Features
+
+* give vin 8 pins ([deeca54](https://github.com/mikesmitty/pdusb/commit/deeca54b5ecd7f126030e2663d6139264055c541))
+* shrink charger module outline ([051fecc](https://github.com/mikesmitty/pdusb/commit/051fecc27901af27a6ce28e297dd4c0b121d335f))
+
+
+### Bug Fixes
+
+* add decoupling caps to i2c and swd switches ([98123b7](https://github.com/mikesmitty/pdusb/commit/98123b795a20ac01e529f1a2962bae2bb5664719))
+* add pullup resistor to i2c switch reset pin ([98123b7](https://github.com/mikesmitty/pdusb/commit/98123b795a20ac01e529f1a2962bae2bb5664719))
+* correct i2c pin mismatch ([deeca54](https://github.com/mikesmitty/pdusb/commit/deeca54b5ecd7f126030e2663d6139264055c541))
+
 ## [0.6.0](https://github.com/mikesmitty/pdusb/compare/backplane-v0.5.2...backplane-v0.6.0) (2024-07-07)
 
 
