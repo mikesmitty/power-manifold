@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.9.0...charger-module-v0.10.0) (2024-07-09)
+
+
+### Features
+
+* give vin 8 pins ([deeca54](https://github.com/mikesmitty/pdusb/commit/deeca54b5ecd7f126030e2663d6139264055c541))
+
+
+### Bug Fixes
+
+* correct i2c pin mismatch ([deeca54](https://github.com/mikesmitty/pdusb/commit/deeca54b5ecd7f126030e2663d6139264055c541))
+
 ## [0.9.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.8.3...charger-module-v0.9.0) (2024-07-08)
 
 
