@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.10.1...charger-module-v0.10.2) (2024-07-10)
+
+
+### Bug Fixes
+
+* clean up traces ([181868f](https://github.com/mikesmitty/power-manifold/commit/181868fa257600ebbe6f0f09d60b0f0e6955dadc))
+
 ## [0.10.1](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.10.0...charger-module-v0.10.1) (2024-07-10)
 
 

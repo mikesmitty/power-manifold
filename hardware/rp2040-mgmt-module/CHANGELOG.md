@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/mikesmitty/power-manifold/compare/rp2040-mgmt-module-v0.3.2...rp2040-mgmt-module-v0.3.3) (2024-07-10)
+
+
+### Bug Fixes
+
+* clean up traces ([181868f](https://github.com/mikesmitty/power-manifold/commit/181868fa257600ebbe6f0f09d60b0f0e6955dadc))
+
 ## [0.3.2](https://github.com/mikesmitty/pdusb/compare/rp2040-mgmt-module-v0.3.1...rp2040-mgmt-module-v0.3.2) (2024-07-04)
 
 
