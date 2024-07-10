@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.10.2...charger-module-v0.11.0) (2024-07-10)
+
+
+### Features
+
+* add gpio header to charger module ([4cbd2f3](https://github.com/mikesmitty/power-manifold/commit/4cbd2f3b8f6b9d3d9eb857e1141b53decd266e08))
+
 ## [0.10.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.10.1...charger-module-v0.10.2) (2024-07-10)
 
 
