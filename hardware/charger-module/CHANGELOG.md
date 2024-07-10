@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.1](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.10.0...charger-module-v0.10.1) (2024-07-10)
+
+
+### Bug Fixes
+
+* add via stitching to improve emc ([1808a28](https://github.com/mikesmitty/pdusb/commit/1808a28883a0908c73fe8574c44388933ec490f3))
+* remove over-complicated USB switch ([b711b1c](https://github.com/mikesmitty/pdusb/commit/b711b1c423c8949ec734186f52588050cb6238bb))
+
 ## [0.10.0](https://github.com/mikesmitty/pdusb/compare/charger-module-v0.9.0...charger-module-v0.10.0) (2024-07-09)
 
 
