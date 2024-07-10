@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.0...backplane-v0.7.1) (2024-07-10)
+
+
+### Bug Fixes
+
+* clean up traces ([181868f](https://github.com/mikesmitty/power-manifold/commit/181868fa257600ebbe6f0f09d60b0f0e6955dadc))
+
 ## [0.7.0](https://github.com/mikesmitty/pdusb/compare/backplane-v0.6.0...backplane-v0.7.0) (2024-07-09)
 
 
