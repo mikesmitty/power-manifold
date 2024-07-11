@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.0...charger-module-v0.11.1) (2024-07-11)
+
+
+### Bug Fixes
+
+* swap usb tvs diode to more available model ([c8b18fa](https://github.com/mikesmitty/power-manifold/commit/c8b18fa9c991078d95106d4458649c13adc903e4))
+
 ## [0.11.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.10.2...charger-module-v0.11.0) (2024-07-10)
 
 

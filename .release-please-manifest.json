@@ -1,6 +1,6 @@
 {
     "hardware/backplane": "0.7.1",
-    "hardware/charger-module": "0.11.0",
+    "hardware/charger-module": "0.11.1",
     "hardware/pi-pico-mgmt-module": "0.5.0",
     "hardware/rp2040-mgmt-module": "0.3.3"
 }
