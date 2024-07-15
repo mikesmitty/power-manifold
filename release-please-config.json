@@ -11,6 +11,10 @@
             "component": "charger-module",
             "include-component-in-tag": true
         },
+        "hardware/esp32-mgmt-module": {
+            "component": "esp32-mgmt-module",
+            "include-component-in-tag": true
+        },
         "hardware/pi-pico-mgmt-module": {
             "component": "pi-pico-mgmt-module",
             "include-component-in-tag": true
