@@ -4,6 +4,10 @@
 	(generator_version "8.0")
 	(uuid "4172e0aa-162c-42a5-ac1f-bf7110fd005d")
 	(paper "A3")
+	(title_block
+		(date "2024-07-14")
+		(rev "v0.1.0")
+	)
 	(lib_symbols
 		(symbol "74xGxx:74LVC1G14"
 			(exclude_from_sim no)
