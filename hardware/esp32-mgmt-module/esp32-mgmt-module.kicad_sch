@@ -15003,6 +15003,7 @@
 	(symbol
 		(lib_id "Connector:Conn_01x03_Pin")
 		(at 386.08 129.54 0)
+		(mirror x)
 		(unit 1)
 		(exclude_from_sim yes)
 		(in_bom no)
@@ -15010,7 +15011,7 @@
 		(dnp yes)
 		(uuid "31547da0-4053-4f19-9de5-a266dea826ef")
 		(property "Reference" "J7"
-			(at 385.826 122.174 0)
+			(at 385.826 136.906 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15019,7 +15020,7 @@
 			)
 		)
 		(property "Value" "UART"
-			(at 388.366 124.46 0)
+			(at 388.366 134.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
