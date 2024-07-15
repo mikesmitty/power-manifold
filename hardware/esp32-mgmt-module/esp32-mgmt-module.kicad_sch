@@ -8861,7 +8861,7 @@
 	)
 	(wire
 		(pts
-			(xy 141.605 43.18) (xy 141.605 44.45)
+			(xy 142.24 43.18) (xy 142.24 44.45)
 		)
 		(stroke
 			(width 0)
@@ -9288,6 +9288,16 @@
 			(type default)
 		)
 		(uuid "5191f91d-fa5e-4e66-8684-cf8139f91a3e")
+	)
+	(wire
+		(pts
+			(xy 149.86 35.56) (xy 153.67 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "53c3a480-414c-4d37-a655-e9cc299a25ed")
 	)
 	(wire
 		(pts
@@ -9971,16 +9981,6 @@
 	)
 	(wire
 		(pts
-			(xy 149.225 35.56) (xy 153.67 35.56)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9a16535c-8b93-4e1a-bbb5-251e30d70f6b")
-	)
-	(wire
-		(pts
 			(xy 162.56 189.23) (xy 168.91 189.23)
 		)
 		(stroke
@@ -10071,7 +10071,7 @@
 	)
 	(wire
 		(pts
-			(xy 127 35.56) (xy 133.985 35.56)
+			(xy 127 35.56) (xy 134.62 35.56)
 		)
 		(stroke
 			(width 0)
@@ -13045,7 +13045,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 141.605 44.45 0)
+		(at 142.24 44.45 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -13053,7 +13053,7 @@
 		(dnp no)
 		(uuid "0f61349f-1027-45b2-9a26-a133c29f194d")
 		(property "Reference" "#PWR033"
-			(at 141.605 50.8 0)
+			(at 142.24 50.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13062,7 +13062,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 137.795 45.72 0)
+			(at 138.43 45.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13070,7 +13070,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 141.605 44.45 0)
+			(at 142.24 44.45 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13079,7 +13079,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 141.605 44.45 0)
+			(at 142.24 44.45 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13088,7 +13088,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 141.605 44.45 0)
+			(at 142.24 44.45 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15461,7 +15461,7 @@
 	)
 	(symbol
 		(lib_id "Regulator_Linear:NCP1117-3.3_SOT223")
-		(at 141.605 35.56 0)
+		(at 142.24 35.56 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -15469,7 +15469,7 @@
 		(dnp no)
 		(uuid "36e856bc-1c04-4c99-9d4c-fecc8778f73f")
 		(property "Reference" "U3"
-			(at 141.605 29.4132 0)
+			(at 142.24 29.4132 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15477,7 +15477,7 @@
 			)
 		)
 		(property "Value" "AMS1117-3.3"
-			(at 141.605 31.7246 0)
+			(at 142.24 31.7246 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15485,7 +15485,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
-			(at 141.605 30.48 0)
+			(at 142.24 30.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15494,7 +15494,7 @@
 			)
 		)
 		(property "Datasheet" "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf"
-			(at 144.145 41.91 0)
+			(at 144.78 41.91 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15503,7 +15503,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 141.605 35.56 0)
+			(at 142.24 35.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15512,7 +15512,7 @@
 			)
 		)
 		(property "LCSC" "C6186"
-			(at 141.605 35.56 0)
+			(at 142.24 35.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15521,7 +15521,7 @@
 			)
 		)
 		(property "JLCPCB_CORRECTION" "0;0;180"
-			(at 141.605 35.56 0)
+			(at 142.24 35.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)

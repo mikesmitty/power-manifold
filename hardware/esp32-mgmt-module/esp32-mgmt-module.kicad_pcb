@@ -15923,7 +15923,7 @@
 				)
 			)
 		)
-		(attr exclude_from_pos_files exclude_from_bom allow_missing_courtyard)
+		(attr board_only exclude_from_pos_files exclude_from_bom allow_missing_courtyard)
 		(fp_poly
 			(pts
 				(xy 2.6526 1.958752) (xy 2.669948 1.966334) (xy 2.711356 1.999128) (xy 2.746765 2.046547) (xy 2.768664 2.097151)
@@ -17212,7 +17212,7 @@
 			(uuid "69d83b86-1e71-4382-9618-e4117b87ca66")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 2.54 360)
+			(at 0 2.54 0)
 			(layer "F.Fab")
 			(uuid "a979426e-c17c-410c-a0a4-4c23954a705e")
 			(effects
@@ -24683,7 +24683,7 @@
 				(justify mirror)
 			)
 		)
-		(attr exclude_from_pos_files exclude_from_bom allow_missing_courtyard)
+		(attr board_only exclude_from_pos_files exclude_from_bom allow_missing_courtyard)
 		(fp_poly
 			(pts
 				(xy 2.6526 -1.958752) (xy 2.669948 -1.966334) (xy 2.711356 -1.999128) (xy 2.746765 -2.046547) (xy 2.768664 -2.097151)
