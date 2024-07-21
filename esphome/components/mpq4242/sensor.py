@@ -68,14 +68,14 @@ CONFIG_SCHEMA = cv.Schema(
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
             state_class=STATE_CLASS_MEASUREMENT,
             unit_of_measurement=UNIT_CELSIUS,
-            icon=ICON_THERMOMETER_ALERT,
+            icon=ICON_THERMOMETER_HIGH,
         ),
         cv.Optional(CONF_OTW_THRESHOLD_2): sensor.sensor_schema(
             device_class=DEVICE_CLASS_TEMPERATURE,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
             state_class=STATE_CLASS_MEASUREMENT,
             unit_of_measurement=UNIT_CELSIUS,
-            icon=ICON_THERMOMETER_HIGH,
+            icon=ICON_THERMOMETER_ALERT,
         ),
         cv.Optional(CONF_PDO_MAX_CURRENT): sensor.sensor_schema(
             device_class=DEVICE_CLASS_CURRENT,

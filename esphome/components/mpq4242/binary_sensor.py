@@ -39,11 +39,11 @@ CONFIG_SCHEMA = {
     ),
     cv.Optional(CONF_OTW_THRESHOLD_1): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-        icon=ICON_THERMOMETER_ALERT,
+        icon=ICON_THERMOMETER_HIGH,
     ),
     cv.Optional(CONF_OTW_THRESHOLD_2): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-        icon=ICON_THERMOMETER_HIGH,
+        icon=ICON_THERMOMETER_ALERT,
     ),
     cv.Optional(CONF_PPS_MODE): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
