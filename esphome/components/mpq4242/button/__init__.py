@@ -5,7 +5,6 @@ from esphome.const import (
     DEVICE_CLASS_RESTART,
     ENTITY_CATEGORY_DIAGNOSTIC,
     ENTITY_CATEGORY_CONFIG,
-    ICON_DATABASE,
     ICON_RESTART,
 )
 from .. import CONF_MPQ4242_ID, MPQ4242Component, mpq4242_ns
@@ -15,6 +14,8 @@ SrcCapButton = mpq4242_ns.class_("SrcCapButton", button.Button)
 
 CONF_SEND_HARD_RESET = "send_hard_reset"
 CONF_SEND_SRC_CAP = "send_src_cap"
+
+ICON_DATABASE_EXPORT = "mdi:database-export"
 
 CONFIG_SCHEMA = {
     cv.GenerateID(CONF_MPQ4242_ID): cv.use_id(MPQ4242Component),
@@ -27,7 +28,7 @@ CONFIG_SCHEMA = {
     cv.Optional(CONF_SEND_SRC_CAP): button.button_schema(
         SrcCapButton,
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-        icon=ICON_DATABASE,
+        icon=ICON_DATABASE_EXPORT,
     ),
 }
 

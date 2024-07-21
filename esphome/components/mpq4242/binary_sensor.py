@@ -4,11 +4,12 @@ from esphome.components import binary_sensor
 from esphome.const import ENTITY_CATEGORY_DIAGNOSTIC
 from . import (
     CONF_MPQ4242_ID,
+    ICON_THERMOMETER_ALERT,
+    ICON_THERMOMETER_HIGH,
     MPQ4242Component,
 )
 
 CODEOWNERS = ["@mikesmitty"]
-
 DEPENDENCIES = ["mpq4242"]
 
 CONF_CABLE_5A_CAPABLE = "cable_5a_capable"
@@ -19,28 +20,38 @@ CONF_OTW_THRESHOLD_2 = "otw_threshold_2"
 CONF_PPS_MODE = "pps_mode"
 CONF_SINK_ATTACHED = "sink_attached"
 
+ICON_BATTERY_ARROW_DOWN_OUTLINE = "mdi:battery-arrow-down-outline"
+ICON_NUMERIC_5_BOX_MULTIPLE = "mdi:numeric-5-box-multiple"
+ICON_POWER_SETTINGS = "mdi:power-settings"
+ICON_USB_C_PORT = "mdi:usb-c-port"
+
 CONFIG_SCHEMA = {
     cv.GenerateID(CONF_MPQ4242_ID): cv.use_id(MPQ4242Component),
     cv.Optional(CONF_CABLE_5A_CAPABLE): binary_sensor.binary_sensor_schema(
-        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        icon=ICON_NUMERIC_5_BOX_MULTIPLE,
     ),
     cv.Optional(CONF_CURRENT_MISMATCH): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
     ),
     cv.Optional(CONF_GIVEBACK_FLAG): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        icon=ICON_BATTERY_ARROW_DOWN_OUTLINE,
     ),
     cv.Optional(CONF_OTW_THRESHOLD_1): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        icon=ICON_THERMOMETER_ALERT,
     ),
     cv.Optional(CONF_OTW_THRESHOLD_2): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        icon=ICON_THERMOMETER_HIGH,
     ),
     cv.Optional(CONF_PPS_MODE): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        icon=ICON_POWER_SETTINGS,
     ),
     cv.Optional(CONF_SINK_ATTACHED): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        icon=ICON_USB_C_PORT,
     ),
 }
 

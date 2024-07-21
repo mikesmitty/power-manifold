@@ -13,6 +13,10 @@ CONF_GPIO1_FUNCTION = "gpio1_function"
 CONF_GPIO2_FUNCTION = "gpio2_function"
 CONF_MPQ4242_ID = "mpq4242_id"
 
+ICON_THERMOMETER_ALERT = "mdi:thermometer-alert"
+ICON_THERMOMETER_HIGH = "mdi:thermometer-high"
+ICON_THERMOMETER_OFF = "mdi:thermometer-off"
+
 mpq4242_ns = cg.esphome_ns.namespace("mpq4242")
 MPQ4242Component = mpq4242_ns.class_("MPQ4242Component", cg.Component, i2c.I2CDevice)
 

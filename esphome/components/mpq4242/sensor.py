@@ -6,17 +6,26 @@ from esphome.const import (
     DEVICE_CLASS_POWER,
     DEVICE_CLASS_TEMPERATURE,
     DEVICE_CLASS_VOLTAGE,
+    ENTITY_CATEGORY_DIAGNOSTIC,
+    ICON_FLASH,
+    STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_NONE,
     UNIT_AMPERE,
     UNIT_CELSIUS,
     UNIT_VOLT,
     UNIT_WATT,
-    ENTITY_CATEGORY_DIAGNOSTIC,
-    ICON_SIGNAL,
-    ICON_FLASH,
 )
-from . import CONF_MPQ4242_ID, MPQ4242Component
+from . import (
+    CONF_MPQ4242_ID,
+    ICON_THERMOMETER_ALERT,
+    ICON_THERMOMETER_HIGH,
+    ICON_THERMOMETER_OFF,
+    MPQ4242Component,
+)
 
+CODEOWNERS = ["@mikesmitty"]
 DEPENDENCIES = ["mpq4242"]
+
 CONF_CONTRACT_POWER = "contract_power"
 CONF_FW_REV = "firmware_revision"
 CONF_OTW_THRESHOLD_1 = "otw_threshold_1"
@@ -28,66 +37,78 @@ CONF_PDO_VOLTAGE = "pdo_voltage"
 CONF_REQUESTED_CURRENT = "requested_current"
 CONF_SELECTED_PDO = "selected_pdo"
 
+ICON_CURRENT_DC = "mdi:current-dc"
+ICON_NUMERIC = "mdi:numeric"
+ICON_POWER_PLUG = "mdi:power-plug"
+
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_MPQ4242_ID): cv.use_id(MPQ4242Component),
         cv.Optional(CONF_CONTRACT_POWER): sensor.sensor_schema(
             device_class=DEVICE_CLASS_POWER,
-            unit_of_measurement=UNIT_WATT,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_WATT,
+            icon=ICON_POWER_PLUG,
         ),
         cv.Optional(CONF_FW_REV): sensor.sensor_schema(
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_NONE,
+            icon=ICON_NUMERIC,
         ),
         cv.Optional(CONF_OTP_THRESHOLD): sensor.sensor_schema(
             device_class=DEVICE_CLASS_TEMPERATURE,
-            unit_of_measurement=UNIT_CELSIUS,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_CELSIUS,
+            icon=ICON_THERMOMETER_OFF,
         ),
         cv.Optional(CONF_OTW_THRESHOLD_1): sensor.sensor_schema(
             device_class=DEVICE_CLASS_TEMPERATURE,
-            unit_of_measurement=UNIT_CELSIUS,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_CELSIUS,
+            icon=ICON_THERMOMETER_ALERT,
         ),
         cv.Optional(CONF_OTW_THRESHOLD_2): sensor.sensor_schema(
             device_class=DEVICE_CLASS_TEMPERATURE,
-            unit_of_measurement=UNIT_CELSIUS,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_CELSIUS,
+            icon=ICON_THERMOMETER_HIGH,
         ),
         cv.Optional(CONF_PDO_MAX_CURRENT): sensor.sensor_schema(
             device_class=DEVICE_CLASS_CURRENT,
-            unit_of_measurement=UNIT_AMPERE,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_AMPERE,
+            icon=ICON_CURRENT_DC,
         ),
         cv.Optional(CONF_PDO_MIN_VOLTAGE): sensor.sensor_schema(
-            accuracy_decimals=1,
             device_class=DEVICE_CLASS_VOLTAGE,
-            unit_of_measurement=UNIT_VOLT,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_VOLT,
             icon=ICON_FLASH,
         ),
         cv.Optional(CONF_PDO_VOLTAGE): sensor.sensor_schema(
-            accuracy_decimals=1,
             device_class=DEVICE_CLASS_VOLTAGE,
-            unit_of_measurement=UNIT_VOLT,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_VOLT,
             icon=ICON_FLASH,
         ),
         cv.Optional(CONF_REQUESTED_CURRENT): sensor.sensor_schema(
             device_class=DEVICE_CLASS_CURRENT,
-            unit_of_measurement=UNIT_AMPERE,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_MEASUREMENT,
+            unit_of_measurement=UNIT_AMPERE,
+            icon=ICON_CURRENT_DC,
         ),
         cv.Optional(CONF_SELECTED_PDO): sensor.sensor_schema(
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-            icon=ICON_SIGNAL,
+            state_class=STATE_CLASS_NONE,
+            icon=ICON_NUMERIC,
         ),
     }
 )

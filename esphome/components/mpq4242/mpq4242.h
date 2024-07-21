@@ -64,7 +64,6 @@ struct MPQ4242Pdo {
 
 static const uint8_t MPQ4242_REGISTER_PDO_SET1 = 0x00;
 static const uint8_t MPQ4242_REGISTER_PDO_SET2 = 0x01;
-static const uint8_t MPQ4242_REGISTER_HOST_SET = 0x02;
 static const uint8_t MPQ4242_REGISTER_PDO_I1 = 0x03;
 static const uint8_t MPQ4242_REGISTER_PDO_V2_L = 0x04;
 static const uint8_t MPQ4242_REGISTER_PDO_V2_H = 0x05;
@@ -84,62 +83,40 @@ static const uint8_t MPQ4242_REGISTER_PDO_I6 = 0x12;
 static const uint8_t MPQ4242_REGISTER_PDO_V7_L = 0x13;
 static const uint8_t MPQ4242_REGISTER_PDO_V7_H = 0x14;
 static const uint8_t MPQ4242_REGISTER_PDO_I7 = 0x15;
-static const uint8_t MPQ4242_REGISTER_PD_CTL1 = 0x16;
 static const uint8_t MPQ4242_REGISTER_PD_CTL2 = 0x17;
 static const uint8_t MPQ4242_REGISTER_PWR_CTL1 = 0x18;
 static const uint8_t MPQ4242_REGISTER_PWR_CTL2 = 0x19;
-static const uint8_t MPQ4242_REGISTER_VOUT = 0x1A;
-static const uint8_t MPQ4242_REGISTER_VOUT_L = 0x1A;
-static const uint8_t MPQ4242_REGISTER_VOUT_H = 0x1B;
-static const uint8_t MPQ4242_REGISTER_IOUT_LIM = 0x1C;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS0 = 0x1D;
 static const uint8_t MPQ4242_REGISTER_CTL_SYS1 = 0x1E;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS2 = 0x1F;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS3 = 0x20;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS4 = 0x21;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS5 = 0x22;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS6 = 0x23;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS7 = 0x24;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS8 = 0x25;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS9 = 0x26;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS10 = 0x27;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS11 = 0x28;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS12 = 0x29;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS13 = 0x2A;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS14 = 0x2B;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS15 = 0x2C;
 static const uint8_t MPQ4242_REGISTER_CTL_SYS16 = 0x2D;
 static const uint8_t MPQ4242_REGISTER_CTL_SYS17 = 0x2E;
-static const uint8_t MPQ4242_REGISTER_CTL_SYS18 = 0x2F;
 static const uint8_t MPQ4242_REGISTER_STATUS1 = 0x30;
 static const uint8_t MPQ4242_REGISTER_STATUS2 = 0x31;
 static const uint8_t MPQ4242_REGISTER_STATUS3 = 0x32;
-static const uint8_t MPQ4242_REGISTER_ID1 = 0x33;
-static const uint8_t MPQ4242_REGISTER_ID2 = 0x34;
 static const uint8_t MPQ4242_REGISTER_FW_REV = 0x35;
 static const uint8_t MPQ4242_REGISTER_MAX_REQ_CUR = 0x36;
-static const uint8_t MPQ4242_REGISTER_MFR_ID = 0x37;
 static const uint8_t MPQ4242_REGISTER_DEV_ID = 0x38;
 static const uint8_t MPQ4242_REGISTER_CLK_ON = 0x39;
 
-/// This class includes support for the MPQ4242 i2c USB PD controller.
+/// This class includes i2c support for the MPQ4242 USB PD controller.
 /// The device has 7 configurable PDOs, 2 GPIOs with several functions
 /// and is capable of up to 100W charging. This class is for the
 /// MPQ4242 configuration.
 class MPQ4242Component : public i2c::I2CDevice, public Component {
  public:
   void loop() override;
-  // bool read_data(uint16_t *data, uint8_t len);
 
   /** Reads the PDO configuration from the device and returns it as a struct.
    * @param pdo_num The PDO number (2-7)
    */
   MPQ4242Pdo get_pdo(uint8_t pdo_num);
 
-  // FIXME: documentation
+  /** Reads the current from a given PDO.
+   * @param pdo_num The PDO number (2-7)
+   * @param pdo The PDO type
+   */
   float get_pdo_current(uint8_t pdo_num, MPQ4242PdoType pdo_type);
 
-  /** Extracts the PDO type of a given PDO from the provided PDO_SET2 register value
+  /** Extracts the PDO type of a given PDO from the provided PDO_SET2 register value.
    * @param pdo_number The PDO number (1-7)
    * @param pdo_set2 The PDO_SET2 register value
    */
