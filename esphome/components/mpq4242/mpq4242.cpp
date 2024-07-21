@@ -240,7 +240,7 @@ void MPQ4242Component::loop() {
   if (otw_threshold_2 != this->otw_threshold_2_) {
     this->otw_threshold_2_ = otw_threshold_2;
     if (this->otw_threshold_2_sensor_ != nullptr) {
-      this->otw_threshold_2_sensor_->publish_state(otw_threshold_index[otw_threshold_2]);
+      this->otw_threshold_2_sensor_->publish_state(this->otw_threshold_index[otw_threshold_2]);
     }
   }
 
