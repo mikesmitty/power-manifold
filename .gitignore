@@ -3,3 +3,4 @@ hardware/**/*_old
 hardware/**/*auto*save*
 *.lck
 *.bak
+__pycache__
