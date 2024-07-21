@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.1...charger-module-v0.11.2) (2024-07-21)
+
+
+### Bug Fixes
+
+* open up path from usb gnd pins to plane ([735a073](https://github.com/mikesmitty/power-manifold/commit/735a073ddeeeeb4ab86238208ebdab3d418ca550))
+
 ## [0.11.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.0...charger-module-v0.11.1) (2024-07-11)
 
 
