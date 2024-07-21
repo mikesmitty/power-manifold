@@ -35,6 +35,7 @@ enum MPQ4242Gpio1Function : uint8_t {
   MPQ4242_GPIO1_FN_ATTACH_FLT_ALT,   // GPIO1 pulls low for 12µs when a sink plug-in is detected. If a fault
                                      // occurs, it pulls low
   MPQ4242_GPIO1_FN_ATTACH_FLT_ALT2,  // Behavior not differentiated from previous option in datasheet
+  MPQ4242_GPIO1_FN_PLACEHOLDER,      // Value not listed in datasheet
   MPQ4242_GPIO1_FN_IMON,             // GPIO1 is an analog current monitor output
 };
 
@@ -126,28 +127,6 @@ static const uint8_t MPQ4242_REGISTER_CLK_ON = 0x39;
 /// and is capable of up to 100W charging. This class is for the
 /// MPQ4242 configuration.
 class MPQ4242Component : public i2c::I2CDevice, public Component {
-#ifdef USE_BINARY_SENSOR
-  SUB_BINARY_SENSOR(cable_5a_capable)
-  SUB_BINARY_SENSOR(current_mismatch)
-  SUB_BINARY_SENSOR(giveback_flag)
-  SUB_BINARY_SENSOR(overheat_threshold_1)
-  SUB_BINARY_SENSOR(overheat_threshold_2)
-  SUB_BINARY_SENSOR(pps_mode)
-  SUB_BINARY_SENSOR(sink_attached)
-#endif
-
-#ifdef USE_BUTTON
-  SUB_BUTTON(hard_reset)
-  SUB_BUTTON(src_cap)
-#endif
-
-#ifdef USE_SENSOR
-  SUB_SENSOR(pdo_max_current)
-  SUB_SENSOR(pdo_min_voltage)
-  SUB_SENSOR(pdo_voltage)
-  SUB_SENSOR(selected_pdo)
-#endif
-
  public:
   void loop() override;
   // bool read_data(uint16_t *data, uint8_t len);
@@ -217,6 +196,59 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
    */
   void set_pdo_current(float current) { this->pdo_current_ = current; }
 
+  /** Sets the binary sensor indicating if a 5A-capable cable is attached. */
+  void set_cable_5a_capable_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->cable_5a_capable_binary_sensor_ = binary_sensor;
+  }
+
+  /** Sets the binary sensor indicating if the client requests more current than can be provided. */
+  void set_current_mismatch_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->current_mismatch_binary_sensor_ = binary_sensor;
+  }
+
+  /** Sets the binary sensor indicating if the client can accept a lower power level. */
+  void set_giveback_flag_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->giveback_flag_binary_sensor_ = binary_sensor;
+  }
+
+  /** Sets the binary sensor indicating if the overheat threshold 1 has been reached. */
+  void set_overheat_threshold_1_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->overheat_threshold_1_binary_sensor_ = binary_sensor;
+  }
+
+  /** Sets the binary sensor indicating if the overheat threshold 2 has been reached. */
+  void set_overheat_threshold_2_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->overheat_threshold_2_binary_sensor_ = binary_sensor;
+  }
+
+  /** Sets the binary sensor indicating if the selected PDO uses PPS. */
+  void set_pps_mode_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->pps_mode_binary_sensor_ = binary_sensor;
+  }
+
+  /** Sets the binary sensor indicating if a sink is attached. */
+  void set_sink_attached_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->sink_attached_binary_sensor_ = binary_sensor;
+  }
+
+  /** Sets the button for sending a hard reset message to the sink. */
+  void set_hard_reset_button(button::Button *button) { this->hard_reset_button_ = button; }
+
+  /** Sets the button for sending a SRC_CAP message to the sink. */
+  void set_src_cap_button(button::Button *button) { this->src_cap_button_ = button; }
+
+  /** Sets the sensor that will report the selected PDO's configured max current. */
+  void set_pdo_max_current_sensor(sensor::Sensor *sensor) { this->pdo_max_current_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the selected PDO's configured minimum voltage. */
+  void set_pdo_min_voltage_sensor(sensor::Sensor *sensor) { this->pdo_min_voltage_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the selected PDO's configured voltage. */
+  void set_pdo_voltage_sensor(sensor::Sensor *sensor) { this->pdo_voltage_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the selected PDO number. */
+  void set_selected_pdo_sensor(sensor::Sensor *sensor) { this->selected_pdo_sensor_ = sensor; }
+
   /** Used by ESPHome framework. */
   void setup() override;
   /** Used by ESPHome framework. */
@@ -232,6 +264,22 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
   bool pdo_12v_enabled_;
   float pdo_current_;
   uint8_t selected_pdo_{0};
+
+  binary_sensor::BinarySensor *cable_5a_capable_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *current_mismatch_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *giveback_flag_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *overheat_threshold_1_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *overheat_threshold_2_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *pps_mode_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *sink_attached_binary_sensor_{nullptr};
+
+  button::Button *hard_reset_button_{nullptr};
+  button::Button *src_cap_button_{nullptr};
+
+  sensor::Sensor *pdo_max_current_sensor_{nullptr};
+  sensor::Sensor *pdo_min_voltage_sensor_{nullptr};
+  sensor::Sensor *pdo_voltage_sensor_{nullptr};
+  sensor::Sensor *selected_pdo_sensor_{nullptr};
 };
 
 }  // namespace mpq4242
