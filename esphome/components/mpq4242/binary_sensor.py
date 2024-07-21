@@ -14,8 +14,8 @@ DEPENDENCIES = ["mpq4242"]
 CONF_CABLE_5A_CAPABLE = "cable_5a_capable"
 CONF_CURRENT_MISMATCH = "current_mismatch"
 CONF_GIVEBACK_FLAG = "giveback_flag"
-CONF_OVERHEAT_THRESHOLD_1 = "overheat_threshold_1"
-CONF_OVERHEAT_THRESHOLD_2 = "overheat_threshold_2"
+CONF_OTW_THRESHOLD_1 = "otw_threshold_1"
+CONF_OTW_THRESHOLD_2 = "otw_threshold_2"
 CONF_PPS_MODE = "pps_mode"
 CONF_SINK_ATTACHED = "sink_attached"
 
@@ -30,10 +30,10 @@ CONFIG_SCHEMA = {
     cv.Optional(CONF_GIVEBACK_FLAG): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
     ),
-    cv.Optional(CONF_OVERHEAT_THRESHOLD_1): binary_sensor.binary_sensor_schema(
+    cv.Optional(CONF_OTW_THRESHOLD_1): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
     ),
-    cv.Optional(CONF_OVERHEAT_THRESHOLD_2): binary_sensor.binary_sensor_schema(
+    cv.Optional(CONF_OTW_THRESHOLD_2): binary_sensor.binary_sensor_schema(
         entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
     ),
     cv.Optional(CONF_PPS_MODE): binary_sensor.binary_sensor_schema(
@@ -59,13 +59,13 @@ async def to_code(config):
         sens = await binary_sensor.new_binary_sensor(giveback_flag_config)
         cg.add(mpq4242_component.set_giveback_flag_binary_sensor(sens))
 
-    if overheat_threshold_1_config := config.get(CONF_OVERHEAT_THRESHOLD_1):
-        sens = await binary_sensor.new_binary_sensor(overheat_threshold_1_config)
-        cg.add(mpq4242_component.set_overheat_threshold_1_binary_sensor(sens))
+    if otw_threshold_1_config := config.get(CONF_OTW_THRESHOLD_1):
+        sens = await binary_sensor.new_binary_sensor(otw_threshold_1_config)
+        cg.add(mpq4242_component.set_otw_threshold_1_binary_sensor(sens))
 
-    if overheat_threshold_2_config := config.get(CONF_OVERHEAT_THRESHOLD_2):
-        sens = await binary_sensor.new_binary_sensor(overheat_threshold_2_config)
-        cg.add(mpq4242_component.set_overheat_threshold_2_binary_sensor(sens))
+    if otw_threshold_2_config := config.get(CONF_OTW_THRESHOLD_2):
+        sens = await binary_sensor.new_binary_sensor(otw_threshold_2_config)
+        cg.add(mpq4242_component.set_otw_threshold_2_binary_sensor(sens))
 
     if pps_mode_config := config.get(CONF_PPS_MODE):
         sens = await binary_sensor.new_binary_sensor(pps_mode_config)

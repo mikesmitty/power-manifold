@@ -176,11 +176,11 @@ void MPQ4242Component::loop() {
   if (this->giveback_flag_binary_sensor_ != nullptr) {
     this->giveback_flag_binary_sensor_->publish_state(CHECK_BIT(status1, 6));
   }
-  if (this->overheat_threshold_1_binary_sensor_ != nullptr) {
-    this->overheat_threshold_1_binary_sensor_->publish_state(CHECK_BIT(status2, 5));
+  if (this->otw_threshold_1_binary_sensor_ != nullptr) {
+    this->otw_threshold_1_binary_sensor_->publish_state(CHECK_BIT(status2, 5));
   }
-  if (this->overheat_threshold_2_binary_sensor_ != nullptr) {
-    this->overheat_threshold_2_binary_sensor_->publish_state(CHECK_BIT(status2, 4));
+  if (this->otw_threshold_2_binary_sensor_ != nullptr) {
+    this->otw_threshold_2_binary_sensor_->publish_state(CHECK_BIT(status2, 4));
   }
   if (this->pps_mode_binary_sensor_ != nullptr) {
     this->pps_mode_binary_sensor_->publish_state(pdo.pdo_type == MPQ4242_PDO_TYPE_PPS);
@@ -190,6 +190,60 @@ void MPQ4242Component::loop() {
   }
 #endif
 #ifdef USE_SENSOR
+  i2c::I2CRegister STATUS3 = this->reg(MPQ4242_REGISTER_STATUS3);
+  float contract_power = STATUS3.get() * 0.5;
+  if (contract_power != this->contract_power_) {
+    this->contract_power_ = contract_power;
+    if (this->contract_power_sensor_ != nullptr) {
+      this->contract_power_sensor_->publish_state(contract_power);
+    }
+  }
+
+  i2c::I2CRegister MAX_REQ_CUR = this->reg(MPQ4242_REGISTER_MAX_REQ_CUR);
+  float requested_current = MAX_REQ_CUR.get() * 0.02;  // 20mA units
+  if (requested_current != this->requested_current_) {
+    this->requested_current_ = requested_current;
+    if (this->requested_current_sensor_ != nullptr) {
+      this->requested_current_sensor_->publish_state(requested_current);
+    }
+  }
+
+  uint8_t fw_rev_number = fw_rev & 0b11111;
+  if (fw_rev_number != this->fw_rev_) {
+    this->fw_rev_ = fw_rev_number;
+    if (this->fw_rev_sensor_ != nullptr) {
+      this->fw_rev_sensor_->publish_state(fw_rev_number);
+    }
+  }
+
+  i2c::I2CRegister PWR_CTL2 = reg(MPQ4242_REGISTER_PWR_CTL2);
+  uint8_t pwr_ctl2 = PWR_CTL2.get();
+  uint8_t otp_threshold = pwr_ctl2 & 0b111;
+  uint8_t otw_threshold_1 = pwr_ctl2 >> 3 & 0b111;
+
+  if (otp_threshold != this->otp_threshold_) {
+    this->otp_threshold_ = otp_threshold;
+    if (this->otp_threshold_sensor_ != nullptr) {
+      this->otp_threshold_sensor_->publish_state(this->otp_threshold_index[otp_threshold]);
+    }
+  }
+
+  if (otw_threshold_1 != this->otw_threshold_1_) {
+    this->otw_threshold_1_ = otw_threshold_1;
+    if (this->otw_threshold_1_sensor_ != nullptr) {
+      this->otw_threshold_1_sensor_->publish_state(this->otw_threshold_index[otw_threshold_1]);
+    }
+  }
+
+  i2c::I2CRegister CTL_SYS16 = reg(MPQ4242_REGISTER_CTL_SYS16);
+  uint8_t otw_threshold_2 = CTL_SYS16.get() >> 1 & 0b111;
+  if (otw_threshold_2 != this->otw_threshold_2_) {
+    this->otw_threshold_2_ = otw_threshold_2;
+    if (this->otw_threshold_2_sensor_ != nullptr) {
+      this->otw_threshold_2_sensor_->publish_state(otw_threshold_index[otw_threshold_2]);
+    }
+  }
+
   if (selected_pdo != this->selected_pdo_) {
     this->selected_pdo_ = selected_pdo;
     if (this->selected_pdo_sensor_ != nullptr) {
@@ -240,9 +294,16 @@ void MPQ4242Component::dump_config() {
   LOG_BUTTON("  ", "SrcCapButton", this->src_cap_button_);
 #endif
 #ifdef USE_SENSOR
+  LOG_SENSOR("  ", "ContractPowerSensor", this->contract_power_sensor_);
+  LOG_SENSOR("  ", "FwRevSensor", this->fw_rev_sensor_);
+  LOG_SENSOR("  ", "OtpThresholdSensor", this->otp_threshold_sensor_);
+  LOG_SENSOR("  ", "OtwThreshold1Sensor", this->otw_threshold_1_sensor_);
+  LOG_SENSOR("  ", "OtwThreshold2Sensor", this->otw_threshold_2_sensor_);
   LOG_SENSOR("  ", "PdoMaxCurrentSensor", this->pdo_max_current_sensor_);
   LOG_SENSOR("  ", "PdoMinVoltageSensor", this->pdo_min_voltage_sensor_);
   LOG_SENSOR("  ", "PdoVoltageSensor", this->pdo_voltage_sensor_);
+  LOG_SENSOR("  ", "RequestedCurrentSensor", this->requested_current_sensor_);
+  LOG_SENSOR("  ", "SelectedPdoSensor", this->selected_pdo_sensor_);
 #endif
   for (uint8_t i = 1; i <= 7; i++) {
     MPQ4242Pdo pdo = this->get_pdo(i);

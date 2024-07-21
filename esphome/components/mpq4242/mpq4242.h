@@ -211,14 +211,14 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
     this->giveback_flag_binary_sensor_ = binary_sensor;
   }
 
-  /** Sets the binary sensor indicating if the overheat threshold 1 has been reached. */
-  void set_overheat_threshold_1_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
-    this->overheat_threshold_1_binary_sensor_ = binary_sensor;
+  /** Sets the binary sensor indicating if the otw threshold 1 has been reached. */
+  void set_otw_threshold_1_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->otw_threshold_1_binary_sensor_ = binary_sensor;
   }
 
-  /** Sets the binary sensor indicating if the overheat threshold 2 has been reached. */
-  void set_overheat_threshold_2_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
-    this->overheat_threshold_2_binary_sensor_ = binary_sensor;
+  /** Sets the binary sensor indicating if the otw threshold 2 has been reached. */
+  void set_otw_threshold_2_binary_sensor(binary_sensor::BinarySensor *binary_sensor) {
+    this->otw_threshold_2_binary_sensor_ = binary_sensor;
   }
 
   /** Sets the binary sensor indicating if the selected PDO uses PPS. */
@@ -237,6 +237,21 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
   /** Sets the button for sending a SRC_CAP message to the sink. */
   void set_src_cap_button(button::Button *button) { this->src_cap_button_ = button; }
 
+  /** Sets the sensor that will report the contract power negotiated with the sink. */
+  void set_contract_power_sensor(sensor::Sensor *sensor) { this->contract_power_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the firmware revision of the sink. */
+  void set_fw_rev_sensor(sensor::Sensor *sensor) { this->fw_rev_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the otp threshold temperature. */
+  void set_otp_threshold_sensor(sensor::Sensor *sensor) { this->otp_threshold_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the otw threshold 1 temperature. */
+  void set_otw_threshold_1_sensor(sensor::Sensor *sensor) { this->otw_threshold_1_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the otw threshold 2 temperature. */
+  void set_otw_threshold_2_sensor(sensor::Sensor *sensor) { this->otw_threshold_2_sensor_ = sensor; }
+
   /** Sets the sensor that will report the selected PDO's configured max current. */
   void set_pdo_max_current_sensor(sensor::Sensor *sensor) { this->pdo_max_current_sensor_ = sensor; }
 
@@ -245,6 +260,9 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
 
   /** Sets the sensor that will report the selected PDO's configured voltage. */
   void set_pdo_voltage_sensor(sensor::Sensor *sensor) { this->pdo_voltage_sensor_ = sensor; }
+
+  /** Sets the sensor that will report the current requested by the sink. */
+  void set_requested_current_sensor(sensor::Sensor *sensor) { this->requested_current_sensor_ = sensor; }
 
   /** Sets the sensor that will report the selected PDO number. */
   void set_selected_pdo_sensor(sensor::Sensor *sensor) { this->selected_pdo_sensor_ = sensor; }
@@ -258,27 +276,42 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
 
  protected:
   i2c::ErrorCode last_error_;
+  bool pdo_12v_enabled_;
+  float contract_power_;
+  float pdo_current_;
+  float requested_current_;
+  uint8_t fw_rev_;
   uint8_t gpio1_function_;
   uint8_t gpio2_function_;
+  uint8_t otp_threshold_{0};
+  uint8_t otw_threshold_1_{0};
+  uint8_t otw_threshold_2_{0};
   uint8_t pdo_12v_;
-  bool pdo_12v_enabled_;
-  float pdo_current_;
   uint8_t selected_pdo_{0};
+
+  uint8_t otp_threshold_index[8] = {155, 165, 175, 185, 0, 0, 0, 0};
+  uint8_t otw_threshold_index[8] = {0, 105, 115, 125, 135, 145, 155, 165};
 
   binary_sensor::BinarySensor *cable_5a_capable_binary_sensor_{nullptr};
   binary_sensor::BinarySensor *current_mismatch_binary_sensor_{nullptr};
   binary_sensor::BinarySensor *giveback_flag_binary_sensor_{nullptr};
-  binary_sensor::BinarySensor *overheat_threshold_1_binary_sensor_{nullptr};
-  binary_sensor::BinarySensor *overheat_threshold_2_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *otw_threshold_1_binary_sensor_{nullptr};
+  binary_sensor::BinarySensor *otw_threshold_2_binary_sensor_{nullptr};
   binary_sensor::BinarySensor *pps_mode_binary_sensor_{nullptr};
   binary_sensor::BinarySensor *sink_attached_binary_sensor_{nullptr};
 
   button::Button *hard_reset_button_{nullptr};
   button::Button *src_cap_button_{nullptr};
 
+  sensor::Sensor *contract_power_sensor_{nullptr};
+  sensor::Sensor *fw_rev_sensor_{nullptr};
+  sensor::Sensor *otp_threshold_sensor_{nullptr};
+  sensor::Sensor *otw_threshold_1_sensor_{nullptr};
+  sensor::Sensor *otw_threshold_2_sensor_{nullptr};
   sensor::Sensor *pdo_max_current_sensor_{nullptr};
   sensor::Sensor *pdo_min_voltage_sensor_{nullptr};
   sensor::Sensor *pdo_voltage_sensor_{nullptr};
+  sensor::Sensor *requested_current_sensor_{nullptr};
   sensor::Sensor *selected_pdo_sensor_{nullptr};
 };
 
