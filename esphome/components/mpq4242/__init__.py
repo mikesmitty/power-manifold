@@ -12,6 +12,7 @@ CONF_12V_PDO_ENABLED = "12v_pdo_enabled"
 CONF_GPIO1_FUNCTION = "gpio1_function"
 CONF_GPIO2_FUNCTION = "gpio2_function"
 CONF_MPQ4242_ID = "mpq4242_id"
+CONF_PORT_NUMBER = "port_number"
 
 ICON_THERMOMETER_ALERT = "mdi:thermometer-alert"
 ICON_THERMOMETER_HIGH = "mdi:thermometer-high"
@@ -57,6 +58,7 @@ CONFIG_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(MPQ4242Component),
+            cv.Optional(CONF_PORT_NUMBER): cv.templatable(cv.int_range(0, 255)),
             cv.Optional(CONF_12V_PDO_ENABLED, default=False): cv.templatable(
                 cv.boolean
             ),

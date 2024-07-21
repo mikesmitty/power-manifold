@@ -2,6 +2,7 @@ import esphome.codegen as cg
 from esphome.components import sensor
 import esphome.config_validation as cv
 from esphome.const import (
+    CONF_ID,
     DEVICE_CLASS_CURRENT,
     DEVICE_CLASS_POWER,
     DEVICE_CLASS_TEMPERATURE,
@@ -15,12 +16,13 @@ from esphome.const import (
     UNIT_VOLT,
     UNIT_WATT,
 )
-from . import (
+from .. import (
     CONF_MPQ4242_ID,
     ICON_THERMOMETER_ALERT,
     ICON_THERMOMETER_HIGH,
     ICON_THERMOMETER_OFF,
-    MPQ4242Component,
+    MPQ4242_COMPONENT_SCHEMA,
+    mpq4242_ns,
 )
 
 CODEOWNERS = ["@mikesmitty"]
@@ -41,9 +43,11 @@ ICON_CURRENT_DC = "mdi:current-dc"
 ICON_NUMERIC = "mdi:numeric"
 ICON_POWER_PLUG = "mdi:power-plug"
 
-CONFIG_SCHEMA = cv.Schema(
+MPQ4242Sensor = mpq4242_ns.class_("MPQ4242Sensor", cg.PollingComponent)
+
+CONFIG_SCHEMA = MPQ4242_COMPONENT_SCHEMA.extend(
     {
-        cv.GenerateID(CONF_MPQ4242_ID): cv.use_id(MPQ4242Component),
+        cv.GenerateID(): cv.declare_id(MPQ4242Sensor),
         cv.Optional(CONF_CONTRACT_POWER): sensor.sensor_schema(
             device_class=DEVICE_CLASS_POWER,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
@@ -111,38 +115,41 @@ CONFIG_SCHEMA = cv.Schema(
             icon=ICON_NUMERIC,
         ),
     }
-)
+).extend(cv.polling_component_schema("60s"))
 
 
 async def to_code(config):
-    mpq4242_component = await cg.get_variable(config[CONF_MPQ4242_ID])
+    paren = await cg.get_variable(config[CONF_MPQ4242_ID])
+    var = cg.new_Pvariable(config[CONF_ID], paren)
+    await cg.register_component(var, config)
+
     if contract_power_config := config.get(CONF_CONTRACT_POWER):
         sens = await sensor.new_sensor(contract_power_config)
-        cg.add(mpq4242_component.set_contract_power_sensor(sens))
+        cg.add(var.set_contract_power_sensor(sens))
     if fw_rev_config := config.get(CONF_FW_REV):
         sens = await sensor.new_sensor(fw_rev_config)
-        cg.add(mpq4242_component.set_fw_rev_sensor(sens))
+        cg.add(var.set_fw_rev_sensor(sens))
     if otp_threshold_config := config.get(CONF_OTP_THRESHOLD):
         sens = await sensor.new_sensor(otp_threshold_config)
-        cg.add(mpq4242_component.set_otp_threshold_sensor(sens))
+        cg.add(var.set_otp_threshold_sensor(sens))
     if otw_threshold_1_config := config.get(CONF_OTW_THRESHOLD_1):
         sens = await sensor.new_sensor(otw_threshold_1_config)
-        cg.add(mpq4242_component.set_otw_threshold_1_sensor(sens))
+        cg.add(var.set_otw_threshold_1_sensor(sens))
     if otw_threshold_2_config := config.get(CONF_OTW_THRESHOLD_2):
         sens = await sensor.new_sensor(otw_threshold_2_config)
-        cg.add(mpq4242_component.set_otw_threshold_2_sensor(sens))
+        cg.add(var.set_otw_threshold_2_sensor(sens))
     if pdo_max_current_config := config.get(CONF_PDO_MAX_CURRENT):
         sens = await sensor.new_sensor(pdo_max_current_config)
-        cg.add(mpq4242_component.set_pdo_max_current_sensor(sens))
+        cg.add(var.set_pdo_max_current_sensor(sens))
     if pdo_min_voltage_config := config.get(CONF_PDO_MIN_VOLTAGE):
         sens = await sensor.new_sensor(pdo_min_voltage_config)
-        cg.add(mpq4242_component.set_pdo_min_voltage_sensor(sens))
+        cg.add(var.set_pdo_min_voltage_sensor(sens))
     if pdo_voltage_config := config.get(CONF_PDO_VOLTAGE):
         sens = await sensor.new_sensor(pdo_voltage_config)
-        cg.add(mpq4242_component.set_pdo_voltage_sensor(sens))
+        cg.add(var.set_pdo_voltage_sensor(sens))
     if max_requested_current_config := config.get(CONF_MAX_REQUESTED_CURRENT):
         sens = await sensor.new_sensor(max_requested_current_config)
-        cg.add(mpq4242_component.set_max_requested_current_sensor(sens))
+        cg.add(var.set_max_requested_current_sensor(sens))
     if selected_pdo_config := config.get(CONF_SELECTED_PDO):
         sens = await sensor.new_sensor(selected_pdo_config)
-        cg.add(mpq4242_component.set_selected_pdo_sensor(sens))
+        cg.add(var.set_selected_pdo_sensor(sens))
