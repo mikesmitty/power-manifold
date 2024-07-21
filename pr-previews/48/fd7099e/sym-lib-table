@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "esp32-mgmt-module")(type "KiCad")(uri "${KIPRJMOD}/esp32-mgmt-module.kicad_sym")(options "")(descr ""))
+)
