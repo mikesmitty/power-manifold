@@ -229,9 +229,8 @@ void MPQ4242Component::dump_config() {
   if (this->pdo_12v_enabled_) {
     ESP_LOGCONFIG(TAG, "  12V PDO Number: PDO%d", this->pdo_12v_);
   }
-  // FIXME: GPIO functions
-  // ESP_LOGCONFIG(TAG, "  GPIO1 function: %s", this->gpio1_function_);
-  // ESP_LOGCONFIG(TAG, "  GPIO2 function: %s", this->gpio2_function_);
+  ESP_LOGCONFIG(TAG, "  GPIO1 function: %d", this->gpio1_function_);
+  ESP_LOGCONFIG(TAG, "  GPIO2 function: %d", this->gpio2_function_);
 #ifdef USE_BINARY_SENSOR
   LOG_BINARY_SENSOR("  ", "Cable5ACapableBinarySensor", this->cable_5a_capable_binary_sensor_);
   LOG_BINARY_SENSOR("  ", "CurrentMismatchBinarySensor", this->current_mismatch_binary_sensor_);

@@ -16,7 +16,6 @@ CONF_MPQ4242_ID = "mpq4242_id"
 mpq4242_ns = cg.esphome_ns.namespace("mpq4242")
 MPQ4242Component = mpq4242_ns.class_("MPQ4242Component", cg.Component, i2c.I2CDevice)
 
-
 MPQ4242PdoType = mpq4242_ns.enum("MPQ4242PdoType")
 PDO_TYPE = {
     "fixed": MPQ4242PdoType.MPQ4242_PDO_FIXED,
