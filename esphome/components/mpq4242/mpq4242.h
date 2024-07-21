@@ -1,14 +1,8 @@
 #pragma once
 #include "esphome/core/defines.h"
 #include "esphome/core/component.h"
-#ifdef USE_BINARY_SENSOR
-#include "esphome/components/binary_sensor/binary_sensor.h"
-#endif
 #ifdef USE_BUTTON
 #include "esphome/components/button/button.h"
-#endif
-#ifdef USE_SENSOR
-#include "esphome/components/sensor/sensor.h"
 #endif
 #include "esphome/components/i2c/i2c.h"
 

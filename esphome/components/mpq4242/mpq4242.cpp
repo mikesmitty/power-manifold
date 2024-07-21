@@ -3,9 +3,6 @@
 #ifdef USE_BUTTON
 #include "esphome/components/button/button.h"
 #endif
-#ifdef USE_SENSOR
-#include "esphome/components/sensor/sensor.h"
-#endif
 #include "esphome/components/i2c/i2c.h"
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"
