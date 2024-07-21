@@ -200,11 +200,11 @@ void MPQ4242Component::loop() {
   }
 
   i2c::I2CRegister MAX_REQ_CUR = this->reg(MPQ4242_REGISTER_MAX_REQ_CUR);
-  float requested_current = MAX_REQ_CUR.get() * 0.02;  // 20mA units
-  if (requested_current != this->requested_current_) {
-    this->requested_current_ = requested_current;
-    if (this->requested_current_sensor_ != nullptr) {
-      this->requested_current_sensor_->publish_state(requested_current);
+  float max_requested_current = MAX_REQ_CUR.get() * 0.02;  // 20mA units
+  if (max_requested_current != this->max_requested_current_) {
+    this->max_requested_current_ = max_requested_current;
+    if (this->max_requested_current_sensor_ != nullptr) {
+      this->max_requested_current_sensor_->publish_state(max_requested_current);
     }
   }
 
@@ -296,13 +296,13 @@ void MPQ4242Component::dump_config() {
 #ifdef USE_SENSOR
   LOG_SENSOR("  ", "ContractPowerSensor", this->contract_power_sensor_);
   LOG_SENSOR("  ", "FwRevSensor", this->fw_rev_sensor_);
+  LOG_SENSOR("  ", "MaxRequestedCurrentSensor", this->max_requested_current_sensor_);
   LOG_SENSOR("  ", "OtpThresholdSensor", this->otp_threshold_sensor_);
   LOG_SENSOR("  ", "OtwThreshold1Sensor", this->otw_threshold_1_sensor_);
   LOG_SENSOR("  ", "OtwThreshold2Sensor", this->otw_threshold_2_sensor_);
   LOG_SENSOR("  ", "PdoMaxCurrentSensor", this->pdo_max_current_sensor_);
   LOG_SENSOR("  ", "PdoMinVoltageSensor", this->pdo_min_voltage_sensor_);
   LOG_SENSOR("  ", "PdoVoltageSensor", this->pdo_voltage_sensor_);
-  LOG_SENSOR("  ", "RequestedCurrentSensor", this->requested_current_sensor_);
   LOG_SENSOR("  ", "SelectedPdoSensor", this->selected_pdo_sensor_);
 #endif
   for (uint8_t i = 1; i <= 7; i++) {

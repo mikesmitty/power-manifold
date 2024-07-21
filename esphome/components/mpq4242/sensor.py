@@ -34,7 +34,7 @@ CONF_OTP_THRESHOLD = "otp_threshold"
 CONF_PDO_MAX_CURRENT = "pdo_max_current"
 CONF_PDO_MIN_VOLTAGE = "pdo_min_voltage"
 CONF_PDO_VOLTAGE = "pdo_voltage"
-CONF_REQUESTED_CURRENT = "requested_current"
+CONF_MAX_REQUESTED_CURRENT = "max_requested_current"
 CONF_SELECTED_PDO = "selected_pdo"
 
 ICON_CURRENT_DC = "mdi:current-dc"
@@ -98,7 +98,7 @@ CONFIG_SCHEMA = cv.Schema(
             unit_of_measurement=UNIT_VOLT,
             icon=ICON_FLASH,
         ),
-        cv.Optional(CONF_REQUESTED_CURRENT): sensor.sensor_schema(
+        cv.Optional(CONF_MAX_REQUESTED_CURRENT): sensor.sensor_schema(
             device_class=DEVICE_CLASS_CURRENT,
             entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
             state_class=STATE_CLASS_MEASUREMENT,
@@ -140,9 +140,9 @@ async def to_code(config):
     if pdo_voltage_config := config.get(CONF_PDO_VOLTAGE):
         sens = await sensor.new_sensor(pdo_voltage_config)
         cg.add(mpq4242_component.set_pdo_voltage_sensor(sens))
-    if requested_current_config := config.get(CONF_REQUESTED_CURRENT):
-        sens = await sensor.new_sensor(requested_current_config)
-        cg.add(mpq4242_component.set_requested_current_sensor(sens))
+    if max_requested_current_config := config.get(CONF_MAX_REQUESTED_CURRENT):
+        sens = await sensor.new_sensor(max_requested_current_config)
+        cg.add(mpq4242_component.set_max_requested_current_sensor(sens))
     if selected_pdo_config := config.get(CONF_SELECTED_PDO):
         sens = await sensor.new_sensor(selected_pdo_config)
         cg.add(mpq4242_component.set_selected_pdo_sensor(sens))

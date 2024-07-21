@@ -220,6 +220,9 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
   /** Sets the sensor that will report the firmware revision of the sink. */
   void set_fw_rev_sensor(sensor::Sensor *sensor) { this->fw_rev_sensor_ = sensor; }
 
+  /** Sets the sensor that will report the current requested by the sink. */
+  void set_max_requested_current_sensor(sensor::Sensor *sensor) { this->max_requested_current_sensor_ = sensor; }
+
   /** Sets the sensor that will report the otp threshold temperature. */
   void set_otp_threshold_sensor(sensor::Sensor *sensor) { this->otp_threshold_sensor_ = sensor; }
 
@@ -238,9 +241,6 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
   /** Sets the sensor that will report the selected PDO's configured voltage. */
   void set_pdo_voltage_sensor(sensor::Sensor *sensor) { this->pdo_voltage_sensor_ = sensor; }
 
-  /** Sets the sensor that will report the current requested by the sink. */
-  void set_requested_current_sensor(sensor::Sensor *sensor) { this->requested_current_sensor_ = sensor; }
-
   /** Sets the sensor that will report the selected PDO number. */
   void set_selected_pdo_sensor(sensor::Sensor *sensor) { this->selected_pdo_sensor_ = sensor; }
 
@@ -255,8 +255,8 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
   i2c::ErrorCode last_error_;
   bool pdo_12v_enabled_;
   float contract_power_;
+  float max_requested_current_;
   float pdo_current_;
-  float requested_current_;
   uint8_t fw_rev_;
   uint8_t gpio1_function_;
   uint8_t gpio2_function_;
@@ -282,13 +282,13 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
 
   sensor::Sensor *contract_power_sensor_{nullptr};
   sensor::Sensor *fw_rev_sensor_{nullptr};
+  sensor::Sensor *max_requested_current_sensor_{nullptr};
   sensor::Sensor *otp_threshold_sensor_{nullptr};
   sensor::Sensor *otw_threshold_1_sensor_{nullptr};
   sensor::Sensor *otw_threshold_2_sensor_{nullptr};
   sensor::Sensor *pdo_max_current_sensor_{nullptr};
   sensor::Sensor *pdo_min_voltage_sensor_{nullptr};
   sensor::Sensor *pdo_voltage_sensor_{nullptr};
-  sensor::Sensor *requested_current_sensor_{nullptr};
   sensor::Sensor *selected_pdo_sensor_{nullptr};
 };
 
