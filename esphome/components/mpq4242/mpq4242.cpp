@@ -308,10 +308,9 @@ void MPQ4242Component::dump_config() {
   for (uint8_t i = 1; i <= 7; i++) {
     MPQ4242Pdo pdo = this->get_pdo(i);
     if (pdo.pdo_type == MPQ4242_PDO_TYPE_PPS) {
-      ESP_LOGCONFIG(TAG, "  PDO%d: %0.2fA %0.1fV-%0.1fV (PPS)", i, YESNO(pdo.enabled), pdo.max_current, pdo.min_voltage,
-                    pdo.voltage);
+      ESP_LOGCONFIG(TAG, "  PDO%d: %0.2fA %0.1fV-%0.1fV (PPS)", i, pdo.max_current, pdo.min_voltage, pdo.voltage);
     } else {
-      ESP_LOGCONFIG(TAG, "  PDO%d: %0.2fA %0.2fV", i, YESNO(pdo.enabled), pdo.max_current, pdo.voltage);
+      ESP_LOGCONFIG(TAG, "  PDO%d: %0.2fA %0.2fV", i, pdo.max_current, pdo.voltage);
     }
   }
 }
