@@ -13737,7 +13737,7 @@
 				)
 			)
 		)
-		(property "Value" "5A"
+		(property "Value" "8A"
 			(at 52.07 33.02 90)
 			(effects
 				(font
@@ -13772,7 +13772,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C553937"
+		(property "LCSC" "C5383193"
 			(at 52.07 36.83 90)
 			(effects
 				(font
