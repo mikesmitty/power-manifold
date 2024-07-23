@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.3](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.2...charger-module-v0.11.3) (2024-07-23)
+
+
+### Bug Fixes
+
+* increase fuse to 8A to match input ([34cf64f](https://github.com/mikesmitty/power-manifold/commit/34cf64f5ec75cb4e9e9030e484891ce500b91830))
+
 ## [0.11.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.1...charger-module-v0.11.2) (2024-07-21)
 
 
