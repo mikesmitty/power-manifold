@@ -2981,109 +2981,7 @@
 				)
 			)
 		)
-		(symbol "Mechanical:MountingHole_Pad"
-			(pin_numbers hide)
-			(pin_names
-				(offset 1.016) hide)
-			(exclude_from_sim yes)
-			(in_bom no)
-			(on_board yes)
-			(property "Reference" "H"
-				(at 0 6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "MountingHole_Pad"
-				(at 0 4.445 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Mounting Hole with connection"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "mounting hole"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "MountingHole*Pad*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "MountingHole_Pad_0_1"
-				(circle
-					(center 0 1.27)
-					(radius 1.27)
-					(stroke
-						(width 1.27)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "MountingHole_Pad_1_1"
-				(pin input line
-					(at 0 -2.54 90)
-					(length 2.54)
-					(name "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-		)
-		(symbol "Motor:Fan_3pin"
+		(symbol "Local Symbol Library:Fan_3pin_fixed"
 			(pin_names
 				(offset 0)
 			)
@@ -3153,7 +3051,7 @@
 					(hide yes)
 				)
 			)
-			(symbol "Fan_3pin_0_0"
+			(symbol "Fan_3pin_fixed_0_0"
 				(arc
 					(start -5.588 -1.016)
 					(mid -5.08 -1.5218)
@@ -3215,7 +3113,7 @@
 					)
 				)
 			)
-			(symbol "Fan_3pin_0_1"
+			(symbol "Fan_3pin_fixed_0_1"
 				(arc
 					(start -2.54 -3.048)
 					(mid 0.0028 -1.6279)
@@ -3324,11 +3222,11 @@
 					)
 				)
 			)
-			(symbol "Fan_3pin_1_1"
+			(symbol "Fan_3pin_fixed_1_1"
 				(pin passive line
-					(at -7.62 0 0)
+					(at 0 -7.62 90)
 					(length 2.54)
-					(name "Tacho"
+					(name "-"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3362,9 +3260,9 @@
 					)
 				)
 				(pin passive line
-					(at 0 -7.62 90)
+					(at -7.62 0 0)
 					(length 2.54)
-					(name "-"
+					(name "Tacho"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3372,6 +3270,108 @@
 						)
 					)
 					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
+		(symbol "Mechanical:MountingHole_Pad"
+			(pin_numbers hide)
+			(pin_names
+				(offset 1.016) hide)
+			(exclude_from_sim yes)
+			(in_bom no)
+			(on_board yes)
+			(property "Reference" "H"
+				(at 0 6.35 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "MountingHole_Pad"
+				(at 0 4.445 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Mounting Hole with connection"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "mounting hole"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "MountingHole*Pad*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "MountingHole_Pad_0_1"
+				(circle
+					(center 0 1.27)
+					(radius 1.27)
+					(stroke
+						(width 1.27)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "MountingHole_Pad_1_1"
+				(pin input line
+					(at 0 -2.54 90)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -11430,7 +11430,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Motor:Fan_3pin")
+		(lib_id "Local Symbol Library:Fan_3pin_fixed")
 		(at 193.04 38.1 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -12730,7 +12730,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Motor:Fan_3pin")
+		(lib_id "Local Symbol Library:Fan_3pin_fixed")
 		(at 233.68 38.1 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -13557,7 +13557,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Motor:Fan_3pin")
+		(lib_id "Local Symbol Library:Fan_3pin_fixed")
 		(at 213.36 38.1 0)
 		(unit 1)
 		(exclude_from_sim no)
