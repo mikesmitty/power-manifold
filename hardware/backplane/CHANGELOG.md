@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.1...backplane-v0.7.2) (2024-07-23)
+
+
+### Bug Fixes
+
+* fix fan header pinouts ([1386e08](https://github.com/mikesmitty/power-manifold/commit/1386e0885fd502d65d987aebbf47d9a931889ee8))
+
 ## [0.7.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.0...backplane-v0.7.1) (2024-07-10)
 
 
