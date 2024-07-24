@@ -12012,7 +12012,7 @@
 		(uuid "6e55cb04-8bae-4662-b9ad-a9104921412a")
 	)
 	(label "TXD0"
-		(at 276.86 40.64 0)
+		(at 276.86 43.18 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -12155,7 +12155,7 @@
 		(uuid "9c0dc953-e114-4fe9-9203-8af45a61e928")
 	)
 	(label "RXD0"
-		(at 276.86 43.18 0)
+		(at 276.86 40.64 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
