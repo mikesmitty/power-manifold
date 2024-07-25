@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.3.0...esp32-mgmt-module-v0.3.1) (2024-07-24)
+
+
+### Bug Fixes
+
+* swap usb-serial tx/rx lines ([e34942f](https://github.com/mikesmitty/power-manifold/commit/e34942ff9244057d3cfc91cc099dd74c4e2bb375))
+
 ## [0.3.0](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.2.1...esp32-mgmt-module-v0.3.0) (2024-07-21)
 
 
