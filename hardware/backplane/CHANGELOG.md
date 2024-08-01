@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.2...backplane-v0.7.3) (2024-08-01)
+
+
+### Bug Fixes
+
+* disconnect switch pins from i2c mux ([43d8c17](https://github.com/mikesmitty/power-manifold/commit/43d8c177ba27d518fe33105f22653d975bff59d6))
+
 ## [0.7.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.1...backplane-v0.7.2) (2024-07-23)
 
 
