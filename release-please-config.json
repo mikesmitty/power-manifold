@@ -3,6 +3,10 @@
     "release-type": "simple",
     "separate-pull-requests": true,
     "packages": {
+        "firmware/charger-module": {
+            "component": "charger-module-firmware",
+            "include-component-in-tag": true
+        },
         "hardware/backplane": {
             "component": "backplane",
             "include-component-in-tag": true
