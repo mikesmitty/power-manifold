@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.4](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.3...charger-module-v0.11.4) (2024-08-01)
+
+
+### Bug Fixes
+
+* correct rp2 usb pin order ([d259270](https://github.com/mikesmitty/power-manifold/commit/d2592703c32c2d982217669368ba1caed00b513d))
+
 ## [0.11.3](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.2...charger-module-v0.11.3) (2024-07-23)
 
 
