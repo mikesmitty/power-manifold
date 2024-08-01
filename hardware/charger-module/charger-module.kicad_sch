@@ -17162,32 +17162,34 @@
 	)
 	(symbol
 		(lib_id "Connector:Conn_01x04_Pin")
-		(at 334.01 226.06 0)
+		(at 334.01 228.6 0)
+		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
 		(dnp yes)
-		(fields_autoplaced yes)
 		(uuid "baad4dc3-e3f8-476e-b278-7ad89cdeb0f2")
 		(property "Reference" "J3"
-			(at 334.645 218.44 0)
+			(at 332.74 226.0599 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify right)
 			)
 		)
 		(property "Value" "RP_USB"
-			(at 334.645 220.98 0)
+			(at 332.74 228.5999 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify right)
 			)
 		)
 		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
-			(at 334.01 226.06 0)
+			(at 334.01 228.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17196,7 +17198,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 334.01 226.06 0)
+			(at 334.01 228.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17205,7 +17207,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x04, script generated"
-			(at 334.01 226.06 0)
+			(at 334.01 228.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
