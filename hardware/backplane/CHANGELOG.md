@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.3...backplane-v0.7.4) (2024-08-02)
+
+
+### Bug Fixes
+
+* make sure the input has a gnd ([9e89fb6](https://github.com/mikesmitty/power-manifold/commit/9e89fb69b0984d57c87f4afeee9d4b00b62a6423))
+
 ## [0.7.3](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.2...backplane-v0.7.3) (2024-08-01)
 
 
