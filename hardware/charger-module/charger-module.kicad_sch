@@ -16453,7 +16453,7 @@
 				)
 			)
 		)
-		(property "Value" "RESET"
+		(property "Value" "BOOT"
 			(at 44.45 198.12 0)
 			(effects
 				(font
