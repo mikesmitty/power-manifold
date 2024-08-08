@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.5](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.4...charger-module-v0.11.5) (2024-08-08)
+
+
+### Bug Fixes
+
+* move charger buttons ([9aaf8b0](https://github.com/mikesmitty/power-manifold/commit/9aaf8b0a4a00f143133bb757bf2bde2eb51de596))
+
 ## [0.11.4](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.3...charger-module-v0.11.4) (2024-08-01)
 
 
