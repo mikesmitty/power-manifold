@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.4...backplane-v0.7.5) (2024-08-08)
+
+
+### Bug Fixes
+
+* add reverse polarity protection mosfet ([2afe8da](https://github.com/mikesmitty/power-manifold/commit/2afe8dad995c7af24ff7d0db02ad513eba687658))
+
 ## [0.7.4](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.3...backplane-v0.7.4) (2024-08-02)
 
 
