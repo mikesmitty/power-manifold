@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.6](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.5...charger-module-v0.11.6) (2024-08-11)
+
+
+### Bug Fixes
+
+* invert enable pin so output doesn't drop during mcu reset ([970bd8c](https://github.com/mikesmitty/power-manifold/commit/970bd8cd0c93e5491865c72c2ee6678852993903))
+
 ## [0.11.5](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.4...charger-module-v0.11.5) (2024-08-08)
 
 
