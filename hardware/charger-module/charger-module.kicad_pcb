@@ -1671,7 +1671,7 @@
 		(descr "SOT-353, SC-70-5")
 		(tags "SOT-353 SC-70-5")
 		(property "Reference" "U5"
-			(at 0 -2.25 360)
+			(at 0 -2.25 0)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "51038cce-168d-4e67-97fb-abd3ccb51ab4")
@@ -1683,7 +1683,7 @@
 			)
 		)
 		(property "Value" "74LVC1G14GW"
-			(at 0 2 360)
+			(at 0 2 0)
 			(layer "F.Fab")
 			(uuid "db9ce3f6-fe7b-48f1-8c90-75f253d0e3cf")
 			(effects
@@ -1728,6 +1728,19 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C265125"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "552df189-9dba-4431-9928-49830cba3fb7")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
