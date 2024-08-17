@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.6](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.5...backplane-v0.7.6) (2024-08-17)
+
+
+### Bug Fixes
+
+* move fan headers so 4-pin fan plugs fit ([9713200](https://github.com/mikesmitty/power-manifold/commit/9713200d012df1082d5f478b315005e594c82122))
+
 ## [0.7.5](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.4...backplane-v0.7.5) (2024-08-08)
 
 
