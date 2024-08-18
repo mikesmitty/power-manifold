@@ -11682,6 +11682,15 @@
 				(hide yes)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "-2.5;0;0"
+			(at 96.52 45.72 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "47951d54-0fd3-4c71-b225-e7fe02499a9d")
 		)
@@ -15718,7 +15727,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "BZT52C10"
+		(property "Value" "BZT52C10S"
 			(at 115.57 45.7199 90)
 			(effects
 				(font
@@ -15727,7 +15736,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-123"
+		(property "Footprint" "Diode_SMD:D_SOD-323"
 			(at 108.585 44.45 0)
 			(effects
 				(font
@@ -15747,6 +15756,15 @@
 		)
 		(property "Description" "500mW Zener Diode, SOD-123F"
 			(at 113.03 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C19077446"
+			(at 113.03 44.45 90)
 			(effects
 				(font
 					(size 1.27 1.27)
