@@ -1,16 +1,46 @@
-import time
+import analogio
 import board
+import digitalio
 import neopixel
+import time
 import adafruit_logging as logging
 
 from i2ctarget import I2CTarget
 from adafruit_led_animation.animation.blink import Blink
 from adafruit_led_animation.animation.pulse import Pulse
 from adafruit_led_animation.animation.solid import Solid
-from adafruit_led_animation.color import RED, ORANGE, YELLOW, GREEN, BLUE, WHITE, JADE
+from adafruit_led_animation.color import JADE
 
+DEV_ID = 0x42
 
+# Read-write regs
+PIXEL_EFFECT_REG = 0x00
+PIXEL_R_REG = PIXEL_COLOR_REG = 0x01
+PIXEL_G_REG = 0x02
+PIXEL_B_REG = 0x03
+PIXEL_W_REG = 0x04
+ENABLE_REG = 0x05
+
+# Read-only regs
+DEV_ID_REG = 0x10
+IOUT_REG_H = 0x11
+IOUT_REG_L = 0x12
+VOUT_REG_H = 0x13
+VOUT_REG_L = 0x14
+VIN_REG_H = 0x15
+VIN_REG_L = 0x16
+LAST_REG = VIN_REG_L
+
+regs = [0] * (LAST_REG + 1)
+
+enable_pin = digitalio.DigitalInOut(board.GP22)
+enable_pin.direction = digitalio.Direction.OUTPUT
+imon_pin = analogio.AnalogIn(board.A0)
 logger = logging.getLogger("i2ctarget")
+led = None
+pixel_regs = set(range(PIXEL_EFFECT_REG, PIXEL_W_REG + 1))
+vin_pin = analogio.AnalogIn(board.A2)
+vout_pin = analogio.AnalogIn(board.A3)
 
 
 def main():
@@ -18,26 +48,22 @@ def main():
     logger.setLevel(logging.DEBUG)
     logger.addHandler(logging.StreamHandler())
 
+    set_enable_pin(1)
+
     scl = board.GP5
     sda = board.GP4
-    i2c_addr = 0x4d
+    i2c_addr = 0x4D
 
-    status_colors = [
-        RED,
-        ORANGE,
-        YELLOW,
-        GREEN,
-        BLUE,
-        WHITE,
-    ]
+    reg_pointer = None
+    reg_pointer_time = None
 
-    led = StatusLed(status_colors)
-
-    PIXEL_REG = 0
+    # FIXME: get rid of the globals where possible
+    global led
+    led = StatusLed()
 
     while True:
         with I2CTarget(scl, sda, (i2c_addr,)) as device:
-            logger.info("i2c listener started")
+            logger.debug("i2c listener started")
             while True:
                 led.animate()
 
@@ -49,26 +75,154 @@ def main():
                     continue
 
                 with i2c_request:
-                    address = i2c_request.address
+                    if (
+                        reg_pointer is not None
+                        and (time.monotonic_ns() - reg_pointer_time) > 1e8  # 100ms
+                    ):
+                        reg_pointer = None
+                        reg_pointer_time = None
 
-                    if i2c_request.is_read:
-                        logger.info(f"read request to address '0x{address:02x}'")
-                        buffer = bytes([0xAA])
-                        i2c_request.write(buffer)
-                    else:
-                        # transaction is a write request
-                        data = i2c_request.read(2)
-                        if len(data) == 0:
-                            logger.error("no data received")
+                    # Write request
+                    if not i2c_request.is_read:
+
+                        # First byte is the register id
+                        reg = i2c_request.read(1)[0]
+                        data = i2c_request.read()
+
+                        # Don't allow writing to non-existent registers
+                        if reg > LAST_REG:
+                            logger.error(f"invalid register 0x{reg:02x}")
                             continue
-                        elif data[0] == PIXEL_REG:
-                            logger.info(f"Pixel write request: {data}")
-                            # Top 3 bits of the first byte are the pattern
-                            pattern = data[1] >> 5
-                            # The rest are color
-                            color = data[1] & 0b00011111
-                            led.set_color(color)
-                            led.set_pattern(pattern)
+
+                        # No further bytes means it's a reg read request, restart loop to send response
+                        if not data:
+                            logger.info(f"read register: 0x{reg:02x}")
+                            reg_pointer = reg
+                            reg_pointer_time = time.monotonic_ns()
+                            continue
+
+                        count = len(data)
+
+                        # Make sure we wouldn't write past the last register
+                        if reg + count > LAST_REG:
+                            logger.error(f"invalid data length to register 0x{reg:02x}")
+                            continue
+
+                        logger.info(f"writing to reg 0x{reg:02x}: {data}")
+                        for i in range(count):
+                            regs[reg + i] = data[i]
+                        handle_reg_writes(reg, count)
+                    else:
+                        # Don't accept plain read requests without specifying a register first
+                        if reg_pointer is None:
+                            logger.warning("plain read requests are not supported")
+                            # Still need to respond, but result data is not defined
+                            i2c_request.write(bytes([0xFF]))
+                            reg_pointer = None
+                            reg_pointer_time = None
+                            continue
+
+                        # Plain reads are covered above, so we should always have a valid register
+                        assert reg_pointer is not None
+
+                        # The write-then-read to an invalid address is covered above,
+                        #   but if this is a restarted read, index might be out of bounds so need to check
+                        if reg_pointer > LAST_REG:
+                            logger.error(f"read requested beyond the last register")
+                            i2c_request.write(bytes([0xFF]))
+                            reg_pointer = None
+                            reg_pointer_time = None
+                            continue
+
+                        # Return the register value
+                        data = handle_reg_reads(reg_pointer)
+                        logger.info(f"returning register 0x{reg_pointer:02x}: {data}")
+                        i2c_request.write(bytes([data]))
+
+                        # Increment the register index to allow for multi-byte reads
+                        assert reg_pointer is not None
+                        reg_pointer += 1
+                        reg_pointer_time = time.monotonic_ns()
+
+
+def get_adc_voltage(pin):
+    reading = pin.value
+    return (reading * 3.3) / 65536
+
+
+def get_voltage_divider_reading(pin, r1=22000, r2=2000):
+    ratio = r2 / (r1 + r2)
+    adc_voltage = get_adc_voltage(pin)
+    return adc_voltage / ratio
+
+
+def get_imon_reading(pin):
+    # Vimon = Gain * Iout * Rsens
+    # Vimon = 27.5V/V * Iout * 0.01 Ohm
+    # Iout = Vimon / 0.275
+    return get_adc_voltage(pin) / 0.275
+
+
+def handle_reg_reads(reg):
+    if reg == DEV_ID_REG:
+        return DEV_ID
+    elif reg in [IOUT_REG_L, IOUT_REG_H]:
+        # The Iout reading is returned as the output current in 10mA steps
+        if regs[reg] is None:
+            current = round(get_imon_reading(imon_pin) * 100)
+            regs[IOUT_REG_L] = current & 0xFF
+            regs[IOUT_REG_H] = (current >> 8) & 0xFF
+        value = regs[reg]
+        # Reset the register to None after reading so we get a fresh atomic value next time regardless of read order
+        regs[reg] = None
+        return value
+    elif reg in [VOUT_REG_L, VOUT_REG_H]:
+        # The Vout reading is returned as the output voltage in 10mV steps
+        if regs[reg] is None:
+            voltage = round(get_voltage_divider_reading(vout_pin, r2=3300) * 100)
+            regs[VOUT_REG_L] = voltage & 0xFF
+            regs[VOUT_REG_H] = (voltage >> 8) & 0xFF
+        value = regs[reg]
+        # Reset the register to None after reading so we get a fresh atomic value next time regardless of read order
+        regs[reg] = None
+        return value
+    elif reg in [VIN_REG_L, VIN_REG_H]:
+        # The Vin reading is returned as the input voltage in 10mV steps
+        if regs[reg] is None:
+            voltage = round(get_voltage_divider_reading(vin_pin, r2=2000) * 100)
+            regs[VIN_REG_L] = voltage & 0xFF
+            regs[VIN_REG_H] = (voltage >> 8) & 0xFF
+        value = regs[reg]
+        # Reset the register to None after reading so we get a fresh atomic value next time regardless of read order
+        regs[reg] = None
+        return value
+
+
+def handle_reg_writes(first_reg, length):
+    changed_regs = set(range(first_reg, first_reg + length))
+
+    if not changed_regs.isdisjoint(pixel_regs):
+        logger.info(f"updating neopixel: {regs[PIXEL_EFFECT_REG:PIXEL_W_REG+1]}")
+        color = (regs[PIXEL_R_REG], regs[PIXEL_G_REG], regs[PIXEL_B_REG])
+        led.set_color(color)
+        led.set_pattern(regs[PIXEL_EFFECT_REG])
+
+    if ENABLE_REG in changed_regs:
+        set_enable_pin()
+
+
+def set_enable_pin(value=None):
+    if value is None:
+        value = regs[ENABLE_REG]
+    else:
+        regs[ENABLE_REG] = value
+
+    if value > 0:
+        logger.info("enabling mpq4242")
+        enable_pin.value = True
+    else:
+        logger.info("disabling mpq4242")
+        enable_pin.value = False
 
 
 class StatusLed:
@@ -76,19 +230,18 @@ class StatusLed:
     PULSE = 1
     BLINK = 2
 
-    def __init__(self, status_colors, brightness=0.1, pixel_num=1, pin=board.GP1):
+    def __init__(self, brightness=0.1, pixel_num=1, pin=board.GP1):
         self.pixels = neopixel.NeoPixel(
             pin, pixel_num, brightness=brightness, auto_write=False
         )
         self.color = JADE
         self.pattern = None
-        self.status_colors = status_colors
         self.set_pattern(self.SOLID)
 
     def set_color(self, new_color):
         logger.info(f"Setting color to {new_color}")
-        self._pattern.color = self.status_colors[new_color]
-        self.color = self.status_colors[new_color]
+        self.color = new_color
+        self._pattern.color = new_color
 
     def set_pattern(self, new_pattern):
         logger.info(f"Setting pattern to {new_pattern}")
