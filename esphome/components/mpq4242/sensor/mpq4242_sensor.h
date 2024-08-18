@@ -59,13 +59,6 @@ class MPQ4242Sensor : public PollingComponent {
  protected:
   MPQ4242Component *parent_;
 
-  /*
-    i2c::I2CRegister FW_REV;
-    i2c::I2CRegister MAX_REQ_CUR;
-    i2c::I2CRegister PWR_CTL2;
-    i2c::I2CRegister STATUS2;
-    i2c::I2CRegister STATUS3;
-  */
   i2c::I2CRegister FW_REV = this->parent_->reg(MPQ4242_REGISTER_FW_REV);
   i2c::I2CRegister MAX_REQ_CUR = this->parent_->reg(MPQ4242_REGISTER_MAX_REQ_CUR);
   i2c::I2CRegister PWR_CTL2 = this->parent_->reg(MPQ4242_REGISTER_PWR_CTL2);

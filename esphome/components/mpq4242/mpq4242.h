@@ -81,6 +81,7 @@ static const uint8_t MPQ4242_REGISTER_PD_CTL2 = 0x17;
 static const uint8_t MPQ4242_REGISTER_PWR_CTL1 = 0x18;
 static const uint8_t MPQ4242_REGISTER_PWR_CTL2 = 0x19;
 static const uint8_t MPQ4242_REGISTER_CTL_SYS1 = 0x1E;
+static const uint8_t MPQ4242_REGISTER_CTL_SYS2 = 0x1F;
 static const uint8_t MPQ4242_REGISTER_CTL_SYS16 = 0x2D;
 static const uint8_t MPQ4242_REGISTER_CTL_SYS17 = 0x2E;
 static const uint8_t MPQ4242_REGISTER_STATUS1 = 0x30;

@@ -76,7 +76,7 @@ void MPQ4242Component::setup() {
   }
 
   // Set GPIO functions
-  i2c::I2CRegister CTL_SYS2 = reg(MPQ4242_REGISTER_CTL_SYS17);
+  i2c::I2CRegister CTL_SYS2 = reg(MPQ4242_REGISTER_CTL_SYS2);
   // GPIO1 bits[7:5], GPIO2 bits[4:2]
   CTL_SYS2 |= (this->gpio1_function_ << 5) | (this->gpio2_function_ << 2);
 }
