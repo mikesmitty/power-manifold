@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.7](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.6...charger-module-v0.11.7) (2024-08-20)
+
+
+### Bug Fixes
+
+* reference vout voltage divider to gndusb for accuracy ([1f7f8f2](https://github.com/mikesmitty/power-manifold/commit/1f7f8f28c6ba415994af95c0408771f9a2a85a8f))
+
 ## [0.11.6](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.5...charger-module-v0.11.6) (2024-08-11)
 
 
