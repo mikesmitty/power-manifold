@@ -47,8 +47,7 @@ pixel_regs = set(range(PIXEL_EFFECT_REG, PIXEL_W_REG + 1))
 
 
 def main():
-    # logger.setLevel(logging.INFO)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler())
 
     set_enable_pin(1)
@@ -105,7 +104,7 @@ def main():
 
                         # No further bytes means it's a reg read request, restart loop to send response
                         if not data:
-                            logger.info(f"read register: 0x{reg:02x}")
+                            logger.debug(f"read register: 0x{reg:02x}")
                             reg_pointer = reg
                             reg_pointer_time = time.monotonic_ns()
                             continue
@@ -117,7 +116,7 @@ def main():
                             logger.error(f"invalid data length to register 0x{reg:02x}")
                             continue
 
-                        logger.info(f"writing to reg 0x{reg:02x}: {data}")
+                        logger.debug(f"writing to reg 0x{reg:02x}: {data}")
                         for i in range(count):
                             regs[reg + i] = data[i]
                         handle_reg_writes(reg, count)
@@ -145,7 +144,7 @@ def main():
 
                         # Return the register value
                         data = handle_reg_reads(reg_pointer)
-                        logger.info(f"returning register 0x{reg_pointer:02x}: {data}")
+                        logger.debug(f"returning register 0x{reg_pointer:02x}: {data}")
                         i2c_request.write(bytes([data]))
 
                         # Increment the register index to allow for multi-byte reads
@@ -234,7 +233,7 @@ def handle_reg_writes(first_reg, length):
     changed_regs = set(range(first_reg, first_reg + length))
 
     if not changed_regs.isdisjoint(pixel_regs):
-        logger.info(f"updating neopixel: {regs[PIXEL_EFFECT_REG:PIXEL_W_REG+1]}")
+        logger.debug(f"updating neopixel: {regs[PIXEL_EFFECT_REG:PIXEL_W_REG+1]}")
         color = (regs[PIXEL_R_REG], regs[PIXEL_G_REG], regs[PIXEL_B_REG])
         led.set_color(color)
         led.set_pattern(regs[PIXEL_EFFECT_REG])
@@ -250,10 +249,10 @@ def set_enable_pin(value=None):
         regs[ENABLE_REG] = value
 
     if value > 0:
-        logger.info("enabling mpq4242")
+        logger.debug("enabling mpq4242")
         enable_pin.value = True
     else:
-        logger.info("disabling mpq4242")
+        logger.debug("disabling mpq4242")
         enable_pin.value = False
 
 
@@ -271,12 +270,12 @@ class StatusLed:
         self.set_pattern(self.SOLID)
 
     def set_color(self, new_color):
-        logger.info(f"Setting color to {new_color}")
+        logger.debug(f"Setting color to {new_color}")
         self.color = new_color
         self._pattern.color = new_color
 
     def set_pattern(self, new_pattern):
-        logger.info(f"Setting pattern to {new_pattern}")
+        logger.debug(f"Setting pattern to {new_pattern}")
         if new_pattern == self.pattern:
             return
         if new_pattern == self.SOLID:
