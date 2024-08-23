@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.4.0...charger-module-firmware-v0.5.0) (2024-08-23)
+
+
+### Features
+
+* add adc reading cache for instant reads ([6d5c1f7](https://github.com/mikesmitty/power-manifold/commit/6d5c1f70831743ac66498cc9b01453e50adf55c9))
+
+
+### Bug Fixes
+
+* reduce logging verbosity ([68178a5](https://github.com/mikesmitty/power-manifold/commit/68178a5f561cc292b9639494e3d139653bb51584))
+
 ## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.3.0...charger-module-firmware-v0.4.0) (2024-08-18)
 
 
