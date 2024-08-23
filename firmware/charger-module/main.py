@@ -33,14 +33,17 @@ LAST_REG = VIN_REG_L
 
 regs = [0] * (LAST_REG + 1)
 
+adc_pins = {
+    "imon": analogio.AnalogIn(board.A0),
+    "vin": analogio.AnalogIn(board.A2),
+    "vout": analogio.AnalogIn(board.A3),
+}
+adc_readings = {}
 enable_pin = digitalio.DigitalInOut(board.GP22)
 enable_pin.direction = digitalio.Direction.OUTPUT
-imon_pin = analogio.AnalogIn(board.A0)
 logger = logging.getLogger("i2ctarget")
 led = None
 pixel_regs = set(range(PIXEL_EFFECT_REG, PIXEL_W_REG + 1))
-vin_pin = analogio.AnalogIn(board.A2)
-vout_pin = analogio.AnalogIn(board.A3)
 
 
 def main():
@@ -57,6 +60,11 @@ def main():
     reg_pointer = None
     reg_pointer_time = None
 
+    # Set the initial color to color.JADE
+    regs[PIXEL_R_REG] = 0
+    regs[PIXEL_G_REG] = 255
+    regs[PIXEL_B_REG] = 40
+
     # FIXME: get rid of the globals where possible
     global led
     led = StatusLed()
@@ -71,7 +79,8 @@ def main():
                 i2c_request = device.request()
 
                 if not i2c_request:
-                    # no request is pending
+                    # no request is pending, so we'll pre-fetch the ADC readings
+                    cache_adc_readings()
                     continue
 
                 with i2c_request:
@@ -145,22 +154,43 @@ def main():
                         reg_pointer_time = time.monotonic_ns()
 
 
-def get_adc_voltage(pin):
-    reading = pin.value
+# Cache the ADC readings so we can return the value immediately when requested
+def cache_adc_readings():
+    for adc_name in adc_pins:
+        adc_readings[adc_name] = get_adc_reading(adc_pins[adc_name])
+
+
+def get_adc_reading(pin):
+    return pin.value
+
+
+def get_adc_voltage(reading):
     return (reading * 3.3) / 65536
 
 
-def get_voltage_divider_reading(pin, r1=22000, r2=2000):
+# Return the cached ADC reading if available, otherwise read the ADC and return the result
+def get_cached_adc_reading(adc_name):
+    reading = adc_readings.get(adc_name)
+    if reading is None:
+        logger.error(f"no cached reading for {adc_name}")
+        reading = get_adc_reading(adc_pins[adc_name])
+    adc_readings[adc_name] = None
+    return reading
+
+
+def get_voltage_divider_reading(adc_name, r1=22000, r2=2000):
     ratio = r2 / (r1 + r2)
-    adc_voltage = get_adc_voltage(pin)
+    reading = get_cached_adc_reading(adc_name)
+    adc_voltage = get_adc_voltage(reading)
     return adc_voltage / ratio
 
 
-def get_imon_reading(pin):
+def get_imon_reading():
     # Vimon = Gain * Iout * Rsens
     # Vimon = 27.5V/V * Iout * 0.01 Ohm
     # Iout = Vimon / 0.275
-    return get_adc_voltage(pin) / 0.275
+    reading = get_cached_adc_reading("imon")
+    return get_adc_voltage(reading) / 0.275
 
 
 def handle_reg_reads(reg):
@@ -169,7 +199,7 @@ def handle_reg_reads(reg):
     elif reg in [IOUT_REG_L, IOUT_REG_H]:
         # The Iout reading is returned as the output current in 10mA steps
         if regs[reg] is None:
-            current = round(get_imon_reading(imon_pin) * 100)
+            current = round(get_imon_reading() * 100)
             regs[IOUT_REG_L] = current & 0xFF
             regs[IOUT_REG_H] = (current >> 8) & 0xFF
         value = regs[reg]
@@ -179,7 +209,7 @@ def handle_reg_reads(reg):
     elif reg in [VOUT_REG_L, VOUT_REG_H]:
         # The Vout reading is returned as the output voltage in 10mV steps
         if regs[reg] is None:
-            voltage = round(get_voltage_divider_reading(vout_pin, r2=3300) * 100)
+            voltage = round(get_voltage_divider_reading("vout", r2=3300) * 100)
             regs[VOUT_REG_L] = voltage & 0xFF
             regs[VOUT_REG_H] = (voltage >> 8) & 0xFF
         value = regs[reg]
@@ -189,13 +219,15 @@ def handle_reg_reads(reg):
     elif reg in [VIN_REG_L, VIN_REG_H]:
         # The Vin reading is returned as the input voltage in 10mV steps
         if regs[reg] is None:
-            voltage = round(get_voltage_divider_reading(vin_pin, r2=2000) * 100)
+            voltage = round(get_voltage_divider_reading("vin", r2=2000) * 100)
             regs[VIN_REG_L] = voltage & 0xFF
             regs[VIN_REG_H] = (voltage >> 8) & 0xFF
         value = regs[reg]
         # Reset the register to None after reading so we get a fresh atomic value next time regardless of read order
         regs[reg] = None
         return value
+    else:
+        return regs[reg]
 
 
 def handle_reg_writes(first_reg, length):
