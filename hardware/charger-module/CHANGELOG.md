@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.7...charger-module-v0.12.0) (2024-08-24)
+
+
+### Features
+
+* split i2c network ([f5c17fe](https://github.com/mikesmitty/power-manifold/commit/f5c17fe2180b5c9388dba73b8ee0f0641791acc8))
+
+
+### Bug Fixes
+
+* increase i2c pullup cap ([6f12598](https://github.com/mikesmitty/power-manifold/commit/6f125985b20211caa995e3b5c805009276087e4b))
+
 ## [0.11.7](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.11.6...charger-module-v0.11.7) (2024-08-20)
 
 
