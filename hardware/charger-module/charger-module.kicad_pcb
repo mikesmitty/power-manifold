@@ -327,12 +327,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "0c00c0bf-67ab-4426-81bf-b8ed31f2ccdc")
+			(uuid "f9a12cdc-57df-45b1-8cc4-0e9e8274a504")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "221b3402-151e-4df0-a3f4-7ca9198fabce")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "aca9f393-0fbd-44b1-9e14-031046d8e504")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cf42658a-cb83-4232-b24e-e6061e9b5d17")
 			(effects
 				(font
 					(size 1 1)
@@ -587,6 +626,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "0f29cfa5-8eb5-4a85-9ace-bed4d2ef0374")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ff4877d0-2629-4d96-8b87-bfaf5a87cb86")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "222833d6-0f32-4e82-b465-a52dcc3983d3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "010f021f-2009-4e6a-b73d-0d3899a5e53f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "42d4c63e-b96b-46f7-8be2-a7500e36e4e8")
 			(effects
 				(font
 					(size 1 1)
@@ -1025,12 +1116,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "70c169fb-2773-4bcd-801a-253864b81d41")
+			(uuid "4d117792-3b39-4b1f-ab82-c68676c4f68f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "52fae1f7-ce84-44f2-bc99-119505885fbb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cdacf56a-e71b-453f-9152-f3f6081f13f0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5db7c11e-7a3e-4c0a-a817-bedfb5497535")
 			(effects
 				(font
 					(size 1 1)
@@ -1265,12 +1395,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "9fbd24f0-de90-4d49-9024-26a1434cb121")
+			(uuid "ae94b86e-0e52-4f17-8700-7e57698c09b0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7aa1c300-27d4-4694-bd8f-1bee146d377d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "aa891121-ccea-4a1f-817a-acfdc1ebd289")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ea86cfb0-b3a2-493f-869e-7d4268082413")
 			(effects
 				(font
 					(size 1 1)
@@ -1505,12 +1674,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "b41920ab-8ebb-4f33-adcd-4a6ded1b143c")
+			(uuid "3360d6ff-c942-4878-b38e-27fe245c96c7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e3d42bea-1995-4051-a6c4-6bab552aa37a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2ad8cbb8-a727-4c52-9ae0-3d50a60e5238")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "811f0748-cd90-4841-adb3-bb8cedcf3fa0")
 			(effects
 				(font
 					(size 1 1)
@@ -1751,6 +1959,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "b356ab9c-c6f5-45d9-8b3a-30604ffde8df")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0692eda4-40cf-4430-9e36-bc8eab63c5b0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "aca486c5-f8d7-48ba-a528-9e359a65e93b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b85a8949-a1d3-44e5-8930-aaaf77150f1f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fe7d59cf-87b7-4269-8557-c04a25f1f2b7")
 			(effects
 				(font
 					(size 1 1)
@@ -2037,6 +2297,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "dddf878a-26d5-410b-8f80-6496961c97ce")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "015ec0fa-646f-4359-89a5-aa4592958a17")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "da5a2259-f346-46c9-b9c1-e57198c2a5b2")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "701eae08-092c-4c5a-b0bd-e09c32acdfe4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/7f1d7956-8c49-4dbb-a074-2b3a951998bd")
 		(sheetname "Root")
@@ -2264,12 +2576,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ab2a2326-2e84-4647-bbc4-71c4406b6dae")
+			(uuid "94b56a73-6b28-4199-8f90-3c372beb6626")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "085f35fb-8de3-42ee-b342-512b3369010f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "42d73eb5-41e2-43be-bd3a-b5c6c17216e2")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "90a1c1b0-4bc4-4b89-9ac7-702750c7a8ce")
 			(effects
 				(font
 					(size 1 1)
@@ -2504,6 +2855,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "498fb8db-e63b-4b42-b1fe-15dfc3b5a5e9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "37ed3eaf-fd5b-4166-8194-ab6e38b17c67")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "00847c10-08f3-412f-9a0a-8b19425da207")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4b2275e0-b52e-4bae-8594-f7963165e548")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(path "/a268f696-aed3-4d0b-805a-02439e259d2c")
 		(sheetname "Root")
 		(sheetfile "charger-module.kicad_sch")
@@ -2712,12 +3115,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "2bc6fee3-f8f0-4da6-b08b-bd7eb9d94b92")
+			(uuid "ecc1025e-84bb-4edb-8ac9-9c6b4ad4be1d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e97485d5-7ae7-4a78-a3af-72b34fe89b4c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f844afd0-3e47-4bef-9dce-ae0f78178542")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f7fae9ed-2735-4f42-bce2-b6f3009e3bdd")
 			(effects
 				(font
 					(size 1 1)
@@ -2992,12 +3434,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "f14d5877-4336-4c4d-ad0b-96e906b40082")
+			(uuid "abd71f31-62ae-4211-85db-721fa4b2f87f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "418dd05f-ba8c-4834-b4fb-9ad4911fb6fe")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "791ff1be-2fa2-4d21-8f14-4187aca904f1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b7adea2b-9d18-45e2-9d9f-721b3cd5ba94")
 			(effects
 				(font
 					(size 1 1)
@@ -3232,12 +3713,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "6f6cc143-129b-4102-9c51-d94b170f1142")
+			(uuid "d35ca61a-e7f5-4888-92a5-2db5ab9b7c02")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fe30a82c-313b-421d-bc8e-298962dcbc83")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "728267dd-092e-4c00-8a57-8091d00be912")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6ea67d2f-1622-435b-ade9-18e3cc5275ad")
 			(effects
 				(font
 					(size 1 1)
@@ -3472,6 +3992,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1be88d6c-ec32-4978-a669-d985855d0b56")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "967d31b0-8b88-4ae2-a6a2-4c4837e03db3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9886635d-70d6-4a82-b106-872ed9d1b18b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c7915787-638d-4cc9-a545-e695b5ca04ee")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/e787bea1-9694-4fa5-a513-0395e9d813da")
 		(sheetname "Root")
@@ -3699,12 +4271,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "49683db7-8121-4f85-8274-fa008349f4f0")
+			(uuid "97d0ea00-0ded-43dc-821e-c88115c5730d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4d5115d4-9ab5-4828-89bf-6171b4c90657")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a50a7004-037d-4f4e-83d0-8e6201914ba8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7519c58b-3c1a-47ee-aa11-ad390cde17f6")
 			(effects
 				(font
 					(size 1 1)
@@ -3932,6 +4543,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "fa8138bf-06d9-4908-b390-c5ed5995d2e4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e68fe619-e254-4eaa-b185-72b210af9da8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e00d76eb-b9b4-46ec-ab3f-f2bd69ad64b6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "789c16db-3e80-4bad-a065-822ad01cd1ed")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "de6013b8-4b3b-4420-92d4-122bd6c913de")
 			(effects
 				(font
 					(size 1 1)
@@ -4471,12 +5134,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "acdd9704-62b9-4ded-b68f-aed87277f21f")
+			(uuid "f1dc0e1b-e4b7-4fd0-86f8-c1c6e8bd5bb6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3c5b5a92-8c26-4a0d-8dd7-762319185ab8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "44a0ff12-aef8-4599-9ba7-a062df48b282")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2ca4f57c-5773-4c4f-a0a3-b7d40b891538")
 			(effects
 				(font
 					(size 1 1)
@@ -4711,12 +5413,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "9d547bf9-69e3-4dde-b082-32dbacb4662c")
+			(uuid "ea148205-2942-4400-84ca-06095e5f8ada")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c9b93248-a45b-4050-abc1-049ba22fcb1c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2bbc4a84-503c-48c9-962f-052309c89de1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "266c00c3-56f0-455d-886e-939b0456b0e0")
 			(effects
 				(font
 					(size 1 1)
@@ -5182,12 +5923,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "4dd9e478-c9b9-4602-999c-4a304058ba53")
+			(uuid "eacf0d8d-d254-48f9-8e1a-f210170fcb79")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1e9bce0a-fed6-42e2-bd01-c19f4dcb46d5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "805b81ff-b04a-4588-a155-5bb15fde37ce")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "45eb84d0-7140-4e19-86c2-a1cf2b4feaaf")
 			(effects
 				(font
 					(size 1 1)
@@ -5422,12 +6202,12 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "JLCPCB_CORRECTION" "0;0;180"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "5b26eced-0c71-4b57-ac23-eb87baa798e0")
+			(uuid "73b11cef-2d18-40a3-ac67-47b15f51637b")
 			(effects
 				(font
 					(size 1 1)
@@ -5435,12 +6215,51 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "0;0;180"
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "73b11cef-2d18-40a3-ac67-47b15f51637b")
+			(uuid "572f7513-3321-45b5-8909-ae13a08664fc")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7b391686-a8e1-49fe-8469-4ecec63ef7a1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f6f2e4d4-c1f8-48fa-95bf-b7284099db64")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "170310ae-ab0d-470e-b582-4e1ec96a96f7")
 			(effects
 				(font
 					(size 1 1)
@@ -5739,12 +6558,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "725cd474-cdf5-4778-90a0-97b2b5a741c6")
+			(uuid "5894030a-56ea-4536-b189-629b3b221847")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "38d5a986-fbe9-49d1-99da-27f0032c85a2")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d9c7758a-2440-41d6-a901-e073a997157f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "93002931-ac2b-4d04-9932-d9bfdf250e2f")
 			(effects
 				(font
 					(size 1 1)
@@ -5979,12 +6837,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "b332e257-815e-4648-9240-6d5c1957f902")
+			(uuid "a5cb9fc4-c5d8-4366-b986-fb07d5d7942e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e296d468-e480-47ab-9892-5b1857f6cf4d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "acadbf33-716c-465b-97f4-51b757fe3684")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9dbdff09-117a-4f44-9968-0c69a30f5fe9")
 			(effects
 				(font
 					(size 1 1)
@@ -6219,12 +7116,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "e2cc35df-4cc3-42c5-a414-75111ac6325f")
+			(uuid "3e1646a3-db5e-4a26-83fb-88dd92952ee0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "638ccac8-ca1f-4e8e-abdc-a49f45576dd1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9dcf422c-998a-4e46-8e26-2db6053c3221")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ffda011f-2c5a-4fa8-bef4-f0374317ec68")
 			(effects
 				(font
 					(size 1 1)
@@ -6459,12 +7395,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "2891d787-3493-4d9e-9cf3-cd06869d8ac9")
+			(uuid "56013bea-f817-4f6e-a6aa-0f6f07c6bbb6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e7178f93-72c9-4d3b-bf77-d053a9c524f1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5f33f54a-652f-4559-b3db-1ca6a36b403b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "37323ac8-1bc8-4003-9a64-8880721887cd")
 			(effects
 				(font
 					(size 1 1)
@@ -6699,12 +7674,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "8d0d040c-3d09-43db-906c-2d994356596a")
+			(uuid "c2417b7a-4935-4780-9c7c-417f51c814f8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d27e65b3-252d-435a-ad3f-8ed93b43b5f5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b21566cb-0b4c-4d33-a831-9d30175d48af")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6a8eda22-6abc-4a84-845f-fa0728df8707")
 			(effects
 				(font
 					(size 1 1)
@@ -6939,12 +7953,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ab24c081-fbad-444f-973e-3831c65b55cf")
+			(uuid "24d6241c-523b-4836-baa0-eaf6fb14794d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4c95e0ec-01d6-4424-a28d-9a11de97d875")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "17731413-92fa-4189-8c03-0408590721a9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "709b348a-031e-4c8e-b341-54d36f7fc55d")
 			(effects
 				(font
 					(size 1 1)
@@ -7179,12 +8232,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ba6d5fa4-3ba7-4836-8dc8-4981156c4208")
+			(uuid "a18ef027-02c6-4031-a76d-a84a0a2a798b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bd5f3a8f-75cc-40fa-a763-d9fd7d46b4c1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1cd0fe86-15ed-419d-9d00-d15b5ade8342")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b302a207-c5f9-4a5e-91aa-b1ea7d6a500e")
 			(effects
 				(font
 					(size 1 1)
@@ -7419,12 +8511,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "23829d1d-0280-4866-9364-a7b540c99b0a")
+			(uuid "421b60fa-df73-4b6a-a8c1-fdab07baec5c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f5de2b66-8abe-4391-9345-d9875212b548")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "79ca58ea-ccd7-4443-a91f-fecff26a08e7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e435fa80-eb69-43ab-b70e-358a6aaccc0f")
 			(effects
 				(font
 					(size 1 1)
@@ -7659,12 +8790,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "415a8a6a-6fd1-445f-8dd9-ab45c9c34277")
+			(uuid "677cf9e7-951f-4192-a64b-b15272c72a36")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f4970050-0057-4486-9fb8-18f0aa0df612")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fe471b2d-7ada-4b40-8491-135933f0bfea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ecd1cb5e-2778-4a82-ae07-c56f38a66f36")
 			(effects
 				(font
 					(size 1 1)
@@ -7899,12 +9069,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "b05a2af5-304e-4943-a25e-1abccdafb8a7")
+			(uuid "4d92c1eb-2bc4-4dff-9b4b-8a7d3dfd5d29")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "773262d4-e14c-4be0-b103-6979ba973f32")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f5b83e2b-12ad-4d2d-9657-e41ef09b5247")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "687882aa-a08c-454d-824a-0068dfa7f655")
 			(effects
 				(font
 					(size 1 1)
@@ -8139,6 +9348,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "63d76f6a-20df-49f2-b360-261b4308a928")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d3e5580f-c1a5-4c38-9d8d-251892ddb011")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "188663dd-d915-46b8-a617-ea8ab4fe4505")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "61b23fd7-b542-420f-856d-1e8644495dd2")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/2e16de69-264b-4111-8f10-8d02c9dcd45f")
 		(sheetname "Root")
@@ -8366,12 +9627,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "e12e32e7-2103-4bab-9305-f37e7b80a2ac")
+			(uuid "511b2c31-8b19-4469-b337-b7b6f7d52abe")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a1de6f83-fd3a-40a7-8ec2-1b6b396620a4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bc883e93-8f27-4480-bc33-da6d9bfd2121")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "40d675a9-1d1d-41d2-907e-c793e3db43d5")
 			(effects
 				(font
 					(size 1 1)
@@ -8606,6 +9906,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8d807e0f-ce5e-41cd-a2e3-3d9126f74ee1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b1c4bc67-fab6-4ae8-bfca-4b8fc6355716")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a4472565-7615-4e9a-97f3-8f1c7f72baa9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f7f8121c-ca4c-4a94-96dc-41587ac45974")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/3235f295-389c-48dd-9ff7-aab8306c5871")
 		(sheetname "Root")
@@ -8821,12 +10173,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "db3802b2-a80b-4562-b50a-64a7d9635815")
+			(uuid "409763ed-3527-4f60-8c21-b3802ed06312")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "17c0a3d5-6a92-49a7-aa22-847c417b74b3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7d23d734-ca4d-49df-918e-2639953f847d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fb5e437f-2f7f-44bd-9cb6-5d621c3d794a")
 			(effects
 				(font
 					(size 1 1)
@@ -9418,12 +10809,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "1de9cf02-e4c6-460f-9672-d7fed21d1bce")
+			(uuid "23a1a2a5-f946-48f6-9c2a-ac22351d90db")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6dc5aa85-e1cf-439c-9cde-6ce09abb4d97")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c1a5da7a-582a-4afc-aeb6-6219c4b64ff7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cb375a9a-538b-4b90-bde3-150033010be2")
 			(effects
 				(font
 					(size 1 1)
@@ -9658,6 +11088,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fa9072b6-bc5a-48e7-abf2-0e0c5e0a72fa")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "903c178f-eb61-4f44-a15e-d925e3437f42")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "17fdccbd-f49b-4488-93b2-391316e310a6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2bfa868a-8e3f-4ffc-a683-82f4230b52b9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/491504b8-ff89-48b1-bdd9-857713f6c70d")
 		(sheetname "Root")
@@ -9878,6 +11360,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "874dcdf8-5f9a-4a1e-8e61-b2c24e251848")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "37660cae-4207-4020-844e-6ceb6152a585")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a6d64229-e31f-4dd4-aae2-2f0b4b3eca71")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "89de983c-0ef0-4003-8934-1c927ca043b4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7d0d84a9-5aff-47d9-b91f-198de89d5bfd")
 			(effects
 				(font
 					(size 1 1)
@@ -10112,12 +11646,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "935325ff-3e0e-41b8-8073-08c6ad9b2c23")
+			(uuid "8f9e4c50-4ab1-4b27-94e4-3acae8418028")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "679e1e51-f0da-4e8a-82fa-b9c60be727c9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ee7a7b6f-1007-495c-a887-0408d969979b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "39e9e756-bf20-4fe7-9cef-477bc987e7b2")
 			(effects
 				(font
 					(size 1 1)
@@ -10352,12 +11925,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ae4ac108-c79c-4007-a9c0-741532dc9442")
+			(uuid "85b9a399-c6a0-4380-b955-94c212585701")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1262ca9a-44a8-47c9-8918-a66d3a94302a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f907cb9b-905d-42cc-8c4b-815e9b15f7ed")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ff5fe3ff-b7c2-4ff1-a646-478f0a6fdac5")
 			(effects
 				(font
 					(size 1 1)
@@ -10877,6 +12489,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "285223ee-b853-4676-af5d-734df3d2cf02")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7f45dd65-2bc6-49f3-a809-763243cea8d5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fb2b8f2a-7efc-456f-b583-4bea24008f52")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "535fc059-a789-44ad-9d6a-074e352eac64")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "*Fuse*")
 		(path "/4f05818d-7218-45e8-bb3d-2dc95c1f51e7")
 		(sheetname "Root")
@@ -11097,6 +12761,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "31cc9925-5a45-4578-84f0-cb168d36dd5b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e5e608fd-51f1-46ed-b6ec-81be8d8f621c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d0a6fb6b-1ace-4085-a03c-54086e34dee9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "89453a65-8657-48e6-b96c-438d9c15e389")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7a5f38ba-8dec-4447-90c3-8c9d54a5c6d5")
 			(effects
 				(font
 					(size 1 1)
@@ -11331,12 +13047,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "01e6dcb8-21e2-4164-9bea-0708b0e67669")
+			(uuid "339b3ba8-2e3a-490c-ba8d-24c87fda4319")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e13fffc3-5c87-4874-9efd-40fb53d323d3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ba3e8308-aa49-47d1-b0f5-2e4db070a26d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "85dba241-062e-4533-a6f2-21bf8b9d4b1e")
 			(effects
 				(font
 					(size 1 1)
@@ -11571,6 +13326,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "84a03bb7-281a-455a-9ae8-71e60f3c16ea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "48e20349-656f-4918-8cd1-d0edd7643f69")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a684a8bf-1fbf-4a3f-9edf-603c0d166da9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7bb64526-57be-44af-a9bd-abe3e6b062ac")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/1c70c77e-892b-4d73-baed-156d09db65e7")
 		(sheetname "Root")
@@ -11781,6 +13588,58 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "883e60d8-5198-4151-b58b-4c4e38d20a0c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b8557ccc-31a1-408c-a3eb-5f197a2191f3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "41351d25-5146-4ce3-bcb5-5695216c5bcf")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "306160b4-898d-4395-8c0e-a0ac4532a762")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -12110,6 +13969,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bd4a59ed-cbdb-44c0-b1fe-e21f1cb3d73b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "447ea776-8f71-423f-aff0-9fa48797b925")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bf4f1424-f717-45bf-92f8-d5a4e3f3e941")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8092ec73-34e6-4415-9f8a-73716d6c7e7b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/bcb9eefa-c85c-4a51-9cff-eb32450c9f83")
 		(sheetname "Root")
@@ -12330,6 +14241,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "038de0ed-ccc1-4795-9f55-6b7a4364d572")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "41dd161e-fcf7-4d9a-bbb9-365e7aed91bb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "12f50f46-6bbc-475e-b667-898350b1fc8b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "97488b3c-2a7b-4b6b-97b6-6196848ad846")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3198a4aa-c0e6-45dd-af2f-e091dfd499c3")
 			(effects
 				(font
 					(size 1 1)
@@ -12795,12 +14758,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "6eb52566-d641-4a75-9192-2918df9fb0d7")
+			(uuid "2555c32b-583b-407b-a58a-8c259de65a54")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "dd7047d1-8343-454e-adcc-dfa6f7477e5d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "437241f7-b437-4dc6-abd4-bd34d0e9685c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b004042b-c663-44da-abfa-8d06ff4db537")
 			(effects
 				(font
 					(size 1 1)
@@ -13697,12 +15699,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "8a80f783-5e3c-4703-90cb-e7b206354f18")
+			(uuid "0aa196a3-2bf0-4827-87a4-9caa2b5f4445")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b30e4f6c-05b3-436d-b617-54f2800db52c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7a05075f-e7f7-4797-9941-683c8ddbcb39")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c037d0da-3c4c-41f3-bbce-f424b29efe08")
 			(effects
 				(font
 					(size 1 1)
@@ -13965,12 +16006,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "a8b65c2c-b625-411c-b265-cc2e3873a34a")
+			(uuid "9c24065a-108b-4189-8616-f15a2125f302")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9780f55b-c067-4020-b013-ace3d4ac84fd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9f9011db-7b3b-4634-8b1e-47e46fec59b4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d9995e4b-ad1c-430d-96ea-bb3e98022ec7")
 			(effects
 				(font
 					(size 1 1)
@@ -14206,12 +16286,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "729ed227-d4d8-4a3e-b239-05665c8b3d62")
+			(uuid "704cfba1-74bc-4724-a776-a646223162cd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0acebe5b-4b6b-448c-8aa2-1ad1d2179cbd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "dea5f5f3-5206-49f6-af9f-f52d30c5a57e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0063c0bb-3fda-4852-8b3a-67009c96842a")
 			(effects
 				(font
 					(size 1 1)
@@ -14446,12 +16565,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "fc6784ea-e4c5-4cb4-8f1c-3f857d1fb54a")
+			(uuid "6d59ecf8-51bb-4c22-8601-f97c524e0767")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5444cf0d-cd30-4b60-89ba-1ec64950f279")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "374097bc-8836-4394-afaf-cb41b34e4ba7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "86012bd5-f009-435b-bb1a-5864834fea3c")
 			(effects
 				(font
 					(size 1 1)
@@ -14686,12 +16844,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "1de0b86f-f60b-473a-8ad6-d625d00b5dfe")
+			(uuid "f21f8a17-85a1-4905-a739-22a5985c87fc")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bc69b43c-6385-4fd5-b96f-8c3b4a80078c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "96ab84ea-c4aa-4b85-af34-f069e5a36ccb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fc8fb75a-8a2e-4d7e-90b8-d2b7ec6d1d88")
 			(effects
 				(font
 					(size 1 1)
@@ -14927,12 +17124,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "87bfb761-0f01-4d58-979b-467add3860bb")
+			(uuid "27ad7081-d7de-4c8a-92a1-d0882ec01bee")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5e135268-fa41-45d9-ae59-16252a20d660")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cbe12676-246b-43b5-a763-5704a8258048")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7d2ef674-0ed0-4821-9fd8-597ea0c82d09")
 			(effects
 				(font
 					(size 1 1)
@@ -15215,12 +17451,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "864d83c6-9435-4781-a838-1a7082e3b966")
+			(uuid "69d572a1-258e-498e-a523-d55992c4c178")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "eac906c5-62dc-4fea-b938-e33b67af5546")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2f537303-46dc-4091-96b8-911adffcddb1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2ff6c592-64fd-45f1-8d18-1de5be30c494")
 			(effects
 				(font
 					(size 1 1)
@@ -15455,12 +17730,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "af89a8c3-fee7-43a5-8887-b9858690fa01")
+			(uuid "0cfbdc70-c740-4f73-82d5-593e22c32319")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9720ca50-885e-4ee4-855f-a5c5e56fadc9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6e7c4c29-a887-45e9-baba-85afc03889d4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c4d68f60-76cf-4d08-b765-91dc4d03a1fe")
 			(effects
 				(font
 					(size 1 1)
@@ -15695,12 +18009,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "791b6fa9-6ace-4bc0-b5df-7b845c24db5a")
+			(uuid "d77cf509-8379-4b26-9704-7ccd1f988607")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c146f1b8-122a-4a24-a330-d6d15489a33f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1da06403-6f77-4ef5-9f36-c640aee17fc7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "eebf86b6-c4cf-4a95-b239-bf19aff7ee60")
 			(effects
 				(font
 					(size 1 1)
@@ -15935,12 +18288,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "eb8a40ab-6a20-4a87-ab1b-82323353c774")
+			(uuid "35bcce57-b450-4c14-bb92-87a379906d71")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2ceb1979-9524-4563-a6f7-197018990674")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a5eff9af-77b2-439b-8363-e6a18020636a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f3a3c999-f803-48a1-ad61-ad3d5aa74626")
 			(effects
 				(font
 					(size 1 1)
@@ -16175,12 +18567,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "8946ce95-59df-4c9d-9211-53d9fd3ac5a0")
+			(uuid "e565204b-21cd-41ec-9af2-78d958d9cf06")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "59a79559-e1f2-4f02-9689-f07e9019d609")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "498bbeaf-2edc-441b-88fe-c0796adbb302")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "11fbf590-8f74-480f-aea0-d466b1e64720")
 			(effects
 				(font
 					(size 1 1)
@@ -16415,6 +18846,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9deca8ac-42d9-423a-94c0-4cc063456e31")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2b94c264-cf27-402e-91f2-777fee882a94")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6e609694-0862-4554-bcb7-58d914d28eb7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "201d0833-0d50-4974-8cef-1ac1efb0b511")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/96a63f09-57ef-43d7-a30f-f8742a0dfc98")
 		(sheetname "Root")
@@ -16642,12 +19125,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "3183aa69-2602-4228-97e0-3eb97811eec3")
+			(uuid "271e972a-5a57-4969-8167-55b17e965e29")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "94341b12-bec8-404d-aab5-003c6f5dba03")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "251e0be5-1f02-45a8-ba30-cac3d36e869a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b7905714-ea87-43b7-81ff-36b5446f7f9e")
 			(effects
 				(font
 					(size 1 1)
@@ -16882,12 +19404,12 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "JLCPCB_CORRECTION" "0;0;-90"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "b8cbd055-38d9-4785-b172-47382b0b79ac")
+			(uuid "67483f87-5023-4885-846d-9106ab7ae540")
 			(effects
 				(font
 					(size 1 1)
@@ -16895,12 +19417,51 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "0;0;-90"
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "67483f87-5023-4885-846d-9106ab7ae540")
+			(uuid "9bc164f7-3aec-4a4d-affd-65df262c74eb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fbdd0c1b-304f-48f2-ae08-fc20e7f05eca")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "891d6786-18d7-4c97-84fd-e279d91b408f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e58d6e3b-ffef-429e-944f-1beabe2a7def")
 			(effects
 				(font
 					(size 1 1)
@@ -17279,12 +19840,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "cba78069-5773-4e9c-a0fd-d45dc6b77b7a")
+			(uuid "86c60608-521e-4a9a-bfe0-b266c3b72a33")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "50dc5a62-1d94-41ea-adcc-9cb0e1dda0c7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f7272449-ade0-4c01-9165-cc70c522ff42")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8ad435c8-1451-4efc-97f8-b17dd09dfab4")
 			(effects
 				(font
 					(size 1 1)
@@ -17519,12 +20119,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "86e4480c-3ec7-4a21-9b76-1b042de91f66")
+			(uuid "38b998f7-e9fd-4999-9fbd-07253f41a5d0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5cd2cbf2-41c7-4c1c-937c-950619b5482e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b960d359-b90c-4e92-b61c-8be187f5baa0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d22fb14c-a7a3-4bd3-8b1f-eb99b9b462b4")
 			(effects
 				(font
 					(size 1 1)
@@ -17759,6 +20398,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c326a389-bec9-4b24-8cd1-641cc906c89b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "84dab06d-414e-4e5e-8e3d-5f261e3d432f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8a3d75bf-b091-4f25-9cae-a6346af3c475")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "98dd7aa6-e149-4bff-83fb-c7a3a45e1c8f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/0189a0b4-6fbe-40a9-978a-40e2357770c8")
 		(sheetname "Root")
@@ -17986,6 +20677,58 @@
 				)
 			)
 		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ed8524e0-694a-4645-bbc5-2ef776e97020")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c9844cfa-8e30-48d1-833c-775a6fb09b14")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f4b09e51-52bf-413a-b1e7-54cbebf3255a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "72261872-2508-4223-bfcb-ef77a7b3512b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(path "/172f75a1-0b2e-45b4-bcc6-f6a1f1b6fe61")
 		(sheetname "Root")
 		(sheetfile "charger-module.kicad_sch")
@@ -18197,12 +20940,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "14ba8184-a12f-4508-ab5c-c8ca7b0e70df")
+			(uuid "069548ca-4b83-4134-999e-30f6003b585c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "14f491c7-b331-4999-a346-e08529151f2b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "17060527-27c9-406f-83d2-7177161ec9cf")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9d996f96-7765-495f-a8f6-e8c0279312b8")
 			(effects
 				(font
 					(size 1 1)
@@ -18437,12 +21219,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "e4577bfd-fb54-4f1d-84bc-014150306575")
+			(uuid "9a992606-0853-46d5-ac88-75c8ef383452")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bb08449f-3489-47b8-909b-57f8b686f515")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "500740bd-8d8a-43eb-8b39-c94fb104241d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c4f7e833-ad16-49de-9034-d2007829a145")
 			(effects
 				(font
 					(size 1 1)
@@ -18677,12 +21498,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "139c2b65-daaa-4fd0-9966-a63c94f6b618")
+			(uuid "75b51700-cbd2-4110-b62f-1fd73521620b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1caf7c1e-385e-416e-b73c-3fb5bdb8016e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "23c11406-dbe4-43ac-b1e6-1779d51f692a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "27d8f64f-f1d3-402a-9ef9-2d041ca838ab")
 			(effects
 				(font
 					(size 1 1)
@@ -18949,6 +21809,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "72d95441-245b-4f2a-beca-12d3760b048a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "76101c0e-b8ee-4d5c-b71e-561fa255fa88")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "239e8bc3-7694-454b-a8bd-b0d71abd2c81")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "82290fae-d522-4bde-b381-353ec3fe24c9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a7cafa99-6aef-47f7-9881-6b3147ef76c1")
 			(effects
 				(font
 					(size 1 1)
@@ -19274,12 +22186,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "a7b745ca-4474-439d-a7e9-2658ca6f11cd")
+			(uuid "0885dc92-db38-4a6a-b1b4-1cdae873ac83")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a6335cad-9163-4995-bf5a-03c718ab2c76")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8175d34c-31e9-49de-9274-e35d5c942757")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d3e9d751-cc4c-448b-b68c-f732302b14ad")
 			(effects
 				(font
 					(size 1 1)
@@ -19554,12 +22505,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "91a05022-f100-4ae6-b34a-b6e48e9a7b76")
+			(uuid "894a5362-b847-4f87-8095-21397b2ccf9e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "41e3afdc-4a41-4dd5-9596-b8ad462ddfcd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cc4b11d5-5229-42ba-bfef-85b2af7cf056")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e5b50aa0-53eb-470c-80f3-aa911ef8bdce")
 			(effects
 				(font
 					(size 1 1)
@@ -19731,7 +22721,7 @@
 				)
 			)
 		)
-		(property "Value" "100nF"
+		(property "Value" "2.2uF"
 			(at 0 1.16 90)
 			(layer "F.Fab")
 			(uuid "56076912-f36b-4b00-9730-948ce69f6c36")
@@ -19781,7 +22771,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C1525"
+		(property "LCSC" "C12530"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -19794,12 +22784,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "4015d597-b6a7-4170-90ca-e0fdbc9e982e")
+			(uuid "6d429486-4bfa-4c62-995c-cae3d44549b1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "28ca7cfa-a26e-42e6-8049-8e0a5c087ca4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a7bb1916-ee5c-4593-a79c-a050b498960d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f9fba502-2e73-4897-9a11-ac18213dc43e")
 			(effects
 				(font
 					(size 1 1)
@@ -20034,12 +23063,51 @@
 				)
 			)
 		)
-		(property "Group by Value" ""
+		(property "Manufacturer_Name" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "159bcd22-ccc5-42e3-8caf-466adcca1509")
+			(uuid "74f675f7-2e42-43c7-8485-b9b6600e9372")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2ce72000-6ca6-4cfa-ad44-c2ed6d04ebfe")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "563386e2-aa71-4539-829b-6c30f87c868b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c7092e7f-a170-4242-8a90-2df233ed5de7")
 			(effects
 				(font
 					(size 1 1)
@@ -20267,6 +23335,58 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "66024659-3840-4106-a1ef-19238caa0a36")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a08b65b4-b960-4ac1-9f6a-3bf8d082cd7a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9204c84f-900b-4b28-8dc5-673a1a35d630")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4778cb6b-0069-4002-8462-13ec7d6ae055")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "407636bc-ca59-48d1-8d60-7c0fb29fa508")
 			(effects
 				(font
 					(size 1 1)
@@ -20716,6 +23836,7 @@
 		(property "Reference" "JP2"
 			(at 0 1.8 180)
 			(layer "B.SilkS")
+			(hide yes)
 			(uuid "487d9e2c-aa0a-4411-8301-4851bc9c5aa2")
 			(effects
 				(font
@@ -20774,6 +23895,62 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "36f15b84-4207-47db-8acf-bca89abb6423")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "73e34e19-4241-479d-9d7d-4bfc34f14bbb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "c2e1de18-0e0f-4895-a5b6-d286a0e092a4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "7d1b3b55-4f5e-4241-9f7c-fc439d42a06e")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 				(justify mirror)
@@ -20952,6 +24129,62 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "f49841b2-4ffc-4ba6-9acd-c7650fbd1cc0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "d5c4c482-a048-42e6-a028-4791a391a810")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "23d65256-42c4-48c4-8162-56d065e51dca")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "87bf3e64-c69a-4ebe-9f6f-4c63c52dbea8")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 				(justify mirror)
@@ -21189,6 +24422,7 @@
 		(property "Reference" "JP1"
 			(at 0 1.8 180)
 			(layer "B.SilkS")
+			(hide yes)
 			(uuid "0fed447d-efa3-45f3-a29e-4e893b156404")
 			(effects
 				(font
@@ -21247,6 +24481,62 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "da2d3785-9bee-4ae5-aba0-3659e7d32d90")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "39f0988d-3760-4d49-84d9-6559a53856df")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "2a1540b1-644b-4d38-aa9e-5fba57f345a6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "ce35eba0-0cd3-4868-9d88-4d80e44e30db")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 				(justify mirror)
