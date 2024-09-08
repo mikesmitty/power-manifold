@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.3.1...esp32-mgmt-module-v0.4.0) (2024-09-08)
+
+
+### Features
+
+* add status led ([9ee251b](https://github.com/mikesmitty/power-manifold/commit/9ee251b6fc0d6e436d1fa8c791fb396cb3d7b08c))
+
+
+### Bug Fixes
+
+* switch swdio from input-only pins ([9ee251b](https://github.com/mikesmitty/power-manifold/commit/9ee251b6fc0d6e436d1fa8c791fb396cb3d7b08c))
+
 ## [0.3.1](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.3.0...esp32-mgmt-module-v0.3.1) (2024-07-24)
 
 
