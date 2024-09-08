@@ -9271,6 +9271,16 @@
 	)
 	(wire
 		(pts
+			(xy 224.79 146.05) (xy 247.65 146.05)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4ee5298a-c99b-4001-963e-b140fe540976")
+	)
+	(wire
+		(pts
 			(xy 278.13 168.91) (xy 306.07 168.91)
 		)
 		(stroke
@@ -9378,6 +9388,16 @@
 			(type default)
 		)
 		(uuid "5ca960d2-bf08-48ed-95ac-1d4177d3ee86")
+	)
+	(wire
+		(pts
+			(xy 330.2 195.58) (xy 318.77 195.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5e287383-de93-41f3-9abc-6b457eaf098a")
 	)
 	(wire
 		(pts
@@ -9638,6 +9658,16 @@
 			(type default)
 		)
 		(uuid "742d2421-1640-4e57-9837-19575d8bf120")
+	)
+	(wire
+		(pts
+			(xy 318.77 195.58) (xy 318.77 198.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "76460dc6-34cb-4bd4-b62f-a12b091c0c80")
 	)
 	(wire
 		(pts
@@ -9908,16 +9938,6 @@
 			(type default)
 		)
 		(uuid "8d8f5342-63bd-4bae-bb55-515d213aca16")
-	)
-	(wire
-		(pts
-			(xy 237.49 146.05) (xy 247.65 146.05)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8f5d4bcf-01b5-4cb4-89a2-fb4df91cff75")
 	)
 	(wire
 		(pts
@@ -11451,13 +11471,13 @@
 		(uuid "096c35f7-4c5d-4b30-8a87-936795be2075")
 	)
 	(label "~{I2C_RESET}"
-		(at 290.83 196.85 180)
+		(at 224.79 146.05 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
 		(uuid "0a583bc1-a9e1-42b3-852f-c902e58ecd9b")
 	)
@@ -11638,13 +11658,13 @@
 		(uuid "27896a1f-e1b9-4c8d-883a-2dea1f7fb57c")
 	)
 	(label "SWDIO"
-		(at 290.83 201.93 180)
+		(at 237.49 153.67 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
 		(uuid "297473d7-1862-4adc-8c86-2b813e5e47fb")
 	)
@@ -11715,13 +11735,13 @@
 		(uuid "39670b39-80fc-44d4-9438-b502db5431ff")
 	)
 	(label "~{ALERT}"
-		(at 237.49 151.13 0)
+		(at 290.83 201.93 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "39915872-95c0-4a60-85d1-53408b7c5354")
 	)
@@ -11989,6 +12009,17 @@
 		)
 		(uuid "66a76399-22d1-4527-a44b-83ceebda9fb2")
 	)
+	(label "STATUS_LED"
+		(at 290.83 151.13 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "66e36d75-e92c-4d66-8628-d8c9b327e982")
+	)
 	(label "SCL"
 		(at 25.4 71.12 0)
 		(fields_autoplaced yes)
@@ -12034,13 +12065,13 @@
 		(uuid "74b1c077-a339-4eee-b99f-97eee19ab900")
 	)
 	(label "OVERLOAD"
-		(at 237.49 153.67 0)
+		(at 290.83 199.39 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "7614fe97-4502-4a37-bd17-bad8e3612e78")
 	)
@@ -12100,13 +12131,13 @@
 		(uuid "8bbbb835-44f3-4645-b1ee-a365c585b6dc")
 	)
 	(label "SWCLK"
-		(at 290.83 199.39 180)
+		(at 237.49 151.13 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
 		(uuid "8d1a323a-8506-4772-9d68-447aa8cd430f")
 	)
@@ -12429,6 +12460,17 @@
 		)
 		(uuid "dc33a2f2-d5cf-4f30-94b1-63afebe61340")
 	)
+	(label "STATUS_LED"
+		(at 330.2 195.58 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e01c689b-9a8d-450c-8342-f6ca188a22ec")
+	)
 	(label "HSPI_SCK"
 		(at 342.9 127 180)
 		(fields_autoplaced yes)
@@ -12529,7 +12571,7 @@
 		(uuid "f1817571-c73b-45b2-8f91-b3ad4dfa4167")
 	)
 	(label "SW_A0"
-		(at 290.83 151.13 180)
+		(at 290.83 196.85 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -13388,7 +13430,7 @@
 				)
 			)
 		)
-		(property "Value" "RED"
+		(property "Value" "RED LED"
 			(at 188.2775 30.48 0)
 			(effects
 				(font
@@ -14016,7 +14058,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "24bc14e1-6578-4778-8e03-13d63ffc3f5e")
 		(property "Reference" "JP4"
@@ -14035,7 +14077,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
+		(property "Footprint" "Local Library:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
 			(at 377.19 179.07 0)
 			(effects
 				(font
@@ -15246,6 +15288,71 @@
 	)
 	(symbol
 		(lib_id "power:GND")
+		(at 318.77 213.36 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "33ba32e4-ad75-44c2-abe2-cd8368dcbe51")
+		(property "Reference" "#PWR023"
+			(at 318.77 219.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 318.897 217.7542 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 318.77 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 318.77 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 318.77 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "9b5a90f1-9c89-4733-8df1-4cbcb895fe73")
+		)
+		(instances
+			(project "esp32-mgmt-module"
+				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
+					(reference "#PWR023")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
 		(at 49.53 170.18 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -16287,7 +16394,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "4976107d-019e-46f9-bf89-2ba74236979e")
 		(property "Reference" "JP2"
@@ -16306,7 +16413,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
+		(property "Footprint" "Local Library:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
 			(at 344.17 179.07 0)
 			(effects
 				(font
@@ -18082,6 +18189,85 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:LED")
+		(at 318.77 209.55 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6a01cea6-0d19-4d23-8948-770928f7eb5c")
+		(property "Reference" "D2"
+			(at 322.58 209.8674 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "BLUE LED"
+			(at 322.58 212.4074 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
+			(at 318.77 209.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 318.77 209.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Light emitting diode"
+			(at 318.77 209.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C965807"
+			(at 318.77 209.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ab2b0bb7-3101-46d1-b965-65dff1ace73e")
+		)
+		(pin "2"
+			(uuid "9d455493-78d7-4cce-9431-5aa23fdab5c7")
+		)
+		(instances
+			(project ""
+				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
+					(reference "D2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 73.66 224.79 0)
 		(unit 1)
@@ -19348,6 +19534,85 @@
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
 					(reference "#PWR053")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 318.77 201.93 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "88f990e9-97cd-4934-85f0-950ed29043e5")
+		(property "Reference" "R36"
+			(at 321.31 200.6599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "470R"
+			(at 321.31 203.1999 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 316.992 201.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 318.77 201.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 318.77 201.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25117"
+			(at 318.77 201.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "4eb05b12-1cec-413f-9848-e22d5dbae3b9")
+		)
+		(pin "2"
+			(uuid "4d1f913f-0076-46db-845a-543487b3f22c")
+		)
+		(instances
+			(project ""
+				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
+					(reference "R36")
 					(unit 1)
 				)
 			)
@@ -21849,7 +22114,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "c8db9e37-72e7-4685-857e-8aa68a4a9e8a")
 		(property "Reference" "JP1"
@@ -21868,7 +22133,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
+		(property "Footprint" "Local Library:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
 			(at 344.17 166.37 0)
 			(effects
 				(font
@@ -22480,7 +22745,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "d88ecf33-7566-4095-b8f5-17f26e2ecb52")
 		(property "Reference" "JP3"
@@ -22499,7 +22764,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
+		(property "Footprint" "Local Library:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm"
 			(at 377.19 166.37 0)
 			(effects
 				(font
