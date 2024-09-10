@@ -3,6 +3,14 @@
     "release-type": "simple",
     "separate-pull-requests": true,
     "packages": {
+        "esphome/components/lad": {
+            "component": "esphome-lad",
+            "include-component-in-tag": true
+        },
+        "esphome/components/pwrman_charger": {
+            "component": "esphome-pwrman-charger",
+            "include-component-in-tag": true
+        },
         "firmware/charger-module": {
             "component": "charger-module-firmware",
             "include-component-in-tag": true

@@ -163,11 +163,6 @@ class MPQ4242Component : public i2c::I2CDevice, public Component {
    */
   void set_gpio2_function(MPQ4242Gpio2Function function) { this->gpio2_function_ = function; }
 
-  /** Sets the current limit for all PDOs.
-   * @param current The current limit in A
-   */
-  void set_pdo_current(float current) { this->pdo_current_ = current; }
-
   /** Sets the button for sending a hard reset message to the sink. */
   void set_hard_reset_button(button::Button *button) { this->hard_reset_button_ = button; }
 
