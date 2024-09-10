@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.1...charger-module-v0.12.2) (2024-09-10)
+
+
+### Bug Fixes
+
+* switch vout divider back to gnd ([d9f0f28](https://github.com/mikesmitty/power-manifold/commit/d9f0f283a0d5d0c393f58e2a211379be7abc3250))
+
 ## [0.12.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.0...charger-module-v0.12.1) (2024-08-27)
 
 
