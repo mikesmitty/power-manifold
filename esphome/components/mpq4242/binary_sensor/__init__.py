@@ -1,13 +1,12 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
-from esphome.const import CONF_ID, ENTITY_CATEGORY_DIAGNOSTIC
+from esphome.const import CONF_ID, ENTITY_CATEGORY_DIAGNOSTIC, ENTITY_CATEGORY_NONE
 from .. import (
     CONF_MPQ4242_ID,
     ICON_THERMOMETER_ALERT,
     ICON_THERMOMETER_HIGH,
     MPQ4242_COMPONENT_SCHEMA,
-    MPQ4242Component,
     mpq4242_ns,
 )
 
@@ -55,7 +54,7 @@ CONFIG_SCHEMA = MPQ4242_COMPONENT_SCHEMA.extend(
             icon=ICON_POWER_SETTINGS,
         ),
         cv.Optional(CONF_SINK_ATTACHED): binary_sensor.binary_sensor_schema(
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+            entity_category=ENTITY_CATEGORY_NONE,
             icon=ICON_USB_C_PORT,
         ),
     }
