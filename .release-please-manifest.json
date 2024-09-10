@@ -1,5 +1,5 @@
 {
-    "esphome/components/lad": "0.0.1",
+    "esphome/components/lad": "0.1.0",
     "esphome/components/pwrman_charger": "0.0.1",
     "firmware/charger-module": "0.6.0",
     "hardware/backplane": "0.7.6",
