@@ -7,6 +7,10 @@
             "component": "esphome-lad",
             "include-component-in-tag": true
         },
+        "esphome/components/mpq4242": {
+            "component": "esphome-mpq4242",
+            "include-component-in-tag": true
+        },
         "esphome/components/pwrman_charger": {
             "component": "esphome-pwrman-charger",
             "include-component-in-tag": true
