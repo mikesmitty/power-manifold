@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.5.0...charger-module-firmware-v0.6.0) (2024-09-10)
+
+
+### Features
+
+* update charger firmware for direct control ([3a91bbd](https://github.com/mikesmitty/power-manifold/commit/3a91bbd409cc3db423d2de4696927b5bc40629b4))
+
 ## [0.5.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.4.0...charger-module-firmware-v0.5.0) (2024-08-23)
 
 
