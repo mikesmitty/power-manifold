@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.7](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.6...backplane-v0.7.7) (2024-09-11)
+
+
+### Bug Fixes
+
+* add qr code for serial numbers ([a93a0fc](https://github.com/mikesmitty/power-manifold/commit/a93a0fc2a96c003166c58c34e3ffadafc17fc278))
+
 ## [0.7.6](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.5...backplane-v0.7.6) (2024-08-17)
 
 
