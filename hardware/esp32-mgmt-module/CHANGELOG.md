@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.4.0...esp32-mgmt-module-v0.4.1) (2024-09-11)
+
+
+### Bug Fixes
+
+* connect gpio12 to phyrstb ([81303e3](https://github.com/mikesmitty/power-manifold/commit/81303e3c5220c57492d950f29b1c146048029eef))
+* switch to 50mhz phy xtal ([81303e3](https://github.com/mikesmitty/power-manifold/commit/81303e3c5220c57492d950f29b1c146048029eef))
+
 ## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.3.1...esp32-mgmt-module-v0.4.0) (2024-09-08)
 
 
