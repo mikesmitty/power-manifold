@@ -17176,6 +17176,19 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "1.5;-0.3;0"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6fc9e7b2-ebfb-43d2-aba7-c6b351de58c9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "LED*SK6812*PLCC*5.0x5.0mm*P3.2mm*")
 		(path "/1fade88e-fc15-418c-925e-7c7a19eee414")
 		(sheetname "Root")
