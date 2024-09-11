@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.4.1...esp32-mgmt-module-v0.4.2) (2024-09-11)
+
+
+### Bug Fixes
+
+* add qr code for serial numbers ([a93a0fc](https://github.com/mikesmitty/power-manifold/commit/a93a0fc2a96c003166c58c34e3ffadafc17fc278))
+
 ## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.4.0...esp32-mgmt-module-v0.4.1) (2024-09-11)
 
 
