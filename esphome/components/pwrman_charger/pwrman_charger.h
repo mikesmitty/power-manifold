@@ -63,7 +63,7 @@ static const uint8_t PWRMAN_CHARGER_REGISTER_OTP_SW_REV = 0x23;
 /// This hot-swappable module can be remotely managed and monitored via
 /// I2C and is capable of up to 100W charging. This class is for the
 /// central configuration.
-class PwrmanCharger : public i2c::I2CDevice, public PollingComponent {
+class PwrmanCharger : public i2c::I2CDevice, public Component {
 #ifdef USE_SWITCH
  protected:
   switch_::Switch *enable_12v_switch_{nullptr};
@@ -87,11 +87,11 @@ class PwrmanCharger : public i2c::I2CDevice, public PollingComponent {
   void set_src_cap_button(button::Button *button) { this->src_cap_button_ = button; }
 
   /** Used by ESPHome framework. */
+  float get_setup_priority() const override;
+  /** Used by ESPHome framework. */
   void setup() override;
   /** Used by ESPHome framework. */
   void dump_config() override;
-  /** Used by ESPHome framework. */
-  float get_setup_priority() const override;
 
  protected:
   i2c::ErrorCode last_error_;
