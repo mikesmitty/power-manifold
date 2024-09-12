@@ -443,8 +443,10 @@ class StatusLed:
         if pps:
             pattern = self.PULSE
         self.set_pattern(pattern)
-        if voltage <= 6:
-            self.set_color(RED)
+        if voltage <= 1:
+            self.set_color(BLACK)
+        elif voltage <= 6:
+            self.set_color(ORANGE)
         elif voltage <= 11:
             self.set_color(YELLOW)
         elif voltage <= 12:
@@ -454,7 +456,7 @@ class StatusLed:
         elif voltage > 16:
             self.set_color(WHITE)
         else:
-            self.set_color(BLACK)
+            self.set_color(RED)
 
     def set_color(self, new_color):
         logger.debug(f"Setting color to {new_color}")
