@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.6.0...charger-module-firmware-v0.6.1) (2024-09-13)
+
+
+### Bug Fixes
+
+* turn off led when inactive ([81dfc89](https://github.com/mikesmitty/power-manifold/commit/81dfc895c7fd111b6f7a23a21a772b41114c7d26))
+
 ## [0.6.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.5.0...charger-module-firmware-v0.6.0) (2024-09-10)
 
 
