@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.4](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.3...charger-module-v0.12.4) (2024-09-13)
+
+
+### Bug Fixes
+
+* add test points ([9edbec6](https://github.com/mikesmitty/power-manifold/commit/9edbec6dcbd2b263c12cf1538030ba3496ef3f8f))
+
 ## [0.12.3](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.2...charger-module-v0.12.3) (2024-09-13)
 
 
