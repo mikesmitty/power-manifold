@@ -2,7 +2,7 @@
     "esphome/components/lad": "0.1.0",
     "esphome/components/mpq4242": "0.1.0",
     "esphome/components/pwrman_charger": "0.1.0",
-    "firmware/charger-module": "0.6.0",
+    "firmware/charger-module": "0.6.1",
     "hardware/backplane": "0.7.7",
     "hardware/charger-module": "0.12.2",
     "hardware/esp32-mgmt-module": "0.4.2",
