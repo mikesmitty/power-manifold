@@ -3,8 +3,8 @@ on:
     branches:
       - main
     paths:
-      - '*.kicad_sch'
-      - '*.kicad_pcb'
+      - '**.kicad_sch'
+      - '**.kicad_pcb'
 
 
 name: KiCad Date Update
@@ -38,7 +38,6 @@ jobs:
 
     name: Update KiCad dates
     runs-on: ubuntu-latest
-    container: ghcr.io/inti-cmnb/kicad8_auto:1.7.0
 
     strategy:
       matrix: 
