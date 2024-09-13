@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.3](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.2...charger-module-v0.12.3) (2024-09-13)
+
+
+### Bug Fixes
+
+* update led footprint ([9083066](https://github.com/mikesmitty/power-manifold/commit/9083066c1faf41cbb17a23f5e38a3fcbacb4b216))
+* update mpq4242 index key ([9083066](https://github.com/mikesmitty/power-manifold/commit/9083066c1faf41cbb17a23f5e38a3fcbacb4b216))
+
 ## [0.12.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.1...charger-module-v0.12.2) (2024-09-11)
 
 
