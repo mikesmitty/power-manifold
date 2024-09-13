@@ -6,7 +6,7 @@
 	(paper "A3")
 	(title_block
 		(date "2024-09-13")
-		(rev "v0.12.3")
+		(rev "v0.12.4")
 	)
 	(lib_symbols
 		(symbol "74xGxx:74LVC1G14"
