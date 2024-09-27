@@ -9,205 +9,6 @@
 		(rev "v0.4.2")
 	)
 	(lib_symbols
-		(symbol "74xGxx:74LVC1G14"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "U"
-				(at 0 3.81 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Value" "74LVC1G14"
-				(at 0 -3.81 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "https://www.ti.com/lit/sg/scyt129e/scyt129e.pdf"
-				(at 0 -6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-					(hide yes)
-				)
-			)
-			(property "Description" "Single Schmitt NOT Gate, Low-Voltage CMOS"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "Single Gate NOT Schmitt LVC CMOS"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "SOT?23* SOT?553*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "74LVC1G14_0_1"
-				(polyline
-					(pts
-						(xy -7.62 6.35) (xy -7.62 -6.35) (xy 5.08 0) (xy -7.62 6.35)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "74LVC1G14_1_1"
-				(polyline
-					(pts
-						(xy -3.81 -1.27) (xy -1.27 -1.27) (xy -1.27 1.27)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.54 -1.27) (xy -2.54 1.27) (xy 0 1.27)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin no_connect line
-					(at -7.62 5.08 180)
-					(length 5.08) hide
-					(name "NC"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -15.24 0 0)
-					(length 7.62)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at -5.08 -10.16 90)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output inverted
-					(at 12.7 0 180)
-					(length 7.62)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at -5.08 10.16 270)
-					(length 5.08)
-					(name "VCC"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-		)
 		(symbol "Connector:Bus_PCI_Express_x1"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -8168,12 +7969,6 @@
 		(uuid "3c3efec9-d156-4edb-ae97-199ae3e862e5")
 	)
 	(junction
-		(at 127 257.81)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "3f709131-2d57-4927-9a7d-f37ce3f9e279")
-	)
-	(junction
 		(at 220.98 201.93)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8214,12 +8009,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "4ebeaa73-449b-450e-857d-da497af1fd75")
-	)
-	(junction
-		(at 127 250.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "4f000fc1-6633-4b2e-a244-33b3d16ff868")
 	)
 	(junction
 		(at 129.54 63.5)
@@ -8596,16 +8385,6 @@
 			(type default)
 		)
 		(uuid "0db67f05-5755-49e0-b7f3-e728518eb29d")
-	)
-	(wire
-		(pts
-			(xy 107.95 261.62) (xy 120.65 261.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0ef8eb78-0362-4b82-b4a4-344945df0ca1")
 	)
 	(wire
 		(pts
@@ -9259,16 +9038,6 @@
 	)
 	(wire
 		(pts
-			(xy 127 257.81) (xy 139.7 257.81)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5191f91d-fa5e-4e66-8684-cf8139f91a3e")
-	)
-	(wire
-		(pts
 			(xy 149.86 35.56) (xy 153.67 35.56)
 		)
 		(stroke
@@ -9516,16 +9285,6 @@
 			(type default)
 		)
 		(uuid "6b224680-8530-4f4b-8277-61ab6b0cd599")
-	)
-	(wire
-		(pts
-			(xy 90.17 250.19) (xy 127 250.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6b483dc3-36fe-4780-9fa8-02290ee15948")
 	)
 	(wire
 		(pts
@@ -9786,16 +9545,6 @@
 			(type default)
 		)
 		(uuid "8728635e-3d8f-4f61-af28-e76b5dcd9d8b")
-	)
-	(wire
-		(pts
-			(xy 90.17 250.19) (xy 90.17 251.46)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "88c09816-7954-4aec-9459-40caecda0d50")
 	)
 	(wire
 		(pts
@@ -10339,16 +10088,6 @@
 	)
 	(wire
 		(pts
-			(xy 127 250.19) (xy 139.7 250.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b3b7ab36-e082-4ef9-a387-93137d9300b2")
-	)
-	(wire
-		(pts
 			(xy 33.02 111.76) (xy 43.18 111.76)
 		)
 		(stroke
@@ -10799,16 +10538,6 @@
 	)
 	(wire
 		(pts
-			(xy 67.31 261.62) (xy 80.01 261.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "da8f6d4f-19df-4998-9a7b-b4e4bb945b21")
-	)
-	(wire
-		(pts
 			(xy 278.13 176.53) (xy 290.83 176.53)
 		)
 		(stroke
@@ -11217,16 +10946,6 @@
 		)
 		(uuid "22d1e16b-6b4f-4361-87b2-a3a220c2fdcd")
 	)
-	(text "Ethernet Clock Filter"
-		(exclude_from_sim no)
-		(at 90.678 244.094 0)
-		(effects
-			(font
-				(size 2.54 2.54)
-			)
-		)
-		(uuid "29011c20-d935-4522-9c18-a49f873ff4ae")
-	)
 	(text "Swap jumpers to free up SPI GPIOs\nRequires disabling UART logging"
 		(exclude_from_sim no)
 		(at 361.442 152.4 0)
@@ -11549,17 +11268,6 @@
 		)
 		(uuid "21341f10-f74e-4d81-846f-9a04634f4d32")
 	)
-	(label "REF_CLK_MCU"
-		(at 120.65 261.62 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "215d2683-8fc5-4324-aba1-3fdeb4e7fb4d")
-	)
 	(label "SCL"
 		(at 290.83 158.75 180)
 		(fields_autoplaced yes)
@@ -11714,7 +11422,7 @@
 		)
 		(uuid "3cb26918-723b-4201-81c2-aa226d981774")
 	)
-	(label "REF_CLK_MCU"
+	(label "REF_CLK_ETH"
 		(at 306.07 146.05 180)
 		(fields_autoplaced yes)
 		(effects
@@ -11878,17 +11586,6 @@
 			(justify right bottom)
 		)
 		(uuid "56ce52dc-2cd9-45c3-8768-8dafc4a6ddde")
-	)
-	(label "REF_CLK_ETH"
-		(at 67.31 261.62 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "56d4d844-bc8d-43e7-9e90-f591dee8cfdb")
 	)
 	(label "DTR"
 		(at 276.86 53.34 0)
@@ -12285,17 +11982,6 @@
 			(justify left bottom)
 		)
 		(uuid "c9cdbd57-32e6-474b-9dd1-b525dc2e67f2")
-	)
-	(label "GPIO12"
-		(at 39.37 213.36 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "cc68e4a7-ba5f-437e-b766-fb01b03eb390")
 	)
 	(label "~{BOOT}"
 		(at 90.17 120.65 180)
@@ -12932,7 +12618,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0c1314b1-51fe-4b88-9dcd-f907e1b33b69")
-		(property "Reference" "#PWR041"
+		(property "Reference" "#PWR038"
 			(at 199.39 210.82 0)
 			(effects
 				(font
@@ -12982,7 +12668,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR041")
+					(reference "#PWR038")
 					(unit 1)
 				)
 			)
@@ -12998,7 +12684,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0c66d1f6-ca3f-4424-b2a7-c2a6c4623655")
-		(property "Reference" "#PWR037"
+		(property "Reference" "#PWR034"
 			(at 181.61 66.04 0)
 			(effects
 				(font
@@ -13048,7 +12734,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR037")
+					(reference "#PWR034")
 					(unit 1)
 				)
 			)
@@ -13063,7 +12749,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "0f61349f-1027-45b2-9a26-a133c29f194d")
-		(property "Reference" "#PWR032"
+		(property "Reference" "#PWR029"
 			(at 142.24 50.8 0)
 			(effects
 				(font
@@ -13113,7 +12799,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR032")
+					(reference "#PWR029")
 					(unit 1)
 				)
 			)
@@ -13128,7 +12814,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "103baee3-19ab-41c0-ba62-b203f30f7934")
-		(property "Reference" "#PWR059"
+		(property "Reference" "#PWR056"
 			(at 379.73 139.7 0)
 			(effects
 				(font
@@ -13178,7 +12864,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR059")
+					(reference "#PWR056")
 					(unit 1)
 				)
 			)
@@ -13260,7 +12946,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "126892b3-2da4-4243-9b37-d731946a0e30")
-		(property "Reference" "#PWR035"
+		(property "Reference" "#PWR032"
 			(at 172.72 38.1 0)
 			(effects
 				(font
@@ -13310,7 +12996,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR035")
+					(reference "#PWR032")
 					(unit 1)
 				)
 			)
@@ -13325,7 +13011,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "13d6e482-b724-418b-9de8-556c31d175e8")
-		(property "Reference" "#PWR044"
+		(property "Reference" "#PWR041"
 			(at 242.57 135.89 0)
 			(effects
 				(font
@@ -13375,7 +13061,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR044")
+					(reference "#PWR041")
 					(unit 1)
 				)
 			)
@@ -13468,7 +13154,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1749303f-9fe5-4d8e-823c-6224f9640171")
-		(property "Reference" "#PWR040"
+		(property "Reference" "#PWR037"
 			(at 193.04 234.95 0)
 			(effects
 				(font
@@ -13518,7 +13204,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR040")
+					(reference "#PWR037")
 					(unit 1)
 				)
 			)
@@ -13612,7 +13298,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "1c2bde2a-8dfb-4a36-ae9b-6514a47a18c3")
-		(property "Reference" "#PWR020"
+		(property "Reference" "#PWR019"
 			(at 104.14 129.54 0)
 			(effects
 				(font
@@ -13662,7 +13348,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR020")
+					(reference "#PWR019")
 					(unit 1)
 				)
 			)
@@ -13821,7 +13507,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "1ef83a7c-9361-4c6c-bedd-0fbf7e098bfa")
-		(property "Reference" "#PWR029"
+		(property "Reference" "#PWR026"
 			(at 127 50.8 0)
 			(effects
 				(font
@@ -13871,7 +13557,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR029")
+					(reference "#PWR026")
 					(unit 1)
 				)
 			)
@@ -13888,7 +13574,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "217d3ab4-c8b1-4a15-9f52-868f33b38e6f")
-		(property "Reference" "#PWR019"
+		(property "Reference" "#PWR018"
 			(at 102.87 176.53 0)
 			(effects
 				(font
@@ -13938,7 +13624,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR019")
+					(reference "#PWR018")
 					(unit 1)
 				)
 			)
@@ -14101,7 +13787,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "254261f3-b1ed-49b3-9986-5556e5ea9b07")
-		(property "Reference" "#PWR054"
+		(property "Reference" "#PWR051"
 			(at 336.55 45.72 0)
 			(effects
 				(font
@@ -14151,7 +13837,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR054")
+					(reference "#PWR051")
 					(unit 1)
 				)
 			)
@@ -14484,7 +14170,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "28f807fb-8e57-420d-af98-d3800b89b046")
-		(property "Reference" "C28"
+		(property "Reference" "C25"
 			(at 271.78 34.2899 0)
 			(effects
 				(font
@@ -14547,7 +14233,7 @@
 		(instances
 			(project ""
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C28")
+					(reference "C25")
 					(unit 1)
 				)
 			)
@@ -14562,7 +14248,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "29c0df0a-e22c-42b8-9e77-b7a2e9d1833e")
-		(property "Reference" "#PWR025"
+		(property "Reference" "#PWR024"
 			(at 116.84 135.89 0)
 			(effects
 				(font
@@ -14612,7 +14298,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR025")
+					(reference "#PWR024")
 					(unit 1)
 				)
 			)
@@ -14955,7 +14641,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2e20f658-f01d-4dd8-a01a-638ec6ba2905")
-		(property "Reference" "#PWR023"
+		(property "Reference" "#PWR022"
 			(at 113.03 213.36 0)
 			(effects
 				(font
@@ -15005,7 +14691,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR023")
+					(reference "#PWR022")
 					(unit 1)
 				)
 			)
@@ -15264,7 +14950,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "33ba32e4-ad75-44c2-abe2-cd8368dcbe51")
-		(property "Reference" "#PWR052"
+		(property "Reference" "#PWR049"
 			(at 318.77 219.71 0)
 			(effects
 				(font
@@ -15314,7 +15000,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR052")
+					(reference "#PWR049")
 					(unit 1)
 				)
 			)
@@ -15545,7 +15231,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "36e856bc-1c04-4c99-9d4c-fecc8778f73f")
-		(property "Reference" "U3"
+		(property "Reference" "U2"
 			(at 142.24 29.4132 0)
 			(effects
 				(font
@@ -15618,7 +15304,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "U3")
+					(reference "U2")
 					(unit 1)
 				)
 			)
@@ -15634,7 +15320,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "3b30c421-3fda-48d1-8284-1e2c5bc0c2cb")
-		(property "Reference" "#PWR024"
+		(property "Reference" "#PWR023"
 			(at 116.84 118.11 0)
 			(effects
 				(font
@@ -15684,7 +15370,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR024")
+					(reference "#PWR023")
 					(unit 1)
 				)
 			)
@@ -15843,7 +15529,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "444116ee-6cd7-42cb-945a-c3e79212fea6")
-		(property "Reference" "U5"
+		(property "Reference" "U4"
 			(at 296.2559 93.98 0)
 			(effects
 				(font
@@ -15985,7 +15671,7 @@
 		(instances
 			(project ""
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "U5")
+					(reference "U4")
 					(unit 1)
 				)
 			)
@@ -16001,7 +15687,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "44a3f46e-b028-4aca-9286-7694dc73d063")
-		(property "Reference" "#PWR038"
+		(property "Reference" "#PWR035"
 			(at 181.61 80.01 0)
 			(effects
 				(font
@@ -16051,7 +15737,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR038")
+					(reference "#PWR035")
 					(unit 1)
 				)
 			)
@@ -16067,7 +15753,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "45269444-7f02-4606-ab12-a2dc07de506c")
-		(property "Reference" "#PWR026"
+		(property "Reference" "#PWR027"
 			(at 129.54 66.04 0)
 			(effects
 				(font
@@ -16117,7 +15803,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR026")
+					(reference "#PWR027")
 					(unit 1)
 				)
 			)
@@ -16287,7 +15973,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "4967da89-2263-45d5-9520-a190e491141b")
-		(property "Reference" "C11"
+		(property "Reference" "C12"
 			(at 132.461 67.4116 0)
 			(effects
 				(font
@@ -16350,7 +16036,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C11")
+					(reference "C12")
 					(unit 1)
 				)
 			)
@@ -16436,7 +16122,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "4a9bd6af-16f2-4707-b8cf-dff93014e315")
-		(property "Reference" "#PWR034"
+		(property "Reference" "#PWR031"
 			(at 153.67 50.8 0)
 			(effects
 				(font
@@ -16486,102 +16172,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR034")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "74xGxx:74LVC1G14")
-		(at 95.25 261.62 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "4b6b3ded-0b30-4e50-913b-e404fc41ee7d")
-		(property "Reference" "U2"
-			(at 106.426 254.254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "74LVC1G14"
-			(at 106.426 256.794 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Package_TO_SOT_SMD:SOT-353_SC-70-5"
-			(at 95.25 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://www.ti.com/lit/sg/scyt129e/scyt129e.pdf"
-			(at 95.25 267.97 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Description" "Single Schmitt NOT Gate, Low-Voltage CMOS"
-			(at 95.25 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C265125"
-			(at 95.25 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB_CORRECTION" "0;0;180"
-			(at 95.25 261.62 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "39bcecf6-7f28-450b-afa2-f24a4a4cf79d")
-		)
-		(pin "3"
-			(uuid "48deeaae-5b1c-412b-95e7-112425d92613")
-		)
-		(pin "4"
-			(uuid "16cf897b-84f6-4da9-b172-750d9526daed")
-		)
-		(pin "5"
-			(uuid "814929f5-3da4-403e-af70-5e55bf9206b6")
-		)
-		(pin "1"
-			(uuid "d5fa75db-4375-4575-b6f0-9a16e88b8d9f")
-		)
-		(instances
-			(project ""
-				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "U2")
+					(reference "#PWR031")
 					(unit 1)
 				)
 			)
@@ -16596,7 +16187,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "4c4e0237-73a9-490e-a1bf-1aaf4802486a")
-		(property "Reference" "#PWR039"
+		(property "Reference" "#PWR036"
 			(at 190.5 45.72 0)
 			(effects
 				(font
@@ -16646,7 +16237,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR039")
+					(reference "#PWR036")
 					(unit 1)
 				)
 			)
@@ -16662,7 +16253,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "4c63987a-7377-4b83-aede-29487d63ed43")
-		(property "Reference" "#PWR043"
+		(property "Reference" "#PWR040"
 			(at 220.98 208.28 0)
 			(effects
 				(font
@@ -16712,7 +16303,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR043")
+					(reference "#PWR040")
 					(unit 1)
 				)
 			)
@@ -16858,72 +16449,6 @@
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
 					(reference "#PWR014")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+3.3V")
-		(at 127 250.19 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "52735d01-5ba5-4f64-b3d7-f92d00ea8dbc")
-		(property "Reference" "#PWR030"
-			(at 127 254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+3.3V"
-			(at 127 245.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 127 250.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 127 250.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 127 250.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "cb061c4c-6548-4ca8-a296-e44cdc8a14fb")
-		)
-		(instances
-			(project "esp32-mgmt-module"
-				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR030")
 					(unit 1)
 				)
 			)
@@ -17079,7 +16604,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "5b479b93-7680-4a0d-90f9-576da06f5ad2")
-		(property "Reference" "C30"
+		(property "Reference" "C27"
 			(at 353.441 127.1016 0)
 			(effects
 				(font
@@ -17142,7 +16667,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C30")
+					(reference "C27")
 					(unit 1)
 				)
 			)
@@ -17390,7 +16915,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "611dc2d8-6364-4863-91dd-a4258c6c04fa")
-		(property "Reference" "U4"
+		(property "Reference" "U3"
 			(at 265.0841 138.43 0)
 			(effects
 				(font
@@ -17573,7 +17098,7 @@
 		(instances
 			(project ""
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "U4")
+					(reference "U3")
 					(unit 1)
 				)
 			)
@@ -17669,7 +17194,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "634ce365-f543-4b0f-94d9-e4aa0d9455c8")
-		(property "Reference" "#PWR045"
+		(property "Reference" "#PWR042"
 			(at 260.35 45.72 0)
 			(effects
 				(font
@@ -17719,7 +17244,7 @@
 		(instances
 			(project ""
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR045")
+					(reference "#PWR042")
 					(unit 1)
 				)
 			)
@@ -17812,7 +17337,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "66c40e4d-9968-4694-846a-c9455597e377")
-		(property "Reference" "#PWR046"
+		(property "Reference" "#PWR043"
 			(at 262.89 132.08 0)
 			(effects
 				(font
@@ -17862,7 +17387,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR046")
+					(reference "#PWR043")
 					(unit 1)
 				)
 			)
@@ -17944,7 +17469,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "68810bdc-919c-4f9a-9ebe-5dd1673771e2")
-		(property "Reference" "#PWR050"
+		(property "Reference" "#PWR047"
 			(at 300.99 34.29 0)
 			(effects
 				(font
@@ -17994,7 +17519,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR050")
+					(reference "#PWR047")
 					(unit 1)
 				)
 			)
@@ -18311,7 +17836,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "6a7ce9bf-e056-4480-96b2-22d5169ca7c8")
-		(property "Reference" "C19"
+		(property "Reference" "C16"
 			(at 157.48 67.3099 0)
 			(effects
 				(font
@@ -18374,7 +17899,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C19")
+					(reference "C16")
 					(unit 1)
 				)
 			)
@@ -18466,7 +17991,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "7028de3b-a882-4b3d-ac4c-a1a68c3e6159")
-		(property "Reference" "C27"
+		(property "Reference" "C24"
 			(at 256.54 34.2899 0)
 			(effects
 				(font
@@ -18529,7 +18054,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C27")
+					(reference "C24")
 					(unit 1)
 				)
 			)
@@ -18544,7 +18069,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "75928335-63a3-4200-b890-4a6a978adb87")
-		(property "Reference" "#PWR055"
+		(property "Reference" "#PWR052"
 			(at 345.44 57.15 0)
 			(effects
 				(font
@@ -18594,7 +18119,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR055")
+					(reference "#PWR052")
 					(unit 1)
 				)
 			)
@@ -18846,7 +18371,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "7af55434-fbab-442b-b023-a748c87c631f")
-		(property "Reference" "#PWR058"
+		(property "Reference" "#PWR055"
 			(at 375.92 88.9 0)
 			(effects
 				(font
@@ -18896,7 +18421,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR058")
+					(reference "#PWR055")
 					(unit 1)
 				)
 			)
@@ -18987,7 +18512,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "7c9d4047-473a-452e-9fb8-067b1ec80aee")
-		(property "Reference" "C18"
+		(property "Reference" "C15"
 			(at 156.591 39.4716 0)
 			(effects
 				(font
@@ -19050,7 +18575,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C18")
+					(reference "C15")
 					(unit 1)
 				)
 			)
@@ -19128,84 +18653,6 @@
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
 					(reference "R8")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 139.7 254 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "83d28715-c9fb-4142-9d55-be7ce90e4232")
-		(property "Reference" "C15"
-			(at 143.51 252.7299 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "1uF"
-			(at 143.51 255.2699 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 140.6652 257.81 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 139.7 254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 139.7 254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C52923"
-			(at 139.7 254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "c47c7686-db39-44a2-8333-244e44eba725")
-		)
-		(pin "1"
-			(uuid "b7469708-5ca7-4bb1-9662-4794c3b47926")
-		)
-		(instances
-			(project "esp32-mgmt-module"
-				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C15")
 					(unit 1)
 				)
 			)
@@ -19374,7 +18821,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "8854e728-5518-445a-bcf6-476ceabea47a")
-		(property "Reference" "#PWR051"
+		(property "Reference" "#PWR048"
 			(at 313.69 45.72 0)
 			(effects
 				(font
@@ -19424,7 +18871,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR051")
+					(reference "#PWR048")
 					(unit 1)
 				)
 			)
@@ -20111,7 +19558,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "978a2f2c-9f79-4f43-a297-0468ce5fcb60")
-		(property "Reference" "#PWR018"
+		(property "Reference" "#PWR017"
 			(at 102.87 166.37 0)
 			(effects
 				(font
@@ -20161,7 +19608,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR018")
+					(reference "#PWR017")
 					(unit 1)
 				)
 			)
@@ -20177,7 +19624,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "9836756e-1cc3-4eb8-a702-a55502fae055")
-		(property "Reference" "C22"
+		(property "Reference" "C19"
 			(at 168.91 39.3699 0)
 			(effects
 				(font
@@ -20240,7 +19687,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C22")
+					(reference "C19")
 					(unit 1)
 				)
 			)
@@ -20255,7 +19702,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "9a2d3764-41aa-4a4a-a096-e86f0001adc3")
-		(property "Reference" "#PWR053"
+		(property "Reference" "#PWR050"
 			(at 332.74 64.77 0)
 			(effects
 				(font
@@ -20305,7 +19752,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR053")
+					(reference "#PWR050")
 					(unit 1)
 				)
 			)
@@ -20321,7 +19768,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9b7a7830-4f3e-4cbe-a248-2c25b355b5f6")
-		(property "Reference" "#PWR048"
+		(property "Reference" "#PWR045"
 			(at 267.97 45.72 0)
 			(effects
 				(font
@@ -20371,7 +19818,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR048")
+					(reference "#PWR045")
 					(unit 1)
 				)
 			)
@@ -20387,7 +19834,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9bb1a1bd-8e47-40da-a0e2-860e2ba56ec0")
-		(property "Reference" "#PWR021"
+		(property "Reference" "#PWR020"
 			(at 111.76 38.1 0)
 			(effects
 				(font
@@ -20437,7 +19884,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR021")
+					(reference "#PWR020")
 					(unit 1)
 				)
 			)
@@ -20452,7 +19899,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "9d36773d-01ac-4bff-a5a9-43c5ae3a4fca")
-		(property "Reference" "#PWR047"
+		(property "Reference" "#PWR044"
 			(at 262.89 218.44 0)
 			(effects
 				(font
@@ -20502,7 +19949,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR047")
+					(reference "#PWR044")
 					(unit 1)
 				)
 			)
@@ -20517,7 +19964,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "a46f97d1-bda9-418e-883e-998a16fec2b3")
-		(property "Reference" "C29"
+		(property "Reference" "C26"
 			(at 317.5 34.2899 0)
 			(effects
 				(font
@@ -20580,7 +20027,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C29")
+					(reference "C26")
 					(unit 1)
 				)
 			)
@@ -20730,7 +20177,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ac850795-4684-4db1-949f-623a673aa36f")
-		(property "Reference" "C23"
+		(property "Reference" "C20"
 			(at 185.42 67.3099 0)
 			(effects
 				(font
@@ -20793,7 +20240,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C23")
+					(reference "C20")
 					(unit 1)
 				)
 			)
@@ -20885,7 +20332,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "aebfb498-5671-4d4a-861e-b3ea16827326")
-		(property "Reference" "C26"
+		(property "Reference" "C23"
 			(at 257.556 139.4206 90)
 			(effects
 				(font
@@ -20948,7 +20395,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C26")
+					(reference "C23")
 					(unit 1)
 				)
 			)
@@ -21427,151 +20874,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 127 257.81 0)
-		(mirror y)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "b9466100-5a3e-46d7-a893-1cf3b18c6c2c")
-		(property "Reference" "#PWR031"
-			(at 127 264.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 127 262.89 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 127 257.81 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 127 257.81 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 127 257.81 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "f707e4e2-bd2a-4a33-81bc-175a72da9a41")
-		)
-		(instances
-			(project "esp32-mgmt-module"
-				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR031")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 127 254 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b98479a5-acb1-4fe2-af90-a325ada0c80d")
-		(property "Reference" "C13"
-			(at 130.81 252.7299 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "100nF"
-			(at 130.81 255.2699 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 127.9652 257.81 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 127 254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 127 254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C1525"
-			(at 127 254 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "850b208b-997d-4478-a4cd-7bf63bf5906a")
-		)
-		(pin "1"
-			(uuid "f568cdd0-3b4b-4e9c-a801-bf20c44a31ec")
-		)
-		(instances
-			(project "esp32-mgmt-module"
-				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C13")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R")
 		(at 45.72 203.2 90)
 		(unit 1)
@@ -21656,7 +20958,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "bd0518ab-b254-4fb8-8fea-c19766f9d556")
-		(property "Reference" "#PWR049"
+		(property "Reference" "#PWR046"
 			(at 298.45 101.6 0)
 			(effects
 				(font
@@ -21706,7 +21008,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR049")
+					(reference "#PWR046")
 					(unit 1)
 				)
 			)
@@ -21929,7 +21231,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "c4328fc7-ec2d-4983-bac0-6659cad25062")
-		(property "Reference" "C17"
+		(property "Reference" "C14"
 			(at 148.59 200.6599 0)
 			(effects
 				(font
@@ -21992,7 +21294,7 @@
 		(instances
 			(project ""
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C17")
+					(reference "C14")
 					(unit 1)
 				)
 			)
@@ -22143,7 +21445,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "cbe0988d-b7da-493d-8793-18ae45e3ed77")
-		(property "Reference" "C20"
+		(property "Reference" "C17"
 			(at 162.56 200.6599 0)
 			(effects
 				(font
@@ -22206,7 +21508,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C20")
+					(reference "C17")
 					(unit 1)
 				)
 			)
@@ -22222,7 +21524,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "cf9700a2-7c0d-4ee6-a502-6f52ffee2075")
-		(property "Reference" "#PWR033"
+		(property "Reference" "#PWR030"
 			(at 152.4 213.36 0)
 			(effects
 				(font
@@ -22272,7 +21574,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR033")
+					(reference "#PWR030")
 					(unit 1)
 				)
 			)
@@ -22288,7 +21590,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d126358f-d954-4106-a407-64cacf0ed4a0")
-		(property "Reference" "#PWR027"
+		(property "Reference" "#PWR028"
 			(at 129.54 80.01 0)
 			(effects
 				(font
@@ -22338,7 +21640,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR027")
+					(reference "#PWR028")
 					(unit 1)
 				)
 			)
@@ -22354,7 +21656,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d42a02c9-4c6c-4fca-9d18-62e00484f610")
-		(property "Reference" "C25"
+		(property "Reference" "C22"
 			(at 255.27 121.92 90)
 			(effects
 				(font
@@ -22415,7 +21717,7 @@
 		(instances
 			(project ""
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C25")
+					(reference "C22")
 					(unit 1)
 				)
 			)
@@ -22495,7 +21797,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "d68e9071-b8dd-417b-b64f-dab0d707a8f8")
-		(property "Reference" "#PWR036"
+		(property "Reference" "#PWR033"
 			(at 172.72 50.8 0)
 			(effects
 				(font
@@ -22545,7 +21847,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR036")
+					(reference "#PWR033")
 					(unit 1)
 				)
 			)
@@ -22560,7 +21862,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "d86171a9-0f0c-45fb-9f57-30518ddb14e5")
-		(property "Reference" "C14"
+		(property "Reference" "C13"
 			(at 144.78 67.3099 0)
 			(effects
 				(font
@@ -22623,7 +21925,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C14")
+					(reference "C13")
 					(unit 1)
 				)
 			)
@@ -22709,7 +22011,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "d9e6166e-4d50-4d1b-96c2-2ab5c0e7af5a")
-		(property "Reference" "#PWR060"
+		(property "Reference" "#PWR057"
 			(at 400.05 139.7 0)
 			(effects
 				(font
@@ -22759,7 +22061,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR060")
+					(reference "#PWR057")
 					(unit 1)
 				)
 			)
@@ -22860,7 +22162,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "db25116d-8a38-4e57-a436-77d965c60bc2")
-		(property "Reference" "#PWR042"
+		(property "Reference" "#PWR039"
 			(at 220.98 193.04 0)
 			(effects
 				(font
@@ -22910,7 +22212,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR042")
+					(reference "#PWR039")
 					(unit 1)
 				)
 			)
@@ -22926,7 +22228,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "db6601f6-5f72-4e41-901d-d3db24a27af4")
-		(property "Reference" "#PWR028"
+		(property "Reference" "#PWR025"
 			(at 125.73 182.88 0)
 			(effects
 				(font
@@ -22976,7 +22278,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR028")
+					(reference "#PWR025")
 					(unit 1)
 				)
 			)
@@ -23054,73 +22356,6 @@
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
 					(reference "R21")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 90.17 271.78 0)
-		(mirror y)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "dba49cbe-9463-4259-9776-a5469f846f98")
-		(property "Reference" "#PWR017"
-			(at 90.17 278.13 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 90.17 276.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 90.17 271.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 90.17 271.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 90.17 271.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "02ee8fd2-b9b8-4612-bcb1-c4e7d6af8c75")
-		)
-		(instances
-			(project "esp32-mgmt-module"
-				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR017")
 					(unit 1)
 				)
 			)
@@ -23213,7 +22448,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "e0becaea-17d6-4949-a207-a3909832d7e9")
-		(property "Reference" "#PWR057"
+		(property "Reference" "#PWR054"
 			(at 350.52 139.7 0)
 			(effects
 				(font
@@ -23263,7 +22498,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR057")
+					(reference "#PWR054")
 					(unit 1)
 				)
 			)
@@ -23443,7 +22678,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ecb0e96a-bfd5-4d9f-bf83-507379bfd3df")
-		(property "Reference" "C21"
+		(property "Reference" "C18"
 			(at 173.99 67.3099 0)
 			(effects
 				(font
@@ -23506,7 +22741,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C21")
+					(reference "C18")
 					(unit 1)
 				)
 			)
@@ -23759,7 +22994,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f6c28694-b53b-4add-9304-0c32c3d7871b")
-		(property "Reference" "#PWR056"
+		(property "Reference" "#PWR053"
 			(at 350.52 125.73 0)
 			(effects
 				(font
@@ -23809,7 +23044,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR056")
+					(reference "#PWR053")
 					(unit 1)
 				)
 			)
@@ -23904,7 +23139,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "fa56a399-31d9-40ff-9673-bfd64a11e4f1")
-		(property "Reference" "C24"
+		(property "Reference" "C21"
 			(at 189.23 224.7899 0)
 			(effects
 				(font
@@ -23967,7 +23202,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C24")
+					(reference "C21")
 					(unit 1)
 				)
 			)
@@ -23982,7 +23217,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "fdf8aee8-ad4e-4a84-9013-d61430aee29e")
-		(property "Reference" "#PWR022"
+		(property "Reference" "#PWR021"
 			(at 111.76 50.8 0)
 			(effects
 				(font
@@ -24032,7 +23267,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "#PWR022")
+					(reference "#PWR021")
 					(unit 1)
 				)
 			)
@@ -24047,7 +23282,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "feeed163-ad57-4c7b-b34b-b79ffc429622")
-		(property "Reference" "C12"
+		(property "Reference" "C11"
 			(at 129.921 39.4716 0)
 			(effects
 				(font
@@ -24110,7 +23345,7 @@
 		(instances
 			(project "esp32-mgmt-module"
 				(path "/4172e0aa-162c-42a5-ac1f-bf7110fd005d"
-					(reference "C12")
+					(reference "C11")
 					(unit 1)
 				)
 			)
