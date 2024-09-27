@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.4.2...esp32-mgmt-module-v0.4.3) (2024-09-27)
+
+
+### Bug Fixes
+
+* make ethernet functional ([ec19758](https://github.com/mikesmitty/power-manifold/commit/ec1975892e4ff3e3a035f9b3b8c0bd091d3ae573))
+
 ## [0.4.2](https://github.com/mikesmitty/power-manifold/compare/esp32-mgmt-module-v0.4.1...esp32-mgmt-module-v0.4.2) (2024-09-11)
 
 
