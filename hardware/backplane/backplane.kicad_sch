@@ -12177,7 +12177,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C86503"
+		(property "LCSC" "C305803"
 			(at 193.04 38.1 0)
 			(effects
 				(font
@@ -12186,7 +12186,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "2.54;0;0"
+		(property "JLCPCB_CORRECTION" "2.54;0;180"
 			(at 193.04 38.1 0)
 			(effects
 				(font
@@ -13543,7 +13543,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C86503"
+		(property "LCSC" "C305803"
 			(at 233.68 38.1 0)
 			(effects
 				(font
@@ -13552,7 +13552,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "2.54;0;0"
+		(property "JLCPCB_CORRECTION" "2.54;0;180"
 			(at 233.68 38.1 0)
 			(effects
 				(font
@@ -14370,7 +14370,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C86503"
+		(property "LCSC" "C305803"
 			(at 213.36 38.1 0)
 			(effects
 				(font
@@ -14379,7 +14379,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "2.54;0;0"
+		(property "JLCPCB_CORRECTION" "2.54;0;180"
 			(at 213.36 38.1 0)
 			(effects
 				(font
