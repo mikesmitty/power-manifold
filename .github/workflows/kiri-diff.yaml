@@ -56,6 +56,6 @@ jobs:
           echo "project-file=$PROJECT_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Kiri
-        uses: usa-reddragon/kiri-github-action@v1
+        uses: usa-reddragon/kiri-github-action@v2
         with:
           project-file: ${{ steps.kicad-project-file.outputs.project-file }}
