@@ -86,7 +86,7 @@ jobs:
           rm -fv ${{ steps.get-paths.outputs.project-dir }}/CAD/*.log
 
       - name: Store exported CAD files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.get-paths.outputs.module-name }}
           path: "${{ steps.get-paths.outputs.project-dir }}/CAD/*.step"
@@ -104,7 +104,7 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           merge-multiple: true
           path: hardware/CAD/
