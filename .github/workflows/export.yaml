@@ -110,7 +110,7 @@ jobs:
           path: hardware/CAD/
 
       - name: Commit changes
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v10
         with:
           add: hardware/CAD/
           default_author: github_actor
