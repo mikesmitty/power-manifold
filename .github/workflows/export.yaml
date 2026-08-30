@@ -14,9 +14,7 @@ on:
           - all
           - backplane
           - charger-module
-          - esp32-mgmt-module
-          - pi-pico-mgmt-module
-          - rp2040-mgmt-module
+          - pcie-breakout
 
 name: KiCad Export
 

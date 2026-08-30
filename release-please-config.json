@@ -3,20 +3,8 @@
     "release-type": "simple",
     "separate-pull-requests": true,
     "packages": {
-        "esphome/components/lad": {
-            "component": "esphome-lad",
-            "include-component-in-tag": true
-        },
-        "esphome/components/mpq4242": {
-            "component": "esphome-mpq4242",
-            "include-component-in-tag": true
-        },
-        "esphome/components/pwrman_charger": {
-            "component": "esphome-pwrman-charger",
-            "include-component-in-tag": true
-        },
-        "firmware/charger-module": {
-            "component": "charger-module-firmware",
+        "firmware/controller": {
+            "component": "controller-firmware",
             "include-component-in-tag": true
         },
         "hardware/backplane": {
@@ -25,18 +13,6 @@
         },
         "hardware/charger-module": {
             "component": "charger-module",
-            "include-component-in-tag": true
-        },
-        "hardware/esp32-mgmt-module": {
-            "component": "esp32-mgmt-module",
-            "include-component-in-tag": true
-        },
-        "hardware/pi-pico-mgmt-module": {
-            "component": "pi-pico-mgmt-module",
-            "include-component-in-tag": true
-        },
-        "hardware/rp2040-mgmt-module": {
-            "component": "rp2040-mgmt-module",
             "include-component-in-tag": true
         }
     }
