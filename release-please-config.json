@@ -5,7 +5,8 @@
     "packages": {
         "firmware/controller": {
             "component": "controller-firmware",
-            "include-component-in-tag": true
+            "include-component-in-tag": true,
+            "release-as": "0.1.0"
         },
         "hardware/backplane": {
             "component": "backplane",
