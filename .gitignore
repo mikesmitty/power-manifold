@@ -1,6 +1,7 @@
 hardware/**/*-backups
 hardware/**/*_old
 hardware/**/*auto*save*
+hardware/**/production/
 *.lck
 *.bak
 __pycache__
