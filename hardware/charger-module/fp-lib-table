@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "Local Library") (type "KiCad") (uri "/Users/michaelsmith/git/power-manifold/hardware/libraries/Local Library.pretty") (options "") (descr ""))
+)
