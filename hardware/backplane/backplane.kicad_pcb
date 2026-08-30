@@ -209,7 +209,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -225,6 +225,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "a8a4fa31-8ad9-4f30-8e81-8ba0e60f140c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25091"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9f5680fb-45c7-4927-8bbe-9cece53b35a8")
 			(effects
 				(font
 					(size 1 1)
@@ -358,7 +371,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "http://www.ti.com/lit/gpn/LM74700-Q1"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -369,7 +382,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Low Iq reverse battery protection ideal diode controller, SOT-23-6"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -385,6 +398,32 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "b3e3f912-bc6b-4df9-9324-49c79a85f204")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C2941042"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8247171a-2e05-4690-bdfa-a6161c78dc8f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d828c4a2-dba6-42b8-939d-45494f19d692")
 			(effects
 				(font
 					(size 1 1)
@@ -734,7 +773,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Mounting Hole with connection"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -750,6 +789,84 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "8b1a0082-8eec-49df-a4d5-ed76a4b0dcea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Height" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "637f34f1-cda7-41e3-abe7-ac685b3cf43e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8c8b43cf-b783-4b9e-b6e0-495dc916c64c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0dbb2485-f368-486c-abd6-5824334582ea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b34f9fae-3ea8-4d78-b7ca-9df53bfb5288")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "afd50c1e-075a-4844-8317-56a351fef97a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e9e1eb73-f588-49ee-9a70-475bc9b91707")
 			(effects
 				(font
 					(size 1 1)
@@ -953,7 +1070,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -969,6 +1086,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "074c9d40-6aa8-466c-9d3e-5ad02946e484")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6c2572d7-f42a-4630-8693-5609f61b4ed3")
 			(effects
 				(font
 					(size 1 1)
@@ -1401,7 +1531,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C404113"
+		(property "LCSC" "C4693418"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -2461,7 +2591,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -2477,6 +2607,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "1abf5c71-ce55-4f59-965e-f73a3b45e064")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1fe7d65e-f8c6-43a8-8289-260b996d9062")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "86fe441f-0f78-4e05-bf88-7c8d03720b6c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4568a5be-6f82-45b3-9506-a162cf629225")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "74e9fd4c-c20c-464d-b7c4-18f3ac602360")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fad5e463-047b-4c6b-8b68-eec87629c2e0")
 			(effects
 				(font
 					(size 1 1)
@@ -3075,7 +3270,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -3091,6 +3286,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "89fe7445-cfa2-4180-877a-f0597e98e465")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "41c05aa4-022d-4de0-9ddf-ef4090a39dbe")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4c21c2ad-4fb6-4eb1-85b8-c62ce7017ee0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "096c7b4f-f2a4-4140-a6a7-b20fcd7fb97f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4afd9430-237b-4dd4-81e9-5005fa296ac1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "68984b73-7b0e-4922-9733-55f72dc9ab6d")
 			(effects
 				(font
 					(size 1 1)
@@ -3237,7 +3497,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -3246,6 +3506,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C43557"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f577ea8f-3ae5-4448-9fb1-fff696059d27")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f40c7341-31cf-4a70-926a-28e6cb66bcd7")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -3488,7 +3774,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tca9548a.pdf"
+		(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tca9539.pdf"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -3501,7 +3787,7 @@
 				)
 			)
 		)
-		(property "Description" "Low voltage 8-channel I2C switch with reset, TSSOP-24"
+		(property "Description" "16-bit I/O expander, I2C and SMBus interface, interrupts, w/o pull-ups, SSOP-24"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -3527,7 +3813,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C130026"
+		(property "LCSC" "C131972"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -4290,7 +4576,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Mounting Hole with connection"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -4306,6 +4592,84 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "61a94225-305a-448e-b166-93bddbe506d4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Height" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cf1cb9bc-edcb-4814-a7f2-d5f5ea038d24")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5826be27-6f8a-451a-96d3-7b96ea78f701")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9fcfe19b-960c-4793-af25-ffd965853fc8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "223a9c7c-374d-4163-ae8a-ba8b0b907a6c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bd743209-5781-4ad5-8ddb-398f69488057")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "16ed181c-9f63-4dd9-974c-f881d9122da3")
 			(effects
 				(font
 					(size 1 1)
@@ -4536,7 +4900,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C404113"
+		(property "LCSC" "C4693418"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -5301,7 +5665,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -5317,6 +5681,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "45d79ca7-bde0-4e98-9d75-1d2383b36c9e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C3013181"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "db2777a0-6523-4639-bf44-1e478ac215e2")
 			(effects
 				(font
 					(size 1 1)
@@ -5461,7 +5838,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -5477,6 +5854,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "69db3414-5b59-4129-84ac-36e31610ad1d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2eb8ac27-3347-4d22-9a55-9580784206e0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2e9f852e-6ac6-4708-89e8-04aaff68bfaf")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bc6dad01-4c04-4d2c-9e73-b5dfc179e812")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b890bb13-91df-473e-8be1-66979cbcec4c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "265c302d-0529-450e-aac5-f13697db1c98")
 			(effects
 				(font
 					(size 1 1)
@@ -5648,7 +6090,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C404113"
+		(property "LCSC" "C4693418"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6428,12 +6870,64 @@
 				)
 			)
 		)
-		(property "LCSC" "C72523"
+		(property "LCSC" "C3151829"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "dce0cb11-54fd-4d9a-a7d5-2b6d8521a351")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "566722f2-05df-4d0f-9920-1574a8326883")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c3fa8cca-ccdf-44e4-bd78-82800f7d4c84")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cd1817d0-fee8-431c-bfeb-5357534c701a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c74a9a6c-77af-406f-979f-662839ffb70b")
 			(effects
 				(font
 					(size 1 1)
@@ -6869,7 +7363,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6878,6 +7372,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29586"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "98a77c9e-0ac5-4e34-b4ab-95591903e9dc")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "726ebcd5-4cdd-4322-986d-34c7634042a7")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -7698,7 +8218,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Generic connector, double row, 02x03, top/bottom pin numbering scheme (row 1: 1...pins_per_row, row2: pins_per_row+1 ... num_pins), script generated (kicad-library-utils/schlib/autogen/connector/)"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -7714,6 +8234,32 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "d6dce8b6-8b27-4094-972b-564d479979f7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C3294384"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b2525858-83dd-4c0e-8e31-0f2ed239cf83")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "3;1.5;180"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "91a0ad02-b782-463b-8e7a-d4febc4b2857")
 			(effects
 				(font
 					(size 1 1)
@@ -8069,7 +8615,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -8085,6 +8631,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "57fcf4c3-9248-4b58-80b8-9e1b7f76e339")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1de4692d-9638-4495-ac9a-81ca9d2400c7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "93674db5-6ad4-4a78-a9e2-dc05c9520661")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a3784761-27ac-4641-aaec-bdb9236832bf")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3dbb00c5-eb49-4dc3-91d4-1047f853bbea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "87cdaab7-1194-401b-81e7-8975a0b4854f")
 			(effects
 				(font
 					(size 1 1)
@@ -8229,7 +8840,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -8245,6 +8856,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "550bef84-87e9-48ee-87a8-e31eeaf16bb4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "78f5776c-7c60-4ce7-a6f3-98e0a566aabf")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0bf3eac1-01ad-44fa-8050-9c83abf2eda5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "019e3f35-deec-49fd-ad93-91c2b3588355")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0e9f05a5-3786-4363-b88b-0c29bac5f819")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fca2572e-8496-44c3-8f76-a2bfc1947876")
 			(effects
 				(font
 					(size 1 1)
@@ -8389,7 +9065,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -8405,6 +9081,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "f21f5049-7a55-41ae-9e9a-126c1f1b5ff0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "965121d8-5b1f-48f9-a7ff-685c05bb8da3")
 			(effects
 				(font
 					(size 1 1)
@@ -8880,7 +9569,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -8896,6 +9585,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "cea329e6-b156-4250-a73f-1579978fd6de")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1c2dcba2-e9e6-47cf-928a-9590dd8cd994")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e9d789e2-99c9-4ef4-aeee-3c0cbb44f49f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7a6fcec2-5bf4-4ea0-9bff-56347206d7e5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "eb7a066d-5cb3-4618-9abf-2433bedacd73")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7f153b35-28c8-46a2-b400-ec2f47246afb")
 			(effects
 				(font
 					(size 1 1)
@@ -9027,7 +9781,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://www.infineon.com/assets/row/public/documents/24/49/infineon-irfs7530-7p-datasheet-en.pdf"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -9038,7 +9792,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "240A Id, 60V Vds, HEXFET N-Channel MOSFET, TO-263-7"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -9057,6 +9811,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C445669"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "adde833f-3ee3-4960-9db3-a2ae83005010")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c8c78a2b-780c-4212-b554-0e40c470dfef")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -9424,7 +10204,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -9440,6 +10220,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "9294d794-e729-47ad-be89-a4cd193edca7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "91c573a2-aee9-43f3-a354-662d1a14273c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e9b27ae2-e7ea-45ac-b354-c4ad1147ef24")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e9e5ec9b-3a5f-42c5-bfc8-934bc920cb5d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "41d3059c-3f99-4288-a589-9967e9d88795")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3d175394-de68-422c-a557-1adfd5366ca2")
 			(effects
 				(font
 					(size 1 1)
@@ -9584,7 +10429,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -9600,6 +10445,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "e6218201-fdda-4a74-97bd-51cbd958084a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "19bdb4fa-076e-4c66-9ab7-d6d94ec6508d")
 			(effects
 				(font
 					(size 1 1)
@@ -9744,7 +10602,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -9760,6 +10618,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "b61ae98a-a02a-4027-b30b-1165e0f1a970")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5c93895d-7ec5-4f01-977f-697a6aad064d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "69c4d693-8c5d-44b2-ab8b-0e287a6c8512")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e3634dd0-23b0-4b76-b8bb-ac98b53cfe77")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5fa16303-d74f-4a27-a2ce-90ab2cd1294e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1066dea4-6253-426f-bce2-194cfc97f033")
 			(effects
 				(font
 					(size 1 1)
@@ -9904,7 +10827,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Light emitting diode"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -9920,6 +10843,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "6606a817-077b-4e65-9b24-6843b1bf7e11")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C2286"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "acc6b61c-9508-4bae-bc86-0bcf72f088a7")
 			(effects
 				(font
 					(size 1 1)
@@ -10115,7 +11051,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -10131,6 +11067,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "171e1b4e-893e-4bbc-823d-c2fa1c16a587")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0df50aac-0c94-435c-8d06-432aadad0203")
 			(effects
 				(font
 					(size 1 1)
@@ -10252,7 +11201,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 0 2.2 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -10264,7 +11213,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4684/4684_WS2812B-2020_V1.3_EN.pdf"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -10277,7 +11226,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "RGB LED with integrated controller, 2.0 x 2.0 mm, 12 mA"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -10290,10 +11239,29 @@
 				)
 			)
 		)
+		(property "LCSC" "C55109522"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "efafd9fc-6342-4a55-aca8-db3c6df19c7e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "LED*WS2812*-2020_PLCC4*")
 		(path "/acf36972-78fd-4b54-a67f-93fe690847bb")
 		(sheetname "/")
 		(sheetfile "backplane.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "3" "4" "2" "1")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -10568,7 +11536,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -10577,6 +11545,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C43557"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "16943056-ed4e-41cd-8c77-ea2821279132")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "80a5274f-9297-437e-9ec9-6713f8b4b5e6")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -10830,7 +11824,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -10846,6 +11840,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "dc8e8f0c-f421-4ffb-b747-6768cc148874")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25741"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3a787b4d-1417-4854-ac1c-89a2cee24405")
 			(effects
 				(font
 					(size 1 1)
@@ -10967,7 +11974,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 0 2.2 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -10979,7 +11986,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4684/4684_WS2812B-2020_V1.3_EN.pdf"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -10992,7 +11999,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "RGB LED with integrated controller, 2.0 x 2.0 mm, 12 mA"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -11005,10 +12012,29 @@
 				)
 			)
 		)
+		(property "LCSC" "C55109522"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9f7bbdd3-5f92-4e9a-b343-de00f4e4b395")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "LED*WS2812*-2020_PLCC4*")
 		(path "/3bd420b8-0a26-4e6a-8c54-35db2a4c243f")
 		(sheetname "/")
 		(sheetfile "backplane.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "3" "4" "2" "1")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -11281,7 +12307,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -11297,6 +12323,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "32872ffc-33b5-4a0f-b97a-9cd03cd04c48")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "86306048-b000-439c-8389-e7f9024e7ea4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "35a668c5-72a3-4d34-b354-6b95094b9797")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d7912018-b03d-4f16-8f87-d661c504079a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a8c8e1d2-8205-41b1-9659-e0a8722a86cf")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b813ce88-e09a-4773-80ad-d667a4e3f741")
 			(effects
 				(font
 					(size 1 1)
@@ -12499,7 +13590,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C404113"
+		(property "LCSC" "C4693418"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -13264,7 +14355,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -13280,6 +14371,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "910c6372-4be0-4c2c-acfa-8ef5f5fcef53")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2f0671e8-e04b-4b88-b45b-9aef7bd77ba5")
 			(effects
 				(font
 					(size 1 1)
@@ -13424,7 +14528,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -13440,6 +14544,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "2305246c-b8cf-407e-b943-0a8877db7adb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0f3aacfd-1eb2-41a5-af86-d770edd2fae7")
 			(effects
 				(font
 					(size 1 1)
@@ -13586,7 +14703,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -13595,6 +14712,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29586"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3d08a7f9-f608-431b-abe1-2ecc871ca5de")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "397355ee-0c34-4380-a99f-fc060c838c9e")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -13850,7 +14993,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -13859,6 +15002,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C43557"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8384a363-72af-4e07-abdd-edf926607aeb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ca78c64b-b28d-41ba-8aff-e9e743df4cec")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -14114,7 +15283,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -14123,6 +15292,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29586"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "83df2982-f2fb-4dbe-8354-80e898d63462")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9ca3369f-3d7c-4981-af17-e11d053c9d28")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -14402,7 +15597,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C404113"
+		(property "LCSC" "C4693418"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -15182,12 +16377,64 @@
 				)
 			)
 		)
-		(property "LCSC" "C72523"
+		(property "LCSC" "C3151829"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "3fc4dd0c-82df-4185-9459-5b7e62429ecc")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "23743575-e762-4e7a-adec-4cc41acb443f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6ede9fb2-1d63-44b2-a67c-1225e43a69e0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a9c69098-863d-4cca-8583-54849eee9a7f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2fbdb7b3-674b-4703-963f-d9765b4c9d08")
 			(effects
 				(font
 					(size 1 1)
@@ -15621,7 +16868,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -15637,6 +16884,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "76fca4ac-c150-495f-ad20-8c60935e1e7e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b1641388-457c-4574-aa67-35064685f9b1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "52c8a5fa-cf01-4a6e-a2c6-665008af6a64")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "45dc9c58-67a3-4bb4-ac28-9218dc806422")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8ad8a2cc-63a5-4598-98b8-3a38666d7d41")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5e54cfcc-4d68-4026-8e0a-0a38a891b659")
 			(effects
 				(font
 					(size 1 1)
@@ -15781,7 +17093,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -15797,6 +17109,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "e073689d-ad37-4984-bf65-30172f29e8ea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c4567353-b996-4a1b-8bdc-b300a0eff221")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "180b76a5-8688-4517-a753-979f5e09c254")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7d1a5e1e-06a2-4ee8-843a-d29d5b65ebf4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7e7c080f-2bf4-4d4f-b6c5-6a88ec50f3a1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8fe5578f-5840-4787-8209-fb79705f6549")
 			(effects
 				(font
 					(size 1 1)
@@ -15941,7 +17318,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -15957,6 +17334,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "b1efc7dd-f5c6-41dc-b50f-974c693212c0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "12daf401-dc0c-4035-8182-9304ca343796")
 			(effects
 				(font
 					(size 1 1)
@@ -16101,7 +17491,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -16117,6 +17507,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "e10fef37-1053-47f3-a7fd-b1c26806f6ef")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25091"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0a07b8af-10ab-49bf-bd96-afc8082ba369")
 			(effects
 				(font
 					(size 1 1)
@@ -16238,7 +17641,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 0 2.2 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -16250,7 +17653,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4684/4684_WS2812B-2020_V1.3_EN.pdf"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -16263,7 +17666,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "RGB LED with integrated controller, 2.0 x 2.0 mm, 12 mA"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -16276,10 +17679,29 @@
 				)
 			)
 		)
+		(property "LCSC" "C55109522"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "738fb0c5-e3ba-436b-9907-8c61950651ec")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "LED*WS2812*-2020_PLCC4*")
 		(path "/85dfd135-e376-41e1-87fa-51389b0d909d")
 		(sheetname "/")
 		(sheetfile "backplane.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "3" "4" "2" "1")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -16552,7 +17974,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -16568,6 +17990,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "4d89a4a3-61f0-45c0-8544-5623a7f59d0b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fe3e3c1f-203b-4236-80b2-b204ff8e5e33")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cfa993a1-ffa5-4c5e-b0ba-28cba1b4a5b1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "127eafe0-751b-4897-a0a5-c340f48a0099")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7e979965-a967-4694-ad6a-48b9b65e95a5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0538abe0-8dd1-4ef8-bb47-314573dea3dc")
 			(effects
 				(font
 					(size 1 1)
@@ -16701,7 +18188,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -16712,7 +18199,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "30V Vds, 5.7A Id, N-Channel MOSFET, SOT-23"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -16728,6 +18215,32 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "1ee7a994-3fd4-43a7-9231-5ad20b700ef0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C20917"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3f4157cc-00e2-4d37-9cfa-20b5563efc02")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4e211216-24ca-4f64-9672-7d3a48ab1447")
 			(effects
 				(font
 					(size 1 1)
@@ -17073,7 +18586,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 0 2.2 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -17085,7 +18598,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4684/4684_WS2812B-2020_V1.3_EN.pdf"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -17098,7 +18611,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "RGB LED with integrated controller, 2.0 x 2.0 mm, 12 mA"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -17111,10 +18624,29 @@
 				)
 			)
 		)
+		(property "LCSC" "C55109522"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0b0b51fb-5d54-446d-bf2a-e04164b7f1ce")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "LED*WS2812*-2020_PLCC4*")
 		(path "/d2817192-de74-4cf7-95d9-fc64de3e22ac")
 		(sheetname "/")
 		(sheetfile "backplane.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "3" "4" "2" "1")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -17389,7 +18921,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Zener diode"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -17398,6 +18930,19 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C42371548"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "355a4ede-ebe7-4918-a8f4-6f61caa38106")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -17684,12 +19229,64 @@
 				)
 			)
 		)
-		(property "LCSC" "C72523"
+		(property "LCSC" "C3151829"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "02ad5fa8-4428-4ba1-bc09-b475318404e1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e880916c-b557-4f9b-838f-38b231b7225b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b850b609-5927-455a-8f8c-afc0400aba18")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1d64cef2-342d-4f8e-bc11-a4bac1b7cf38")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f396d095-81b9-464f-970b-0cd09862ff03")
 			(effects
 				(font
 					(size 1 1)
@@ -18138,12 +19735,64 @@
 				)
 			)
 		)
-		(property "LCSC" "C72523"
+		(property "LCSC" "C3151829"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "050b643c-1545-4bb3-bdd0-d94d09c950f3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "84f719c2-b15b-4287-94b7-44fee0b8f6b4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b9ec84a2-3bdb-4678-82c6-867ad74bedc0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5e3f788b-06f0-4b74-89ba-3349a1ad0f68")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "21070396-8d60-4a91-b747-a809978c9d83")
 			(effects
 				(font
 					(size 1 1)
@@ -18604,7 +20253,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C404113"
+		(property "LCSC" "C4693418"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -19850,7 +21499,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -19859,6 +21508,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C43557"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "da52314f-d741-400a-a649-f710d75d4374")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6aecdffe-fa82-46dd-867c-208211718ae9")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -20112,7 +21787,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -20128,6 +21803,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "7b2df7f2-b843-49c1-94c0-a0f20fb6caf0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ba085d30-787c-43d6-a052-249e1b081c6b")
 			(effects
 				(font
 					(size 1 1)
@@ -20249,7 +21937,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 0 2.2 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -20261,7 +21949,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4684/4684_WS2812B-2020_V1.3_EN.pdf"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -20274,7 +21962,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "RGB LED with integrated controller, 2.0 x 2.0 mm, 12 mA"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -20287,10 +21975,29 @@
 				)
 			)
 		)
+		(property "LCSC" "C55109522"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "83d9fe05-781f-4bc0-879f-a41db34d627d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "LED*WS2812*-2020_PLCC4*")
 		(path "/3cf4c80c-390c-4ee9-8e9e-9814bc2924b0")
 		(sheetname "/")
 		(sheetfile "backplane.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "3" "4" "2" "1")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -20563,7 +22270,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -20579,6 +22286,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "806a0e3a-9df9-4e2c-b273-7825e8a192b6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "34adaaa1-9cfa-4be0-a74f-2e19a69cb37a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c52dc673-e0fe-420a-826b-9bfa3a5a6cdb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7f6e4cb3-4ac4-4770-aba6-feec06905100")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3b894488-84ab-4d3e-a18a-ce775b32d509")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d72c55a5-0d41-42d7-9042-328105359b58")
 			(effects
 				(font
 					(size 1 1)
@@ -20723,7 +22495,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -20739,6 +22511,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "970a53d4-9d15-4660-a0ec-1a4a96d87581")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "509d5485-ad73-4f7e-a4c0-43f02d116518")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "07a37f4f-e235-418f-b87c-44fb350a2391")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "82f27ba2-b2c8-4d79-a593-d926888a0783")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5cb0f346-5351-4fee-8867-6ab4ed672b2b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3784a330-083f-4061-b170-d128e3044d87")
 			(effects
 				(font
 					(size 1 1)
@@ -20883,7 +22720,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -20899,6 +22736,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "d24ff40d-a24c-46ae-b0ee-c559ce724f7a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "aaf01303-df75-47fd-b7ee-48701ef2859b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ab626244-e3dd-416e-8b20-461093db21ae")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "da107f46-d25d-4c3e-a9ef-869441783587")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "299e68e0-81d0-435a-9c1d-a0c7de0b5cf1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9511448b-1ff8-4781-9226-e22f660eef67")
 			(effects
 				(font
 					(size 1 1)
@@ -21058,12 +22960,64 @@
 				)
 			)
 		)
-		(property "LCSC" "C72523"
+		(property "LCSC" "C3151829"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "80188a72-8928-425f-82fa-bdabae0a3735")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fe39bcd3-d361-4993-ba33-48d524c3d0c6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "116e4405-6673-499c-a980-61900bb3f605")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b2b0a74c-df1c-4a65-b5dc-a4578b1fdcf7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f209f3c6-5dd6-47df-9df1-1f2d52488ebe")
 			(effects
 				(font
 					(size 1 1)
@@ -21497,7 +23451,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -21513,6 +23467,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "c0928345-5685-46af-a2b5-5639aa9937c4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "41fe5d94-a788-4443-8adb-2c6aa4474ffc")
 			(effects
 				(font
 					(size 1 1)
@@ -21657,7 +23624,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -21673,6 +23640,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "83021d50-5325-480f-8c3d-9b64c2c4c695")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a72db7a8-961d-4179-bc31-db372d824300")
 			(effects
 				(font
 					(size 1 1)
@@ -21817,7 +23797,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -21833,6 +23813,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "e1194134-9cf7-41fd-9512-cf3b6b1a0275")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "abc5ed66-b772-4980-80fb-a0ee8ba29cbd")
 			(effects
 				(font
 					(size 1 1)
@@ -21992,12 +23985,64 @@
 				)
 			)
 		)
-		(property "LCSC" "C72523"
+		(property "LCSC" "C3151829"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "5b884bb3-34f9-4f9b-bacf-2c6a19766299")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "741efb6a-e68b-4d2f-81ba-87a886942ba7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "123a57cf-61b2-49ea-8317-28989b695405")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6ac98818-ac7d-4511-b2a7-26529e20441a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "df22d45e-7027-437f-aacc-169c31a038f6")
 			(effects
 				(font
 					(size 1 1)
@@ -22431,7 +24476,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -22447,6 +24492,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "7070e750-d08d-4cb5-867c-dd37851cf4d6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9bd3f504-79e3-4d95-91a7-873161713151")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "67367071-81fa-4f05-9a10-d0a4ef158f32")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ddd38920-34b1-4780-8f61-0d3727f37b04")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "51a6dcce-ba9d-436d-8603-b798abd0a6b7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5911899e-036a-4011-8796-282d295b3be7")
 			(effects
 				(font
 					(size 1 1)
@@ -22593,7 +24703,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "4 resistor network, parallel topology"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -22602,6 +24712,32 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29586"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "37258004-3a93-455e-9a1c-36da28d3b870")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c2bbfa5f-128d-40bf-94c2-e169b93a6145")
+			(effects
+				(font
+					(size 1 1)
 					(thickness 0.15)
 				)
 			)
@@ -22832,7 +24968,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 0 2.2 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -22844,7 +24980,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4684/4684_WS2812B-2020_V1.3_EN.pdf"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -22857,7 +24993,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "RGB LED with integrated controller, 2.0 x 2.0 mm, 12 mA"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -22870,10 +25006,29 @@
 				)
 			)
 		)
+		(property "LCSC" "C55109522"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "66b2beaa-1893-4e88-8664-219f21585e85")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "LED*WS2812*-2020_PLCC4*")
 		(path "/8badbdad-afdf-43a8-858c-8d9e8e7981d6")
 		(sheetname "/")
 		(sheetfile "backplane.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "3" "4" "2" "1")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -23146,7 +25301,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -23162,6 +25317,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "4b573c0a-d35f-400e-841a-97d7149416af")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1b590ce0-c0e4-445c-8e92-c536d2bad653")
 			(effects
 				(font
 					(size 1 1)
@@ -23306,7 +25474,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -23322,6 +25490,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "0758a15f-bcf9-4299-8521-47a3f1890565")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "02bcc6f2-08d5-4aec-9544-2b7e9c9ec07d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "09d4faa3-7340-4990-a329-4f94d9c6a5f3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "80c9bba3-621b-446c-a476-dc064b88ff85")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "10a00928-51b0-4422-91b4-87d878b49427")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "344ec064-e4a1-4b9a-bd87-1ed1083c3518")
 			(effects
 				(font
 					(size 1 1)
@@ -23716,7 +25949,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C404113"
+		(property "LCSC" "C4693418"
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -24481,7 +26714,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -24497,6 +26730,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "3bcc628e-be9f-4284-b066-4c1aa6c0fcf7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "92698f01-e8fd-4494-8ac3-2ef34de85f9f")
 			(effects
 				(font
 					(size 1 1)
@@ -24641,7 +26887,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -24657,6 +26903,19 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "21e14b1b-6499-4551-85c3-4cbd66392f04")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "eb866c49-3a45-4e00-ad13-ca1df7e86cdb")
 			(effects
 				(font
 					(size 1 1)
@@ -24801,7 +27060,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -24817,6 +27076,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "e1e56874-c5e2-4cbd-8d84-a79cbcda3040")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c9a5e211-d2d1-4f0f-a8de-3ff02d7920b9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b49b82fe-313b-4bd4-adc5-c909f1bb0cd5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8c654cdb-903a-4b05-9789-d64a9749bbb6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "009b3a4e-ef5c-4b43-953b-890cc1da9c07")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "34fb8272-a210-4fbd-85db-c5f4e75667cb")
 			(effects
 				(font
 					(size 1 1)

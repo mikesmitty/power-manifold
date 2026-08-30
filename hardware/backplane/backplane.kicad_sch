@@ -12847,6 +12847,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
+			(at 134.62 234.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "16"
 			(uuid "a640de85-5dbc-43b0-8af4-e654fcde3293")
 		)
@@ -14959,6 +14970,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 157.48 219.71 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "f45a701a-73dd-448f-954b-409e6f1adedf")
 		)
@@ -15014,7 +15036,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 397.51 68.5098 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15113,7 +15135,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 397.51 53.2698 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15395,6 +15417,17 @@
 			)
 		)
 		(property "LCSC" "C2941042"
+			(at 142.24 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
 			(at 142.24 48.26 0)
 			(hide yes)
 			(show_name no)
@@ -16606,6 +16639,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 59.69 254 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "11b5f223-7a8d-4758-8f8b-e7b688351c9c")
 		)
@@ -16885,6 +16929,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 59.69 218.44 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "b44fb89b-d80e-4b99-9e25-30740aa9a5c0")
 		)
@@ -16997,7 +17052,7 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "-2.5;0;0"
+		(property "JLCPCB_CORRECTION" ""
 			(at 142.24 31.75 90)
 			(hide yes)
 			(show_name no)
@@ -18479,6 +18534,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 59.69 241.3 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "00b4e3b0-7c13-4a1b-9593-9dbf86a926a2")
 		)
@@ -18765,6 +18831,17 @@
 			)
 		)
 		(property "LCSC" "C20917"
+			(at 194.31 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
 			(at 194.31 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -19709,7 +19786,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 397.51 129.4698 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20023,7 +20100,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 397.51 114.2298 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20911,6 +20988,17 @@
 			)
 		)
 		(property "LCSC" "C43557"
+			(at 157.48 242.57 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
 			(at 157.48 242.57 90)
 			(hide yes)
 			(show_name no)
@@ -21929,7 +22017,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 397.51 98.9898 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22451,6 +22539,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 59.69 228.6 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "eca2fe11-2f49-402a-a551-22ac5273f9b2")
 		)
@@ -22862,6 +22961,17 @@
 			)
 		)
 		(property "LCSC" "C43557"
+			(at 157.48 252.73 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
 			(at 157.48 252.73 90)
 			(hide yes)
 			(show_name no)
@@ -23983,6 +24093,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;90"
+			(at 157.48 229.87 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "7"
 			(uuid "a1fad681-0229-48fc-92a2-128dbc4776cb")
 		)
@@ -24586,7 +24707,7 @@
 				)
 			)
 		)
-		(property "Value" "WS2812C-2020"
+		(property "Value" "WS2812C-2020-V6"
 			(at 397.51 83.7498 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -27188,6 +27309,17 @@
 			)
 		)
 		(property "LCSC" "C3294384"
+			(at 78.74 36.83 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "3;1.5;180"
 			(at 78.74 36.83 90)
 			(hide yes)
 			(show_name no)
