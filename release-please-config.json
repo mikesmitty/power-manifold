@@ -5,7 +5,8 @@
     "packages": {
         "firmware/controller": {
             "component": "controller-firmware",
-            "include-component-in-tag": true
+            "include-component-in-tag": true,
+            "extra-files": ["src/manifold.h"]
         },
         "hardware/backplane": {
             "component": "backplane",
