@@ -4,6 +4,19 @@ on:
       - main
     paths:
       - '**.kicad_pcb'
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Module to export"
+        type: choice
+        default: all
+        options:
+          - all
+          - backplane
+          - charger-module
+          - esp32-mgmt-module
+          - pi-pico-mgmt-module
+          - rp2040-mgmt-module
 
 name: KiCad Export
 
@@ -20,15 +33,30 @@ jobs:
 
       - name: Get changed PCB files
         id: changed-files
+        if: github.event_name == 'push'
         uses: tj-actions/changed-files@v47
         with:
           files: |
             **/*.kicad_pcb
           matrix: true
 
+      - name: Get requested PCB files
+        id: requested-files
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          MODULE: ${{ inputs.module }}
+        run: |
+          if [ "$MODULE" = "all" ]; then
+            PATTERN="hardware/*/*.kicad_pcb"
+          else
+            PATTERN="hardware/${MODULE}/*.kicad_pcb"
+          fi
+          FILES="$(git ls-files "$PATTERN" | jq --raw-input --slurp --compact-output 'split("\n") | map(select(length > 0))')"
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+
     outputs:
-      any-changed: ${{ steps.changed-files.outputs.any_changed }}
-      matrix: ${{ steps.changed-files.outputs.all_changed_files }}
+      any-changed: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed-files.outputs.any_changed }}
+      matrix: ${{ github.event_name == 'workflow_dispatch' && steps.requested-files.outputs.files || steps.changed-files.outputs.matrix }}
 
   export-cad:
     if: ${{ fromJson(needs.get-changed-files.outputs.any-changed) }}
