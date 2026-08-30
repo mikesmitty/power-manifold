@@ -1,0 +1,316 @@
+(footprint "FanPinHeader_1x03_P2.54mm_Vertical"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "3-pin CPU fan Through hole pin header, see http://www.formfactors.org/developer%5Cspecs%5Crev1_2_public.pdf")
+	(tags "pin header 3-pin CPU fan")
+	(property "Reference" "REF**"
+		(at 2.5 -3.4 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "e65a2564-49b0-4e9d-85a8-655f71caa76d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "FAN1"
+		(at 2.55 4.5 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "d93ffa95-6321-45b4-a01c-19dd96fe665e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "http://www.hardwarecanucks.com/forum/attachments/new-builds/16287d1330775095-help-chassis-power-fan-connectors-motherboard-asus_p8z68.jpg"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "47033112-eed4-433d-ad92-254c43eeed85")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Fan, tacho output, 3-pin connector"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "2207b6aa-2e25-4897-a79c-15d29c67dbcf")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "LCSC" "C305803"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "2ec10fc7-c258-4b0f-9cf4-19748fddf6f5")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "JLCPCB_CORRECTION" "2.54;0;180"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "08827a45-6533-4d80-9975-79f8e9f02db1")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property ki_fp_filters "FanPinHeader*P2.54mm*Vertical* PinHeader*P2.54mm*Vertical* TerminalBlock*")
+	(sheetname "/")
+	(sheetfile "backplane.kicad_sch")
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -1.35 -2.65)
+		(end 6.45 -2.65)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2fa37da5-1540-4afb-acc1-c96b6ea495dc")
+	)
+	(fp_line
+		(start -1.35 3.4)
+		(end -1.35 -2.65)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "f864d930-a58a-44b8-87e3-f8abcbf098e7")
+	)
+	(fp_line
+		(start 0 2.29)
+		(end 5.08 2.29)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "7662d762-b96b-49e7-a164-fa9ca74e8664")
+	)
+	(fp_line
+		(start 0 3.3)
+		(end 0 2.29)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "1513f9ef-5721-401d-a829-a79dd42eb7ce")
+	)
+	(fp_line
+		(start 5.08 2.29)
+		(end 5.08 3.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "b167975b-667b-4643-bdb6-465e35fbb676")
+	)
+	(fp_line
+		(start 6.45 -2.65)
+		(end 6.45 3.4)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2a6bfc92-f21e-445d-ac1d-60f3390fc4c4")
+	)
+	(fp_line
+		(start 6.45 3.4)
+		(end -1.35 3.4)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2b77c768-39a7-4e42-b68c-75ffd0745a83")
+	)
+	(fp_line
+		(start -1.75 3.8)
+		(end -1.75 -3.05)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "31d0ea10-0e58-469b-8105-498640aaa50b")
+	)
+	(fp_line
+		(start -1.75 3.8)
+		(end 6.85 3.8)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "2ec6ab1f-2385-47e0-b4a5-1fdd6ab5f4dc")
+	)
+	(fp_line
+		(start 6.85 -3.05)
+		(end -1.75 -3.05)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "f6f7a98f-de02-4aa8-af4d-09fd0ba437a9")
+	)
+	(fp_line
+		(start 6.85 -3.05)
+		(end 6.85 3.8)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "e42eea7d-cf99-4aaa-bff1-a68392484cbe")
+	)
+	(fp_line
+		(start -1.25 -2.55)
+		(end 6.35 -2.55)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "8933a68f-244f-458d-9d0d-4febf558196a")
+	)
+	(fp_line
+		(start -1.25 3.3)
+		(end -1.25 -2.55)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "8c8bb8aa-b592-4235-9af1-613a9c605e1f")
+	)
+	(fp_line
+		(start 0 2.3)
+		(end 0 3.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "81ae357c-306d-4f22-a2e3-a7f94eb6b803")
+	)
+	(fp_line
+		(start 5.05 2.3)
+		(end 0 2.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c0c69826-b11c-4b5a-82ab-681d345965cb")
+	)
+	(fp_line
+		(start 5.05 3.3)
+		(end 5.05 2.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "321aa954-c561-4c22-bd67-09391ca4d5bc")
+	)
+	(fp_line
+		(start 6.35 -2.55)
+		(end 6.35 3.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "02a4ca88-a3e1-4b86-afea-07abab572ce6")
+	)
+	(fp_line
+		(start 6.35 3.3)
+		(end -1.25 3.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "2191d24a-f87c-4e69-9297-e00a47c3cac6")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 2.45 1.8 180)
+		(layer "F.Fab")
+		(uuid "8601675b-58c4-48bd-b707-30467ae9425e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole rect
+		(at 0 0 90)
+		(size 2.03 1.73)
+		(drill 1.02)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "61774b7d-33ee-4bcb-908b-a1a6942b119e")
+	)
+	(pad "2" thru_hole oval
+		(at 2.54 0 90)
+		(size 2.03 1.73)
+		(drill 1.02)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "bc707998-6131-4e65-8722-b068db1a9463")
+	)
+	(pad "3" thru_hole oval
+		(at 5.08 0 90)
+		(size 2.03 1.73)
+		(drill 1.02)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "e47ffe0d-765a-4228-b516-91a65814a32a")
+	)
+	(embedded_fonts no)
+	(model "${KICAD10_3DMODEL_DIR}/Connector.3dshapes/FanPinHeader_1x03_P2.54mm_Vertical.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
