@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.7...backplane-v0.8.0) (2026-08-30)
+
+
+### Features
+
+* **backplane:** update to new generation ([e4af0c1](https://github.com/mikesmitty/power-manifold/commit/e4af0c1a8fe70551243ed0e62807cf6d5e45583a))
+
 ## [0.7.7](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.6...backplane-v0.7.7) (2024-09-11)
 
 
