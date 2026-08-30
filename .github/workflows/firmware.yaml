@@ -45,7 +45,7 @@ jobs:
 
       - name: Cache pico-sdk
         id: sdk-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/pico-sdk
           key: pico-sdk-${{ env.PICO_SDK_VERSION }}-v1
