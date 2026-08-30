@@ -1,0 +1,76 @@
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'firmware/controller/**'
+      - '.github/workflows/firmware.yaml'
+  pull_request:
+    paths:
+      - 'firmware/controller/**'
+      - '.github/workflows/firmware.yaml'
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git ref to build"
+        type: string
+        required: false
+        default: ''
+
+name: Firmware Build
+
+permissions:
+  contents: read
+
+env:
+  PICO_SDK_VERSION: 2.2.0
+
+jobs:
+  build:
+    name: Build controller firmware
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || '' }}
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build gcc-arm-none-eabi \
+            libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+
+      - name: Cache pico-sdk
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/pico-sdk
+          key: pico-sdk-${{ env.PICO_SDK_VERSION }}-v1
+
+      - name: Fetch pico-sdk
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$PICO_SDK_VERSION" \
+            https://github.com/raspberrypi/pico-sdk "$HOME/pico-sdk"
+          # only the submodules this firmware links against
+          git -C "$HOME/pico-sdk" submodule update --init --depth 1 \
+            lib/cyw43-driver lib/lwip lib/tinyusb
+
+      - name: Configure
+        run: >
+          cmake -S firmware/controller -B firmware/controller/build -G Ninja
+          -DPICO_BOARD=pico2_w -DPICO_SDK_PATH="$HOME/pico-sdk"
+
+      - name: Build
+        run: ninja -C firmware/controller/build
+
+      - name: Store firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-firmware
+          path: |
+            firmware/controller/build/controller.uf2
+            firmware/controller/build/controller.elf

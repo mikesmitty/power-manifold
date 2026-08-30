@@ -13,3 +13,36 @@ jobs:
         id: release-please
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+    outputs:
+      controller-released: ${{ steps.release-please.outputs['firmware/controller--release_created'] }}
+      controller-tag: ${{ steps.release-please.outputs['firmware/controller--tag_name'] }}
+
+  build-controller-firmware:
+    name: Build controller firmware
+    needs: release-please
+    if: needs.release-please.outputs.controller-released == 'true'
+    uses: ./.github/workflows/firmware.yaml
+    with:
+      ref: ${{ needs.release-please.outputs.controller-tag }}
+
+  attach-controller-firmware:
+    name: Attach firmware to release
+    needs:
+      - release-please
+      - build-controller-firmware
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: controller-firmware
+          path: dist
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.controller-tag }}
+        run: |
+          gh release upload "$TAG" dist/controller.uf2 dist/controller.elf \
+            --repo "$GITHUB_REPOSITORY" --clobber
