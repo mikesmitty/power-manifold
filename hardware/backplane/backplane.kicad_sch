@@ -15024,7 +15024,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
+		(property "Footprint" "Local Library:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 375.92 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -15123,7 +15123,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
+		(property "Footprint" "Local Library:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 375.92 58.42 0)
 			(hide yes)
 			(show_name no)
@@ -17361,7 +17361,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
+		(in_pos_files no)
 		(dnp no)
 		(uuid "65ef2275-080c-4267-929c-b5787444a639")
 		(property "Reference" "F1"
@@ -19719,7 +19719,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
+		(property "Footprint" "Local Library:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 375.92 134.62 0)
 			(hide yes)
 			(show_name no)
@@ -20033,7 +20033,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
+		(property "Footprint" "Local Library:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 375.92 119.38 0)
 			(hide yes)
 			(show_name no)
@@ -20631,7 +20631,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
+		(in_pos_files no)
 		(dnp no)
 		(uuid "97157c1e-7175-47e4-9f38-f2f4c439df14")
 		(property "Reference" "H1"
@@ -21939,7 +21939,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
+		(property "Footprint" "Local Library:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 375.92 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -24596,7 +24596,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
+		(property "Footprint" "Local Library:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 375.92 88.9 0)
 			(hide yes)
 			(show_name no)
@@ -26463,7 +26463,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
+		(in_pos_files no)
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "efbb558f-9335-4ca9-8c66-28bb065c77de")
