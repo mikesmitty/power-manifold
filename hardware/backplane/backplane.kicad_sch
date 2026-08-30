@@ -13846,7 +13846,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1c7d0a40-44a9-4706-aa29-9917f437795d")
 		(property "Reference" "J8"
@@ -21506,7 +21506,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "aac15bbc-b861-435c-a18e-8e724f595ce3")
 		(property "Reference" "J1"
@@ -22915,7 +22915,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c26a8fc6-9f96-434a-ab19-60c192834d83")
 		(property "Reference" "J5"
@@ -23233,7 +23233,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c5767c01-5f93-42f5-be69-e0a4bbc3cd35")
 		(property "Reference" "J7"
@@ -25152,7 +25152,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "dff9a9f9-0d92-4486-95ee-b0798d4c9647")
 		(property "Reference" "J3"
@@ -25348,7 +25348,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e04c1cf5-0159-4a72-a052-ff0816655857")
 		(property "Reference" "J4"
@@ -25991,7 +25991,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e64c3359-b688-4fcf-a45e-0b4e1a853a3c")
 		(property "Reference" "J6"
