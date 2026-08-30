@@ -1,10 +1,25 @@
 {
     "layout": {
+        "hspace": "4mm",
         "vspace": "2mm",
-        "rows": "8"
+        "rows": "4",
+        "cols": "2"
     },
     "source": {
         "tolerance": "10mm"
+    },
+    "tabs": {
+        "type": "fixed",
+        "hcount": "0",
+        "vcount": "5",
+        "vwidth": "3mm"
+    },
+    "cuts": {
+        "type": "mousebites",
+        "drill": "0.5mm",
+        "spacing": "0.9mm",
+        "offset": "0.2mm",
+        "prolong": "0.5mm"
     },
     "framing": {
         "type": "railstb",

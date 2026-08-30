@@ -6327,6 +6327,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;-90"
+			(at 198.12 120.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "4"
 			(uuid "0305f27e-4504-4008-a50f-d2f689f48c20")
 		)
@@ -11684,7 +11695,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C23268532"
+		(property "LCSC" "C26948529"
 			(at 198.12 64.77 0)
 			(hide yes)
 			(show_name no)
@@ -11695,40 +11706,7 @@
 				)
 			)
 		)
-		(property "Manufacturer_Name" ""
-			(at 198.12 64.77 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Manufacturer_Part_Number" ""
-			(at 198.12 64.77 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Mouser Part Number" ""
-			(at 198.12 64.77 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Mouser Price/Stock" ""
+		(property "JLCPCB_CORRECTION" "0;0;-90"
 			(at 198.12 64.77 0)
 			(hide yes)
 			(show_name no)

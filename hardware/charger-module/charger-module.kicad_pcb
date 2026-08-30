@@ -209,7 +209,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -225,6 +225,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "fafd35b8-31df-467c-98d3-b26fce4da21a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C12530"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fe9dbb87-2351-4c30-ad56-12ec0b568ea5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fd4f22cc-53fb-4da4-abf7-95b9d4ca150c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "00ac8e6f-1281-417d-b6db-ec454bbda994")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "de8cfd9a-9bd7-41a7-8e7c-a0e03f5addaa")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7a3863dd-424f-4a58-963f-24523f494b9a")
 			(effects
 				(font
 					(size 1 1)
@@ -877,7 +942,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -893,6 +958,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "5b586ae4-9723-4ebe-8815-8bc3cd775329")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "42934fd2-20d0-4ce7-a79c-8bc8d24da38f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f7f39578-4217-4abe-8f0b-540d94fa997e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7cdd2901-13e0-4769-b818-bf6cba73b2ea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a0b17b67-3434-43df-b969-a1968dfa0c94")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "88d21457-c1b8-411f-b038-c36025231c8f")
 			(effects
 				(font
 					(size 1 1)
@@ -1037,7 +1167,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -1053,6 +1183,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "e96caed2-950b-4589-a162-2561f7632ce8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2426a021-121e-4d27-8ddc-d2f8eb55563e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c2972c52-385d-460f-9cce-da35c88dc647")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a59e507f-cc70-48b9-afc7-28ce302af53d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "52adb4bb-802c-491d-952f-6e34e9a2e301")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d28f8c1d-9c7b-4613-b213-ce64dd4c4757")
 			(effects
 				(font
 					(size 1 1)
@@ -1868,7 +2063,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -1884,6 +2079,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "ce583b4d-88f7-40b4-a493-8596b50b4f4f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ca90eb5a-22ee-4ff6-ab68-6c1945bf029c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "85f16cbd-a8c4-4c6c-bb41-7db187d9147d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "de8c4f51-1107-4b20-be26-0705a82e8287")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5b82c656-aba6-4298-873f-5b65cf501ad7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "1f060b5d-49ea-4d51-8071-4722cb86c558")
 			(effects
 				(font
 					(size 1 1)
@@ -2028,7 +2288,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -2044,6 +2304,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "fa8138bf-06d9-4908-b390-c5ed5995d2e4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C282239"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "57c60386-60e2-4541-bf3f-160b7dc86281")
 			(effects
 				(font
 					(size 1 1)
@@ -2188,7 +2461,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -2204,6 +2477,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "39771f82-6cfc-4234-a586-c2cc276b1e47")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "88b979db-ac3b-41e0-a308-3930d371e38e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0d1c9bbd-ba68-4d99-9de2-108f7311ca64")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "49c67059-e0b7-4607-b3d5-6f26e3420876")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "083af9e5-c29a-438f-9e2f-d74d84b04f64")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "61dd01b0-c104-4f51-b70f-411c3c346edc")
 			(effects
 				(font
 					(size 1 1)
@@ -2363,7 +2701,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C3151829"
+		(property "LCSC" "C46550467"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -2890,6 +3228,19 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;-90"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "54a1d8e2-fe9e-4bb9-9fe8-0f25d6c786ec")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "*TSSOP*3x3mm?P0.5mm*")
 		(path "/106704ba-9e3f-428a-a2e9-69070867e12b")
 		(sheetname "/")
@@ -3271,7 +3622,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -3287,6 +3638,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "6d20ec01-bfa8-4959-b81f-a4eaef400fc8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C22859"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0a822502-7f19-41e1-9a76-1b773f788086")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2fb99fb8-e832-4848-813c-4e6816debd9b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8cc5e1c1-6274-498b-a21e-e68e7336aa50")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4bf084ca-f990-4250-871e-cf8d6921d47a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8cc2798c-aab0-48d3-8429-0bd1901c026a")
 			(effects
 				(font
 					(size 1 1)
@@ -3431,7 +3847,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -3447,6 +3863,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "377a53fb-292e-44ea-b2ba-887cbb6ef924")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C307331"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d8f3fab3-c77f-4fea-b57f-3f6537c9b2ea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7e2a32f5-5082-4a0f-9759-60ab92c0b08a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3188ee63-3dce-46f1-8263-831d0000613d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "091526fc-f03e-40dc-9893-09c4f8ee637a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "80f44c95-2b53-4d80-85a2-1f41e2b99c84")
 			(effects
 				(font
 					(size 1 1)
@@ -3820,7 +4301,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -3836,6 +4317,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "117c1bd1-7ff8-4788-bed3-a00255cf0faa")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C76947"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b0c1bf4a-8694-4709-b2ee-c0afa3010373")
 			(effects
 				(font
 					(size 1 1)
@@ -4224,7 +4718,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C23268532"
+		(property "LCSC" "C26948529"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -4282,6 +4776,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "ff5fe3ff-b7c2-4ff1-a646-478f0a6fdac5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;-90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8da44d78-1028-4eff-80f6-5dea5e3b37be")
 			(effects
 				(font
 					(size 1 1)
@@ -5012,7 +5519,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -5028,6 +5535,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "31cc9925-5a45-4578-84f0-cb168d36dd5b")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C76947"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "abf5a119-4ece-4ed7-bec1-288c9a62d82b")
 			(effects
 				(font
 					(size 1 1)
@@ -5401,7 +5921,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -5417,6 +5937,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "6b531e56-c8bf-4573-b46d-a1e2c9f45fe0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C282239"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7b25c71a-51c9-493a-b5c4-a330ad39ff12")
 			(effects
 				(font
 					(size 1 1)
@@ -5561,7 +6094,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -5577,6 +6110,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "5bbc8929-52a8-41b4-8d82-ffe2683efd02")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C1537"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "97c12420-734a-46d7-895b-6d1bfc929fb9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "51472393-a1db-405a-b7e6-fd4d5a671639")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8d63c83c-acad-4de4-8a87-720f2acc3c01")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8d836136-da5c-4946-a008-924f57f5b041")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3d594ae1-154c-4219-b49c-afd986d51c80")
 			(effects
 				(font
 					(size 1 1)
@@ -6227,7 +6825,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -6243,6 +6841,71 @@
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "96c0d887-5cf3-48a9-a6d3-f0a945df0ef6")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C25741"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "282a5ae0-bdd2-45c5-97f2-6c0572c58432")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "be3c4797-fe21-428c-9ae3-819b56034a32")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4dc35835-05d7-409d-9aea-38b81a894b6a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f0aa9c3a-632b-4598-8e93-766f72b08e1f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "692ad2a1-f829-4b80-a62e-99d6ce5c798c")
 			(effects
 				(font
 					(size 1 1)
@@ -6387,7 +7050,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Resistor"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -6403,6 +7066,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "f4d01e1f-ec3e-4ad7-b4d1-25be8e15ae8f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C21189"
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "19fdcf73-fac2-4bd9-b63b-240b07d7a0e9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c234b7e8-389a-45fa-9704-a16b94483ad7")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ead22f1b-d0e6-46bb-bd3b-48f695d08b1d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "918a152b-73a3-4dac-9420-d06adbb8a202")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "74957457-55a7-4a00-a7d8-a89639e00b7f")
 			(effects
 				(font
 					(size 1 1)
@@ -6823,7 +7551,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -6839,6 +7567,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "86166f7c-162f-46ce-9630-77f723ad2576")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C21120"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4da8bbea-4dfc-48b1-8747-6e2472e75c56")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e0cd24e8-2c38-46e1-a85e-c7c9920ac3fe")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "52abf884-62b5-4401-95de-46aeb530aed5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "ee4e6126-666e-422c-a908-cc72cc2600bd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "db4d44de-2b67-4bbb-a276-ae63ca41e2f6")
 			(effects
 				(font
 					(size 1 1)
@@ -6983,7 +7776,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
@@ -6999,6 +7792,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "9590d754-fe51-4e6e-9ef0-30535933a337")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C29823"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "cc7922b5-2e61-45bc-844b-ee29a5888299")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2b0c1b4f-1943-4fab-bff3-62a04ae80e59")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d667fd8c-09e8-4b8e-a29e-5d4435c72d20")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a038c819-989a-43a4-ac94-cb2713373650")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "fbe4f479-ea8b-4696-968f-a253868c2986")
 			(effects
 				(font
 					(size 1 1)
@@ -7223,6 +8081,19 @@
 				)
 			)
 		)
+		(property "LCSC" "C127692"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a9ecc565-e07e-4bdc-b75e-0a490a68b646")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/96a63f09-57ef-43d7-a30f-f8742a0dfc98")
 		(sheetname "/")
@@ -7360,7 +8231,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Unpolarized capacitor"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -7376,6 +8247,71 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "b689bb16-86f9-4786-bd3d-6cff4f46c883")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC" "C21120"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e5b4fcdc-f09d-4265-9bbf-993bdf657434")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Name" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2ea0463b-e37c-4792-b423-91995426ef45")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Manufacturer_Part_Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8597562e-d6b1-4a59-a277-f353c7b9264f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Part Number" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f60344a6-e991-46ad-abf2-8973386f3574")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Mouser Price/Stock" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "495e4a43-0ae4-4f8e-9e28-8db8ab9891ff")
 			(effects
 				(font
 					(size 1 1)
@@ -9254,7 +10190,7 @@
 			)
 			(justify bottom mirror)
 		)
-		(render_cache "Charger Module\nv0.12.4" 0
+		(render_cache "Charger Module\nv0.13.0" 0
 			(polygon
 				(pts
 					(xy 97.559311 44.454309) (xy 97.703346 44.445272) (xy 97.8265 44.419758) (xy 97.931952 44.379503)
@@ -9503,20 +10439,25 @@
 			)
 			(polygon
 				(pts
-					(xy 88.756768 45.871461) (xy 88.764639 45.949559) (xy 88.788276 46.024601) (xy 88.82414 46.096224)
-					(xy 88.870066 46.166201) (xy 88.923254 46.232661) (xy 88.983456 46.297359) (xy 89.107196 46.416885)
-					(xy 89.175431 46.483014) (xy 89.245681 46.557478) (xy 89.30549 46.627728) (xy 89.328065 46.659614)
-					(xy 89.338005 46.681217) (xy 88.712621 46.681217) (xy 88.712621 46.945) (xy 89.682204 46.945) (xy 89.686418 46.88629)
-					(xy 89.686418 46.835915) (xy 89.678061 46.738094) (xy 89.653903 46.651267) (xy 89.616287 46.570112)
-					(xy 89.568815 46.494921) (xy 89.513082 46.425011) (xy 89.450296 46.359549) (xy 89.319137 46.233612)
-					(xy 89.224707 46.142295) (xy 89.147038 46.058398) (xy 89.116575 46.016619) (xy 89.094556 45.976516)
-					(xy 89.080323 45.934957) (xy 89.075688 45.893626) (xy 89.082405 45.834556) (xy 89.10033 45.792732)
-					(xy 89.12817 45.763566) (xy 89.185442 45.73564) (xy 89.258321 45.725739) (xy 89.313601 45.730286)
-					(xy 89.364292 45.743599) (xy 89.454509 45.78564) (xy 89.524851 45.833908) (xy 89.568906 45.872651)
-					(xy 89.724153 45.653382) (xy 89.625077 45.575472) (xy 89.509097 45.511691) (xy 89.425685 45.480933)
-					(xy 89.338191 45.462377) (xy 89.245681 45.456095) (xy 89.122646 45.463989) (xy 89.025405 45.485496)
-					(xy 88.939414 45.521833) (xy 88.873272 45.568294) (xy 88.821433 45.627416) (xy 88.785162 45.698353)
-					(xy 88.764167 45.778103)
+					(xy 89.319137 46.974309) (xy 89.438755 46.966981) (xy 89.56048 46.947289) (xy 89.667458 46.920362)
+					(xy 89.743021 46.893342) (xy 89.682204 46.634964) (xy 89.54262 46.684331) (xy 89.452218 46.703361)
+					(xy 89.331685 46.710526) (xy 89.236254 46.703217) (xy 89.167826 46.68403) (xy 89.119744 46.655755)
+					(xy 89.082577 46.615224) (xy 89.060357 46.566901) (xy 89.052607 46.508293) (xy 89.058989 46.454593)
+					(xy 89.076788 46.412489) (xy 89.105136 46.377399) (xy 89.142916 46.349291) (xy 89.187627 46.32913)
+					(xy 89.242567 46.315586) (xy 89.365299 46.30606) (xy 89.487024 46.30606) (xy 89.487024 46.054002)
+					(xy 89.348538 46.054002) (xy 89.259329 46.045575) (xy 89.218104 46.03408) (xy 89.182758 46.017274)
+					(xy 89.152654 45.993697) (xy 89.129269 45.962594) (xy 89.114646 45.924945) (xy 89.109302 45.875399)
+					(xy 89.113691 45.837387) (xy 89.126155 45.806065) (xy 89.145405 45.779082) (xy 89.169111 45.757704)
+					(xy 89.197025 45.741308) (xy 89.229928 45.729311) (xy 89.30027 45.719877) (xy 89.388141 45.726877)
+					(xy 89.467057 45.747172) (xy 89.54098 45.77796) (xy 89.606642 45.814308) (xy 89.717833 45.58588)
+					(xy 89.639157 45.542008) (xy 89.539506 45.500059) (xy 89.423002 45.468643) (xy 89.359999 45.459304)
+					(xy 89.291843 45.456095) (xy 89.168665 45.464256) (xy 89.070468 45.486595) (xy 88.983513 45.524361)
+					(xy 88.916228 45.572874) (xy 88.863121 45.633534) (xy 88.826011 45.703299) (xy 88.804136 45.780414)
+					(xy 88.79661 45.866331) (xy 88.801842 45.922527) (xy 88.817688 45.977999) (xy 88.844879 46.033577)
+					(xy 88.881056 46.083542) (xy 88.924195 46.124277) (xy 88.974938 46.156584) (xy 88.903795 46.193084)
+					(xy 88.845959 46.238641) (xy 88.799725 46.293604) (xy 88.765922 46.35683) (xy 88.745081 46.428993)
+					(xy 88.737809 46.51214) (xy 88.746412 46.609702) (xy 88.771423 46.697246) (xy 88.814172 46.77583)
+					(xy 88.876295 46.843608) (xy 88.955036 46.897236) (xy 89.057828 46.939779) (xy 89.173672 46.965059)
 				)
 			)
 			(polygon
@@ -9531,12 +10472,24 @@
 			)
 			(polygon
 				(pts
-					(xy 87.503397 45.589869) (xy 87.599332 45.703391) (xy 87.778759 45.943726) (xy 87.932998 46.183053)
-					(xy 88.048403 46.391973) (xy 88.048403 46.622599) (xy 87.420913 46.622599) (xy 87.420913 46.945)
-					(xy 87.11454 46.945) (xy 87.11454 46.622599) (xy 86.959202 46.622599) (xy 86.959202 46.364678)
-					(xy 87.11454 46.364678) (xy 87.420913 46.364678) (xy 87.750366 46.364678) (xy 87.680693 46.234932)
-					(xy 87.595119 46.106392) (xy 87.420913 45.873201) (xy 87.420913 46.364678) (xy 87.11454 46.364678)
-					(xy 87.11454 45.491266) (xy 87.410471 45.491266)
+					(xy 87.572857 45.46189) (xy 87.644527 45.478783) (xy 87.710524 45.50647) (xy 87.771126 45.54465)
+					(xy 87.826253 45.593309) (xy 87.876303 45.653474) (xy 87.917576 45.720368) (xy 87.953053 45.798934)
+					(xy 87.982274 45.890786) (xy 88.009265 46.037176) (xy 88.019002 46.214194) (xy 88.008653 46.401684)
+					(xy 87.980136 46.554454) (xy 87.936472 46.678263) (xy 87.879509 46.778029) (xy 87.818499 46.849602)
+					(xy 87.750654 46.903798) (xy 87.675126 46.942412) (xy 87.59039 46.966096) (xy 87.494369 46.974309)
+					(xy 87.398345 46.966095) (xy 87.31362 46.942409) (xy 87.238111 46.903795) (xy 87.170294 46.8496)
+					(xy 87.10932 46.778029) (xy 87.052317 46.678257) (xy 87.008624 46.554445) (xy 86.980091 46.401678)
+					(xy 86.969735 46.214194) (xy 87.288747 46.214194) (xy 87.291509 46.320882) (xy 87.29928 46.413313)
+					(xy 87.313491 46.499963) (xy 87.332802 46.568469) (xy 87.361118 46.627696) (xy 87.395817 46.669036)
+					(xy 87.439785 46.695542) (xy 87.494369 46.704665) (xy 87.548784 46.695509) (xy 87.591913 46.669036)
+					(xy 87.625973 46.627837) (xy 87.654928 46.568469) (xy 87.675009 46.499908) (xy 87.689549 46.413313)
+					(xy 87.697252 46.320883) (xy 87.699991 46.214194) (xy 87.697243 46.107559) (xy 87.689549 46.016083)
+					(xy 87.675033 45.930389) (xy 87.654928 45.862027) (xy 87.625967 45.80258) (xy 87.591913 45.761368)
+					(xy 87.548784 45.734895) (xy 87.494369 45.725739) (xy 87.439785 45.734862) (xy 87.395817 45.761368)
+					(xy 87.361123 45.802721) (xy 87.332802 45.862027) (xy 87.313469 45.930333) (xy 87.29928 46.016083)
+					(xy 87.291518 46.10756) (xy 87.288747 46.214194) (xy 86.969735 46.214194) (xy 86.98007 46.027838)
+					(xy 87.008571 45.875734) (xy 87.052259 45.75222) (xy 87.10932 45.652466) (xy 87.170299 45.580857)
+					(xy 87.238119 45.526637) (xy 87.313628 45.488006) (xy 87.39835 45.464311) (xy 87.494369 45.456095)
 				)
 			)
 		)
