@@ -65,7 +65,7 @@ jobs:
           echo "kicad-dir=$KICAD_DIR" >> "$GITHUB_OUTPUT"
 
           # Get the name of the hardware module
-          MODULE_NAME="$(basename $(dirname $KICAD_DIR))"
+          MODULE_NAME="$(basename "$KICAD_DIR")"
           echo "module-name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
 
           # Get the parent project directory
@@ -89,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.get-paths.outputs.module-name }}
-          path: "${{ steps.get-paths.outputs.project-dir }}/CAD/*.step"
+          path: "${{ steps.get-paths.outputs.project-dir }}/CAD/${{ steps.get-paths.outputs.module-name }}.step"
           overwrite: true
 
   push-changes:
