@@ -7,7 +7,7 @@
 // deliberately optional at runtime: if the radio fails or credentials are
 // unset, the engine keeps running and the USB CLI remains available.
 //
-// The eventual wired path (W5500 on the reserved GP16-21) slots in here as an
+// The eventual wired path (W6100 on the reserved GP16-21) slots in here as an
 // alternative lwIP netif; mqtt/http above it are transport-agnostic.
 
 void net_init(void);

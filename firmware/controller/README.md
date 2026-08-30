@@ -1,9 +1,14 @@
 # Power Manifold Controller Firmware
 
-Native pico-sdk firmware for the V2 management controller: a Raspberry Pi
-Pico 2 W (RP2350) on the backplane management socket, supervising up to six
-MPQ4242 charger blades through the backplane TCA9548A I2C mux and TCA9539 GPIO
-expander.
+Native pico-sdk firmware for the V2 management controller, supervising up to
+six MPQ4242 charger blades through the backplane TCA9548A I2C mux and TCA9539
+GPIO expander.
+
+Development target: a Raspberry Pi Pico 2 W (RP2350) on the backplane
+management socket. Production target: a custom RP2350 board with a WIZnet
+W6100 wired-Ethernet controller, possibly plus a Raspberry Pi RM2 radio
+module (same CYW43439 as the Pico 2 W, so the WiFi/Bluetooth stack carries
+over).
 
 ## Architecture
 
@@ -33,7 +38,7 @@ The hardware watchdog is fed only while both cores make progress.
 | GP6 | EXP_INT# | TCA9539 interrupt |
 | GP7 | MUX_RST# | TCA9548A reset |
 | GP8 | EXP_RST# | TCA9539 reset |
-| GP16–GP21 | *reserved* | future W5500 Ethernet (W5500-EVB-Pico2 pinout) |
+| GP16–GP21 | *reserved* | wired Ethernet (W6100; WIZnet EVB-Pico2 pinout) |
 
 ## Building
 
@@ -79,5 +84,6 @@ reboot
 
 - OTA via the RP2350 bootrom A/B partitions (try-before-you-buy); BOOTSEL for now
 - Throttle victim selection by port priority (currently clamps the newcomer)
-- W5500 wired Ethernet netif (hardware path reserved, see GPIO map)
+- W6100 wired Ethernet netif (hardware path reserved, see GPIO map)
+- BLE provisioning via RM2/BTstack (candidate for initial configuration)
 - Front-panel display (planned as another consumer of the telemetry snapshot)

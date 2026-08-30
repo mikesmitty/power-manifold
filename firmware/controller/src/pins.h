@@ -2,9 +2,11 @@
 
 // Controller GPIO map (Pico 2 W on the pcie-breakout / backplane J11 socket).
 //
-// GP16-GP21 are RESERVED for the future wired-Ethernet path: the W5500 sits on
-// SPI0 GP16-19 with RSTn=GP20 / INTn=GP21 on the WIZnet W5500-EVB-Pico2, so
-// keeping these free lets that board drop into the same socket unchanged.
+// GP16-GP21 are RESERVED for the wired-Ethernet path. WIZnet's EVB-Pico2
+// boards put the Ethernet chip on SPI0 GP16-19 with RSTn=GP20 / INTn=GP21, so
+// a W6100-EVB-Pico2 drops into the dev socket unchanged, and the production
+// board (custom RP2350 + W6100, possibly with an RM2 radio module) should
+// copy the same mapping so firmware carries over.
 
 #define PIN_LED_DATA    2  // WS2812C chain on backplane (6 pixels), via PIO
 #define PIN_ALERT_N     3  // GLOBAL_ALERT#: wire-OR of all blade ALERT# lines
