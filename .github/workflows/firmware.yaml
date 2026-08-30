@@ -27,6 +27,24 @@ env:
   PICO_SDK_VERSION: 2.2.0
 
 jobs:
+  host-tests:
+    name: Engine host tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || '' }}
+
+      - name: Configure
+        run: cmake -S firmware/controller/test -B firmware/controller/test/build
+
+      - name: Build
+        run: cmake --build firmware/controller/test/build
+
+      - name: Run
+        run: ctest --test-dir firmware/controller/test/build --output-on-failure
+
   build:
     name: Build controller firmware
     runs-on: ubuntu-latest

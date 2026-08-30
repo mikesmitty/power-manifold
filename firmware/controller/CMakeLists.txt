@@ -9,6 +9,22 @@ set(CMAKE_C_STANDARD 11)
 
 pico_sdk_init()
 
+option(FAKE_BLADES "Simulate the backplane and blades; runs on a bare board" OFF)
+
+if(FAKE_BLADES)
+    set(DRIVER_SOURCES
+        src/engine/sim/sim_blades.c
+        src/engine/sim/sim_scenario.c
+    )
+else()
+    set(DRIVER_SOURCES
+        src/engine/mpq4242.c
+        src/engine/ina226.c
+        src/engine/tca9548a.c
+        src/engine/tca9539.c
+    )
+endif()
+
 add_executable(controller
     src/main.c
     src/ipc.c
@@ -17,20 +33,22 @@ add_executable(controller
     src/engine/engine.c
     src/engine/port_fsm.c
     src/engine/budget.c
-    src/engine/mpq4242.c
-    src/engine/ina226.c
-    src/engine/tca9548a.c
-    src/engine/tca9539.c
     src/engine/leds.c
     src/net/net.c
     src/net/mqtt.c
     src/net/http.c
+    ${DRIVER_SOURCES}
 )
+
+if(FAKE_BLADES)
+    target_compile_definitions(controller PRIVATE PWRMAN_FAKE_BLADES=1)
+endif()
 
 pico_generate_pio_header(controller ${CMAKE_CURRENT_LIST_DIR}/src/engine/ws2812.pio)
 
 target_include_directories(controller PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src
+    ${CMAKE_CURRENT_LIST_DIR}/src/engine # driver headers, for the sim seam
     ${CMAKE_CURRENT_LIST_DIR} # lwipopts.h
 )
 

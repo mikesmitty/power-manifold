@@ -17,6 +17,11 @@
 #include "tca9539.h"
 #include "tca9548a.h"
 
+#ifdef PWRMAN_FAKE_BLADES
+#include "sim/sim_blades.h"
+#include "sim/sim_scenario.h"
+#endif
+
 #define TICK_MS 10 // 100 Hz supervisory rate
 #define PRESENCE_REFRESH_TICKS 10 // full presence re-read every 100ms
 
@@ -30,10 +35,21 @@ static bool present[NUM_PORTS];
 static bool fan_on;
 static uint8_t exp_fail_streak;
 
+#ifndef PWRMAN_FAKE_BLADES
 static void gpio_irq_handler(uint gpio, uint32_t events) {
     (void)events;
     if (gpio == PIN_ALERT_N) alert_irq = true;
     else if (gpio == PIN_EXP_INT_N) exp_irq = true;
+}
+#endif
+
+// GLOBAL_ALERT# level; the sim stands in for the wire-OR line in fake builds
+static bool alert_line_active(void) {
+#ifdef PWRMAN_FAKE_BLADES
+    return sim_alert_asserted();
+#else
+    return !gpio_get(PIN_ALERT_N);
+#endif
 }
 
 static void refresh_presence(void) {
@@ -77,6 +93,7 @@ void engine_main(void) {
     // allow core 0 to write flash (settings) while this core is parked
     flash_safe_execute_core_init();
 
+#ifndef PWRMAN_FAKE_BLADES
     i2c_init(I2C_BUS, I2C_BAUD);
     gpio_set_function(PIN_I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C_SCL, GPIO_FUNC_I2C);
@@ -86,6 +103,9 @@ void engine_main(void) {
     gpio_set_dir(PIN_ALERT_N, GPIO_IN);
     gpio_init(PIN_EXP_INT_N);
     gpio_set_dir(PIN_EXP_INT_N, GPIO_IN);
+#else
+    sim_reset();
+#endif
 
     tca9548a_init();
     tca9539_init(); // outputs low FIRST, then direction (spec §6.4)
@@ -95,9 +115,11 @@ void engine_main(void) {
     budget_init(g_settings.budget_mw);
     port_fsm_init();
 
+#ifndef PWRMAN_FAKE_BLADES
     gpio_set_irq_enabled_with_callback(PIN_ALERT_N, GPIO_IRQ_EDGE_FALL, true,
                                        gpio_irq_handler);
     gpio_set_irq_enabled(PIN_EXP_INT_N, GPIO_IRQ_EDGE_FALL, true);
+#endif
 
     refresh_presence();
 
@@ -107,12 +129,16 @@ void engine_main(void) {
         next = delayed_by_ms(next, TICK_MS);
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
 
+#ifdef PWRMAN_FAKE_BLADES
+        sim_scenario_tick(now_ms);
+#endif
+
         engine_cmd_t cmd;
         while (ipc_cmd_pop(&cmd)) dispatch_cmd(&cmd);
 
         // Fault line first: it is wire-OR'd, so sweep all powered ports.
         // Level-check as well as the IRQ flag in case an edge was missed.
-        if (alert_irq || !gpio_get(PIN_ALERT_N)) {
+        if (alert_irq || alert_line_active()) {
             alert_irq = false;
             port_fsm_alert_sweep(now_ms);
         }
@@ -131,7 +157,7 @@ void engine_main(void) {
         t.reserved_mw = budget_reserved();
         t.budget_mw = budget_total();
         t.fan_on = fan_on;
-        t.alert_active = !gpio_get(PIN_ALERT_N);
+        t.alert_active = alert_line_active();
 
         ipc_snapshot_publish(&t);
         leds_render(&t, now_ms);

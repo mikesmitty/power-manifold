@@ -18,7 +18,12 @@ Two cores, one rule: **only core 1 touches the backplane.**
   the mux channels reading each blade's INA226 and MPQ4242, runs the per-port
   state machine and the chassis power-budget arbiter, owns blade EN / presence
   / fan via the expander, services GLOBAL_ALERT# / EXP_INT#, renders the
-  WS2812C status LEDs via PIO.
+  WS2812C status LEDs via PIO. When a new contract would exceed the chassis
+  budget, strictly lower-priority ports are renegotiated downward first
+  (worst priority first, 15 W floor); only if that isn't enough does the
+  newcomer get clamped. Throttled ports recover automatically when budget
+  frees up, highest priority first. Per-port priority: `port <n> priority`
+  in the CLI (0 = highest, default = port number).
 - **Core 0 — management** (`src/net/`, `src/cli.c`): CYW43 WiFi + lwIP,
   MQTT with Home Assistant discovery, embedded web UI + JSON API, USB CDC
   maintenance console.
@@ -54,6 +59,33 @@ ninja -C build
 Flash `build/controller.uf2` over BOOTSEL, or `picotool load -f
 build/controller.uf2`.
 
+### Fake-blade mode (no backplane needed)
+
+`-DFAKE_BLADES=ON` swaps the four I2C drivers for a simulated backplane
+(`src/engine/sim/`) and drives it through a repeating 60-second demo script —
+attaches, budget contention with priority shedding, an over-current fault and
+recovery, blade insertion/removal. Everything above the driver seam (state
+machine, budget arbiter, MQTT/HA, web UI, CLI) is the real code, so the whole
+management plane can be exercised on a bare Pico 2 W:
+
+```sh
+cmake -B build-fake -G Ninja -DFAKE_BLADES=ON
+ninja -C build-fake
+```
+
+### Host-side tests
+
+The engine core (state machine + budget arbiter) is hardware-free and runs
+natively against the same simulated drivers:
+
+```sh
+cmake -S test -B test/build
+cmake --build test/build
+ctest --test-dir test/build --output-on-failure
+```
+
+CI runs these on every push/PR touching the firmware.
+
 ## First-time setup
 
 Connect to the USB console (any serial terminal, 115200) and provision:
@@ -83,7 +115,6 @@ reboot
 ## Not yet implemented
 
 - OTA via the RP2350 bootrom A/B partitions (try-before-you-buy); BOOTSEL for now
-- Throttle victim selection by port priority (currently clamps the newcomer)
 - W6100 wired Ethernet netif (hardware path reserved, see GPIO map)
 - BLE provisioning via RM2/BTstack (candidate for initial configuration)
 - Front-panel display (planned as another consumer of the telemetry snapshot)
