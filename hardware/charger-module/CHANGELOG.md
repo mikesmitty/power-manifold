@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.4...charger-module-v0.13.0) (2026-08-30)
+
+
+### Features
+
+* **charger-module:** update to new generation ([0f52f65](https://github.com/mikesmitty/power-manifold/commit/0f52f65b2d89ae45185e18c2af32f05ce7f673aa))
+
 ## [0.12.4](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.3...charger-module-v0.12.4) (2024-09-13)
 
 
