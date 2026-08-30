@@ -108,14 +108,14 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
     }
 }
 
-// Reduce a port's programmed current limit so its contract fits the headroom
-// left by everyone else. Placeholder policy: renegotiation currently clamps
-// this port only; picking cheaper victims by priority is a TODO.
-static void throttle(uint8_t i, uint32_t want_mw) {
-    uint32_t grant_mw = budget_headroom() + budget_port_reservation(i);
-    if (grant_mw < BUDGET_BASE_RESERVE_MW) grant_mw = BUDGET_BASE_RESERVE_MW;
-    if (grant_mw > want_mw) grant_mw = want_mw;
+static uint8_t prio(uint8_t i) {
+    return g_settings.port_priority[i]; // 0 = highest
+}
 
+// Program port i's advertised current ceiling so its contract fits grant_mw,
+// take the reservation, and keep want_mw as the recovery target. The caller
+// must have port i's mux channel selected.
+static void apply_throttle(uint8_t i, uint32_t grant_mw, uint32_t want_mw) {
     uint32_t mv = ctx[i].ina.bus_mv ? ctx[i].ina.bus_mv : 5000;
     uint32_t ma = (grant_mw * 1000) / mv;
     if (ma < 500) ma = 500;
@@ -125,15 +125,81 @@ static void throttle(uint8_t i, uint32_t want_mw) {
     ctx[i].granted_ma = ma;
     budget_force_reserve(i, grant_mw);
     ctx[i].contract_mw = grant_mw;
-    ctx[i].denied_mw = want_mw;
-    emit(EVT_THROTTLE, i, 0, grant_mw);
+    if (want_mw > ctx[i].denied_mw) ctx[i].denied_mw = want_mw;
+    emit(EVT_THROTTLE, i, THROTTLE_CLAMPED, grant_mw);
     enter(i, PORT_STATE_THROTTLED);
 }
 
+// Reduce this port's own current limit so its contract fits the headroom left
+// by everyone else. Last resort, after shed_lower_priority() found no victims.
+static void throttle(uint8_t i, uint32_t want_mw) {
+    uint32_t grant_mw = budget_headroom() + budget_port_reservation(i);
+    if (grant_mw < BUDGET_BASE_RESERVE_MW) grant_mw = BUDGET_BASE_RESERVE_MW;
+    if (grant_mw > want_mw) grant_mw = want_mw;
+    apply_throttle(i, grant_mw, want_mw);
+}
+
+// Make room for claimant's want_mw by clamping strictly lower-priority powered
+// ports, worst priority first (ties: biggest reservation first). Equal
+// priority never sheds — first come, first served among peers. Victims keep
+// their original ask in denied_mw and recover through the same path as a
+// self-clamped port. Restores the claimant's mux channel before returning.
+static void shed_lower_priority(uint8_t claimant, uint32_t want_mw) {
+    uint32_t others = budget_reserved() - budget_port_reservation(claimant);
+    if (others + want_mw <= budget_total()) return;
+    uint32_t shortfall = others + want_mw - budget_total();
+
+    bool tried[NUM_PORTS] = {false};
+    while (shortfall > 0) {
+        int v = -1;
+        for (uint8_t j = 0; j < NUM_PORTS; j++) {
+            if (j == claimant || tried[j]) continue;
+            if (ctx[j].state != PORT_STATE_ACTIVE &&
+                ctx[j].state != PORT_STATE_THROTTLED)
+                continue;
+            if (prio(j) <= prio(claimant)) continue;
+            if (budget_port_reservation(j) <= BUDGET_BASE_RESERVE_MW) continue;
+            if (v < 0 || prio(j) > prio((uint8_t)v) ||
+                (prio(j) == prio((uint8_t)v) &&
+                 budget_port_reservation(j) > budget_port_reservation((uint8_t)v)))
+                v = j;
+        }
+        if (v < 0) break; // nobody left to shed; caller clamps itself
+
+        tried[v] = true;
+        uint32_t res = budget_port_reservation((uint8_t)v);
+        uint32_t reclaim = res - BUDGET_BASE_RESERVE_MW;
+        if (reclaim > shortfall) reclaim = shortfall;
+        if (!tca9548a_select((uint8_t)v)) continue; // unreachable: skip it
+
+        apply_throttle((uint8_t)v, res - reclaim, ctx[v].contract_mw);
+        shortfall -= reclaim;
+    }
+    tca9548a_select(claimant);
+}
+
+// A strictly higher-priority throttled port whose recovery fits the current
+// headroom goes first. If its need does not fit anyway, taking the headroom
+// now cannot starve it further, so recovery stays work-conserving.
+static bool recovery_should_yield(uint8_t i) {
+    uint32_t headroom = budget_headroom();
+    for (uint8_t j = 0; j < NUM_PORTS; j++) {
+        if (j == i || ctx[j].state != PORT_STATE_THROTTLED) continue;
+        if (prio(j) >= prio(i)) continue;
+        uint32_t res = budget_port_reservation(j);
+        if (ctx[j].denied_mw > res && ctx[j].denied_mw - res <= headroom)
+            return true;
+    }
+    return false;
+}
+
+// Restore the full advertisement. The caller has already claimed the budget
+// for the recovered contract, so a rival can't take it mid-renegotiation.
 static void unthrottle(uint8_t i) {
     mpq4242_set_max_current_ma(g_settings.port_limit_ma[i]);
     mpq4242_send_src_cap();
     ctx[i].granted_ma = g_settings.port_limit_ma[i];
+    emit(EVT_THROTTLE, i, THROTTLE_RESTORED, ctx[i].contract_mw);
     enter(i, PORT_STATE_ACTIVE);
 }
 
@@ -161,12 +227,15 @@ static void track_contract(uint8_t i) {
     if (want < BUDGET_BASE_RESERVE_MW) want = BUDGET_BASE_RESERVE_MW;
     if (want == ctx[i].contract_mw) return;
 
-    if (budget_try_reserve(i, want)) {
-        ctx[i].contract_mw = want;
-        emit(EVT_CONTRACT, i, ctx[i].mpq.selected_pdo, want);
-    } else {
-        throttle(i, want);
+    if (!budget_try_reserve(i, want)) {
+        shed_lower_priority(i, want);
+        if (!budget_try_reserve(i, want)) {
+            throttle(i, want);
+            return;
+        }
     }
+    ctx[i].contract_mw = want;
+    emit(EVT_CONTRACT, i, ctx[i].mpq.selected_pdo, want);
 }
 
 void port_fsm_init(void) {
@@ -219,12 +288,16 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         track_contract(i);
         if (p->state == PORT_STATE_THROTTLED && p->denied_mw) {
             // when other ports release enough budget to cover the contract
-            // that was refused, restore the full advertisement and let the
-            // sink renegotiate upward
+            // that was refused, claim it, then restore the full advertisement
+            // and let the sink renegotiate upward. Higher-priority throttled
+            // ports get first pick of freed headroom.
             uint32_t res = budget_port_reservation(i);
-            if (p->denied_mw > res && budget_headroom() >= p->denied_mw - res) {
-                unthrottle(i);
+            if (p->denied_mw > res && budget_headroom() >= p->denied_mw - res &&
+                !recovery_should_yield(i)) {
+                budget_force_reserve(i, p->denied_mw);
+                p->contract_mw = p->denied_mw;
                 p->denied_mw = 0;
+                unthrottle(i);
             }
         }
         break;

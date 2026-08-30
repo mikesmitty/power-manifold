@@ -29,22 +29,24 @@ static void print_help(void) {
            "  token <t>|clear              REST API bearer token\n"
            "  budget <watts>               chassis power budget\n"
            "  port <1-%d> on|off|reset|srccap\n"
+           "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  fan on|off\n"
            "  led <0-255>                  status LED brightness\n"
            "  save | defaults | reboot | bootsel\n",
-           NUM_PORTS);
+           NUM_PORTS, NUM_PORTS);
 }
 
 static void print_status(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
-    printf("port state      attach pdo    mV     mA     mW  contract\n");
+    printf("port state      attach pdo    mV     mA     mW  contract prio\n");
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
-        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW\n", i + 1,
+        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %4u\n", i + 1,
                port_state_name((port_state_t)p->state), p->attached ? "yes" : "no",
                p->selected_pdo, p->bus_mv, (long)p->current_ma,
-               (unsigned long)p->power_mw, (unsigned long)p->contract_mw);
+               (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
+               g_settings.port_priority[i]);
     }
     printf("total %lumW reserved %lumW budget %lumW fan %s alert %s\n",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
@@ -125,6 +127,14 @@ static void run_line(char *l) {
         const char *op = strtok_r(NULL, " \t", &save);
         uint8_t port;
         if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap\n", NUM_PORTS); return; }
+        if (!strcmp(op, "priority")) {
+            const char *p = strtok_r(NULL, " \t", &save);
+            if (!p) { printf("usage: port <1-%d> priority <0-255>\n", NUM_PORTS); return; }
+            g_settings.port_priority[port] = (uint8_t)atoi(p);
+            printf("port %u priority %u ('save' to persist)\n", port + 1,
+                   g_settings.port_priority[port]);
+            return;
+        }
         engine_cmd_t c = {.port = port};
         if (!strcmp(op, "on")) c.op = CMD_PORT_ENABLE;
         else if (!strcmp(op, "off")) c.op = CMD_PORT_DISABLE;

@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define FW_VERSION      "0.1.0"
+#define FW_VERSION      "0.1.0" // x-release-please-version
 #define NUM_PORTS       6
 
 // Per-port supervisory state. Differs from the spec's table in one way: the
@@ -78,8 +78,12 @@ typedef enum {
     EVT_FAULT,        // code = MPQ_FAULT_* bits, arg = INA226 alert flag
     EVT_CONTRACT,     // code = selected PDO, arg = contract mW
     EVT_PROBE_FAIL,   // code = which probe step failed
-    EVT_THROTTLE,     // arg = granted mW
+    EVT_THROTTLE,     // code = THROTTLE_*, arg = granted/restored mW
 } evt_type_t;
+
+// EVT_THROTTLE codes
+#define THROTTLE_CLAMPED  0 // advertisement reduced to fit the budget
+#define THROTTLE_RESTORED 1 // full advertisement restored after recovery
 
 typedef struct {
     uint8_t  type; // evt_type_t

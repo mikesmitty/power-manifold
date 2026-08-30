@@ -118,11 +118,11 @@ static void build_status_json(char *out, size_t cap) {
         const port_telemetry_t *p = &t.port[i];
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"state\":\"%s\",\"attached\":%s,\"pdo\":%u,\"v\":%.3f,"
-            "\"i\":%.3f,\"p\":%.2f,\"contract_w\":%.1f,\"fault\":%u}",
+            "\"i\":%.3f,\"p\":%.2f,\"contract_w\":%.1f,\"prio\":%u,\"fault\":%u}",
             i ? "," : "", port_state_name((port_state_t)p->state),
             p->attached ? "true" : "false", p->selected_pdo, p->bus_mv / 1000.0,
             p->current_ma / 1000.0, p->power_mw / 1000.0,
-            p->contract_mw / 1000.0, p->fault_bits);
+            p->contract_mw / 1000.0, g_settings.port_priority[i], p->fault_bits);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
