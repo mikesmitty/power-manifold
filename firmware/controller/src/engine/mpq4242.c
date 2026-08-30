@@ -10,6 +10,7 @@
 #define REG_PDO_I1      0x03
 #define REG_PDO_V2_L    0x04
 #define REG_PD_CTL2     0x17
+#define REG_CTL_SYS5    0x22
 #define REG_PWR_CTL1    0x18
 #define REG_CTL_SYS1    0x1E
 #define REG_CTL_SYS2    0x1F
@@ -111,6 +112,15 @@ bool mpq4242_configure(uint32_t max_ma) {
     if (!reg_read(REG_CTL_SYS17, &ctl_sys17)) return false;
     ctl_sys17 = (uint8_t)((ctl_sys17 & 0x3F) | (MPQ4242_PEAK_CL_8A << 6));
     if (!reg_write(REG_CTL_SYS17, ctl_sys17)) return false;
+
+    // CTL_SYS5: CC over-current blank time, bits[5:4]
+    uint8_t ctl_sys5;
+    if (!reg_read(REG_CTL_SYS5, &ctl_sys5)) return false;
+    ctl_sys5 = (uint8_t)((ctl_sys5 & ~0x30) | (MPQ4242_CC_BLANK_16MS << 4));
+    if (!reg_write(REG_CTL_SYS5, ctl_sys5)) return false;
+
+    // PWR_CTL1: frequency spread spectrum (DITHER, bit 3); OTP ships it off
+    if (!reg_set_bit(REG_PWR_CTL1, 3, true)) return false;
 
     return mpq4242_set_max_current_ma(max_ma);
 }

@@ -86,7 +86,7 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
     } else if (!ina226_probe() || !ina226_configure() ||
-               !ina226_set_alert_ma((g_settings.port_limit_ma[i] * 110) / 100)) {
+               !ina226_set_alert_ma((g_settings.port_limit_ma[i] * 125) / 100)) {
         fail = PROBE_FAIL_INA226;
     } else if (!mpq4242_probe() ||
                !mpq4242_configure(g_settings.port_limit_ma[i])) {

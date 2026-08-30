@@ -23,6 +23,14 @@
 #define MPQ4242_PEAK_CL_16A        2
 #define MPQ4242_PEAK_CL_20A        3
 
+// CC over-current blank time (CTL_SYS5). Datasheet Rev 1.0 lists conflicting
+// OTP defaults (2ms vs 16ms), so configure() programs it rather than trusting
+// the -0000 part; 16ms keeps the <=10ms PD peak-current overload tiers usable.
+#define MPQ4242_CC_BLANK_NONE      0
+#define MPQ4242_CC_BLANK_2MS       1
+#define MPQ4242_CC_BLANK_16MS      2
+#define MPQ4242_CC_BLANK_32MS      3
+
 typedef struct {
     bool     attached;      // STATUS1[7]
     uint8_t  selected_pdo;  // STATUS2[3:1], 0 = none
@@ -32,7 +40,7 @@ typedef struct {
 
 bool mpq4242_probe(void);                  // DEV_ID == 0x58
 bool mpq4242_unlock(void);                 // CLK_ON=1 enables register writes
-bool mpq4242_configure(uint32_t max_ma);   // GPIO fns, peak CL, PDO currents
+bool mpq4242_configure(uint32_t max_ma); // GPIOs, peak CL, CC blank, dither, PDOs
 bool mpq4242_read_status(mpq4242_status_t *s);
 
 bool mpq4242_set_max_current_ma(uint32_t ma); // all PDOs

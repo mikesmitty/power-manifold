@@ -16,8 +16,8 @@
 
 #define MFG_ID_TI       0x5449
 
-// CONFIG: AVG=4 (0b010), VBUSCT=588us (0b011), VSHCT=588us (0b011),
-// MODE=shunt+bus continuous (0b111) -> ~4.7ms per averaged result set
+// CONFIG: AVG=16 (0b010), VBUSCT=588us (0b011), VSHCT=588us (0b011),
+// MODE=shunt+bus continuous (0b111) -> ~18.8ms per averaged result set
 #define CONFIG_VALUE ((1u << 14) | (0b010u << 9) | (0b011u << 6) | (0b011u << 3) | 0b111u)
 
 #define CAL_VALUE       2048    // 0.00512 / (0.25mA * 0.010R)

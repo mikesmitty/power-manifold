@@ -16,7 +16,7 @@ static void test_probe_to_idle(void) {
     MT_ASSERT(sim_en(0));
     MT_ASSERT_EQ(budget_port_reservation(0), BUDGET_BASE_RESERVE_MW);
     MT_ASSERT_EQ(sim_advertised_ma(0), 5000);
-    MT_ASSERT_EQ(sim_ina_alert_ma(0), 5500); // 110% of the 5A port limit
+    MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250); // 125% of the 5A port limit
     MT_ASSERT(evt_count(EVT_STATE_CHANGE, 0) >= 2); // absent->probe->idle
 }
 
