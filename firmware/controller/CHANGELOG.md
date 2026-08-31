@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.2.0...controller-firmware-v0.3.0) (2026-08-31)
+
+
+### Features
+
+* **controller:** automatic fan policy with hysteresis ([d256d2c](https://github.com/mikesmitty/power-manifold/commit/d256d2cdbdde2efd187038a6407d25cb29abe15f))
+* **controller:** HA buttons for hard reset/src-cap and port priority numbers ([5802dc6](https://github.com/mikesmitty/power-manifold/commit/5802dc6ffcb6bc40376f27674c1bb9b5c63717d3))
+* **controller:** Home Assistant update entity with HTTP pull OTA ([c8b5fd8](https://github.com/mikesmitty/power-manifold/commit/c8b5fd83c2afda4ee73d0474b96182fdc7301388))
+* **controller:** per-port and chassis energy sensors ([b102fb8](https://github.com/mikesmitty/power-manifold/commit/b102fb8f9eb3cb00b54d486c55c23f989a8bdcad))
+* **controller:** persistent fault log in the data partition ([a3c83df](https://github.com/mikesmitty/power-manifold/commit/a3c83df7a8bef5f2484fc82cace32c63f59a150c))
+* **controller:** recover throttled ports in partial steps ([bf6f2ed](https://github.com/mikesmitty/power-manifold/commit/bf6f2edbfe7e802796e2604e80eee0aa04909f7f))
+
 ## [0.2.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.1.0...controller-firmware-v0.2.0) (2026-08-31)
 
 
