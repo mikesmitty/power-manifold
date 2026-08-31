@@ -2766,6 +2766,19 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e31279a2-cc25-48e3-8491-f504e95b9b07")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "CP_*")
 		(path "/7894b7c8-f5d3-491c-93cb-7047c06001cc")
 		(sheetname "/")
