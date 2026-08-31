@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.8.0...backplane-v0.9.0) (2026-08-31)
+
+
+### Features
+
+* **backplane:** update pcb for higher power ([c10f2d2](https://github.com/mikesmitty/power-manifold/commit/c10f2d2f9e9ecd4d4e8aedecc9c5d84b7b704873))
+
 ## [0.8.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.7.7...backplane-v0.8.0) (2026-08-30)
 
 
