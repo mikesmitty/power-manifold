@@ -138,10 +138,14 @@ written last.
 shows `slot B (TRIAL, uncommitted)` — and commits itself only after 10 s of
 continuous health (engine heartbeat, network up if one is configured). Until
 then any reboot, watchdog bite, or the 10-minute deadline reverts to the
-previous image, so a broken OTA push heals itself. The same-version tie-break
-caveat above applies to OTA too: pushing a build that isn't newer than the
-running one trials and commits fine, but the next power cycle boots the other
-slot again.
+previous image, so a broken OTA push heals itself.
+
+Version ordering: pushing a **newer** build sticks by version comparison, and
+pushing a strictly **older** one sticks too — the bootrom records the
+deliberate downgrade and erases the newer slot's image when the trial commits,
+which is the rollback path. Only pushing the **same** version doesn't reliably
+survive a power cycle (ties break to slot A); that's the local-iteration case,
+so bump `FW_VERSION` or use `picotool load -f -p <0|1>` at the bench.
 
 ## First-time setup
 
