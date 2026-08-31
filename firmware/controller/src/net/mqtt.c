@@ -19,10 +19,11 @@
 #define BACKOFF_MS       (5 * 1000)
 #define TELEMETRY_MS     1000
 
-// discovery entity table: per-port sensors + switch, chassis sensors + fan
-// (the last chassis step retracts the pre-select fan switch config)
+// discovery entity table: per-port sensors + switch + buttons + priority
+// number, chassis sensors + fan (the last chassis step retracts the
+// pre-select fan switch config)
 #define PORT_SENSOR_N    5
-#define PORT_ENTITIES    (PORT_SENSOR_N + 1)
+#define PORT_ENTITIES    (PORT_SENSOR_N + 4)
 #define CHASSIS_ENTITIES 5
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
@@ -87,9 +88,19 @@ static void handle_command(const char *topic, const char *data) {
     bool on = strncmp(data, "ON", 2) == 0;
 
     unsigned port;
-    if (sscanf(sub, "/port/%u/set", &port) == 1 && port >= 1 && port <= NUM_PORTS) {
-        engine_cmd_t c = {.op = on ? CMD_PORT_ENABLE : CMD_PORT_DISABLE,
-                          .port = (uint8_t)(port - 1)};
+    if (sscanf(sub, "/port/%u/priority/set", &port) == 1 &&
+        strstr(sub, "/priority/set") != NULL && port >= 1 && port <= NUM_PORTS) {
+        int prio = atoi(data);
+        if (prio >= 0 && prio <= 255) {
+            g_settings.port_priority[port - 1] = (uint8_t)prio;
+            settings_save_later();
+        }
+    } else if (sscanf(sub, "/port/%u/set", &port) == 1 && port >= 1 &&
+               port <= NUM_PORTS) {
+        engine_cmd_t c = {.port = (uint8_t)(port - 1)};
+        if (!strcasecmp(data, "hard_reset")) c.op = CMD_PORT_HARD_RESET;
+        else if (!strcasecmp(data, "src_cap")) c.op = CMD_PORT_SRC_CAP;
+        else c.op = on ? CMD_PORT_ENABLE : CMD_PORT_DISABLE;
         ipc_cmd_push(&c);
     } else if (strcmp(sub, "/fan/set") == 0) {
         // fan mode select: "auto"/"on"/"off" (plus legacy switch ON/OFF)
@@ -136,6 +147,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         discovery_idx = 0;
         publish(will_topic, "online", 1, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/priority/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/fan/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
@@ -226,6 +239,34 @@ static void publish_port_sensor(unsigned port, const sensor_spec_t *s) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_port_button(unsigned port, const char *action,
+                                const char *label) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_%s", port, action);
+    discovery_config_topic("button", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Port %u %s\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"cmd_t\":\"~/port/%u/set\",\"pl_prs\":\"%s\","
+             "\"avail_t\":\"~/availability\",\"ent_cat\":\"config\",\"dev\":%s}",
+             base, port, label, uid, object, port, action, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
+static void publish_port_number(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_priority", port);
+    discovery_config_topic("number", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Port %u priority\","
+             "\"uniq_id\":\"pwrman_%s_%s\",\"cmd_t\":\"~/port/%u/priority/set\","
+             "\"stat_t\":\"~/port/%u/telemetry\","
+             "\"val_tpl\":\"{{ value_json.prio }}\","
+             "\"min\":0,\"max\":255,\"step\":1,\"mode\":\"box\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, port, uid, object, port, port, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_port_switch(unsigned port) {
     char object[32];
     snprintf(object, sizeof(object), "p%u_enable", port);
@@ -272,7 +313,10 @@ static void discovery_step(void) {
         unsigned port = (unsigned)(i / PORT_ENTITIES) + 1;
         int e = i % PORT_ENTITIES;
         if (e < PORT_SENSOR_N) publish_port_sensor(port, &PORT_SENSORS[e]);
-        else publish_port_switch(port);
+        else if (e == PORT_SENSOR_N) publish_port_switch(port);
+        else if (e == PORT_SENSOR_N + 1) publish_port_button(port, "hard_reset", "hard reset");
+        else if (e == PORT_SENSOR_N + 2) publish_port_button(port, "src_cap", "re-announce caps");
+        else publish_port_number(port);
         return;
     }
     switch (i - NUM_PORTS * PORT_ENTITIES) {
@@ -310,11 +354,12 @@ static void publish_telemetry(void) {
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
         snprintf(payload_buf, sizeof(payload_buf),
                  "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
-                 "\"pdo\":%u,\"contract_w\":%.1f,\"fault\":%u}",
+                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"fault\":%u}",
                  port_state_name((port_state_t)p->state), p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
-                 p->contract_mw / 1000.0, p->fault_bits);
+                 p->contract_mw / 1000.0, g_settings.port_priority[i],
+                 p->fault_bits);
         publish(topic_buf, payload_buf, 0, 0);
     }
 
