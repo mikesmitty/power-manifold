@@ -78,6 +78,7 @@ target_link_libraries(controller
 
 pico_enable_stdio_usb(controller 1)
 pico_enable_stdio_uart(controller 0)
+pico_enable_stdio_rtt(controller 1)
 
 # IMAGE_DEF version, used by the bootrom to pick between the A/B slots.
 # FW_VERSION x.y.z maps to major=x, minor=y*256+z so the ROM's 32-bit
