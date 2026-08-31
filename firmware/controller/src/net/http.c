@@ -238,7 +238,9 @@ static void update_post_start(conn_t *c, const char *body_start) {
     }
     if (update_conn && update_conn != c) {
         // update_begin only lets a new transfer through when the old one has
-        // gone stale, so its parked connection can be dropped outright
+        // gone stale, so its parked connection can be dropped outright — with
+        // the flag cleared first, or its teardown would abort OUR session
+        update_conn->updating = false;
         conn_close(update_conn);
     }
     update_conn = c;
