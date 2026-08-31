@@ -14,6 +14,7 @@
 #include "manifold.h"
 #include "net/mqtt.h"
 #include "net/net.h"
+#include "net/ota_pull.h"
 #include "settings.h"
 #include "update.h"
 
@@ -36,6 +37,7 @@ static void print_help(void) {
            "  fan on|off|auto [on_w off_w]  auto follows total power w/ hysteresis\n"
            "  led <0-255>                  status LED brightness\n"
            "  faults [clear]               persistent fault log\n"
+           "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS);
 }
@@ -184,6 +186,14 @@ static void run_line(char *l) {
         engine_cmd_t c = {.op = CMD_LED_BRIGHTNESS, .arg = g_settings.led_brightness};
         ipc_cmd_push(&c);
         printf("ok\n");
+    } else if (!strcmp(cmd, "update")) {
+        const char *url = strtok_r(NULL, " \t", &save);
+        if (!url) { printf("usage: update <http://host[:port]/controller.uf2>\n"); return; }
+        char e[96];
+        if (ota_pull_start(url, e, sizeof(e)))
+            printf("pulling; progress lands on this console\n");
+        else
+            printf("update: %s\n", e);
     } else if (!strcmp(cmd, "faults")) {
         const char *op = strtok_r(NULL, " \t", &save);
         if (op && !strcmp(op, "clear")) {

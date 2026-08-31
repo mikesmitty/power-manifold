@@ -1,6 +1,7 @@
 #include "mqtt.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -13,6 +14,7 @@
 #include "ipc.h"
 #include "manifold.h"
 #include "net.h"
+#include "ota_pull.h"
 #include "settings.h"
 
 #define KEEP_ALIVE_S     30
@@ -24,7 +26,7 @@
 // pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 4)
-#define CHASSIS_ENTITIES 5
+#define CHASSIS_ENTITIES 6
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -47,8 +49,11 @@ static char base[48];       // pwrman/<device_name>
 static char client_id[32];
 static char will_topic[64];
 static char in_topic[96];   // topic of the in-flight incoming publish
-static char in_data[32];
+static char in_data[192];   // sized for the update/latest JSON pointer
 static uint16_t in_len;
+
+static char latest_version[16]; // from the retained update/latest pointer
+static char latest_url[160];
 
 static char topic_buf[160];
 static char payload_buf[768];
@@ -80,6 +85,28 @@ static void publish(const char *topic, const char *payload, uint8_t qos,
 }
 
 // ---- incoming commands -----------------------------------------------------
+
+// minimal {"key":"value"} extraction; enough for the update/latest pointer
+static void json_str(const char *json, const char *key, char *out, size_t cap) {
+    char pat[24];
+    snprintf(pat, sizeof(pat), "\"%s\":\"", key);
+    out[0] = '\0';
+    const char *s = strstr(json, pat);
+    if (!s) return;
+    s += strlen(pat);
+    const char *e = strchr(s, '"');
+    if (!e || (size_t)(e - s) >= cap) return;
+    memcpy(out, s, (size_t)(e - s));
+    out[e - s] = '\0';
+}
+
+static void publish_update_state(void) {
+    snprintf(topic_buf, sizeof(topic_buf), "%s/update/state", base);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"installed_version\":\"%s\",\"latest_version\":\"%s\"}",
+             FW_VERSION, latest_version[0] ? latest_version : FW_VERSION);
+    publish(topic_buf, payload_buf, 1, 1);
+}
 
 static void handle_command(const char *topic, const char *data) {
     size_t blen = strlen(base);
@@ -114,6 +141,21 @@ static void handle_command(const char *topic, const char *data) {
             ipc_cmd_push(&c);
         }
         settings_save_later();
+    } else if (strcmp(sub, "/update/latest") == 0) {
+        // retained release pointer, published by CI or by hand:
+        //   {"version":"x.y.z","url":"http://lan-host/controller.uf2"}
+        json_str(data, "version", latest_version, sizeof(latest_version));
+        json_str(data, "url", latest_url, sizeof(latest_url));
+        publish_update_state();
+    } else if (strcmp(sub, "/update/set") == 0) {
+        if (strcasecmp(data, "install") != 0) return;
+        if (!latest_url[0]) {
+            printf("update: install requested but no update/latest url is set\n");
+            return;
+        }
+        char e[96];
+        if (!ota_pull_start(latest_url, e, sizeof(e)))
+            printf("update: %s\n", e);
     }
 }
 
@@ -152,6 +194,11 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/fan/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/update/latest", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/update/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        publish_update_state();
         printf("mqtt: connected to %s\n", g_settings.mqtt_host);
     } else {
         state = ST_BACKOFF;
@@ -294,6 +341,17 @@ static void publish_chassis_sensor(const char *object, const char *name,
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_update_entity(void) {
+    discovery_config_topic("update", "fw");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Firmware\",\"uniq_id\":\"pwrman_%s_fw\","
+             "\"stat_t\":\"~/update/state\",\"cmd_t\":\"~/update/set\","
+             "\"pl_inst\":\"install\",\"dev_cla\":\"firmware\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_fan_select(void) {
     discovery_config_topic("select", "fan_mode");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -334,6 +392,9 @@ static void discovery_step(void) {
         break;
     case 3:
         publish_fan_select();
+        break;
+    case 4:
+        publish_update_entity();
         break;
     default:
         // retire the fan switch this select replaced from older firmware

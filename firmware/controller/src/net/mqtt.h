@@ -17,6 +17,9 @@
 //   base/port/N/priority/set   command: 0-255 (0 = highest)
 //   base/fan/set               command: auto/on/off (legacy ON/OFF accepted)
 //   base/event                 fault/contract/state events, QoS 1
+//   base/update/latest         in, retained: {"version":"x.y.z","url":"http://..."}
+//   base/update/state          out, retained: installed/latest for HA's update entity
+//   base/update/set            command: "install" -> pull the latest url (OTA)
 
 void mqtt_poll(uint32_t now_ms);
 bool mqtt_is_connected(void);

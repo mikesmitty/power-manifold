@@ -41,6 +41,7 @@ add_executable(controller
     src/net/net.c
     src/net/mqtt.c
     src/net/http.c
+    src/net/ota_pull.c
     ${DRIVER_SOURCES}
 )
 
@@ -75,6 +76,7 @@ target_link_libraries(controller
     pico_lwip_mqtt
     pico_lwip_mdns
     pico_lwip_sntp
+    pico_lwip_http # http_client for OTA pull (httpd side goes unused)
 )
 
 pico_enable_stdio_usb(controller 1)
