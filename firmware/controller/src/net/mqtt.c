@@ -390,16 +390,16 @@ static const char *evt_name(evt_type_t t) {
     }
 }
 
-static void publish_events(void) {
-    engine_evt_t e;
-    while (ipc_evt_pop(&e)) {
-        snprintf(topic_buf, sizeof(topic_buf), "%s/event", base);
-        snprintf(payload_buf, sizeof(payload_buf),
-                 "{\"port\":%u,\"event\":\"%s\",\"code\":%u,\"arg\":%lu,\"ts\":%lu}",
-                 e.port + 1, evt_name((evt_type_t)e.type), e.code,
-                 (unsigned long)e.arg, (unsigned long)net_epoch());
-        publish(topic_buf, payload_buf, 1, 0);
-    }
+void mqtt_event(const engine_evt_t *e) {
+    if (!mqtt_is_connected()) return; // transient events aren't queued
+    cyw43_arch_lwip_begin();
+    snprintf(topic_buf, sizeof(topic_buf), "%s/event", base);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"port\":%u,\"event\":\"%s\",\"code\":%u,\"arg\":%lu,\"ts\":%lu}",
+             e->port + 1, evt_name((evt_type_t)e->type), e->code,
+             (unsigned long)e->arg, (unsigned long)net_epoch());
+    publish(topic_buf, payload_buf, 1, 0);
+    cyw43_arch_lwip_end();
 }
 
 // ---- driver ----------------------------------------------------------------
@@ -433,7 +433,6 @@ void mqtt_poll(uint32_t now_ms) {
             break;
         }
         discovery_step();
-        publish_events();
         if (now_ms - last_telemetry_ms >= TELEMETRY_MS) {
             last_telemetry_ms = now_ms;
             publish_telemetry();

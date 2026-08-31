@@ -30,6 +30,7 @@ add_executable(controller
     src/ipc.c
     src/flash_map.c
     src/settings.c
+    src/fault_log.c
     src/update.c
     src/update_image.c
     src/cli.c

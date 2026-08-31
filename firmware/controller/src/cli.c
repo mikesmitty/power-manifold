@@ -8,6 +8,7 @@
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
 
+#include "fault_log.h"
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
@@ -34,6 +35,7 @@ static void print_help(void) {
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  fan on|off|auto [on_w off_w]  auto follows total power w/ hysteresis\n"
            "  led <0-255>                  status LED brightness\n"
+           "  faults [clear]               persistent fault log\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS);
 }
@@ -182,6 +184,37 @@ static void run_line(char *l) {
         engine_cmd_t c = {.op = CMD_LED_BRIGHTNESS, .arg = g_settings.led_brightness};
         ipc_cmd_push(&c);
         printf("ok\n");
+    } else if (!strcmp(cmd, "faults")) {
+        const char *op = strtok_r(NULL, " \t", &save);
+        if (op && !strcmp(op, "clear")) {
+            printf(fault_log_clear() ? "fault log cleared\n"
+                                     : "fault log clear failed\n");
+            return;
+        }
+        if (!fault_log_available()) {
+            printf("fault log needs the data partition (partition table not flashed?)\n");
+            return;
+        }
+        int n = fault_log_count();
+        printf("%d fault record(s)%s\n", n, n > 20 ? ", newest 20:" : "");
+        for (int i = 0; i < n && i < 20; i++) {
+            fault_rec_t r;
+            if (!fault_log_get(i, &r)) break;
+            const char *type = r.type == EVT_FAULT ? "fault" : "probe_fail";
+            char when[24];
+            if (r.epoch)
+                snprintf(when, sizeof(when), "epoch %lu", (unsigned long)r.epoch);
+            else
+                snprintf(when, sizeof(when), "up %lus", (unsigned long)r.uptime_s);
+            if (r.port == 0xFF)
+                printf("#%-4lu %-10s chassis   code %-3u              (%s)\n",
+                       (unsigned long)r.seq, type, r.code, when);
+            else
+                printf("#%-4lu %-10s port %u    code 0x%02x arg %-3lu %lu/%lumW (%s)\n",
+                       (unsigned long)r.seq, type, r.port + 1, r.code,
+                       (unsigned long)r.arg, (unsigned long)r.power_mw,
+                       (unsigned long)r.contract_mw, when);
+        }
     } else if (!strcmp(cmd, "save")) {
         printf(settings_save() ? "saved\n" : "save FAILED\n");
     } else if (!strcmp(cmd, "defaults")) {

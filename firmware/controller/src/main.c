@@ -6,6 +6,7 @@
 
 #include "cli.h"
 #include "engine/engine.h"
+#include "fault_log.h"
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
@@ -28,6 +29,7 @@ int main(void) {
     stdio_init_all();
     flash_map_init();
     settings_load();
+    fault_log_init();
     ipc_init();
 
     // Core 1: charger management engine (sole owner of I2C/expander/LEDs).
@@ -55,6 +57,13 @@ int main(void) {
         cli_poll();
         net_poll(now_ms);
         mqtt_poll(now_ms);
+
+        // engine events: log faults durably first, then publish (best-effort)
+        engine_evt_t evt;
+        while (ipc_evt_pop(&evt)) {
+            fault_log_event(&evt);
+            mqtt_event(&evt);
+        }
 
         if (update_reboot_due()) {
             // scheduled by the OTA endpoint once its 200 response is queued
