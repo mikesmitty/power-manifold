@@ -134,6 +134,13 @@ reboots into it as a trial. A half-finished or failed upload leaves nothing
 bootable behind — the slot's first sector is erased before the transfer and
 written last.
 
+The same pipeline also *pulls*: `update <http-url>` on the CLI fetches an
+image over plain HTTP (serve it from any LAN box, `python3 -m http.server`
+included), and Home Assistant gets an update entity — publish a retained
+release pointer to `pwrman/<name>/update/latest` as
+`{"version":"x.y.z","url":"http://.../controller.uf2"}` and HA shows the
+update and installs it with one click.
+
 **Try-before-you-buy**: a TBYB-flagged image boots as a *trial* — `info`
 shows `slot B (TRIAL, uncommitted)` — and commits itself only after 10 s of
 continuous health (engine heartbeat, network up if one is configured). Until
@@ -159,25 +166,35 @@ save
 reboot
 ```
 
-`help` lists everything else (port control, budget, fan, LED brightness,
-`bootsel` for firmware updates).
+`help` lists everything else (port control and priorities, budget, fan
+policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
 
 ## Management surfaces
 
 - **Web UI / API**: `http://<name>.local/` status page;
   `GET /api/v1/status`; `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
-  `POST /api/v1/fan` with `{"on":true}`, and `POST /api/v1/update` with a
-  firmware image as the body (Bearer token if `token` is set).
-- **MQTT**: telemetry under `pwrman/<name>/...` at 1 Hz, commands on
-  `.../port/<n>/set` and `.../fan/set`, faults/contract changes on
-  `.../event`, availability via LWT. Home Assistant discovers every port's
-  sensors and switches automatically when a broker is configured.
+  `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`, and
+  `POST /api/v1/update` with a firmware image as the body (Bearer token if
+  `token` is set).
+- **MQTT / Home Assistant**: telemetry under `pwrman/<name>/...` at 1 Hz,
+  availability via LWT, faults/contract changes on `.../event`. Discovery
+  publishes, per port: power/voltage/current/state sensors, a since-boot
+  energy sensor (`total_increasing`, energy-dashboard ready), an enable
+  switch, hard-reset and re-announce-caps buttons, and a priority number —
+  plus chassis power/headroom/energy sensors, a fan select (auto/on/off),
+  and a firmware update entity fed from the retained
+  `.../update/latest` pointer. Remote settings changes (fan mode, priority)
+  persist automatically a few seconds after the last change.
+- **Fan**: `auto` follows total chassis power with hysteresis
+  (`fan auto [on_w off_w]`, defaults 80/60 W, 30 s anti-flap hold);
+  `on`/`off` are manual overrides.
+- **Fault log**: faults and probe failures persist in the data partition
+  (~256 records, oldest dropped); `faults` lists them with power/contract
+  at the moment of the event and wall-clock time once SNTP has synced.
 
 ## Not yet implemented
 
-- Home Assistant `update` entity (announce releases over MQTT and trigger the
-  existing `/api/v1/update` flow from HA)
 - W6100 wired Ethernet netif (hardware path reserved, see GPIO map)
 - BLE provisioning via RM2/BTstack (candidate for initial configuration)
 - Front-panel display (planned as another consumer of the telemetry snapshot)
