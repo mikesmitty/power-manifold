@@ -13,6 +13,12 @@
 #define FAULT_COOLDOWN_MS 5000
 #define PROBE_MAX_ATTEMPTS 3
 
+// Partial unthrottle: a throttled port takes freed budget in steps of at
+// least this much (avoids renegotiation churn over crumbs), no more than one
+// step per holdoff period.
+#define UNTHROTTLE_STEP_MIN_MW     5000
+#define UNTHROTTLE_STEP_HOLDOFF_MS 1000
+
 // EVT_PROBE_FAIL codes
 #define PROBE_FAIL_MUX     1
 #define PROBE_FAIL_INA226  2
@@ -25,6 +31,7 @@ typedef struct {
     uint8_t  probe_attempts;
     uint8_t  fault_bits;     // latched for diagnostics until next probe
     uint32_t cooldown_until_ms;
+    uint32_t step_after_ms;  // next partial unthrottle step allowed at
     uint32_t contract_mw;
     uint32_t denied_mw;      // contract that budget refused; unthrottle target
     uint32_t granted_ma;     // current ceiling currently programmed
@@ -77,6 +84,8 @@ static void fault(uint8_t i, uint32_t now_ms, uint8_t fault_bits, uint32_t detai
 static void start_probe(uint8_t i) {
     ctx[i].probe_attempts = 0;
     ctx[i].fault_bits = 0;
+    ctx[i].denied_mw = 0; // stale asks must not inflate a new throttle epoch
+    ctx[i].step_after_ms = 0;
     enter(i, PORT_STATE_PROBE);
 }
 
@@ -113,9 +122,11 @@ static uint8_t prio(uint8_t i) {
 }
 
 // Program port i's advertised current ceiling so its contract fits grant_mw,
-// take the reservation, and keep want_mw as the recovery target. The caller
-// must have port i's mux channel selected.
-static void apply_throttle(uint8_t i, uint32_t grant_mw, uint32_t want_mw) {
+// take the reservation, and keep want_mw as the recovery target. evt_code
+// distinguishes a clamp from a partial step back up. The caller must have
+// port i's mux channel selected.
+static void apply_throttle(uint8_t i, uint32_t grant_mw, uint32_t want_mw,
+                           uint16_t evt_code) {
     uint32_t mv = ctx[i].ina.bus_mv ? ctx[i].ina.bus_mv : 5000;
     uint32_t ma = (grant_mw * 1000) / mv;
     if (ma < 500) ma = 500;
@@ -126,7 +137,7 @@ static void apply_throttle(uint8_t i, uint32_t grant_mw, uint32_t want_mw) {
     budget_force_reserve(i, grant_mw);
     ctx[i].contract_mw = grant_mw;
     if (want_mw > ctx[i].denied_mw) ctx[i].denied_mw = want_mw;
-    emit(EVT_THROTTLE, i, THROTTLE_CLAMPED, grant_mw);
+    emit(EVT_THROTTLE, i, evt_code, grant_mw);
     enter(i, PORT_STATE_THROTTLED);
 }
 
@@ -136,7 +147,7 @@ static void throttle(uint8_t i, uint32_t want_mw) {
     uint32_t grant_mw = budget_headroom() + budget_port_reservation(i);
     if (grant_mw < BUDGET_BASE_RESERVE_MW) grant_mw = BUDGET_BASE_RESERVE_MW;
     if (grant_mw > want_mw) grant_mw = want_mw;
-    apply_throttle(i, grant_mw, want_mw);
+    apply_throttle(i, grant_mw, want_mw, THROTTLE_CLAMPED);
 }
 
 // Make room for claimant's want_mw by clamping strictly lower-priority powered
@@ -172,23 +183,21 @@ static void shed_lower_priority(uint8_t claimant, uint32_t want_mw) {
         if (reclaim > shortfall) reclaim = shortfall;
         if (!tca9548a_select((uint8_t)v)) continue; // unreachable: skip it
 
-        apply_throttle((uint8_t)v, res - reclaim, ctx[v].contract_mw);
+        apply_throttle((uint8_t)v, res - reclaim, ctx[v].contract_mw,
+                       THROTTLE_CLAMPED);
         shortfall -= reclaim;
     }
     tca9548a_select(claimant);
 }
 
-// A strictly higher-priority throttled port whose recovery fits the current
-// headroom goes first. If its need does not fit anyway, taking the headroom
-// now cannot starve it further, so recovery stays work-conserving.
+// Any strictly higher-priority throttled port that still wants more goes
+// first: since recovery can happen in partial steps, it can use whatever
+// headroom exists, so freed watts always flow top-down by priority.
 static bool recovery_should_yield(uint8_t i) {
-    uint32_t headroom = budget_headroom();
     for (uint8_t j = 0; j < NUM_PORTS; j++) {
         if (j == i || ctx[j].state != PORT_STATE_THROTTLED) continue;
         if (prio(j) >= prio(i)) continue;
-        uint32_t res = budget_port_reservation(j);
-        if (ctx[j].denied_mw > res && ctx[j].denied_mw - res <= headroom)
-            return true;
+        if (ctx[j].denied_mw > budget_port_reservation(j)) return true;
     }
     return false;
 }
@@ -287,17 +296,26 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         }
         track_contract(i);
         if (p->state == PORT_STATE_THROTTLED && p->denied_mw) {
-            // when other ports release enough budget to cover the contract
-            // that was refused, claim it, then restore the full advertisement
-            // and let the sink renegotiate upward. Higher-priority throttled
-            // ports get first pick of freed headroom.
+            // Freed budget flows back by priority. When everything the port
+            // was refused fits, claim it and restore the full advertisement;
+            // when only part of it does, step the clamp up by the available
+            // headroom (rate-limited) and let the sink renegotiate upward —
+            // recovery no longer waits for the full ask to fit at once.
             uint32_t res = budget_port_reservation(i);
-            if (p->denied_mw > res && budget_headroom() >= p->denied_mw - res &&
-                !recovery_should_yield(i)) {
-                budget_force_reserve(i, p->denied_mw);
-                p->contract_mw = p->denied_mw;
-                p->denied_mw = 0;
-                unthrottle(i);
+            uint32_t need = p->denied_mw > res ? p->denied_mw - res : 0;
+            uint32_t headroom = budget_headroom();
+            if (need && !recovery_should_yield(i)) {
+                if (headroom >= need) {
+                    budget_force_reserve(i, p->denied_mw);
+                    p->contract_mw = p->denied_mw;
+                    p->denied_mw = 0;
+                    unthrottle(i);
+                } else if (headroom >= UNTHROTTLE_STEP_MIN_MW &&
+                           (int32_t)(now_ms - p->step_after_ms) >= 0) {
+                    apply_throttle(i, res + headroom, p->denied_mw,
+                                   THROTTLE_STEP);
+                    p->step_after_ms = now_ms + UNTHROTTLE_STEP_HOLDOFF_MS;
+                }
             }
         }
         break;

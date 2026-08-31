@@ -109,7 +109,81 @@ static void test_recovery_yields_to_higher_priority(void) {
     tick(3);
     MT_ASSERT_EQ(port_state(5), PORT_STATE_ACTIVE);
     MT_ASSERT_EQ(budget_port_reservation(5), 60000);
-    MT_ASSERT_EQ(port_state(4), PORT_STATE_THROTTLED); // still waiting
+    // the priority-9 port goes second, and only the remaining 25W is left:
+    // it takes that as a partial step-up rather than waiting at the floor
+    MT_ASSERT_EQ(port_state(4), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(budget_port_reservation(4), 40000);
+    const engine_evt_t *s = evt_last(EVT_THROTTLE, 4);
+    MT_ASSERT(s != NULL);
+    MT_ASSERT_EQ(s->code, THROTTLE_STEP);
+}
+
+static void test_partial_step_up_then_full_restore(void) {
+    support_reset(100000);
+    g_settings.port_priority[1] = 0; // peer of port 1: no victim available
+    seat_and_attach(1, 20000, 3000); // 60W
+    seat_and_attach(0, 20000, 3000); // wants 60W, clamps itself to 40W
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(budget_port_reservation(0), 40000);
+
+    // rival renegotiates down 60W -> 50W: 10W frees, not the 20W needed.
+    // The throttled port steps up by what's there instead of waiting.
+    sim_attach(1, 20000, 2500);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(budget_port_reservation(0), 50000);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 2500); // 50W at 20V
+    const engine_evt_t *s = evt_last(EVT_THROTTLE, 0);
+    MT_ASSERT(s != NULL);
+    MT_ASSERT_EQ(s->code, THROTTLE_STEP);
+    MT_ASSERT_EQ(s->arg, 50000);
+
+    // rival detaches: the rest fits now, so the full advertisement returns
+    sim_detach(1);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 5000);
+    const engine_evt_t *r = evt_last(EVT_THROTTLE, 0);
+    MT_ASSERT_EQ(r->code, THROTTLE_RESTORED);
+}
+
+static void test_step_up_ignores_crumbs(void) {
+    support_reset(100000);
+    g_settings.port_priority[1] = 0;
+    seat_and_attach(1, 20000, 3000); // 60W
+    seat_and_attach(0, 20000, 3000); // clamped to 40W
+    MT_ASSERT_EQ(budget_port_reservation(0), 40000);
+    evt_clear();
+
+    // rival renegotiates 60W -> 56W: 4W of headroom is below the 5W step
+    // minimum, so no renegotiation churn is triggered for it
+    sim_attach(1, 20000, 2800);
+    tick(5);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(budget_port_reservation(0), 40000);
+    MT_ASSERT_EQ(evt_count(EVT_THROTTLE, 0), 0);
+}
+
+static void test_step_up_respects_priority(void) {
+    support_reset(150000);
+    g_settings.port_priority[3] = 0;
+    g_settings.port_priority[4] = 9; // ticks first, worst priority
+    g_settings.port_priority[5] = 2;
+    seat_and_attach(5, 20000, 3000); // 60W
+    seat_and_attach(4, 20000, 3000); // 60W
+    seat_and_attach(3, 20000, 5000); // 100W: sheds 4 to the floor, then 5
+    MT_ASSERT_EQ(budget_port_reservation(4), BUDGET_BASE_RESERVE_MW);
+    MT_ASSERT_EQ(budget_port_reservation(5), 35000);
+
+    // 20W frees: not enough for the priority-2 port's full recovery (25W),
+    // so it partial-steps — and the priority-9 port must not touch any of it
+    // while its better still wants more
+    sim_attach(3, 20000, 4000); // 100W -> 80W
+    tick(3);
+    MT_ASSERT_EQ(port_state(5), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(budget_port_reservation(5), 55000);
+    MT_ASSERT_EQ(port_state(4), PORT_STATE_THROTTLED);
     MT_ASSERT_EQ(budget_port_reservation(4), BUDGET_BASE_RESERVE_MW);
 }
 
@@ -140,4 +214,8 @@ void run_priority_tests(void) {
            test_recovery_yields_to_higher_priority);
     mt_run("prio: detach while throttled clears denial",
            test_detach_while_throttled_clears_denial);
+    mt_run("prio: partial step-up, then full restore",
+           test_partial_step_up_then_full_restore);
+    mt_run("prio: step-up ignores sub-quantum crumbs", test_step_up_ignores_crumbs);
+    mt_run("prio: step-up respects priority", test_step_up_respects_priority);
 }

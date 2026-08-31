@@ -84,6 +84,7 @@ typedef enum {
 // EVT_THROTTLE codes
 #define THROTTLE_CLAMPED  0 // advertisement reduced to fit the budget
 #define THROTTLE_RESTORED 1 // full advertisement restored after recovery
+#define THROTTLE_STEP     2 // partial step-up toward the pre-throttle ask
 
 typedef struct {
     uint8_t  type; // evt_type_t
