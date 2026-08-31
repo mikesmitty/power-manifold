@@ -35,6 +35,12 @@ static bool present[NUM_PORTS];
 static bool fan_on;
 static uint8_t exp_fail_streak;
 
+// Delivered energy, integrated at the tick rate in mW·ms (µJ). uint64 is
+// centuries of headroom; the mWh views in telemetry wrap after ~4.9 years
+// of continuous 100W, which resets HA's total_increasing meters harmlessly.
+static uint64_t port_energy_uj[NUM_PORTS];
+static uint64_t total_energy_uj;
+
 #ifndef PWRMAN_FAKE_BLADES
 static void gpio_irq_handler(uint gpio, uint32_t events) {
     (void)events;
@@ -153,7 +159,13 @@ void engine_main(void) {
         for (uint8_t i = 0; i < NUM_PORTS; i++)
             port_fsm_tick(i, present[i], now_ms, &t.port[i]);
 
-        for (uint8_t i = 0; i < NUM_PORTS; i++) t.total_mw += t.port[i].power_mw;
+        for (uint8_t i = 0; i < NUM_PORTS; i++) {
+            t.total_mw += t.port[i].power_mw;
+            port_energy_uj[i] += (uint64_t)t.port[i].power_mw * TICK_MS;
+            t.port[i].energy_mwh = (uint32_t)(port_energy_uj[i] / 3600000u);
+        }
+        total_energy_uj += (uint64_t)t.total_mw * TICK_MS;
+        t.energy_mwh = (uint32_t)(total_energy_uj / 3600000u);
         t.reserved_mw = budget_reserved();
         t.budget_mw = budget_total();
         t.fan_on = fan_on;

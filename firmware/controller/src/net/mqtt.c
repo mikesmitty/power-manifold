@@ -18,9 +18,11 @@
 #define BACKOFF_MS       (5 * 1000)
 #define TELEMETRY_MS     1000
 
-// discovery entity table: 5 per port + chassis total/headroom + fan switch
-#define PORT_ENTITIES    5
-#define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + 3)
+// discovery entity table: per-port sensors + switch, chassis sensors + fan
+#define PORT_SENSOR_N    5
+#define PORT_ENTITIES    (PORT_SENSOR_N + 1)
+#define CHASSIS_ENTITIES 4
+#define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
     ST_IDLE,
@@ -174,14 +176,19 @@ typedef struct {
     const char *name;
     const char *dev_class; // NULL = none
     const char *unit;      // NULL = none
+    const char *extra;     // raw JSON fragment (state_class etc.), "" = none
     const char *template;
 } sensor_spec_t;
 
-static const sensor_spec_t PORT_SENSORS[] = {
-    {"power",   "power",   "power",   "W", "{{ value_json.p }}"},
-    {"voltage", "voltage", "voltage", "V", "{{ value_json.v }}"},
-    {"current", "current", "current", "A", "{{ value_json.i }}"},
-    {"state",   "state",   NULL,      NULL, "{{ value_json.state }}"},
+#define MEASUREMENT "\"stat_cla\":\"measurement\","
+#define TOTALINC    "\"stat_cla\":\"total_increasing\",\"sug_dsp_prc\":3,"
+
+static const sensor_spec_t PORT_SENSORS[PORT_SENSOR_N] = {
+    {"power",   "power",   "power",   "W",   MEASUREMENT, "{{ value_json.p }}"},
+    {"voltage", "voltage", "voltage", "V",   MEASUREMENT, "{{ value_json.v }}"},
+    {"current", "current", "current", "A",   MEASUREMENT, "{{ value_json.i }}"},
+    {"energy",  "energy",  "energy",  "kWh", TOTALINC,    "{{ value_json.e }}"},
+    {"state",   "state",   NULL,      NULL,  "",          "{{ value_json.state }}"},
 };
 
 static void discovery_config_topic(const char *component, const char *object) {
@@ -194,10 +201,10 @@ static void publish_port_sensor(unsigned port, const sensor_spec_t *s) {
     snprintf(object, sizeof(object), "p%u_%s", port, s->object);
     discovery_config_topic("sensor", object);
 
-    char extras[96] = "";
+    char extras[128] = "";
     if (s->dev_class)
-        snprintf(extras, sizeof(extras), "\"dev_cla\":\"%s\",\"unit_of_meas\":\"%s\",",
-                 s->dev_class, s->unit);
+        snprintf(extras, sizeof(extras), "\"dev_cla\":\"%s\",\"unit_of_meas\":\"%s\",%s",
+                 s->dev_class, s->unit, s->extra);
 
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"Port %u %s\",\"uniq_id\":\"pwrman_%s_%s\","
@@ -223,14 +230,15 @@ static void publish_port_switch(unsigned port) {
 }
 
 static void publish_chassis_sensor(const char *object, const char *name,
-                                   const char *tpl) {
+                                   const char *dev_cla, const char *unit,
+                                   const char *extra, const char *tpl) {
     discovery_config_topic("sensor", object);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\","
-             "\"dev_cla\":\"power\",\"unit_of_meas\":\"W\",\"val_tpl\":\"%s\","
+             "\"dev_cla\":\"%s\",\"unit_of_meas\":\"%s\",%s\"val_tpl\":\"%s\","
              "\"dev\":%s}",
-             base, name, uid, object, tpl, device_json);
+             base, name, uid, object, dev_cla, unit, extra, tpl, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
 
@@ -252,14 +260,26 @@ static void discovery_step(void) {
     if (i < NUM_PORTS * PORT_ENTITIES) {
         unsigned port = (unsigned)(i / PORT_ENTITIES) + 1;
         int e = i % PORT_ENTITIES;
-        if (e < 4) publish_port_sensor(port, &PORT_SENSORS[e]);
+        if (e < PORT_SENSOR_N) publish_port_sensor(port, &PORT_SENSORS[e]);
         else publish_port_switch(port);
-    } else if (i == NUM_PORTS * PORT_ENTITIES) {
-        publish_chassis_sensor("total_power", "Total power", "{{ value_json.total_w }}");
-    } else if (i == NUM_PORTS * PORT_ENTITIES + 1) {
-        publish_chassis_sensor("headroom", "Budget headroom", "{{ value_json.headroom_w }}");
-    } else {
+        return;
+    }
+    switch (i - NUM_PORTS * PORT_ENTITIES) {
+    case 0:
+        publish_chassis_sensor("total_power", "Total power", "power", "W",
+                               MEASUREMENT, "{{ value_json.total_w }}");
+        break;
+    case 1:
+        publish_chassis_sensor("headroom", "Budget headroom", "power", "W",
+                               MEASUREMENT, "{{ value_json.headroom_w }}");
+        break;
+    case 2:
+        publish_chassis_sensor("energy", "Total energy", "energy", "kWh",
+                               TOTALINC, "{{ value_json.energy_kwh }}");
+        break;
+    default:
         publish_fan_switch();
+        break;
     }
 }
 
@@ -273,10 +293,11 @@ static void publish_telemetry(void) {
         const port_telemetry_t *p = &t.port[i];
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
         snprintf(payload_buf, sizeof(payload_buf),
-                 "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,"
+                 "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
                  "\"pdo\":%u,\"contract_w\":%.1f,\"fault\":%u}",
                  port_state_name((port_state_t)p->state), p->bus_mv / 1000.0,
-                 p->current_ma / 1000.0, p->power_mw / 1000.0, p->selected_pdo,
+                 p->current_ma / 1000.0, p->power_mw / 1000.0,
+                 p->energy_mwh / 1e6, p->selected_pdo,
                  p->contract_mw / 1000.0, p->fault_bits);
         publish(topic_buf, payload_buf, 0, 0);
     }
@@ -285,10 +306,10 @@ static void publish_telemetry(void) {
     snprintf(topic_buf, sizeof(topic_buf), "%s/status", base);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
-             "\"headroom_w\":%.1f,\"fan\":\"%s\",\"alert\":%s,\"rssi\":%ld,"
-             "\"uptime_s\":%lu,\"fw\":\"%s\"}",
+             "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
+             "\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,\"fw\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
-             headroom / 1000.0, t.fan_on ? "ON" : "OFF",
+             headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.alert_active ? "true" : "false", (long)net_rssi(),
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
              FW_VERSION);

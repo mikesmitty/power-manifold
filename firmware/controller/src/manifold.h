@@ -42,6 +42,7 @@ typedef struct {
     int32_t  current_ma;    // INA226 current (signed)
     uint32_t power_mw;      // INA226 power
     uint32_t contract_mw;   // budget reservation held by this port
+    uint32_t energy_mwh;    // delivered since boot (not persisted)
 } port_telemetry_t;
 
 typedef struct {
@@ -49,6 +50,7 @@ typedef struct {
     uint32_t total_mw;      // sum of measured port power
     uint32_t reserved_mw;   // sum of budget reservations
     uint32_t budget_mw;     // chassis budget in force
+    uint32_t energy_mwh;    // chassis total delivered since boot
     bool     fan_on;
     bool     alert_active;  // GLOBAL_ALERT# currently asserted
 } telemetry_t;

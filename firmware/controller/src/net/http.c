@@ -48,7 +48,7 @@ static const char INDEX_HTML[] =
     ".s-disabled{color:#555}</style></head><body>"
     "<h1>Power Manifold</h1><div id='chassis'>loading&hellip;</div>"
     "<table><thead><tr><th>Port</th><th>State</th><th>V</th><th>A</th><th>W</th>"
-    "<th>Contract</th></tr></thead><tbody id='ports'></tbody></table>"
+    "<th>kWh</th><th>Contract</th></tr></thead><tbody id='ports'></tbody></table>"
     "<script>"
     "async function tick(){try{"
     "const r=await fetch('/api/v1/status');const d=await r.json();"
@@ -58,7 +58,7 @@ static const char INDEX_HTML[] =
     "document.getElementById('ports').innerHTML=d.ports.map((p,i)=>"
     "`<tr><td>${i+1}</td><td class='s-${p.state}'>${p.state}</td>"
     "<td>${p.v.toFixed(2)}</td><td>${p.i.toFixed(2)}</td><td>${p.p.toFixed(1)}</td>"
-    "<td>${p.contract_w.toFixed(0)}W</td></tr>`).join('');"
+    "<td>${p.e.toFixed(3)}</td><td>${p.contract_w.toFixed(0)}W</td></tr>`).join('');"
     "}catch(e){}}tick();setInterval(tick,1000);"
     "</script></body></html>";
 
@@ -118,22 +118,24 @@ static void build_status_json(char *out, size_t cap) {
         "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
         "\"uptime_s\":%lu,\"rssi\":%ld,"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
-        "\"headroom_w\":%.1f,\"fan\":\"%s\",\"alert\":%s,\"ports\":[",
+        "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\",\"alert\":%s,"
+        "\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
         (long)net_rssi(), t.total_mw / 1000.0, t.reserved_mw / 1000.0,
-        t.budget_mw / 1000.0, headroom / 1000.0, t.fan_on ? "on" : "off",
-        t.alert_active ? "true" : "false");
+        t.budget_mw / 1000.0, headroom / 1000.0, t.energy_mwh / 1e6,
+        t.fan_on ? "on" : "off", t.alert_active ? "true" : "false");
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"state\":\"%s\",\"attached\":%s,\"pdo\":%u,\"v\":%.3f,"
-            "\"i\":%.3f,\"p\":%.2f,\"contract_w\":%.1f,\"prio\":%u,\"fault\":%u}",
+            "\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
+            "\"fault\":%u}",
             i ? "," : "", port_state_name((port_state_t)p->state),
             p->attached ? "true" : "false", p->selected_pdo, p->bus_mv / 1000.0,
-            p->current_ma / 1000.0, p->power_mw / 1000.0,
+            p->current_ma / 1000.0, p->power_mw / 1000.0, p->energy_mwh / 1e6,
             p->contract_mw / 1000.0, g_settings.port_priority[i], p->fault_bits);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
