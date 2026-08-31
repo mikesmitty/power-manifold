@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define FW_VERSION      "0.1.0" // x-release-please-version
+#define FW_VERSION      "0.2.0" // x-release-please-version
 #define NUM_PORTS       6
 
 // Per-port supervisory state. Differs from the spec's table in one way: the
