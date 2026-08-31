@@ -8,6 +8,7 @@
 
 #include "lwip/tcp.h"
 
+#include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "net.h"
@@ -105,10 +106,12 @@ static void build_status_json(char *out, size_t cap) {
     uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
 
     size_t off = (size_t)snprintf(out, cap,
-        "{\"name\":\"%s\",\"fw\":\"%s\",\"uptime_s\":%lu,\"rssi\":%ld,"
+        "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
+        "\"uptime_s\":%lu,\"rssi\":%ld,"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"fan\":\"%s\",\"alert\":%s,\"ports\":[",
-        g_settings.device_name, FW_VERSION,
+        g_settings.device_name, FW_VERSION, flash_map_slot_name(),
+        flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
         (long)net_rssi(), t.total_mw / 1000.0, t.reserved_mw / 1000.0,
         t.budget_mw / 1000.0, headroom / 1000.0, t.fan_on ? "on" : "off",

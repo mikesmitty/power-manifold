@@ -6,6 +6,7 @@
 
 #include "cli.h"
 #include "engine/engine.h"
+#include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "net/http.h"
@@ -15,8 +16,16 @@
 
 #define WATCHDOG_TIMEOUT_MS 5000
 
+// Try-before-you-buy: a trial image commits itself only after this much
+// continuous health (engine heartbeat + network up when one is configured).
+// If it never gets there, reboot; the bootrom then falls back to the
+// previous image, since an uncommitted trial is skipped on a normal boot.
+#define UPDATE_HEALTH_MS   (10 * 1000)
+#define UPDATE_DEADLINE_MS (10 * 60 * 1000)
+
 int main(void) {
     stdio_init_all();
+    flash_map_init();
     settings_load();
     ipc_init();
 
@@ -28,12 +37,16 @@ int main(void) {
     net_init();
     http_init();
 
-    printf("power-manifold controller %s ('help' for console)\n> ", FW_VERSION);
+    printf("power-manifold controller %s (slot %s%s, 'help' for console)\n> ",
+           FW_VERSION, flash_map_slot_name(),
+           flash_map_update_pending() ? ", TRIAL" : "");
 
     // Arm the watchdog only once the engine has proven alive; afterwards it is
     // fed only while BOTH cores make progress (this loop running + engine
     // heartbeat fresh), so either core stalling reboots the system.
     bool wd_armed = false;
+    bool trial = flash_map_update_pending();
+    uint32_t healthy_since = 0;
 
     for (;;) {
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
@@ -48,6 +61,35 @@ int main(void) {
                 wd_armed = true;
             }
             watchdog_update();
+
+            if (settings_migration_pending()) {
+                printf(settings_migrate()
+                           ? "settings: migrated into the data partition\n"
+                           : "settings: migration save failed; still on legacy sectors\n");
+            }
+        }
+
+        if (trial) {
+            bool healthy = ipc_engine_alive() &&
+                           (!g_settings.wifi_ssid[0] || net_up());
+            if (!healthy) {
+                healthy_since = 0;
+            } else if (!healthy_since) {
+                healthy_since = now_ms ? now_ms : 1;
+            } else if (now_ms - healthy_since >= UPDATE_HEALTH_MS) {
+                if (flash_map_commit_update()) {
+                    printf("update: slot %s committed\n", flash_map_slot_name());
+                    trial = false;
+                } else {
+                    printf("update: commit failed, retrying\n");
+                    healthy_since = 0;
+                }
+            }
+            if (trial && now_ms >= UPDATE_DEADLINE_MS) {
+                printf("update: never became healthy; reverting to previous image\n");
+                sleep_ms(50);
+                watchdog_reboot(0, 0, 0);
+            }
         }
 
         sleep_ms(2);

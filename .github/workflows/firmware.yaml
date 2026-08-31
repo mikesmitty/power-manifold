@@ -92,3 +92,4 @@ jobs:
           path: |
             firmware/controller/build/controller.uf2
             firmware/controller/build/controller.elf
+            firmware/controller/build/partition_table.uf2

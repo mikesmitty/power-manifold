@@ -6,14 +6,21 @@
 #include "hardware/flash.h"
 #include "pico/flash.h"
 
-// Two dedicated sectors at the top of flash, clear of the program image and
-// of any future A/B OTA partition layout (revisit when the partition table
-// lands).
+#include "flash_map.h"
+
+// The pair lives in the first two sectors of the "data" partition; boards
+// without a partition table fall back to the legacy pre-partition location,
+// the last two sectors of flash (which, on a freshly partitioned board, is
+// where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_SECTOR(i)  (PICO_FLASH_SIZE_BYTES - ((i) + 1) * FLASH_SECTOR_SIZE)
 #define SETTINGS_VERSION    1
 
+#define LEGACY_BASE (PICO_FLASH_SIZE_BYTES - SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
+
 settings_t g_settings;
+
+static uint32_t home_base;       // storage offset of the active ping-pong pair
+static bool     migrate_pending; // valid legacy copy found while the new home is empty
 
 static uint32_t crc32_calc(const uint8_t *data, size_t len) {
     uint32_t crc = 0xFFFFFFFFu;
@@ -29,13 +36,36 @@ static uint32_t payload_len(void) {
     return offsetof(settings_t, crc);
 }
 
-static const settings_t *slot_ptr(int i) {
-    return (const settings_t *)(XIP_BASE + SETTINGS_SECTOR(i));
+static uint32_t sector_off(uint32_t base, int i) {
+    return base + (uint32_t)i * FLASH_SECTOR_SIZE;
+}
+
+// Reads go through the untranslated XIP alias: storage offsets stay valid no
+// matter which A/B slot the bootrom mapped at XIP_BASE.
+static const settings_t *slot_ptr(uint32_t base, int i) {
+    return (const settings_t *)flash_map_xip_ptr(sector_off(base, i));
 }
 
 static bool slot_valid(const settings_t *s) {
     if (s->magic != SETTINGS_MAGIC || s->version != SETTINGS_VERSION) return false;
     return crc32_calc((const uint8_t *)s, payload_len()) == s->crc;
+}
+
+static uint32_t resolve_home(void) {
+    uint32_t off, size;
+    if (flash_map_find(FLASH_MAP_ID_DATA, &off, &size) &&
+        size >= SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
+        return off;
+    return LEGACY_BASE;
+}
+
+static const settings_t *best_in(uint32_t base) {
+    const settings_t *best = NULL;
+    for (int i = 0; i < SETTINGS_SLOTS; i++) {
+        const settings_t *s = slot_ptr(base, i);
+        if (slot_valid(s) && (!best || s->seq > best->seq)) best = s;
+    }
+    return best;
 }
 
 void settings_defaults(void) {
@@ -54,10 +84,11 @@ void settings_defaults(void) {
 }
 
 void settings_load(void) {
-    const settings_t *best = NULL;
-    for (int i = 0; i < SETTINGS_SLOTS; i++) {
-        const settings_t *s = slot_ptr(i);
-        if (slot_valid(s) && (!best || s->seq > best->seq)) best = s;
+    home_base = resolve_home();
+    const settings_t *best = best_in(home_base);
+    if (!best && home_base != LEGACY_BASE) {
+        best = best_in(LEGACY_BASE);
+        migrate_pending = best != NULL;
     }
     if (best) {
         memcpy(&g_settings, best, sizeof(g_settings));
@@ -68,21 +99,30 @@ void settings_load(void) {
 
 typedef struct {
     uint32_t offset;
-    const uint8_t *data;
+    const uint8_t *data; // NULL: erase only
 } flash_op_t;
 
 static void do_flash_write(void *param) {
     const flash_op_t *op = (const flash_op_t *)param;
     flash_range_erase(op->offset, FLASH_SECTOR_SIZE);
-    flash_range_program(op->offset, op->data, FLASH_SECTOR_SIZE);
+    if (op->data) flash_range_program(op->offset, op->data, FLASH_SECTOR_SIZE);
+}
+
+static bool run_flash_op(uint32_t offset, const uint8_t *data) {
+    flash_op_t op = {.offset = offset, .data = data};
+    // flash_safe_execute parks core 1 (the engine calls
+    // flash_safe_execute_core_init at startup) while XIP is unavailable
+    return flash_safe_execute(do_flash_write, &op, 500) == PICO_OK;
 }
 
 bool settings_save(void) {
     static uint8_t buf[FLASH_SECTOR_SIZE]; // static: keep 4KB off the stack
 
+    if (!home_base) home_base = resolve_home();
+
     // write to the slot NOT holding the current best copy
     int target = 0;
-    const settings_t *s0 = slot_ptr(0), *s1 = slot_ptr(1);
+    const settings_t *s0 = slot_ptr(home_base, 0), *s1 = slot_ptr(home_base, 1);
     if (slot_valid(s0) && (!slot_valid(s1) || s0->seq > s1->seq)) target = 1;
 
     g_settings.seq++;
@@ -91,11 +131,23 @@ bool settings_save(void) {
     memset(buf, 0xFF, sizeof(buf));
     memcpy(buf, &g_settings, sizeof(g_settings));
 
-    flash_op_t op = {
-        .offset = SETTINGS_SECTOR(target),
-        .data = buf,
-    };
-    // flash_safe_execute parks core 1 (the engine calls
-    // flash_safe_execute_core_init at startup) while XIP is unavailable
-    return flash_safe_execute(do_flash_write, &op, 500) == PICO_OK;
+    return run_flash_op(sector_off(home_base, target), buf);
+}
+
+bool settings_migration_pending(void) {
+    return migrate_pending;
+}
+
+bool settings_migrate(void) {
+    if (!migrate_pending) return true;
+    migrate_pending = false; // one attempt per boot; a manual 'save' also lands
+                             // in the new home, so failure here loses nothing
+    if (!settings_save()) return false;
+    // Retire the legacy copies so old firmware or a stale sector can't
+    // resurrect superseded credentials.
+    for (int i = 0; i < SETTINGS_SLOTS; i++) {
+        if (best_in(LEGACY_BASE) == NULL) break;
+        run_flash_op(sector_off(LEGACY_BASE, i), NULL);
+    }
+    return true;
 }

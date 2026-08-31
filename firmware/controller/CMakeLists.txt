@@ -28,6 +28,7 @@ endif()
 add_executable(controller
     src/main.c
     src/ipc.c
+    src/flash_map.c
     src/settings.c
     src/cli.c
     src/engine/engine.c
@@ -75,4 +76,31 @@ target_link_libraries(controller
 pico_enable_stdio_usb(controller 1)
 pico_enable_stdio_uart(controller 0)
 
+# IMAGE_DEF version, used by the bootrom to pick between the A/B slots.
+# FW_VERSION x.y.z maps to major=x, minor=y*256+z so the ROM's 32-bit
+# (major<<16|minor) comparison stays ordered across releases.
+file(STRINGS ${CMAKE_CURRENT_LIST_DIR}/src/manifold.h _fw_version_line REGEX "#define FW_VERSION")
+if(NOT _fw_version_line MATCHES "\"([0-9]+)\\.([0-9]+)\\.([0-9]+)\"")
+    message(FATAL_ERROR "cannot parse FW_VERSION out of src/manifold.h")
+endif()
+math(EXPR _fw_image_minor "${CMAKE_MATCH_2} * 256 + ${CMAKE_MATCH_3}")
+pico_set_binary_version(controller MAJOR ${CMAKE_MATCH_1} MINOR ${_fw_image_minor})
+
 pico_add_extra_outputs(controller)
+
+# Partition table image (A/B app slots + data partition; flashed once per
+# board, see README). The JSON is board-specific; firmware finds partitions
+# by ID at runtime, so the app binary itself is layout-agnostic.
+set(PARTITION_TABLE_JSON "${CMAKE_CURRENT_LIST_DIR}/partitions/pico2w-4mb.json"
+    CACHE FILEPATH "Partition layout compiled into partition_table.uf2")
+pico_init_picotool()
+if(picotool_FOUND)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/partition_table.uf2
+        COMMAND picotool partition create --quiet
+                ${PARTITION_TABLE_JSON} ${CMAKE_CURRENT_BINARY_DIR}/partition_table.uf2
+        DEPENDS ${PARTITION_TABLE_JSON}
+        VERBATIM)
+    add_custom_target(partition_table ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/partition_table.uf2)
+endif()

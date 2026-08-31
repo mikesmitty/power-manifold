@@ -86,6 +86,47 @@ ctest --test-dir test/build --output-on-failure
 
 CI runs these on every push/PR touching the firmware.
 
+## Flash layout & updates
+
+The flash is carved up by an RP2350 partition table — two A/B image slots the
+bootrom picks between, plus a `data` partition holding persistent settings
+(and, later, the fault log). Layouts live in `partitions/*.json`, one per
+board; the build compiles the selected one (`PARTITION_TABLE_JSON`, default
+`pico2w-4mb.json`) into `build/partition_table.uf2`:
+
+| Offset | Size | Partition |
+| --- | --- | --- |
+| `0x000000` | 4K | partition table |
+| `0x002000` | 1536K | `A` — image slot |
+| `0x182000` | 1536K | `B` — image slot |
+| `0x302000` | 1016K | `data` — settings ping-pong pair in the first two sectors |
+
+The firmware never hardcodes these offsets: it looks partitions up **by ID**
+through the bootrom at boot, so the same binary runs on any layout (the
+16 MB production map in `prod-16mb.json` just makes everything bigger and
+adds an `assets` partition). Boards with no partition table at all still
+work — settings fall back to the legacy top-of-flash sectors and `info`
+reports `slot raw`.
+
+**One-time install** (per board): enter BOOTSEL and drag
+`partition_table.uf2`, then `controller.uf2`. The bootrom routes the app UF2
+into an image slot by itself. Settings saved by older raw-layout firmware are
+found and migrated into the data partition on first boot.
+
+**Updates**: dragging a newer `controller.uf2` in BOOTSEL lands in the
+*inactive* slot, and the bootrom boots whichever slot holds the higher
+image version (wired to `FW_VERSION`, so releases order themselves). Caveat
+for local iteration: two builds with the *same* version tie-break to slot A —
+either bump `FW_VERSION` locally or target a slot explicitly with
+`picotool load -f -p <0|1> build/controller.uf2`.
+
+**Try-before-you-buy**: an image written with the TBYB flag (the OTA path)
+boots as a *trial* — `info` shows `slot B (TRIAL, uncommitted)` — and commits
+itself only after 10 s of continuous health (engine heartbeat, network up if
+one is configured). Until then any reboot, watchdog bite, or the 10-minute
+deadline reverts to the previous image. Nothing sets the flag yet; the OTA
+transport that will is the remaining piece.
+
 ## First-time setup
 
 Connect to the USB console (any serial terminal, 115200) and provision:
@@ -114,7 +155,8 @@ reboot
 
 ## Not yet implemented
 
-- OTA via the RP2350 bootrom A/B partitions (try-before-you-buy); BOOTSEL for now
+- OTA transport (HTTP image pull into the inactive slot, TBYB-flagged); the
+  A/B layout, slot awareness and commit flow above are already in place
 - W6100 wired Ethernet netif (hardware path reserved, see GPIO map)
 - BLE provisioning via RM2/BTstack (candidate for initial configuration)
 - Front-panel display (planned as another consumer of the telemetry snapshot)

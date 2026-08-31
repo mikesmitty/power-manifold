@@ -45,4 +45,5 @@ jobs:
           TAG: ${{ needs.release-please.outputs.controller-tag }}
         run: |
           gh release upload "$TAG" dist/controller.uf2 dist/controller.elf \
+            dist/partition_table.uf2 \
             --repo "$GITHUB_REPOSITORY" --clobber

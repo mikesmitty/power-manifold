@@ -8,6 +8,7 @@
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
 
+#include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "net/mqtt.h"
@@ -56,6 +57,8 @@ static void print_status(void) {
 
 static void print_info(void) {
     printf("power-manifold controller %s\n", FW_VERSION);
+    printf("boot: slot %s%s\n", flash_map_slot_name(),
+           flash_map_update_pending() ? " (TRIAL, uncommitted)" : "");
     printf("device name: %s\n", g_settings.device_name);
     printf("wifi: %s (%s)\n",
            g_settings.wifi_ssid[0] ? g_settings.wifi_ssid : "(unset)",

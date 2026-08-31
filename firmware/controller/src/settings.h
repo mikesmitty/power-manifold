@@ -5,9 +5,11 @@
 
 #include "manifold.h"
 
-// Persistent configuration. Stored in the last two 4KB flash sectors as a
-// ping-pong pair: saves alternate sectors with an incrementing sequence
-// number, so a power failure mid-write leaves the previous copy intact.
+// Persistent configuration. Stored as a ping-pong pair of 4KB sectors: saves
+// alternate sectors with an incrementing sequence number, so a power failure
+// mid-write leaves the previous copy intact. The pair lives at the start of
+// the partition table's "data" partition (see flash_map.h), falling back to
+// the legacy last-two-sectors-of-flash location on unpartitioned boards.
 
 #define SETTINGS_MAGIC 0x504D4643u // "PMFC"
 
@@ -35,3 +37,9 @@ extern settings_t g_settings;
 void settings_load(void);     // falls back to defaults on empty/corrupt flash
 bool settings_save(void);     // core 0 only; engine pauses briefly via flash_safe_execute
 void settings_defaults(void);
+
+// One-shot re-home of settings found at the legacy location on a freshly
+// partitioned board. Needs flash writes, so call from core 0 once the engine
+// is running (flash_safe_execute refuses before core 1 can be parked).
+bool settings_migration_pending(void);
+bool settings_migrate(void);
