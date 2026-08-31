@@ -9,7 +9,7 @@
 		(at 0 -2 180)
 		(layer "F.SilkS")
 		(hide yes)
-		(uuid "1f2f985c-30cd-4946-a39e-9e729fe70be3")
+		(uuid "3132e4f0-6475-4ba8-bc2e-f8c08e704058")
 		(effects
 			(font
 				(size 1 1)
@@ -17,11 +17,11 @@
 			)
 		)
 	)
-	(property "Value" "WS2812C-2020"
+	(property "Value" "WS2812C-2020-V6"
 		(at 0 2.2 180)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "1675f632-e5a3-4c7e-9336-2d4f4b0f0434")
+		(uuid "4167d562-22a1-4877-bcea-b4eb5407ab57")
 		(effects
 			(font
 				(size 1 1)
@@ -29,12 +29,12 @@
 			)
 		)
 	)
-	(property "Datasheet" ""
+	(property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4684/4684_WS2812B-2020_V1.3_EN.pdf"
 		(at 0 0 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "3965e557-c05b-48fb-a76f-b81205e06af5")
+		(uuid "2ddc2b09-6b70-4973-b07d-e04d81d66ef6")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -42,15 +42,28 @@
 			)
 		)
 	)
-	(property "Description" ""
+	(property "Description" "RGB LED with integrated controller, 2.0 x 2.0 mm, 12 mA"
 		(at 0 0 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "56eb7b84-29af-4808-8ab3-b42fd8991ff4")
+		(uuid "1c9c4f77-15d0-4d1b-8782-19465629b5cf")
 		(effects
 			(font
 				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "LCSC" "C55109522"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "bda69761-2ade-4fe3-96b4-1e78abf542f2")
+		(effects
+			(font
+				(size 1 1)
 				(thickness 0.15)
 			)
 		)
@@ -68,7 +81,7 @@
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "a9750df6-7ce5-448d-b4fa-ef7cdce542c7")
+		(uuid "351a27de-ef6b-479f-b7bf-a82f02cddf5e")
 	)
 	(fp_line
 		(start -1.6 1.15)
@@ -78,7 +91,7 @@
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "f1070234-8b2f-4187-9c4d-227e938df3c2")
+		(uuid "de8bc315-f5be-47ef-b843-2aea56815c5c")
 	)
 	(fp_line
 		(start -1.3 -1.15)
@@ -88,7 +101,7 @@
 			(type default)
 		)
 		(layer "F.SilkS")
-		(uuid "97f6e62c-442e-4bd1-a5e6-934ee3de3b4c")
+		(uuid "cc4cca54-d5ba-4440-b09b-99813a589ceb")
 	)
 	(fp_line
 		(start -1.3 -1.15)
@@ -98,7 +111,7 @@
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "103367ca-1e84-420e-9ac3-9b29e4858d50")
+		(uuid "f68a82f0-34db-42d9-b6ed-25b36e0b941a")
 	)
 	(fp_line
 		(start 1.6 -1.15)
@@ -108,7 +121,7 @@
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "8ad9c8c5-5792-4b60-b42f-6fbff7b84a71")
+		(uuid "5715082e-b4f9-4f18-9bfa-71b9ebd9fd92")
 	)
 	(fp_line
 		(start -1.52 -1.25)
@@ -118,7 +131,7 @@
 			(type solid)
 		)
 		(layer "F.CrtYd")
-		(uuid "fdfe4d07-4f2e-4993-a866-483c3b65bbba")
+		(uuid "1629caa7-9269-4d1b-a750-094ba313dfe5")
 	)
 	(fp_line
 		(start -1.52 1.25)
@@ -128,7 +141,7 @@
 			(type solid)
 		)
 		(layer "F.CrtYd")
-		(uuid "6f0d1272-566f-45d6-a9b7-64db9941ab7b")
+		(uuid "18c64e3c-17f5-4398-ba01-2c698b29242a")
 	)
 	(fp_line
 		(start 1.52 -1.25)
@@ -138,7 +151,7 @@
 			(type solid)
 		)
 		(layer "F.CrtYd")
-		(uuid "2847b4e3-c78a-4360-8fcc-ed26dfee4986")
+		(uuid "d07d5ff9-6db0-4692-8e71-ee887054791a")
 	)
 	(fp_line
 		(start 1.52 1.25)
@@ -148,7 +161,7 @@
 			(type solid)
 		)
 		(layer "F.CrtYd")
-		(uuid "ecf2a81f-077e-44fa-abf8-949dbf8255c6")
+		(uuid "d3ae0c12-173c-49b0-a218-8a5654bffdac")
 	)
 	(fp_line
 		(start -1.1 -0.45)
@@ -158,7 +171,7 @@
 			(type solid)
 		)
 		(layer "F.Fab")
-		(uuid "ca068983-b271-48d0-88ea-695c431888c2")
+		(uuid "17440af1-aa67-4e15-9856-96a82daa2e60")
 	)
 	(fp_line
 		(start -1.1 1)
@@ -168,7 +181,7 @@
 			(type solid)
 		)
 		(layer "F.Fab")
-		(uuid "16dc13ea-0481-4398-aba2-83538e656166")
+		(uuid "b48d142f-15f3-4a55-9194-f92c8c1f02a8")
 	)
 	(fp_line
 		(start -0.55 -1)
@@ -178,7 +191,7 @@
 			(type solid)
 		)
 		(layer "F.Fab")
-		(uuid "4d48380d-74fd-4d97-84f5-529ce56d5d94")
+		(uuid "fcbad107-9e0a-409e-8de1-6d8a82abfbf1")
 	)
 	(fp_line
 		(start 1.1 -1)
@@ -188,7 +201,7 @@
 			(type solid)
 		)
 		(layer "F.Fab")
-		(uuid "522e47a4-3e33-4b1f-ac27-138b0e3ffe7c")
+		(uuid "fe9d1c8f-2f50-435c-b31d-fb0a2073ad2c")
 	)
 	(fp_line
 		(start 1.1 -1)
@@ -198,7 +211,7 @@
 			(type solid)
 		)
 		(layer "F.Fab")
-		(uuid "25cd7fec-72c0-43b4-a4c7-c2fe1c1b306f")
+		(uuid "6b990604-277e-4450-8d3a-329661f239b5")
 	)
 	(fp_rect
 		(start -0.5 -1)
@@ -209,7 +222,7 @@
 		)
 		(fill yes)
 		(layer "F.Fab")
-		(uuid "6fd06289-19a2-4952-84e7-a191c08ca148")
+		(uuid "8234cd01-cdef-4640-b415-589a008b311f")
 	)
 	(fp_rect
 		(start -0.5 0.4)
@@ -220,12 +233,12 @@
 		)
 		(fill yes)
 		(layer "F.Fab")
-		(uuid "97bbb37f-5442-459c-98b2-06d6491a0ee3")
+		(uuid "7ac40874-68dd-42e4-a87a-509fba2d1e0c")
 	)
 	(fp_text user "${REFERENCE}"
 		(at 0 0 180)
 		(layer "F.Fab")
-		(uuid "0c3e9dc5-f3d0-418e-95ab-4e356c4f0144")
+		(uuid "11ac769c-0eaa-4b09-8115-413599f224d8")
 		(effects
 			(font
 				(size 0.5 0.5)
@@ -237,25 +250,25 @@
 		(at -0.915 -0.55)
 		(size 0.7 0.7)
 		(layers "F.Cu" "F.Mask" "F.Paste")
-		(uuid "3b4c9c80-d95e-4874-9eca-ea03530cde7e")
+		(uuid "9e0e07b4-367b-4841-8025-0044803caf16")
 	)
 	(pad "2" smd rect
 		(at -0.915 0.55)
 		(size 0.7 0.7)
 		(layers "F.Cu" "F.Mask" "F.Paste")
-		(uuid "8048ba40-e5b2-4571-b187-3b61bb048889")
+		(uuid "ee821646-ab43-4a8b-a86f-6360e30c3152")
 	)
 	(pad "3" smd rect
 		(at 0.915 0.55)
 		(size 0.7 0.7)
 		(layers "F.Cu" "F.Mask" "F.Paste")
-		(uuid "593ae3db-3039-4832-ab59-de962a153157")
+		(uuid "2e666796-671b-4a40-a773-392f7056e15d")
 	)
 	(pad "4" smd rect
 		(at 0.915 -0.55)
 		(size 0.7 0.7)
 		(layers "F.Cu" "F.Mask" "F.Paste")
-		(uuid "e26aaf53-12f8-4d92-aa31-62a2a4771b01")
+		(uuid "f7b5e9e9-c5d5-4f1e-86fb-8cf865afd3dd")
 	)
 	(embedded_fonts no)
 	(embedded_files

@@ -9,7 +9,7 @@
 		(at 0 -1.16 0)
 		(layer "F.SilkS")
 		(hide yes)
-		(uuid "5ff27541-bb98-400e-a1d8-1b2a300e12b0")
+		(uuid "3c072b3a-bcdf-4f74-9739-bbc7ac2b980d")
 		(effects
 			(font
 				(size 1 1)
@@ -21,7 +21,7 @@
 		(at 0 1.16 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "85af6556-e18a-4144-b4c3-06f694c8074a")
+		(uuid "08044ea8-102b-49c1-83e3-ceae1f4d9199")
 		(effects
 			(font
 				(size 1 1)
@@ -33,18 +33,18 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "0d9fcc45-5c22-486e-832a-2fb861398aa7")
+		(uuid "6e72aaa5-508b-447b-85ce-571be7554bd6")
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 		)
 	)
-	(property "Description" ""
+	(property "Description" "Unpolarized capacitor"
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "f9d969ab-2360-4769-a405-8b353dbc367d")
+		(uuid "5a6af779-67da-422a-b5ba-47654bfe992e")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -55,7 +55,72 @@
 		(at 0 0 0)
 		(layer "F.SilkS")
 		(hide yes)
-		(uuid "863dc90e-e1f2-4e48-aa2f-1d2107a704c0")
+		(uuid "24e92a92-98e9-4c32-8452-5aad1f385120")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "LCSC" "C307331"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "39b272b5-fd1e-406d-9657-8542e9a63f30")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Manufacturer_Name" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "33bfc747-3d33-43b8-80f2-df24376a82af")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Manufacturer_Part_Number" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7c187ee7-4fab-4349-936a-61084b37abb2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Mouser Part Number" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a4f2268f-7a87-45a5-ba18-54787e35366a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Mouser Price/Stock" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "2c12caa7-982d-4f7e-824d-c4c2e7168005")
 		(effects
 			(font
 				(size 1 1)
@@ -69,24 +134,24 @@
 	(attr smd)
 	(duplicate_pad_numbers_are_jumpers no)
 	(fp_line
-		(start -0.107836 -0.36)
-		(end 0.107836 -0.36)
+		(start -0.045 -0.36)
+		(end 0.045 -0.36)
 		(stroke
 			(width 0.12)
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "6c557087-1cb5-418f-b351-5ee30bf4bfad")
+		(uuid "0bccc846-f2bf-4cc6-96f6-a576f698ab6d")
 	)
 	(fp_line
-		(start -0.107836 0.36)
-		(end 0.107836 0.36)
+		(start -0.045 0.36)
+		(end 0.045 0.36)
 		(stroke
 			(width 0.12)
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "fdef2971-4290-471b-b870-fda14aa9ecdd")
+		(uuid "d7ce3c30-0dac-49f2-8018-51e043a4f543")
 	)
 	(fp_rect
 		(start -0.91 -0.46)
@@ -97,7 +162,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "107f2792-bdcb-49ad-b9cc-07501cf05184")
+		(uuid "1a7b683c-5aa2-4a3a-b3cf-7f12c5630e10")
 	)
 	(fp_rect
 		(start -0.5 -0.25)
@@ -108,12 +173,12 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "c11e0b18-add0-45dd-afd0-2cc13da11643")
+		(uuid "70604023-92f9-4d7a-88ea-ca483a256389")
 	)
 	(fp_text user "${REFERENCE}"
 		(at 0 0 0)
 		(layer "F.Fab")
-		(uuid "ef786daf-35dd-42e2-8626-05681f5c9047")
+		(uuid "c79a89a6-0694-4e63-8388-7119855634cb")
 		(effects
 			(font
 				(size 0.25 0.25)
@@ -126,14 +191,14 @@
 		(size 0.56 0.62)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.25)
-		(uuid "713f0822-5ec8-4054-a593-f797268bb031")
+		(uuid "64a19e93-7702-4a22-a956-55c717c360dc")
 	)
 	(pad "2" smd roundrect
 		(at 0.48 0)
 		(size 0.56 0.62)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.25)
-		(uuid "8eb9dbb6-aaa4-4d1e-883f-6bea11a952d6")
+		(uuid "4ebb7a36-fc6e-4cec-b947-e74930c717ad")
 	)
 	(embedded_fonts no)
 	(model "${KICAD10_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0402_1005Metric.step"

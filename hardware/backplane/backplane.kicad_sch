@@ -2462,7 +2462,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Connector_Generic:Conn_02x03_Top_Bottom"
+		(symbol "Connector_Generic:Conn_02x04_Top_Bottom"
 			(pin_names
 				(offset 1.016)
 				(hide yes)
@@ -2482,8 +2482,8 @@
 					)
 				)
 			)
-			(property "Value" "Conn_02x03_Top_Bottom"
-				(at 1.27 -5.08 0)
+			(property "Value" "Conn_02x04_Top_Bottom"
+				(at 1.27 -7.62 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -2514,7 +2514,7 @@
 					)
 				)
 			)
-			(property "Description" "Generic connector, double row, 02x03, top/bottom pin numbering scheme (row 1: 1...pins_per_row, row2: pins_per_row+1 ... num_pins), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(property "Description" "Generic connector, double row, 02x04, top/bottom pin numbering scheme (row 1: 1...pins_per_row, row2: pins_per_row+1 ... num_pins), script generated (kicad-library-utils/schlib/autogen/connector/)"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -2547,10 +2547,10 @@
 					)
 				)
 			)
-			(symbol "Conn_02x03_Top_Bottom_1_1"
+			(symbol "Conn_02x04_Top_Bottom_1_1"
 				(rectangle
 					(start -1.27 3.81)
-					(end 3.81 -3.81)
+					(end 3.81 -6.35)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -2593,6 +2593,17 @@
 					)
 				)
 				(rectangle
+					(start -1.27 -4.953)
+					(end 0 -5.207)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
 					(start 3.81 2.667)
 					(end 2.54 2.413)
 					(stroke
@@ -2617,6 +2628,17 @@
 				(rectangle
 					(start 3.81 -2.413)
 					(end 2.54 -2.667)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start 3.81 -4.953)
+					(end 2.54 -5.207)
 					(stroke
 						(width 0.1524)
 						(type default)
@@ -2680,7 +2702,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 2.54 180)
+					(at -5.08 -5.08 0)
 					(length 3.81)
 					(name "Pin_4"
 						(effects
@@ -2698,7 +2720,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 0 180)
+					(at 7.62 2.54 180)
 					(length 3.81)
 					(name "Pin_5"
 						(effects
@@ -2716,7 +2738,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 -2.54 180)
+					(at 7.62 0 180)
 					(length 3.81)
 					(name "Pin_6"
 						(effects
@@ -2726,6 +2748,42 @@
 						)
 					)
 					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 -2.54 180)
+					(length 3.81)
+					(name "Pin_7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 -5.08 180)
+					(length 3.81)
+					(name "Pin_8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -7756,12 +7814,6 @@
 		(uuid "4615bde4-534d-4afb-a538-f294b0c0a91e")
 	)
 	(junction
-		(at 78.74 29.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "479ce710-7491-4266-95e9-5f82538f40c5")
-	)
-	(junction
 		(at 220.98 154.94)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -7778,6 +7830,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "4c22117d-84c1-4a75-b20e-145c2d739d81")
+	)
+	(junction
+		(at 76.2 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4d7f8697-dc32-4bf2-97e5-03689e21a1f0")
 	)
 	(junction
 		(at 127 38.1)
@@ -7798,10 +7856,22 @@
 		(uuid "5098337b-5b56-47c7-a14c-306abe344061")
 	)
 	(junction
+		(at 78.74 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "52b1ce38-d926-4169-a81c-83970775ed10")
+	)
+	(junction
 		(at 278.13 78.74)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "55a8d2da-33ba-4dff-b055-c1b54cf4830a")
+	)
+	(junction
+		(at 81.28 41.91)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "5686a0ae-46d6-4487-84be-f244fe2e75ec")
 	)
 	(junction
 		(at 401.32 92.71)
@@ -7820,12 +7890,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "5b9b3de2-2070-4fad-853f-77f557944176")
-	)
-	(junction
-		(at 81.28 41.91)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "5d251a4a-3926-46bf-8a98-792148e0d422")
 	)
 	(junction
 		(at 373.38 118.11)
@@ -7940,6 +8004,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "89a2388e-3f31-4b3c-8f34-8c845c4727cb")
+	)
+	(junction
+		(at 78.74 41.91)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8b78974e-ad16-48ec-843b-fde94302ca96")
 	)
 	(junction
 		(at 111.76 109.22)
@@ -8098,16 +8168,16 @@
 		(uuid "b592b989-90eb-4b36-9346-d575f29d6d5d")
 	)
 	(junction
-		(at 81.28 29.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "b609c26c-69ce-4383-afd0-d0361d53cdb8")
-	)
-	(junction
 		(at 64.77 218.44)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "b652e2e7-04e7-435b-a39e-c43c5c9e3992")
+	)
+	(junction
+		(at 76.2 41.91)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b65b9443-e50d-4696-8478-b767e6069056")
 	)
 	(junction
 		(at 213.36 238.76)
@@ -8194,6 +8264,12 @@
 		(uuid "d8d2e41d-8a0c-4ce0-a828-1339c576767e")
 	)
 	(junction
+		(at 81.28 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d907518e-2beb-4037-b6d3-2a5c5af9df93")
+	)
+	(junction
 		(at 393.7 92.71)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8252,12 +8328,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "fd59c9f7-1b8d-462b-90ae-ebf32108c911")
-	)
-	(junction
-		(at 78.74 41.91)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "fd5b91b2-35b0-4625-8c06-f7448b29053e")
 	)
 	(junction
 		(at 393.7 60.96)
@@ -9801,7 +9871,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 41.91) (xy 78.74 41.91)
+			(xy 73.66 41.91) (xy 76.2 41.91)
 		)
 		(stroke
 			(width 0)
@@ -10018,6 +10088,16 @@
 			(type default)
 		)
 		(uuid "8b8166ff-4ece-403b-9710-8ccd46694577")
+	)
+	(wire
+		(pts
+			(xy 76.2 29.21) (xy 78.74 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8be2f52a-08b5-4c93-bafb-f655a1d9c234")
 	)
 	(wire
 		(pts
@@ -10771,7 +10851,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 29.21) (xy 78.74 29.21)
+			(xy 73.66 29.21) (xy 76.2 29.21)
 		)
 		(stroke
 			(width 0)
@@ -10808,6 +10888,16 @@
 			(type default)
 		)
 		(uuid "c34d4c9e-7cd2-43d7-b950-3c08d96acd00")
+	)
+	(wire
+		(pts
+			(xy 76.2 41.91) (xy 78.74 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c4266f87-2f5a-47e7-9582-8039a457be19")
 	)
 	(wire
 		(pts
@@ -11028,16 +11118,6 @@
 			(type default)
 		)
 		(uuid "d207b2db-27be-42eb-90ef-fdd4af85e398")
-	)
-	(wire
-		(pts
-			(xy 78.74 41.91) (xy 81.28 41.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d281ad47-5575-4a8c-8b02-9430762bd72d")
 	)
 	(wire
 		(pts
@@ -11278,6 +11358,16 @@
 			(type default)
 		)
 		(uuid "e8f63065-26c7-48a7-ab04-59b92e8e1592")
+	)
+	(wire
+		(pts
+			(xy 78.74 41.91) (xy 81.28 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e9601436-95ad-4399-a79d-80bc1da85299")
 	)
 	(wire
 		(pts
@@ -17429,7 +17519,7 @@
 				)
 			)
 		)
-		(property "Value" "20A"
+		(property "Value" "40A"
 			(at 97.79 25.4 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17439,7 +17529,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Local Library:Fuseholder_Blade_Mini_Keystone_3568"
+		(property "Footprint" "Local Library:FuseHolder_Blade_ATO_Littelfuse_FLR_178.6165"
 			(at 97.79 27.432 90)
 			(hide yes)
 			(show_name no)
@@ -27243,8 +27333,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Generic:Conn_02x03_Top_Bottom")
-		(at 78.74 36.83 90)
+		(lib_id "Connector_Generic:Conn_02x04_Top_Bottom")
+		(at 76.2 36.83 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -27254,7 +27344,7 @@
 		(dnp no)
 		(uuid "fe5f4344-d4f3-4e0b-be0a-257d0a98c24c")
 		(property "Reference" "J2"
-			(at 83.82 36.8301 90)
+			(at 83.312 36.83 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -27265,7 +27355,7 @@
 			)
 		)
 		(property "Value" "PWR"
-			(at 83.82 34.2901 90)
+			(at 83.312 34.29 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -27275,8 +27365,8 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Local Library:Molex_Micro-Fit_3.0_43045-0600_2x03_P3.00mm_Horizontal"
-			(at 78.74 36.83 0)
+		(property "Footprint" "Local Library:Molex_Micro-Fit_3.0_43045-0812_2x04_P3.00mm_Vertical"
+			(at 76.2 36.83 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -27287,7 +27377,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 78.74 36.83 0)
+			(at 76.2 36.83 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -27297,8 +27387,8 @@
 				)
 			)
 		)
-		(property "Description" "Generic connector, double row, 02x03, top/bottom pin numbering scheme (row 1: 1...pins_per_row, row2: pins_per_row+1 ... num_pins), script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 78.74 36.83 0)
+		(property "Description" "Generic connector, double row, 02x04, top/bottom pin numbering scheme (row 1: 1...pins_per_row, row2: pins_per_row+1 ... num_pins), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 76.2 36.83 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -27308,8 +27398,8 @@
 				)
 			)
 		)
-		(property "LCSC" "C3294384"
-			(at 78.74 36.83 90)
+		(property "LCSC" "C505221"
+			(at 76.2 36.83 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -27319,8 +27409,8 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "3;1.5;180"
-			(at 78.74 36.83 90)
+		(property "JLCPCB_CORRECTION" "0;0;0"
+			(at 76.2 36.83 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -27347,6 +27437,12 @@
 		)
 		(pin "3"
 			(uuid "a0bb188c-8ddc-4dca-8ac3-7fc228e95347")
+		)
+		(pin "7"
+			(uuid "f833d472-8d5c-402e-9345-6742c4a473f9")
+		)
+		(pin "8"
+			(uuid "05d4d2a7-d2e9-466c-a827-0069548996dc")
 		)
 		(instances
 			(project "backplane"
