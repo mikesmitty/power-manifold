@@ -13,6 +13,7 @@
 #include "net/mqtt.h"
 #include "net/net.h"
 #include "settings.h"
+#include "update.h"
 
 #define WATCHDOG_TIMEOUT_MS 5000
 
@@ -54,6 +55,13 @@ int main(void) {
         cli_poll();
         net_poll(now_ms);
         mqtt_poll(now_ms);
+
+        if (update_reboot_due()) {
+            // scheduled by the OTA endpoint once its 200 response is queued
+            printf("update: rebooting into slot %s (trial)\n", update_slot_name());
+            sleep_ms(20); // let the CDC console flush
+            update_reboot_now();
+        }
 
         if (ipc_engine_alive()) {
             if (!wd_armed) {

@@ -16,10 +16,12 @@ add_executable(engine_tests
     ../src/engine/budget.c
     ../src/engine/port_fsm.c
     ../src/engine/sim/sim_blades.c
+    ../src/update_image.c
     support/test_support.c
     test_budget.c
     test_port_fsm.c
     test_priority.c
+    test_update_image.c
     test_main.c
 )
 

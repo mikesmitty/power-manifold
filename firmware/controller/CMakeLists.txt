@@ -30,6 +30,8 @@ add_executable(controller
     src/ipc.c
     src/flash_map.c
     src/settings.c
+    src/update.c
+    src/update_image.c
     src/cli.c
     src/engine/engine.c
     src/engine/port_fsm.c
@@ -62,6 +64,7 @@ target_link_libraries(controller
     pico_stdlib
     pico_multicore
     pico_flash
+    boot_uf2_headers
     pico_unique_id
     hardware_i2c
     hardware_pio

@@ -14,6 +14,7 @@
 #include "net/mqtt.h"
 #include "net/net.h"
 #include "settings.h"
+#include "update.h"
 
 #define CLI_LINE_MAX 160
 
@@ -67,6 +68,9 @@ static void print_info(void) {
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
     printf("engine: %s\n", ipc_engine_alive() ? "running" : "STALLED");
+    if (update_active())
+        printf("ota: receiving, %lu bytes into slot %s so far\n",
+               (unsigned long)update_bytes(), update_slot_name());
 }
 
 static bool port_arg(const char *s, uint8_t *port) {

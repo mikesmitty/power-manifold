@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "pico/cyw43_arch.h"
 
@@ -13,6 +14,7 @@
 #include "manifold.h"
 #include "net.h"
 #include "settings.h"
+#include "update.h"
 
 #define HTTP_PORT     80
 #define MAX_CONNS     4
@@ -26,9 +28,12 @@ typedef struct {
     char resp[RESP_MAX];
     uint16_t resp_len;
     uint16_t resp_sent;
+    bool updating;      // headers done, body streams into update_write()
+    uint32_t body_left; // update body bytes still expected
 } conn_t;
 
 static conn_t conns[MAX_CONNS];
+static conn_t *update_conn; // the one connection allowed to stream an update
 
 static const char INDEX_HTML[] =
     "<!doctype html><html><head><meta charset='utf-8'>"
@@ -58,10 +63,14 @@ static const char INDEX_HTML[] =
     "</script></body></html>";
 
 static void conn_free(conn_t *c) {
+    if (c->updating) update_abort(); // transfer died with its connection
+    if (update_conn == c) update_conn = NULL;
     c->pcb = NULL;
     c->req_len = 0;
     c->resp_len = 0;
     c->resp_sent = 0;
+    c->updating = false;
+    c->body_left = 0;
 }
 
 static void conn_close(conn_t *c) {
@@ -137,6 +146,111 @@ static bool authorized(const conn_t *c) {
     return strstr(c->req, needle) != NULL;
 }
 
+static long content_length(const char *req) {
+    // scan header lines only; the header always precedes any body bytes that
+    // may already sit (binary, but NUL-terminated) in req[]
+    for (const char *p = req; (p = strchr(p, '\n')) != NULL;) {
+        p++;
+        if (!strncasecmp(p, "Content-Length:", 15)) return strtol(p + 15, NULL, 10);
+    }
+    return -1;
+}
+
+// ---- OTA upload: POST /api/v1/update, body = firmware image (uf2 or bin).
+// The body streams straight into update_write(); nothing except the request
+// headers ever lands in req[].
+
+static void update_fail(conn_t *c, int code, const char *status, const char *msg) {
+    char body[160];
+    c->updating = false;
+    if (update_conn == c) update_conn = NULL;
+    update_abort();
+    snprintf(body, sizeof(body), "{\"error\":\"%s\"}", msg);
+    respond(c, code, status, "application/json", body);
+}
+
+static void update_complete(conn_t *c) {
+    char err[96], body[192];
+    c->updating = false;
+    if (update_conn == c) update_conn = NULL;
+    if (!update_finish(err, sizeof(err))) {
+        update_fail(c, 422, "Unprocessable Entity", err);
+        return;
+    }
+    update_schedule_reboot(1000);
+    snprintf(body, sizeof(body),
+             "{\"ok\":true,\"slot\":\"%s\",\"bytes\":%lu,\"version\":\"%s\","
+             "\"action\":\"trial reboot in 1s\"}",
+             update_slot_name(), (unsigned long)update_bytes(), update_version_str());
+    respond(c, 200, "OK", "application/json", body);
+    printf("update: %lu bytes -> slot %s (v%s); trial reboot scheduled\n",
+           (unsigned long)update_bytes(), update_slot_name(), update_version_str());
+}
+
+static void update_feed_bytes(conn_t *c, const uint8_t *d, uint32_t n) {
+    if (!c->updating || n == 0) return;
+    if (n > c->body_left) n = c->body_left; // ignore trailing junk
+    char err[96];
+    if (!update_write(d, n, err, sizeof(err))) {
+        update_fail(c, 422, "Unprocessable Entity", err);
+        return;
+    }
+    c->body_left -= n;
+    if (c->body_left == 0) update_complete(c);
+}
+
+static void update_feed(conn_t *c, struct pbuf *p, uint16_t skip) {
+    for (struct pbuf *q = p; q && c->updating; q = q->next) {
+        if (skip >= q->len) {
+            skip -= q->len;
+            continue;
+        }
+        update_feed_bytes(c, (const uint8_t *)q->payload + skip, (uint32_t)(q->len - skip));
+        skip = 0;
+    }
+}
+
+static void update_post_start(conn_t *c, const char *body_start) {
+    if (!authorized(c)) {
+        respond(c, 401, "Unauthorized", "application/json",
+                "{\"error\":\"bearer token required\"}");
+        return;
+    }
+    if (strstr(c->req, "Transfer-Encoding")) {
+        respond(c, 400, "Bad Request", "application/json",
+                "{\"error\":\"chunked bodies unsupported; send Content-Length\"}");
+        return;
+    }
+    long cl = content_length(c->req);
+    if (cl <= 0) {
+        respond(c, 411, "Length Required", "application/json",
+                "{\"error\":\"Content-Length required\"}");
+        return;
+    }
+
+    char err[96], body[160];
+    if (!update_begin((uint32_t)cl, err, sizeof(err))) {
+        // no update_fail(): a refusal must not abort a transfer that another
+        // connection legitimately still owns
+        snprintf(body, sizeof(body), "{\"error\":\"%s\"}", err);
+        respond(c, 409, "Conflict", "application/json", body);
+        return;
+    }
+    if (update_conn && update_conn != c) {
+        // update_begin only lets a new transfer through when the old one has
+        // gone stale, so its parked connection can be dropped outright
+        conn_close(update_conn);
+    }
+    update_conn = c;
+    c->updating = true;
+    c->body_left = (uint32_t)cl;
+    printf("update: receiving %ld bytes into slot %s\n", cl, update_slot_name());
+
+    // body bytes that arrived with the headers
+    update_feed_bytes(c, (const uint8_t *)body_start,
+                      (uint32_t)(c->req_len - (uint16_t)(body_start - c->req)));
+}
+
 static void handle_request(conn_t *c) {
     char json[1600];
 
@@ -183,7 +297,7 @@ static void handle_request(conn_t *c) {
 static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) {
     conn_t *c = (conn_t *)arg;
     if (!p) { // remote closed
-        if (c) conn_close(c);
+        if (c) conn_close(c); // conn_free aborts a transfer cut off mid-body
         else tcp_close(pcb);
         return ERR_OK;
     }
@@ -194,20 +308,35 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
     }
     (void)err;
 
-    uint16_t copied = pbuf_copy_partial(p, c->req + c->req_len,
-                                        (uint16_t)(REQ_MAX - 1 - c->req_len), 0);
-    c->req_len += copied;
-    c->req[c->req_len] = '\0';
+    // Ack the window up front: everything below consumes the whole pbuf, and
+    // the handlers may close the pcb (making it unsafe to touch afterwards).
     tcp_recved(pcb, p->tot_len);
-    pbuf_free(p);
 
-    // headers complete? (bodies used here are tiny and arrive with them; a
-    // split POST body larger than one segment is out of scope for this server)
-    if (strstr(c->req, "\r\n\r\n")) {
-        handle_request(c);
-    } else if (c->req_len >= REQ_MAX - 1) {
-        respond(c, 431, "Request Header Fields Too Large", "text/plain", "too large");
+    if (c->resp_len) {
+        // response already in flight; drain and ignore whatever else arrives
+    } else if (c->updating) {
+        update_feed(c, p, 0);
+    } else {
+        uint16_t copied = pbuf_copy_partial(p, c->req + c->req_len,
+                                            (uint16_t)(REQ_MAX - 1 - c->req_len), 0);
+        c->req_len += copied;
+        c->req[c->req_len] = '\0';
+
+        char *hdr_end = strstr(c->req, "\r\n\r\n");
+        if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19)) {
+            update_post_start(c, hdr_end + 4);
+            // body bytes past what fit in req[] are still in this pbuf
+            if (c->updating && copied < p->tot_len) update_feed(c, p, copied);
+        } else if (hdr_end) {
+            // non-update bodies are tiny and arrive with the headers; a split
+            // POST body larger than one segment is out of scope for this server
+            handle_request(c);
+        } else if (c->req_len >= REQ_MAX - 1) {
+            respond(c, 431, "Request Header Fields Too Large", "text/plain", "too large");
+        }
     }
+
+    pbuf_free(p);
     return ERR_OK;
 }
 

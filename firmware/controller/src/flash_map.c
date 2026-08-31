@@ -119,6 +119,26 @@ bool flash_map_commit_update(void) {
     return true;
 }
 
+bool flash_map_update_target(uint32_t *offset, uint32_t *size, flash_slot_t *slot) {
+    int a = -1, b = -1;
+    for (uint8_t i = 0; i < part_count; i++) {
+        if (!parts[i].has_id) continue;
+        if (parts[i].id == FLASH_MAP_ID_APP_A) a = i;
+        else if (parts[i].id == FLASH_MAP_ID_APP_B) b = i;
+    }
+    if (a < 0 || b < 0) return false;
+
+    int picked = rom_pick_ab_partition_during_update((uint32_t *)workarea,
+                                                     sizeof(workarea), (uint)a);
+    if (picked < 0) return false;
+
+    int target = picked == a ? b : a;
+    *offset = parts[target].offset;
+    *size = parts[target].size;
+    *slot = target == a ? FLASH_SLOT_A : FLASH_SLOT_B;
+    return true;
+}
+
 const void *flash_map_xip_ptr(uint32_t storage_offset) {
     return (const void *)(XIP_NOCACHE_NOALLOC_NOTRANSLATE_BASE + storage_offset);
 }

@@ -120,12 +120,28 @@ for local iteration: two builds with the *same* version tie-break to slot A —
 either bump `FW_VERSION` locally or target a slot explicitly with
 `picotool load -f -p <0|1> build/controller.uf2`.
 
-**Try-before-you-buy**: an image written with the TBYB flag (the OTA path)
-boots as a *trial* — `info` shows `slot B (TRIAL, uncommitted)` — and commits
-itself only after 10 s of continuous health (engine heartbeat, network up if
-one is configured). Until then any reboot, watchdog bite, or the 10-minute
-deadline reverts to the previous image. Nothing sets the flag yet; the OTA
-transport that will is the remaining piece.
+**OTA**: push a firmware image to the update endpoint over the LAN — the
+release `controller.uf2` and the raw `controller.bin` both work:
+
+```
+curl --data-binary @controller.uf2 http://<name>.local/api/v1/update
+```
+
+(add `-H "Authorization: Bearer <token>"` if an API token is set). The body
+streams into the *inactive* slot with the try-before-you-buy flag forced on
+the written image, gets verified by read-back, and the controller then
+reboots into it as a trial. A half-finished or failed upload leaves nothing
+bootable behind — the slot's first sector is erased before the transfer and
+written last.
+
+**Try-before-you-buy**: a TBYB-flagged image boots as a *trial* — `info`
+shows `slot B (TRIAL, uncommitted)` — and commits itself only after 10 s of
+continuous health (engine heartbeat, network up if one is configured). Until
+then any reboot, watchdog bite, or the 10-minute deadline reverts to the
+previous image, so a broken OTA push heals itself. The same-version tie-break
+caveat above applies to OTA too: pushing a build that isn't newer than the
+running one trials and commits fine, but the next power cycle boots the other
+slot again.
 
 ## First-time setup
 
@@ -146,8 +162,9 @@ reboot
 
 - **Web UI / API**: `http://<name>.local/` status page;
   `GET /api/v1/status`; `POST /api/v1/port/<n>` with
-  `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}` and
-  `POST /api/v1/fan` with `{"on":true}` (Bearer token if `token` is set).
+  `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
+  `POST /api/v1/fan` with `{"on":true}`, and `POST /api/v1/update` with a
+  firmware image as the body (Bearer token if `token` is set).
 - **MQTT**: telemetry under `pwrman/<name>/...` at 1 Hz, commands on
   `.../port/<n>/set` and `.../fan/set`, faults/contract changes on
   `.../event`, availability via LWT. Home Assistant discovers every port's
@@ -155,8 +172,8 @@ reboot
 
 ## Not yet implemented
 
-- OTA transport (HTTP image pull into the inactive slot, TBYB-flagged); the
-  A/B layout, slot awareness and commit flow above are already in place
+- Home Assistant `update` entity (announce releases over MQTT and trigger the
+  existing `/api/v1/update` flow from HA)
 - W6100 wired Ethernet netif (hardware path reserved, see GPIO map)
 - BLE provisioning via RM2/BTstack (candidate for initial configuration)
 - Front-panel display (planned as another consumer of the telemetry snapshot)
