@@ -118,14 +118,16 @@ static void build_status_json(char *out, size_t cap) {
         "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
         "\"uptime_s\":%lu,\"rssi\":%ld,"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
-        "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\",\"alert\":%s,"
-        "\"ports\":[",
+        "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
+        "\"fan_mode\":\"%s\",\"alert\":%s,\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
         (long)net_rssi(), t.total_mw / 1000.0, t.reserved_mw / 1000.0,
         t.budget_mw / 1000.0, headroom / 1000.0, t.energy_mwh / 1e6,
-        t.fan_on ? "on" : "off", t.alert_active ? "true" : "false");
+        t.fan_on ? "on" : "off",
+        t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
+        t.alert_active ? "true" : "false");
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];
@@ -287,7 +289,16 @@ static void handle_request(conn_t *c) {
             respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
                     "OK", "application/json", "{\"ok\":true}");
         } else if (!strncmp(c->req, "POST /api/v1/fan", 16)) {
-            engine_cmd_t cmd = {.op = CMD_FAN, .arg = strstr(body, "true") != NULL};
+            engine_cmd_t cmd;
+            if (strstr(body, "\"auto\"")) {
+                cmd.op = CMD_FAN_AUTO;
+                g_settings.fan_auto = 1;
+            } else {
+                cmd.op = CMD_FAN;
+                cmd.arg = strstr(body, "true") != NULL;
+                g_settings.fan_auto = 0;
+            }
+            settings_save_later();
             respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
                     "OK", "application/json", "{\"ok\":true}");
         } else {

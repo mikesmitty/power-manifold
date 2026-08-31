@@ -52,6 +52,7 @@ typedef struct {
     uint32_t budget_mw;     // chassis budget in force
     uint32_t energy_mwh;    // chassis total delivered since boot
     bool     fan_on;
+    bool     fan_auto;      // fan under the engine's auto policy
     bool     alert_active;  // GLOBAL_ALERT# currently asserted
 } telemetry_t;
 
@@ -64,7 +65,8 @@ typedef enum {
     CMD_PORT_HARD_RESET, // port: PD hard reset to sink
     CMD_PORT_SRC_CAP,    // port: re-send source capabilities
     CMD_SET_BUDGET,      // arg = chassis budget mW
-    CMD_FAN,             // arg = 0/1
+    CMD_FAN,             // arg = 0/1; also drops the fan out of auto mode
+    CMD_FAN_AUTO,        // hand the fan back to the engine's auto policy
     CMD_LED_BRIGHTNESS,  // arg = 0-255
 } cmd_op_t;
 

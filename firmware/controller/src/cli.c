@@ -32,7 +32,7 @@ static void print_help(void) {
            "  budget <watts>               chassis power budget\n"
            "  port <1-%d> on|off|reset|srccap\n"
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
-           "  fan on|off\n"
+           "  fan on|off|auto [on_w off_w]  auto follows total power w/ hysteresis\n"
            "  led <0-255>                  status LED brightness\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS);
@@ -50,10 +50,10 @@ static void print_status(void) {
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
                g_settings.port_priority[i]);
     }
-    printf("total %lumW reserved %lumW budget %lumW fan %s alert %s\n",
+    printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s\n",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
            (unsigned long)t.budget_mw, t.fan_on ? "on" : "off",
-           t.alert_active ? "ACTIVE" : "clear");
+           t.fan_auto ? " (auto)" : "", t.alert_active ? "ACTIVE" : "clear");
 }
 
 static void print_info(void) {
@@ -151,9 +151,30 @@ static void run_line(char *l) {
         printf(ipc_cmd_push(&c) ? "ok\n" : "queue full\n");
     } else if (!strcmp(cmd, "fan")) {
         const char *op = strtok_r(NULL, " \t", &save);
-        if (!op) { printf("usage: fan on|off\n"); return; }
-        engine_cmd_t c = {.op = CMD_FAN, .arg = !strcmp(op, "on")};
-        printf(ipc_cmd_push(&c) ? "ok\n" : "queue full\n");
+        if (!op) { printf("usage: fan on|off|auto [on_w off_w]\n"); return; }
+        if (!strcmp(op, "auto")) {
+            const char *on_w = strtok_r(NULL, " \t", &save);
+            const char *off_w = strtok_r(NULL, " \t", &save);
+            if (on_w && off_w) {
+                int on = atoi(on_w), off = atoi(off_w);
+                if (on <= 0 || off < 0 || off >= on || on > 1000) {
+                    printf("need 0 <= off_w < on_w <= 1000\n");
+                    return;
+                }
+                g_settings.fan_on_w = (uint16_t)on;
+                g_settings.fan_off_w = (uint16_t)off;
+            }
+            g_settings.fan_auto = 1;
+            engine_cmd_t c = {.op = CMD_FAN_AUTO};
+            ipc_cmd_push(&c);
+            printf("fan auto: on >= %uW, off <= %uW ('save' to persist)\n",
+                   g_settings.fan_on_w, g_settings.fan_off_w);
+        } else {
+            g_settings.fan_auto = 0;
+            engine_cmd_t c = {.op = CMD_FAN, .arg = !strcmp(op, "on")};
+            printf(ipc_cmd_push(&c) ? "fan manual ('save' to persist the mode)\n"
+                                    : "queue full\n");
+        }
     } else if (!strcmp(cmd, "led")) {
         const char *b = strtok_r(NULL, " \t", &save);
         if (!b) { printf("usage: led <0-255>\n"); return; }

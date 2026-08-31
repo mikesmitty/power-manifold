@@ -29,6 +29,10 @@ typedef struct {
     uint32_t port_limit_ma[NUM_PORTS]; // per-port PDO current ceiling
     uint8_t  port_priority[NUM_PORTS]; // 0 = highest; throttle victims picked from the bottom
     uint8_t  led_brightness;  // 0-255
+    // -- added in layout version 2 (older records upgrade on load) --
+    uint8_t  fan_auto;        // 1: engine drives the fan from total power
+    uint16_t fan_on_w;        // auto: on at/above this
+    uint16_t fan_off_w;       // auto: off at/below this (hysteresis band)
     uint32_t crc; // must remain last
 } settings_t;
 
@@ -37,6 +41,12 @@ extern settings_t g_settings;
 void settings_load(void);     // falls back to defaults on empty/corrupt flash
 bool settings_save(void);     // core 0 only; engine pauses briefly via flash_safe_execute
 void settings_defaults(void);
+
+// Debounced persistence for remote mutations (MQTT/REST): mark now, and the
+// main loop's settings_save_poll flushes once things go quiet for a few
+// seconds. Returns 0 when idle, 1 after a successful save, -1 on failure.
+void settings_save_later(void);
+int  settings_save_poll(uint32_t now_ms);
 
 // One-shot re-home of settings found at the legacy location on a freshly
 // partitioned board. Needs flash writes, so call from core 0 once the engine

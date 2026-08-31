@@ -5,6 +5,7 @@
 
 #include "hardware/flash.h"
 #include "pico/flash.h"
+#include "pico/time.h"
 
 #include "flash_map.h"
 
@@ -13,7 +14,11 @@
 // the last two sectors of flash (which, on a freshly partitioned board, is
 // where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    1
+#define SETTINGS_VERSION    2
+
+// Version 1 ended where the version-2 fields begin; accepting it means
+// wifi/mqtt credentials survive a firmware upgrade.
+#define SETTINGS_V1_PAYLOAD offsetof(settings_t, fan_auto)
 
 #define LEGACY_BASE (PICO_FLASH_SIZE_BYTES - SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
 
@@ -47,8 +52,16 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 }
 
 static bool slot_valid(const settings_t *s) {
-    if (s->magic != SETTINGS_MAGIC || s->version != SETTINGS_VERSION) return false;
-    return crc32_calc((const uint8_t *)s, payload_len()) == s->crc;
+    if (s->magic != SETTINGS_MAGIC) return false;
+    if (s->version == SETTINGS_VERSION)
+        return crc32_calc((const uint8_t *)s, payload_len()) == s->crc;
+    if (s->version == 1) {
+        // v1's crc sits right after its last field, where v2's new fields are
+        uint32_t crc;
+        memcpy(&crc, (const uint8_t *)s + SETTINGS_V1_PAYLOAD, sizeof(crc));
+        return crc32_calc((const uint8_t *)s, SETTINGS_V1_PAYLOAD) == crc;
+    }
+    return false;
 }
 
 static uint32_t resolve_home(void) {
@@ -81,6 +94,9 @@ void settings_defaults(void) {
         g_settings.port_priority[i] = i;
     }
     g_settings.led_brightness = 48;
+    g_settings.fan_auto = 1;
+    g_settings.fan_on_w = 80;
+    g_settings.fan_off_w = 60;
 }
 
 void settings_load(void) {
@@ -92,6 +108,13 @@ void settings_load(void) {
     }
     if (best) {
         memcpy(&g_settings, best, sizeof(g_settings));
+        if (g_settings.version < SETTINGS_VERSION) {
+            // upgrade in place: default the fields the old layout lacked
+            g_settings.version = SETTINGS_VERSION;
+            g_settings.fan_auto = 1;
+            g_settings.fan_on_w = 80;
+            g_settings.fan_off_w = 60;
+        }
     } else {
         settings_defaults();
     }
@@ -132,6 +155,21 @@ bool settings_save(void) {
     memcpy(buf, &g_settings, sizeof(g_settings));
 
     return run_flash_op(sector_off(home_base, target), buf);
+}
+
+#define SAVE_DEBOUNCE_MS 5000
+
+static uint32_t save_at_ms; // 0 = clean
+
+void settings_save_later(void) {
+    uint32_t t = to_ms_since_boot(get_absolute_time()) + SAVE_DEBOUNCE_MS;
+    save_at_ms = t ? t : 1;
+}
+
+int settings_save_poll(uint32_t now_ms) {
+    if (!save_at_ms || (int32_t)(now_ms - save_at_ms) < 0) return 0;
+    save_at_ms = 0;
+    return settings_save() ? 1 : -1;
 }
 
 bool settings_migration_pending(void) {

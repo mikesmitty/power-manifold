@@ -75,6 +75,12 @@ int main(void) {
                            ? "settings: migrated into the data partition\n"
                            : "settings: migration save failed; still on legacy sectors\n");
             }
+
+            int saved = settings_save_poll(now_ms);
+            if (saved) {
+                printf(saved > 0 ? "settings: saved (remote change)\n"
+                                 : "settings: save failed\n");
+            }
         }
 
         if (trial) {

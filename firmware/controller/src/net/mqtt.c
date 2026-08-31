@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 #include "pico/cyw43_arch.h"
 #include "pico/unique_id.h"
@@ -19,9 +20,10 @@
 #define TELEMETRY_MS     1000
 
 // discovery entity table: per-port sensors + switch, chassis sensors + fan
+// (the last chassis step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 1)
-#define CHASSIS_ENTITIES 4
+#define CHASSIS_ENTITIES 5
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -90,8 +92,17 @@ static void handle_command(const char *topic, const char *data) {
                           .port = (uint8_t)(port - 1)};
         ipc_cmd_push(&c);
     } else if (strcmp(sub, "/fan/set") == 0) {
-        engine_cmd_t c = {.op = CMD_FAN, .arg = on};
-        ipc_cmd_push(&c);
+        // fan mode select: "auto"/"on"/"off" (plus legacy switch ON/OFF)
+        if (!strcasecmp(data, "auto")) {
+            g_settings.fan_auto = 1;
+            engine_cmd_t c = {.op = CMD_FAN_AUTO};
+            ipc_cmd_push(&c);
+        } else {
+            g_settings.fan_auto = 0;
+            engine_cmd_t c = {.op = CMD_FAN, .arg = !strcasecmp(data, "on")};
+            ipc_cmd_push(&c);
+        }
+        settings_save_later();
     }
 }
 
@@ -242,13 +253,13 @@ static void publish_chassis_sensor(const char *object, const char *name,
     publish(topic_buf, payload_buf, 1, 1);
 }
 
-static void publish_fan_switch(void) {
-    discovery_config_topic("switch", "fan");
+static void publish_fan_select(void) {
+    discovery_config_topic("select", "fan_mode");
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"~\":\"%s\",\"name\":\"Fan\",\"uniq_id\":\"pwrman_%s_fan\","
+             "{\"~\":\"%s\",\"name\":\"Fan\",\"uniq_id\":\"pwrman_%s_fan_mode\","
              "\"cmd_t\":\"~/fan/set\",\"stat_t\":\"~/status\","
-             "\"avail_t\":\"~/availability\",\"val_tpl\":\"{{ value_json.fan }}\","
-             "\"dev\":%s}",
+             "\"avail_t\":\"~/availability\",\"ops\":[\"auto\",\"on\",\"off\"],"
+             "\"val_tpl\":\"{{ value_json.fan_mode }}\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -277,8 +288,13 @@ static void discovery_step(void) {
         publish_chassis_sensor("energy", "Total energy", "energy", "kWh",
                                TOTALINC, "{{ value_json.energy_kwh }}");
         break;
+    case 3:
+        publish_fan_select();
+        break;
     default:
-        publish_fan_switch();
+        // retire the fan switch this select replaced from older firmware
+        discovery_config_topic("switch", "fan");
+        publish(topic_buf, "", 1, 1);
         break;
     }
 }
@@ -307,9 +323,11 @@ static void publish_telemetry(void) {
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
              "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
-             "\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,\"fw\":\"%s\"}",
+             "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
+             "\"fw\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
+             t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
              t.alert_active ? "true" : "false", (long)net_rssi(),
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
              FW_VERSION);
