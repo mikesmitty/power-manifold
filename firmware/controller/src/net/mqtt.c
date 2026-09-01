@@ -26,7 +26,7 @@
 // pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 4)
-#define CHASSIS_ENTITIES 6
+#define CHASSIS_ENTITIES 7
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -129,6 +129,14 @@ static void handle_command(const char *topic, const char *data) {
         else if (!strcasecmp(data, "src_cap")) c.op = CMD_PORT_SRC_CAP;
         else c.op = on ? CMD_PORT_ENABLE : CMD_PORT_DISABLE;
         ipc_cmd_push(&c);
+    } else if (strcmp(sub, "/budget/set") == 0) {
+        int w = atoi(data);
+        if (w >= BUDGET_MIN_W && w <= BUDGET_MAX_W) {
+            g_settings.budget_mw = (uint32_t)w * 1000u;
+            engine_cmd_t c = {.op = CMD_SET_BUDGET, .arg = g_settings.budget_mw};
+            ipc_cmd_push(&c);
+            settings_save_later();
+        }
     } else if (strcmp(sub, "/fan/set") == 0) {
         // fan mode select: "auto"/"on"/"off" (plus legacy switch ON/OFF)
         if (!strcasecmp(data, "auto")) {
@@ -193,6 +201,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/priority/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/fan/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/budget/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/update/latest", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
@@ -341,6 +351,19 @@ static void publish_chassis_sensor(const char *object, const char *name,
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_budget_number(void) {
+    discovery_config_topic("number", "budget");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Power budget\","
+             "\"uniq_id\":\"pwrman_%s_budget\",\"cmd_t\":\"~/budget/set\","
+             "\"stat_t\":\"~/status\",\"val_tpl\":\"{{ value_json.budget_w | round(0) }}\","
+             "\"min\":%d,\"max\":%d,\"step\":1,\"mode\":\"box\","
+             "\"dev_cla\":\"power\",\"unit_of_meas\":\"W\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, uid, BUDGET_MIN_W, BUDGET_MAX_W, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_update_entity(void) {
     discovery_config_topic("update", "fw");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -394,6 +417,9 @@ static void discovery_step(void) {
         publish_fan_select();
         break;
     case 4:
+        publish_budget_number();
+        break;
+    case 5:
         publish_update_entity();
         break;
     default:

@@ -16,6 +16,7 @@
 //   base/port/N/set            command: ON/OFF (admin enable), hard_reset, src_cap
 //   base/port/N/priority/set   command: 0-255 (0 = highest)
 //   base/fan/set               command: auto/on/off (legacy ON/OFF accepted)
+//   base/budget/set            command: chassis budget in watts
 //   base/event                 fault/contract/state events, QoS 1
 //   base/update/latest         in, retained: {"version":"x.y.z","url":"http://..."}
 //   base/update/state          out, retained: installed/latest for HA's update entity

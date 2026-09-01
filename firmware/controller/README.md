@@ -174,7 +174,8 @@ policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
 - **Web UI / API**: `http://<name>.local/` status page;
   `GET /api/v1/status`; `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
-  `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`, and
+  `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`,
+  `POST /api/v1/budget` with `{"watts":N}`, and
   `POST /api/v1/update` with a firmware image as the body (Bearer token if
   `token` is set).
 - **MQTT / Home Assistant**: telemetry under `pwrman/<name>/...` at 1 Hz,
@@ -182,10 +183,10 @@ policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
   publishes, per port: power/voltage/current/state sensors, a since-boot
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
   switch, hard-reset and re-announce-caps buttons, and a priority number —
-  plus chassis power/headroom/energy sensors, a fan select (auto/on/off),
-  and a firmware update entity fed from the retained
-  `.../update/latest` pointer. Remote settings changes (fan mode, priority)
-  persist automatically a few seconds after the last change.
+  plus chassis power/headroom/energy sensors, a power-budget number, a fan
+  select (auto/on/off), and a firmware update entity fed from the retained
+  `.../update/latest` pointer. Remote settings changes (budget, fan mode,
+  priority) persist automatically a few seconds after the last change.
 - **Fan**: `auto` follows total chassis power with hysteresis
   (`fan auto [on_w off_w]`, defaults 80/60 W, 30 s anti-flap hold);
   `on`/`off` are manual overrides.

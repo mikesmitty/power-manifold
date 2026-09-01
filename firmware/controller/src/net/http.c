@@ -288,6 +288,20 @@ static void handle_request(conn_t *c) {
             }
             respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
                     "OK", "application/json", "{\"ok\":true}");
+        } else if (!strncmp(c->req, "POST /api/v1/budget", 19)) {
+            const char *w = strstr(body, "\"watts\"");
+            long watts = -1;
+            if (w && (w = strchr(w, ':')) != NULL) watts = strtol(w + 1, NULL, 10);
+            if (watts < BUDGET_MIN_W || watts > BUDGET_MAX_W) {
+                respond(c, 400, "Bad Request", "application/json",
+                        "{\"error\":\"watts out of range\"}");
+                return;
+            }
+            g_settings.budget_mw = (uint32_t)watts * 1000u;
+            engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = g_settings.budget_mw};
+            settings_save_later();
+            respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
+                    "OK", "application/json", "{\"ok\":true}");
         } else if (!strncmp(c->req, "POST /api/v1/fan", 16)) {
             engine_cmd_t cmd;
             if (strstr(body, "\"auto\"")) {

@@ -129,10 +129,16 @@ static void run_line(char *l) {
     } else if (!strcmp(cmd, "budget")) {
         const char *w = strtok_r(NULL, " \t", &save);
         if (!w) { printf("usage: budget <watts>\n"); return; }
-        g_settings.budget_mw = (uint32_t)atoi(w) * 1000u;
+        int watts = atoi(w);
+        if (watts < BUDGET_MIN_W || watts > BUDGET_MAX_W) {
+            printf("budget must be %d-%dW\n", BUDGET_MIN_W, BUDGET_MAX_W);
+            return;
+        }
+        g_settings.budget_mw = (uint32_t)watts * 1000u;
         engine_cmd_t c = {.op = CMD_SET_BUDGET, .arg = g_settings.budget_mw};
         ipc_cmd_push(&c);
-        printf("budget %luW\n", (unsigned long)(g_settings.budget_mw / 1000));
+        printf("budget %luW ('save' to persist)\n",
+               (unsigned long)(g_settings.budget_mw / 1000));
     } else if (!strcmp(cmd, "port")) {
         const char *n = strtok_r(NULL, " \t", &save);
         const char *op = strtok_r(NULL, " \t", &save);

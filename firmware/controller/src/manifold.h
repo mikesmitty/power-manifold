@@ -6,6 +6,11 @@
 #define FW_VERSION      "0.3.0" // x-release-please-version
 #define NUM_PORTS       6
 
+// Accepted chassis budget range, every surface (CLI/MQTT/REST). The floor is
+// one port's base reserve; the ceiling is far above any realistic supply.
+#define BUDGET_MIN_W    15
+#define BUDGET_MAX_W    1000
+
 // Per-port supervisory state. Differs from the spec's table in one way: the
 // MPQ4242 negotiates PD contracts autonomously, so there is no in-line
 // "NEGOTIATING" state — the engine constrains the advertised PDO set ahead of
