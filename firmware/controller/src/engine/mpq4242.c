@@ -89,12 +89,63 @@ bool mpq4242_set_pdo_fixed(uint8_t pdo, uint16_t mv, uint32_t ma, bool enabled) 
     return mpq4242_set_pdo_enabled(pdo, enabled);
 }
 
+bool mpq4242_set_pdo_pps(uint8_t pdo, uint16_t min_mv, uint16_t max_mv, uint32_t ma, bool enabled) {
+    if (pdo < 2 || pdo > 7) return false;
+    if (!reg_set_bit(REG_PDO_SET2, pdo - 2, true)) return false; // pps type
+    uint8_t base = REG_PDO_V2_L + 3 * (pdo - 2);
+    if (!reg_write(base, (uint8_t)(min_mv / 100))) return false; // 0.1V LSB
+    if (!reg_write(base + 1, (uint8_t)(max_mv / 100))) return false;
+    if (!set_pdo_current(pdo, ma, true)) return false;
+    return mpq4242_set_pdo_enabled(pdo, enabled);
+}
+
 bool mpq4242_send_src_cap(void) {
     return reg_set_bit(REG_CTL_SYS1, 7, true);
 }
 
 bool mpq4242_send_hard_reset(void) {
     return reg_set_bit(REG_PD_CTL2, 7, true);
+}
+
+static bool configure_default_pdos(void) {
+    // Reprogram the advertised PDO table:
+    //   PDO1: Fixed 5.0V (OTP default)
+    //   PDO2: Fixed 9.0V (OTP default)
+    //   PDO3: Fixed 12.0V
+    //   PDO4: Fixed 15.0V
+    //   PDO5: Fixed 20.0V
+    //   PDO6: PPS 3.3V - 11.0V (replaces 16V PPS)
+    //   PDO7: PPS 3.3V - 21.0V (OTP default)
+    //
+    // Set PDO_SET2: PDOs 2-5 Fixed (bits 0-3 = 0), PDOs 6-7 PPS (bits 4-5 = 1) -> 0x30
+    if (!reg_write(REG_PDO_SET2, 0x30)) return false;
+
+    // PDO 2: Fixed 9.0V
+    if (!reg_write(REG_PDO_V2_L + 3 * (2 - 2), 90)) return false;
+    if (!reg_write(REG_PDO_V2_L + 3 * (2 - 2) + 1, 0)) return false;
+
+    // PDO 3: Fixed 12.0V
+    if (!reg_write(REG_PDO_V2_L + 3 * (3 - 2), 120)) return false;
+    if (!reg_write(REG_PDO_V2_L + 3 * (3 - 2) + 1, 0)) return false;
+
+    // PDO 4: Fixed 15.0V
+    if (!reg_write(REG_PDO_V2_L + 3 * (4 - 2), 150)) return false;
+    if (!reg_write(REG_PDO_V2_L + 3 * (4 - 2) + 1, 0)) return false;
+
+    // PDO 5: Fixed 20.0V
+    if (!reg_write(REG_PDO_V2_L + 3 * (5 - 2), 200)) return false;
+    if (!reg_write(REG_PDO_V2_L + 3 * (5 - 2) + 1, 0)) return false;
+
+    // PDO 6: PPS 3.3V - 11.0V
+    if (!reg_write(REG_PDO_V2_L + 3 * (6 - 2), 33)) return false;
+    if (!reg_write(REG_PDO_V2_L + 3 * (6 - 2) + 1, 110)) return false;
+
+    // PDO 7: PPS 3.3V - 21.0V
+    if (!reg_write(REG_PDO_V2_L + 3 * (7 - 2), 33)) return false;
+    if (!reg_write(REG_PDO_V2_L + 3 * (7 - 2) + 1, 210)) return false;
+
+    // PDO_SET1: Enable PDOs 2-7 (bits 0-5 = 1) -> 0x3F
+    return reg_write(REG_PDO_SET1, 0x3F);
 }
 
 bool mpq4242_configure(uint32_t max_ma) {
@@ -121,6 +172,9 @@ bool mpq4242_configure(uint32_t max_ma) {
 
     // PWR_CTL1: frequency spread spectrum (DITHER, bit 3); OTP ships it off
     if (!reg_set_bit(REG_PWR_CTL1, 3, true)) return false;
+
+    // Override OTP PDO table with 5 Fixed (5/9/12/15/20V) + 2 PPS (11V/21V)
+    if (!configure_default_pdos()) return false;
 
     return mpq4242_set_max_current_ma(max_ma);
 }

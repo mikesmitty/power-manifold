@@ -295,6 +295,11 @@ bool mpq4242_set_pdo_fixed(uint8_t pdo, uint16_t mv, uint32_t ma, bool enabled) 
     return mpq() != NULL;
 }
 
+bool mpq4242_set_pdo_pps(uint8_t pdo, uint16_t min_mv, uint16_t max_mv, uint32_t ma, bool enabled) {
+    (void)pdo; (void)min_mv; (void)max_mv; (void)ma; (void)enabled;
+    return mpq() != NULL;
+}
+
 bool mpq4242_set_pdo_enabled(uint8_t pdo, bool enabled) {
     (void)pdo; (void)enabled;
     return mpq() != NULL;

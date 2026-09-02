@@ -48,6 +48,37 @@ static void test_attach_contract(void) {
     const engine_evt_t *e = evt_last(EVT_CONTRACT, 0);
     MT_ASSERT(e != NULL);
     MT_ASSERT_EQ(e->arg, 60000);
+    MT_ASSERT_EQ(e->code, 5); // PDO5: 20V
+}
+
+static void test_attach_12v_contract(void) {
+    support_reset(360000);
+    sim_set_present(0, true);
+    tick(2);
+    sim_attach(0, 12000, 3000); // 36W 12V trigger
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(budget_port_reservation(0), 36000);
+    MT_ASSERT_EQ(tele.port[0].bus_mv, 12000);
+    const engine_evt_t *e = evt_last(EVT_CONTRACT, 0);
+    MT_ASSERT(e != NULL);
+    MT_ASSERT_EQ(e->arg, 36000);
+    MT_ASSERT_EQ(e->code, 3); // PDO3: 12V
+}
+
+static void test_attach_15v_contract(void) {
+    support_reset(360000);
+    sim_set_present(0, true);
+    tick(2);
+    sim_attach(0, 15000, 3000); // 45W 15V (e.g. Switch dock)
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(budget_port_reservation(0), 45000);
+    MT_ASSERT_EQ(tele.port[0].bus_mv, 15000);
+    const engine_evt_t *e = evt_last(EVT_CONTRACT, 0);
+    MT_ASSERT(e != NULL);
+    MT_ASSERT_EQ(e->arg, 45000);
+    MT_ASSERT_EQ(e->code, 4); // PDO4: 15V
 }
 
 static void test_small_contract_reserves_base(void) {
@@ -152,6 +183,8 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: probe failure faults then recovers",
            test_probe_failure_faults_then_recovers);
     mt_run("fsm: attach lands a contract", test_attach_contract);
+    mt_run("fsm: attach 12V lands PDO3", test_attach_12v_contract);
+    mt_run("fsm: attach 15V lands PDO4", test_attach_15v_contract);
     mt_run("fsm: small contract reserves base", test_small_contract_reserves_base);
     mt_run("fsm: detach returns to idle", test_detach_returns_to_idle);
     mt_run("fsm: OCP faults then recovers", test_ocp_faults_then_recovers);
