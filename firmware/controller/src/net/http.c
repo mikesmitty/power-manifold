@@ -4,27 +4,34 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
 
 
 #include "lwip/tcp.h"
+#include "pico/rand.h"
 
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "eth.h"
 #include "improv.h"
+#include "jsonlite.h"
 #include "net.h"
 #include "settings.h"
 #include "update.h"
 
 #define HTTP_PORT       80
 #define MAX_CONNS       4
-#define REQ_MAX         1024
+#define REQ_MAX         2048 // browser headers + a full settings body
 #define STATUS_JSON_MAX 1600
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
 #define IDLE_POLLS      20   // drop a connection that sends no request in ~10s
+#define REBOOT_DELAY_MS 300  // API reboot: let the response leave first
+#define SETUP_SECRET_TTL_MS (10 * 60 * 1000)
+#define STR_(x) #x
+#define STR(x) STR_(x)
 
 typedef struct {
     struct tcp_pcb *pcb;
@@ -65,6 +72,14 @@ static const char INDEX_HTML[] =
     "border:1px solid #333}"
     "polyline{fill:none;stroke:#9ad;stroke-width:1.5;vector-effect:non-scaling-stroke}"
     "#hint{font-size:.8em;color:#666;margin-top:.8em;max-width:44em}"
+    "details{margin-top:1.2em;max-width:44em}summary{cursor:pointer;color:#888}"
+    "label{display:block;margin:.55em 0;font-size:.8em;color:#888}"
+    "input,select{display:block;width:100%;box-sizing:border-box;margin-top:.2em;padding:.4em;"
+    "background:#1a1a1a;color:#eee;border:1px solid #333;border-radius:3px;font:inherit}"
+    "button{padding:.45em 1em;margin:.6em .6em 0 0;background:#1c2430;color:#eee;"
+    "border:1px solid #345;border-radius:3px;cursor:pointer;font:inherit}"
+    "#msg{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
+    "#lock input{display:inline-block;width:14em;margin-right:.5em}"
     "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
     ".g{grid-template-columns:1fr}}"
     "</style></head><body>"
@@ -75,6 +90,32 @@ static const char INDEX_HTML[] =
     "<th>kWh</th></tr></thead><tbody id='ports'></tbody></table>"
     "<div id='hint'>Click a port for its last 10 minutes of W / A / V, sampled"
     " once a second while this page is open.</div>"
+    // Connection-level settings. Unlocked by the API token, or by the setup
+    // secret Improv passes in the redirect URL while no token exists yet.
+    "<details id='cfg'><summary>Settings</summary><div id='msg'></div>"
+    "<div id='lock' hidden><input id='tok' type='password' placeholder='API token'>"
+    "<button id='ul'>Unlock</button></div>"
+    "<form id='f' hidden autocomplete='off'>"
+    "<label>Device name (hostname, MQTT topic id)"
+    "<input name='dname' maxlength='31' pattern='[A-Za-z0-9\\-]+' required></label>"
+    "<label>MQTT broker (blank = MQTT off)<input name='mhost' maxlength='63'></label>"
+    "<label>MQTT port<input name='mport' type='number' min='1' max='65535'></label>"
+    "<label>MQTT user<input name='muser' maxlength='32'></label>"
+    "<label>MQTT password<input name='mpass' type='password' maxlength='64'></label>"
+    "<label>Chassis budget (W)<input name='bud' type='number' min='" STR(BUDGET_MIN_W) "'"
+    " max='" STR(BUDGET_MAX_W) "' required></label>"
+    "<label>Fan<select name='fmode'><option value='auto'>auto</option>"
+    "<option value='on'>on</option><option value='off'>off</option></select></label>"
+    "<label>Fan auto: on at or above (W)"
+    "<input name='fon' type='number' min='1' max='1000' required></label>"
+    "<label>Fan auto: off at or below (W)"
+    "<input name='foff' type='number' min='0' max='999' required></label>"
+    "<label>Fan auto: also on while any contract exceeds (mA, 0 = off)"
+    "<input name='fma' type='number' min='0' max='10000' required></label>"
+    "<label>API token (locks the API and this panel)"
+    "<input name='atok' type='password' maxlength='32'></label>"
+    "<button type='submit'>Save</button>"
+    "<button type='button' id='rb'>Reboot</button></form></details>"
     "<script>"
     // Per-port sample rings live in the page: the 1 Hz status poll already
     // carries V/A/W, so history costs the firmware nothing. Sparklines are
@@ -109,6 +150,47 @@ static const char INDEX_HTML[] =
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
     "if(H[i].length>N)H[i].shift();});"
     "draw();}catch(e){}}tick();setInterval(tick,1000);"
+    // Settings panel. The bearer lives in sessionStorage for this tab only;
+    // a ?s=<secret> from Improv's redirect seeds it and is scrubbed from the
+    // address bar. Blank password/token fields mean "unchanged".
+    "const CFG=document.getElementById('cfg'),F=document.getElementById('f'),"
+    "M=document.getElementById('msg'),LK=document.getElementById('lock'),"
+    "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
+    "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma'},"
+    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1},"
+    "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
+    "async function cfgLoad(){let r;"
+    "try{r=await fetch('/api/v1/settings',{headers:hdr()});}"
+    "catch(e){M.textContent='No response from the device.';return;}"
+    "if(r.status==401){LK.hidden=false;F.hidden=true;"
+    "M.textContent=(sessionStorage.tok?'Token rejected. ':'')+"
+    "'Enter the API token to edit settings.';return;}"
+    "const d=await r.json();LK.hidden=true;F.hidden=false;"
+    "for(const k in KEYS)F[k].value=d[KEYS[k]];"
+    "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
+    "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
+    "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
+    " the API and this panel, so keep a copy.';}"
+    "F.onsubmit=async e=>{e.preventDefault();const b={};"
+    "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
+    "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
+    "let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
+    "headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});"
+    "d=await r.json();}catch(e){}"
+    "if(!r||!r.ok){M.textContent='Not saved: '+(d.error||'no response');return;}"
+    "if(b.token)sessionStorage.tok=b.token;F.mpass.value=F.atok.value='';"
+    "await cfgLoad();M.textContent=d.reboot_required?"
+    "'Saved. Reboot to apply the name and broker.':'Saved and applied.';};"
+    "document.getElementById('rb').onclick=async()=>{"
+    "try{await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}"
+    "M.textContent='Rebooting; this page reloads in a few seconds.';"
+    "setTimeout(()=>location.reload(),6000);};"
+    "document.getElementById('ul').onclick=()=>{"
+    "sessionStorage.tok=document.getElementById('tok').value;cfgLoad();};"
+    "CFG.ontoggle=()=>{if(CFG.open)cfgLoad();};"
+    "const U=new URL(location),S=U.searchParams.get('s');"
+    "if(S){sessionStorage.tok=S;U.searchParams.delete('s');"
+    "history.replaceState(null,'',U);CFG.open=true;}"
     "</script></body></html>";
 _Static_assert(sizeof(INDEX_HTML) - 1 <= UINT16_MAX, "conn_t.static_len is 16-bit");
 
@@ -239,11 +321,224 @@ static void build_status_json(char *out, size_t cap) {
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
 
+static bool bearer_present(const conn_t *c, const char *token) {
+    const char *p = strstr(c->req, "Authorization: Bearer ");
+    if (!p) return false;
+    p += 22;
+    size_t n = strlen(token);
+    return n && !strncmp(p, token, n) &&
+           (p[n] == '\r' || p[n] == '\n' || p[n] == ' ' || p[n] == '\0');
+}
+
+// Everything under POST /api/v1/: open until an API token is set.
 static bool authorized(const conn_t *c) {
     if (!g_settings.api_token[0]) return true;
-    char needle[64];
-    snprintf(needle, sizeof(needle), "Authorization: Bearer %s", g_settings.api_token);
-    return strstr(c->req, needle) != NULL;
+    return bearer_present(c, g_settings.api_token);
+}
+
+// ---- Setup secret: Improv hands the provisioning client http://<ip>/?s=<secret>
+// so the same phone can finish first-time setup (broker, name, token) in the
+// web UI without a serial cable. It stands in for the API token on /settings
+// only, only while no token is stored, and only for SETUP_SECRET_TTL_MS;
+// the token a setup request must set retires it. Written from improv_poll
+// under the network lock, read here in lwIP's context.
+
+static char setup_secret[9];
+static uint32_t setup_until_ms; // 0 = none issued
+
+const char *http_setup_secret_issue(uint32_t now_ms) {
+    snprintf(setup_secret, sizeof(setup_secret), "%08lx", (unsigned long)get_rand_32());
+    setup_until_ms = now_ms + SETUP_SECRET_TTL_MS;
+    if (!setup_until_ms) setup_until_ms = 1;
+    return setup_secret;
+}
+
+static bool setup_secret_live(void) {
+    if (!setup_until_ms || g_settings.api_token[0]) return false;
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+    return (int32_t)(now - setup_until_ms) < 0;
+}
+
+// /settings always needs a bearer: the token, or the live setup secret.
+static bool settings_authorized(const conn_t *c, bool *via_setup) {
+    *via_setup = false;
+    if (g_settings.api_token[0]) return bearer_present(c, g_settings.api_token);
+    if (setup_secret_live() && bearer_present(c, setup_secret)) {
+        *via_setup = true;
+        return true;
+    }
+    return false;
+}
+
+static uint32_t reboot_at_ms; // 0 = none requested
+
+bool http_reboot_due(uint32_t now_ms) {
+    return reboot_at_ms && (int32_t)(now_ms - reboot_at_ms) >= 0;
+}
+
+// ---- Settings: the console's mqtt/name/token/budget/fan commands in one
+// place (WiFi excepted: that is Improv's job over BLE). Budget and fan apply
+// live; name and broker take a reboot.
+
+static void build_settings_json(char *out, size_t cap, bool via_setup) {
+    // static: escaping can grow a field sixfold, and this runs on the IRQ stack
+    static char name[sizeof(g_settings.device_name) * 6];
+    static char host[sizeof(g_settings.mqtt_host) * 6];
+    static char user[sizeof(g_settings.mqtt_user) * 6];
+    json_escape(name, sizeof(name), g_settings.device_name);
+    json_escape(host, sizeof(host), g_settings.mqtt_host);
+    json_escape(user, sizeof(user), g_settings.mqtt_user);
+    telemetry_t t; // manual fan state is the engine's, not a setting
+    ipc_snapshot_read(&t);
+    snprintf(out, cap,
+             "{\"name\":\"%s\",\"mqtt_host\":\"%s\",\"mqtt_port\":%u,\"mqtt_user\":\"%s\","
+             "\"mqtt_pass_set\":%s,\"token_set\":%s,\"setup\":%s,"
+             "\"budget_w\":%lu,\"fan_mode\":\"%s\",\"fan_on_w\":%u,\"fan_off_w\":%u,"
+             "\"fan_on_ma\":%u}",
+             name, host, g_settings.mqtt_port, user,
+             g_settings.mqtt_pass[0] ? "true" : "false",
+             g_settings.api_token[0] ? "true" : "false", via_setup ? "true" : "false",
+             (unsigned long)(g_settings.budget_mw / 1000u),
+             g_settings.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
+             g_settings.fan_on_w, g_settings.fan_off_w, g_settings.fan_on_ma);
+}
+
+static bool header_safe(const char *s) { // printable ASCII, no spaces
+    for (; *s; s++) {
+        if ((unsigned char)*s < 0x21 || (unsigned char)*s > 0x7E) return false;
+    }
+    return true;
+}
+
+static bool no_controls(const char *s) {
+    for (; *s; s++) {
+        if ((unsigned char)*s < 0x20 || (unsigned char)*s == 0x7F) return false;
+    }
+    return true;
+}
+
+static bool valid_name(const char *s) { // one hostname label
+    size_t n = strlen(s);
+    if (!n || s[0] == '-' || s[n - 1] == '-') return false;
+    for (; *s; s++) {
+        if (!isalnum((unsigned char)*s) && *s != '-') return false;
+    }
+    return true;
+}
+
+// Any subset of the fields; absent ones keep their value. The whole record
+// is validated into a copy first so a bad field changes nothing.
+static void settings_post(conn_t *c, const char *body, bool via_setup) {
+    static settings_t s; // static: a few hundred bytes, IRQ stack
+    s = g_settings;
+    const char *err = NULL;
+    long port;
+    int r;
+
+    if ((r = json_get_str(body, "name", s.device_name, sizeof(s.device_name))) < 0)
+        err = "name too long";
+    else if (r > 0 && !valid_name(s.device_name))
+        err = "name: letters, digits and hyphens only";
+    else if ((r = json_get_str(body, "mqtt_host", s.mqtt_host, sizeof(s.mqtt_host))) < 0)
+        err = "mqtt_host too long";
+    else if (r > 0 && !header_safe(s.mqtt_host))
+        err = "mqtt_host: no spaces or control characters";
+    else if ((r = json_get_str(body, "mqtt_user", s.mqtt_user, sizeof(s.mqtt_user))) < 0)
+        err = "mqtt_user too long";
+    else if (r > 0 && !no_controls(s.mqtt_user))
+        err = "mqtt_user: no control characters";
+    else if ((r = json_get_str(body, "mqtt_pass", s.mqtt_pass, sizeof(s.mqtt_pass))) < 0)
+        err = "mqtt_pass too long";
+    else if (r > 0 && !no_controls(s.mqtt_pass))
+        err = "mqtt_pass: no control characters";
+    else if ((r = json_get_str(body, "token", s.api_token, sizeof(s.api_token))) < 0)
+        err = "token too long";
+    else if (r > 0 && !header_safe(s.api_token))
+        err = "token: no spaces or control characters";
+    else if (json_get_int(body, "mqtt_port", &port) && (port < 1 || port > 65535))
+        err = "mqtt_port out of range";
+    else if (via_setup && !s.api_token[0])
+        err = "set an API token to finish setup";
+
+    // operational fields: applied to the engine below, not just persisted
+    long v;
+    char mode[8];
+    int m = json_get_str(body, "fan_mode", mode, sizeof(mode));
+    bool fan_touched = m != 0, fan_manual_on = false;
+    if (!err && json_get_int(body, "budget_w", &v)) {
+        if (v < BUDGET_MIN_W || v > BUDGET_MAX_W) err = "budget_w out of range";
+        else s.budget_mw = (uint32_t)v * 1000u;
+    }
+    if (!err && json_get_int(body, "fan_on_w", &v)) {
+        if (v < 1 || v > 1000) err = "fan_on_w: 1-1000";
+        else s.fan_on_w = (uint16_t)v;
+        fan_touched = true;
+    }
+    if (!err && json_get_int(body, "fan_off_w", &v)) {
+        if (v < 0 || v > 1000) err = "fan_off_w: 0-1000";
+        else s.fan_off_w = (uint16_t)v;
+        fan_touched = true;
+    }
+    if (!err && fan_touched && s.fan_off_w >= s.fan_on_w)
+        err = "fan_off_w must be below fan_on_w";
+    if (!err && json_get_int(body, "fan_on_ma", &v)) {
+        if (v < 0 || v > 10000) err = "fan_on_ma: 0-10000 (0 disables)";
+        else s.fan_on_ma = (uint16_t)v;
+        fan_touched = true;
+    }
+    if (!err && m != 0) {
+        if (m > 0 && !strcmp(mode, "auto")) {
+            s.fan_auto = 1;
+        } else if (m > 0 && (!strcmp(mode, "on") || !strcmp(mode, "off"))) {
+            s.fan_auto = 0;
+            fan_manual_on = mode[1] == 'n';
+        } else {
+            err = "fan_mode: auto, on or off";
+        }
+    }
+
+    if (err) {
+        char b[128];
+        snprintf(b, sizeof(b), "{\"error\":\"%s\"}", err);
+        respond(c, 400, "Bad Request", "application/json", b);
+        return;
+    }
+    if (json_get_int(body, "mqtt_port", &port)) s.mqtt_port = (uint16_t)port;
+
+    bool reboot_required = strcmp(g_settings.device_name, s.device_name) != 0 ||
+                           strcmp(g_settings.mqtt_host, s.mqtt_host) != 0 ||
+                           g_settings.mqtt_port != s.mqtt_port ||
+                           strcmp(g_settings.mqtt_user, s.mqtt_user) != 0 ||
+                           strcmp(g_settings.mqtt_pass, s.mqtt_pass) != 0;
+    bool budget_changed = g_settings.budget_mw != s.budget_mw;
+    g_settings = s;
+
+    if (budget_changed) {
+        engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = s.budget_mw};
+        ipc_cmd_push(&cmd);
+    }
+    if (m != 0) { // an explicit mode: apply it (the CLI's fan on|off|auto)
+        engine_cmd_t cmd = s.fan_auto ? (engine_cmd_t){.op = CMD_FAN_AUTO}
+                                      : (engine_cmd_t){.op = CMD_FAN, .arg = fan_manual_on};
+        ipc_cmd_push(&cmd);
+    } else if (fan_touched && s.fan_auto) { // new thresholds under auto: re-arm
+        engine_cmd_t cmd = {.op = CMD_FAN_AUTO};
+        ipc_cmd_push(&cmd);
+    }
+
+    bool saved = settings_save(); // flash_safe_execute, as the OTA path does from here
+    setup_until_ms = 0;           // a token now exists (or the caller had one)
+    printf("settings: %s via web%s\n", saved ? "saved" : "save FAILED",
+           via_setup ? " (first-time setup)" : "");
+    if (saved) {
+        char b[64];
+        snprintf(b, sizeof(b), "{\"ok\":true,\"reboot_required\":%s}",
+                 reboot_required ? "true" : "false");
+        respond(c, 200, "OK", "application/json", b);
+    } else {
+        respond(c, 500, "Internal Server Error", "application/json",
+                "{\"error\":\"flash save failed\"}");
+    }
 }
 
 static long content_length(const char *req) {
@@ -364,6 +659,21 @@ static void handle_request(conn_t *c) {
     } else if (!strncmp(c->req, "GET /api/v1/status", 18)) {
         build_status_json(json, sizeof(json));
         respond(c, 200, "OK", "application/json", json);
+    } else if (!strncmp(c->req, "GET /api/v1/settings", 20) ||
+               !strncmp(c->req, "POST /api/v1/settings", 21)) {
+        bool via_setup;
+        if (!settings_authorized(c, &via_setup)) {
+            respond(c, 401, "Unauthorized", "application/json",
+                    "{\"error\":\"bearer token required\"}");
+            return;
+        }
+        if (c->req[0] == 'G') {
+            build_settings_json(json, sizeof(json), via_setup);
+            respond(c, 200, "OK", "application/json", json);
+        } else {
+            const char *body = strstr(c->req, "\r\n\r\n");
+            settings_post(c, body ? body + 4 : "", via_setup);
+        }
     } else if (!strncmp(c->req, "POST /api/v1/", 13)) {
         if (!authorized(c)) {
             respond(c, 401, "Unauthorized", "application/json",
@@ -414,6 +724,12 @@ static void handle_request(conn_t *c) {
             settings_save_later();
             respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
                     "OK", "application/json", "{\"ok\":true}");
+        } else if (!strncmp(c->req, "POST /api/v1/reboot", 19)) {
+            uint32_t t = to_ms_since_boot(get_absolute_time()) + REBOOT_DELAY_MS;
+            reboot_at_ms = t ? t : 1; // the main loop reboots (and flushes a pending save)
+            printf("http: reboot requested\n");
+            respond(c, 200, "OK", "application/json",
+                    "{\"ok\":true,\"action\":\"reboot in 300ms\"}");
         } else {
             respond(c, 404, "Not Found", "application/json", "{\"error\":\"no such endpoint\"}");
         }
@@ -456,9 +772,13 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
             // body bytes past what fit in req[] are still in this pbuf
             if (c->updating && copied < p->tot_len) update_feed(c, p, copied);
         } else if (hdr_end) {
-            // non-update bodies are tiny and arrive with the headers; a split
-            // POST body larger than one segment is out of scope for this server
-            handle_request(c);
+            // non-update bodies are small and usually ride in with the
+            // headers; when Content-Length says the rest is still in flight
+            // and req[] has room for it, wait for the next segment (a client
+            // that never finishes is dropped by the idle poll)
+            long cl = content_length(c->req);
+            long have = (long)(c->req_len - (uint16_t)(hdr_end + 4 - c->req));
+            if (!(cl > 0 && have < cl && c->req_len < REQ_MAX - 1)) handle_request(c);
         } else if (c->req_len >= REQ_MAX - 1) {
             respond(c, 431, "Request Header Fields Too Large", "text/plain", "too large");
         }

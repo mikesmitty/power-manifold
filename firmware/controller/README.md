@@ -185,20 +185,29 @@ Assistant companion app (Settings → Devices → Add → *Improv via BLE*, or
 the notification it raises when it spots one) or the Web Bluetooth
 provisioner at improv-wifi.com in a Chromium browser hands it the SSID and
 password. *Identify* flashes the status LEDs so you know which box you're
-talking to; on success the client is redirected to `http://<ip>/` and the
-credentials are saved. Or over the USB console (any serial terminal,
-115200):
+talking to; on success the credentials are saved and the client is
+redirected to the web UI, whose *Settings* panel finishes the job from the
+same phone: MQTT broker, device name, and an API token. The redirect
+carries a one-shot setup secret (`http://<ip>/?s=…`) that unlocks the
+panel for 10 minutes while no token exists yet; the panel makes you choose
+a token, which locks the API and retires the secret. *Reboot* in the same
+panel applies the name and broker. Or over the USB console (any serial
+terminal, 115200):
 
 ```
 wifi <ssid> <password>
 mqtt <broker-host> [port user pass]
 name pwrman
+token <t>
 save
 reboot
 ```
 
-`help` lists everything else (port control and priorities, budget, fan
-policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
+A box provisioned this way (or a wired-only one that simply took a DHCP
+lease) has no setup secret: set a `token` on the console and the *Settings*
+panel unlocks with it. `help` lists everything else (port control and
+priorities, budget, fan policy, LED brightness, the persistent fault log,
+OTA pull, `bootsel`).
 
 BLE only ever carries the WiFi credentials, and only while a provisioning
 window is open: automatically while the device has no credentials or has
@@ -221,12 +230,19 @@ state.
   port row for sparklines of its last 10 minutes of W / A / V, sampled from
   the page's own 1 Hz poll (history lives in the tab, so it starts when the
   page opens — Home Assistant keeps the long-term record);
-  `GET /api/v1/status`; `POST /api/v1/port/<n>` with
+  the *Settings* panel below the table covers the device name, broker, API
+  token, chassis budget and fan policy. `GET /api/v1/status`; `GET` /
+  `POST /api/v1/settings` with any subset of `{"name","mqtt_host",
+  "mqtt_port","mqtt_user","mqtt_pass","token","budget_w","fan_mode",
+  "fan_on_w","fan_off_w","fan_on_ma"}` (saved to flash at once; budget and
+  fan apply live, `POST /api/v1/reboot` applies the name and broker);
+  `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
   `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`,
   `POST /api/v1/budget` with `{"watts":N}`, and
-  `POST /api/v1/update` with a firmware image as the body (Bearer token if
-  `token` is set).
+  `POST /api/v1/update` with a firmware image as the body. Mutations take a
+  Bearer token once `token` is set; `/settings` always wants one — the
+  token, or the setup secret from an Improv redirect while none is stored.
 - **MQTT / Home Assistant**: telemetry under `pwrman/<name>/...` at 1 Hz,
   availability via LWT, faults/contract changes on `.../event`. Discovery
   publishes, per port: power/voltage/current/state sensors, a since-boot

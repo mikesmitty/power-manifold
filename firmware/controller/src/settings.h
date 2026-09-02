@@ -49,6 +49,7 @@ void settings_defaults(void);
 // seconds. Returns 0 when idle, 1 after a successful save, -1 on failure.
 void settings_save_later(void);
 int  settings_save_poll(uint32_t now_ms);
+bool settings_save_pending(void); // a settings_save_later not yet flushed
 
 // One-shot re-home of settings found at the legacy location on a freshly
 // partitioned board. Needs flash writes, so call from core 0 once the engine

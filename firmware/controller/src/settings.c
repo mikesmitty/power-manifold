@@ -185,6 +185,10 @@ void settings_save_later(void) {
     save_at_ms = t ? t : 1;
 }
 
+bool settings_save_pending(void) {
+    return save_at_ms != 0;
+}
+
 int settings_save_poll(uint32_t now_ms) {
     if (!save_at_ms || (int32_t)(now_ms - save_at_ms) < 0) return 0;
     save_at_ms = 0;

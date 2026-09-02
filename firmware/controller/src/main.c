@@ -69,6 +69,14 @@ int main(void) {
             mqtt_event(&evt);
         }
 
+        if (http_reboot_due(now_ms)) {
+            // asked for from the web UI after a settings change; the CLI's
+            // 'reboot' is immediate for the same watchdog reason
+            if (settings_save_pending()) settings_save();
+            printf("http: rebooting\n");
+            sleep_ms(20);
+            watchdog_reboot(0, 0, 0);
+        }
         if (update_reboot_due()) {
             // scheduled by the OTA endpoint once its 200 response is queued
             printf("update: rebooting into slot %s (trial)\n", update_slot_name());

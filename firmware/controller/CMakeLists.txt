@@ -51,6 +51,7 @@ add_executable(controller
     src/net/net.c
     src/net/mqtt.c
     src/net/http.c
+    src/net/jsonlite.c
     src/net/ota_pull.c
     ${DRIVER_SOURCES}
 )
@@ -102,6 +103,8 @@ target_include_directories(controller PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src/engine # driver headers, for the sim seam
     ${CMAKE_CURRENT_LIST_DIR} # lwipopts.h, btstack_config.h
 )
+
+target_link_libraries(controller pico_rand) # setup secret for the web UI
 
 target_compile_definitions(controller PRIVATE
     PICO_STACK_SIZE=16384
