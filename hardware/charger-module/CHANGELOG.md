@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.13.0...charger-module-v0.13.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* **charger-module:** switch to 5V vcc ([5735743](https://github.com/mikesmitty/power-manifold/commit/5735743172d4cc040109c1f3c75d42a167998cc3))
+
 ## [0.13.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.12.4...charger-module-v0.13.0) (2026-08-30)
 
 
