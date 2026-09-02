@@ -5,13 +5,13 @@
 #include <string.h>
 #include <strings.h>
 
-#include "pico/cyw43_arch.h"
 
 #include "lwip/tcp.h"
 
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
+#include "eth.h"
 #include "improv.h"
 #include "net.h"
 #include "settings.h"
@@ -206,16 +206,20 @@ static void build_status_json(char *out, size_t cap) {
     ipc_snapshot_read(&t);
     uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
 
+    char ethf[64] = "";
+#if PWRMAN_NET_ETH
+    snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
+#endif
     size_t off = (size_t)snprintf(out, cap,
         "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
-        "\"uptime_s\":%lu,\"rssi\":%ld,"
+        "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
-        (long)net_rssi(), t.total_mw / 1000.0, t.reserved_mw / 1000.0,
+        (long)net_rssi(), ethf, t.total_mw / 1000.0, t.reserved_mw / 1000.0,
         t.budget_mw / 1000.0, headroom / 1000.0, t.energy_mwh / 1e6,
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -515,7 +519,7 @@ static err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 void http_init(void) {
     if (!net_available()) return;
-    cyw43_arch_lwip_begin();
+    net_lock();
     struct tcp_pcb *pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
     if (pcb && tcp_bind(pcb, IP_ANY_TYPE, HTTP_PORT) == ERR_OK) {
         pcb = tcp_listen_with_backlog(pcb, 4);
@@ -524,5 +528,5 @@ void http_init(void) {
         printf("http: failed to bind port %d\n", HTTP_PORT);
         if (pcb) tcp_abort(pcb);
     }
-    cyw43_arch_lwip_end();
+    net_unlock();
 }

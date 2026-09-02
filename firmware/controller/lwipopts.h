@@ -58,6 +58,11 @@
 #define MQTT_VAR_HEADER_BUFFER_LEN  256
 #define MQTT_REQ_MAX_IN_FLIGHT      5
 
+// Source-based routing (lwip_hooks.h): with WiFi and Ethernet on one
+// subnet, replies leave via the netif that owns their source address
+#define LWIP_HOOK_FILENAME          "lwip_hooks.h"
+#define LWIP_HOOK_IP4_ROUTE_SRC(src, dest) net_ip4_route_src(src, dest)
+
 // SNTP: wall-clock time for log/event timestamps
 #define SNTP_SERVER_DNS             1
 #define SNTP_SET_SYSTEM_TIME(sec)   sntp_report_time(sec)

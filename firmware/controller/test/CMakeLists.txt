@@ -18,6 +18,7 @@ add_executable(engine_tests
     ../src/engine/port_fsm.c
     ../src/engine/sim/sim_blades.c
     ../src/net/improv_proto.c
+    ../src/net/w6100.c
     ../src/update_image.c
     support/test_support.c
     test_budget.c
@@ -26,6 +27,7 @@ add_executable(engine_tests
     test_port_fsm.c
     test_priority.c
     test_update_image.c
+    test_w6100.c
     test_main.c
 )
 

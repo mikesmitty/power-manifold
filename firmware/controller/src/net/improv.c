@@ -352,12 +352,12 @@ static void close_locked(const char *why) {
 // ---- public API ------------------------------------------------------------
 
 void improv_init(void) {
-    cyw43_arch_lwip_begin();
+    net_lock();
     // Load the BT firmware now rather than lazily on the first window: the
     // download holds the shared bus for about a second, long enough to time
     // out WiFi ioctls in flight (seen as [CYW43] do_ioctl timeouts).
     if (cyw43_bluetooth_hci_init() != 0) {
-        cyw43_arch_lwip_end();
+        net_unlock();
         printf("improv: BT controller init failed; BLE provisioning unavailable\n");
         return;
     }
@@ -367,50 +367,51 @@ void improv_init(void) {
     hci_cb.callback = packet_handler;
     hci_add_event_handler(&hci_cb);
     att_server_register_packet_handler(packet_handler);
-    cyw43_arch_lwip_end();
+    net_unlock();
     available = true;
 }
 
 bool improv_open(uint32_t window_ms, const char *why) {
     if (!available) return false;
-    cyw43_arch_lwip_begin();
+    net_lock();
     auto_inhibit = false;
     if (window_open)
         printf("improv: already open (%s)\n", improv_state_str());
     else
         open_locked(window_ms, OPEN_MANUAL, why, to_ms_since_boot(get_absolute_time()));
-    cyw43_arch_lwip_end();
+    net_unlock();
     return true;
 }
 
 void improv_close(void) {
     if (!available) return;
-    cyw43_arch_lwip_begin();
+    net_lock();
     auto_inhibit = true;
     if (window_open) close_locked("by request");
-    cyw43_arch_lwip_end();
+    net_unlock();
 }
 
 void improv_poll(uint32_t now_ms) {
     if (!available) return;
     bool do_save = false, do_identify = false;
 
-    cyw43_arch_lwip_begin();
+    net_lock();
 
     bool up = net_up();
     bool unprovisioned = !g_settings.wifi_ssid[0];
     if (up) down_since_ms = 0;
     else if (!down_since_ms) down_since_ms = now_ms ? now_ms : 1;
 
-    // automatic windows
+    // automatic windows (a wired link counts as being on the network: no
+    // point advertising WiFi provisioning to a box already reachable)
     if (!window_open && !auto_inhibit) {
-        if (unprovisioned)
+        if (unprovisioned && !up)
             open_locked(0, OPEN_UNPROVISIONED, "no WiFi credentials", now_ms);
         else if (!up && now_ms - down_since_ms >= IMPROV_DOWN_OPEN_MS)
             open_locked(0, OPEN_DOWN, "network down", now_ms);
     } else if (window_open && !attempt && !close_at_ms) {
-        if (open_reason == OPEN_UNPROVISIONED && !unprovisioned)
-            close_locked("credentials set");
+        if (open_reason == OPEN_UNPROVISIONED && (!unprovisioned || up))
+            close_locked(unprovisioned ? "network up" : "credentials set");
         else if (open_reason == OPEN_DOWN && up)
             close_locked("network is back");
         else if (window_until_ms && (int32_t)(now_ms - window_until_ms) >= 0)
@@ -471,7 +472,7 @@ void improv_poll(uint32_t now_ms) {
 
     if (close_at_ms && (int32_t)(now_ms - close_at_ms) >= 0) close_locked("provisioned");
 
-    cyw43_arch_lwip_end();
+    net_unlock();
 
     // side effects outside the lock: flash write parks core 1, and the
     // command queue has one producer (this loop)

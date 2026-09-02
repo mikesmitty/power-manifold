@@ -5,7 +5,6 @@
 #include <string.h>
 #include <strings.h>
 
-#include "pico/cyw43_arch.h"
 #include "pico/unique_id.h"
 
 #include "lwip/apps/mqtt.h"
@@ -498,14 +497,14 @@ static const char *evt_name(evt_type_t t) {
 
 void mqtt_event(const engine_evt_t *e) {
     if (!mqtt_is_connected()) return; // transient events aren't queued
-    cyw43_arch_lwip_begin();
+    net_lock();
     snprintf(topic_buf, sizeof(topic_buf), "%s/event", base);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"port\":%u,\"event\":\"%s\",\"code\":%u,\"arg\":%lu,\"ts\":%lu}",
              e->port + 1, evt_name((evt_type_t)e->type), e->code,
              (unsigned long)e->arg, (unsigned long)net_epoch());
     publish(topic_buf, payload_buf, 1, 0);
-    cyw43_arch_lwip_end();
+    net_unlock();
 }
 
 // ---- driver ----------------------------------------------------------------
@@ -514,7 +513,7 @@ void mqtt_poll(uint32_t now_ms) {
     if (!net_available() || !g_settings.mqtt_host[0]) return;
     ensure_ids();
 
-    cyw43_arch_lwip_begin();
+    net_lock();
 
     switch (state) {
     case ST_IDLE:
@@ -554,5 +553,5 @@ void mqtt_poll(uint32_t now_ms) {
         break;
     }
 
-    cyw43_arch_lwip_end();
+    net_unlock();
 }

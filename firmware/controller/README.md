@@ -24,10 +24,10 @@ Two cores, one rule: **only core 1 touches the backplane.**
   newcomer get clamped. Throttled ports recover automatically when budget
   frees up, highest priority first. Per-port priority: `port <n> priority`
   in the CLI (0 = highest, default = port number).
-- **Core 0 — management** (`src/net/`, `src/cli.c`): CYW43 WiFi + lwIP,
-  MQTT with Home Assistant discovery, embedded web UI + JSON API, USB CDC
-  maintenance console, Improv Wi-Fi provisioning over BLE (BTstack on the
-  same CYW43).
+- **Core 0 — management** (`src/net/`, `src/cli.c`): lwIP over CYW43 WiFi
+  and/or a WIZnet W6100 wired Ethernet controller, MQTT with Home Assistant
+  discovery, embedded web UI + JSON API, USB CDC maintenance console,
+  Improv Wi-Fi provisioning over BLE (BTstack on the same CYW43).
 - **Between them** (`src/ipc.c`): a command queue, an event queue, and a
   seqlock telemetry snapshot. Every management surface is a thin transport
   over the same command/telemetry interface.
@@ -44,7 +44,9 @@ The hardware watchdog is fed only while both cores make progress.
 | GP6 | EXP_INT# | TCA9539 interrupt |
 | GP7 | MUX_RST# | TCA9548A reset |
 | GP8 | EXP_RST# | TCA9539 reset |
-| GP16–GP21 | *reserved* | wired Ethernet (W6100; WIZnet EVB-Pico2 pinout) |
+| GP16–GP19 | SPI0 MISO/CS/SCK/MOSI | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
+| GP20 | ETH_RST# | W6100 reset |
+| GP21 | ETH_INT# | W6100 interrupt, level-low while a frame waits |
 
 ## Building
 
@@ -61,6 +63,23 @@ ninja -C build
 
 Flash `build/controller.uf2` over BOOTSEL, or `picotool load -f
 build/controller.uf2`.
+
+### Network options
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `NET_WIFI` | ON | CYW43 WiFi + Improv BLE provisioning; needs a CYW43 board (`pico2_w`) |
+| `NET_ETH` | ON | W6100 wired Ethernet on SPI0 GP16–21, probed once at boot |
+
+Both on is the production shape (RM2 radio + W6100). A Pico 2 W with nothing
+on GP16–21 logs `eth: no W6100 answering` at boot and runs WiFi-only. For a
+board with no radio, such as a WIZnet W6100-EVB-Pico2 in the same socket,
+build a wired-only image (no cyw43 or BTstack blobs, about 220 KB):
+
+```sh
+cmake -B build-eth -G Ninja -DPICO_BOARD=pico2 -DNET_WIFI=OFF
+ninja -C build-eth
+```
 
 ### Fake-blade mode (no backplane needed)
 
@@ -217,6 +236,14 @@ state.
   select (auto/on/off), and a firmware update entity fed from the retained
   `.../update/latest` pointer. Remote settings changes (budget, fan mode,
   priority) persist automatically a few seconds after the last change.
+- **Wired Ethernet**: the W6100 runs in MACRAW mode, so it is just another
+  lwIP netif and everything above it (DHCP, mDNS, MQTT, HTTP, OTA pull) is
+  the same code as over WiFi. Its MAC is locally administered, derived from
+  the RP2350's unique ID. When both links are up the wired one holds the
+  default route and WiFi stands by; replies always leave on the interface
+  that owns their address. `info` shows `eth:` link speed and address, and
+  the status JSON carries `"eth"`. Not yet exercised on hardware: the driver
+  is verified against an emulated chip in the host tests (`test_w6100.c`).
 - **Fan**: `auto` follows total chassis power with hysteresis
   (`fan auto [on_w off_w [on_ma]]`, defaults 80/60 W, 30 s anti-flap hold)
   and also runs while any port holds a contract over `on_ma` (default
@@ -230,5 +257,4 @@ state.
 
 ## Not yet implemented
 
-- W6100 wired Ethernet netif (hardware path reserved, see GPIO map)
 - Front-panel display (planned as another consumer of the telemetry snapshot)

@@ -7,6 +7,9 @@
 #include "hardware/watchdog.h"
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
+#if PWRMAN_NET_WIFI
+#include "pico/cyw43_arch.h"
+#endif
 
 #include "engine/engine.h"
 #include "fault_log.h"
@@ -14,6 +17,7 @@
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
+#include "net/eth.h"
 #include "net/improv.h"
 #include "net/mqtt.h"
 #include "net/net.h"
@@ -72,9 +76,17 @@ static void print_info(void) {
     printf("boot: slot %s%s\n", flash_map_slot_name(),
            flash_map_update_pending() ? " (TRIAL, uncommitted)" : "");
     printf("device name: %s\n", g_settings.device_name);
+#if PWRMAN_NET_WIFI
     printf("wifi: %s (%s)\n",
            g_settings.wifi_ssid[0] ? g_settings.wifi_ssid : "(unset)",
-           net_up() ? net_ip_str() : "down");
+           net_link_status() == CYW43_LINK_UP ? "up" : "down");
+#else
+    printf("wifi: not fitted\n");
+#endif
+#if PWRMAN_NET_ETH
+    printf("eth: %s\n", eth_status_str());
+#endif
+    printf("ip: %s\n", net_up() ? net_ip_str() : "none");
     printf("mqtt: %s:%u (%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");

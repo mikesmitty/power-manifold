@@ -19,6 +19,16 @@
 #define I2C_BUS         i2c0
 #define I2C_BAUD        (400 * 1000)
 
+// Wired Ethernet: WIZnet W6100 on SPI0, the EVB-Pico2 mapping (NET_ETH)
+#define PIN_ETH_MISO    16 // SPI0 RX
+#define PIN_ETH_CS_N    17 // driven as a GPIO
+#define PIN_ETH_SCK     18
+#define PIN_ETH_MOSI    19 // SPI0 TX
+#define PIN_ETH_RST_N   20
+#define PIN_ETH_INT_N   21 // level-low while socket 0 has a frame waiting
+#define ETH_SPI         spi0
+#define ETH_SPI_HZ      (20 * 1000 * 1000)
+
 // I2C addresses, verified against the backplane netlist (2026-08-30):
 // TCA9548A A0=A1=A2=GND, TCA9539 A0=A1=GND. Blade parts sit behind the mux,
 // one blade per channel, so identical per-blade addresses never conflict.

@@ -4,11 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pico/cyw43_arch.h"
 
 #include "lwip/altcp.h"
 #include "lwip/apps/http_client.h"
 
+#include "net.h"
 #include "update.h"
 
 static bool           busy;
@@ -120,10 +120,10 @@ bool ota_pull_start(const char *url, char *err, size_t errlen) {
     if (!parse_url(url, err, errlen)) return false;
 
     feed_failed = false;
-    cyw43_arch_lwip_begin();
+    net_lock();
     err_t rc = httpc_get_file_dns(host, port_num, uri, &settings, recv_cb,
                                   NULL, &conn);
-    cyw43_arch_lwip_end();
+    net_unlock();
     if (rc != ERR_OK) {
         snprintf(err, errlen, "http client start failed (%d)", (int)rc);
         return false;

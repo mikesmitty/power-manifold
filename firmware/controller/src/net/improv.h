@@ -21,6 +21,7 @@
 #define IMPROV_DOWN_OPEN_MS (5 * 60 * 1000)
 #define IMPROV_WINDOW_MS    (10 * 60 * 1000)
 
+#if PWRMAN_NET_WIFI
 void improv_init(void);            // after cyw43_arch_init succeeded
 void improv_poll(uint32_t now_ms); // main loop, before net_poll
 
@@ -34,3 +35,14 @@ bool improv_active(void); // window open (advertising, connected or provisioning
 // "off", "advertising", "connected", "provisioning", "provisioned"
 const char *improv_state_str(void);
 uint32_t improv_window_left_s(uint32_t now_ms); // 0 when closed or open-ended
+#else
+// wired-only build: no radio, no BLE; every surface sees "unavailable"
+static inline void improv_init(void) {}
+static inline void improv_poll(uint32_t now_ms) { (void)now_ms; }
+static inline bool improv_open(uint32_t window_ms, const char *why) { (void)window_ms; (void)why; return false; }
+static inline void improv_close(void) {}
+static inline bool improv_available(void) { return false; }
+static inline bool improv_active(void) { return false; }
+static inline const char *improv_state_str(void) { return "unavailable"; }
+static inline uint32_t improv_window_left_s(uint32_t now_ms) { (void)now_ms; return 0; }
+#endif

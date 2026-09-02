@@ -10,6 +10,13 @@ set(CMAKE_C_STANDARD 11)
 pico_sdk_init()
 
 option(FAKE_BLADES "Simulate the backplane and blades; runs on a bare board" OFF)
+option(NET_WIFI "CYW43 WiFi + Improv BLE provisioning (Pico 2 W, RM2)" ON)
+option(NET_ETH "WIZnet W6100 wired Ethernet on SPI0 GP16-21, probed at boot" ON)
+
+if(NET_WIFI AND NOT PICO_CYW43_SUPPORTED)
+    message(FATAL_ERROR "NET_WIFI=ON needs a CYW43 board (PICO_BOARD=pico2_w). "
+        "For a wired-only image (W6100-EVB-Pico2 etc.) configure with -DNET_WIFI=OFF.")
+endif()
 
 if(FAKE_BLADES)
     set(DRIVER_SOURCES
@@ -45,9 +52,6 @@ add_executable(controller
     src/net/mqtt.c
     src/net/http.c
     src/net/ota_pull.c
-    src/net/improv.c
-    src/net/improv_proto.c
-    src/net/btstack_glue.c
     ${DRIVER_SOURCES}
 )
 
@@ -56,8 +60,42 @@ if(FAKE_BLADES)
 endif()
 
 pico_generate_pio_header(controller ${CMAKE_CURRENT_LIST_DIR}/src/engine/ws2812.pio)
-# Improv Wi-Fi GATT database -> improv_profile.h (BTstack's compile_gatt.py)
-pico_btstack_make_gatt_header(controller PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/net/improv_profile.gatt)
+
+if(NET_WIFI)
+    target_sources(controller PRIVATE
+        src/net/improv.c
+        src/net/improv_proto.c
+        src/net/btstack_glue.c
+    )
+    target_compile_definitions(controller PRIVATE PWRMAN_NET_WIFI=1)
+    # Improv Wi-Fi GATT database -> improv_profile.h (BTstack's compile_gatt.py)
+    pico_btstack_make_gatt_header(controller PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/net/improv_profile.gatt)
+    target_link_libraries(controller
+        pico_cyw43_arch_lwip_threadsafe_background
+        # BLE (Improv provisioning). Deliberately NOT pico_btstack_cyw43: its
+        # flash-backed TLV store would format sectors at the top of flash; the
+        # glue it provides is reimplemented without that in src/net/btstack_glue.c
+        pico_btstack_ble
+        pico_btstack_hci_transport_cyw43
+        pico_btstack_run_loop_async_context
+    )
+else()
+    # lwIP without the cyw43 arch: same NO_SYS + threadsafe-background shape
+    target_link_libraries(controller
+        pico_lwip_nosys
+        pico_async_context_threadsafe_background
+    )
+endif()
+
+if(NET_ETH)
+    target_sources(controller PRIVATE
+        src/net/w6100.c
+        src/net/w6100_hw_pico.c
+        src/net/eth.c
+    )
+    target_compile_definitions(controller PRIVATE PWRMAN_NET_ETH=1)
+    target_link_libraries(controller hardware_spi)
+endif()
 
 target_include_directories(controller PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src
@@ -80,17 +118,10 @@ target_link_libraries(controller
     hardware_pio
     hardware_flash
     hardware_watchdog
-    pico_cyw43_arch_lwip_threadsafe_background
     pico_lwip_mqtt
     pico_lwip_mdns
     pico_lwip_sntp
     pico_lwip_http # http_client for OTA pull (httpd side goes unused)
-    # BLE (Improv provisioning). Deliberately NOT pico_btstack_cyw43: its
-    # flash-backed TLV store would format sectors at the top of flash; the
-    # glue it provides is reimplemented without that in src/net/btstack_glue.c
-    pico_btstack_ble
-    pico_btstack_hci_transport_cyw43
-    pico_btstack_run_loop_async_context
 )
 
 pico_enable_stdio_usb(controller 1)
