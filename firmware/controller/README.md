@@ -171,7 +171,9 @@ policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
 
 ## Management surfaces
 
-- **Web UI / API**: `http://<name>.local/` status page;
+- **Web UI / API**: `http://<name>.local/` status page — per port and
+  chassis-wide, measured draw *and* the budget reservation held against it
+  (an idle powered port draws 0 W but still reserves its 15 W base);
   `GET /api/v1/status`; `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
   `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`,
