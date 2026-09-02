@@ -29,6 +29,8 @@ add_executable(controller
     src/main.c
     src/ipc.c
     src/flash_map.c
+    src/stack_probe.c
+    src/fault_trap.c
     src/settings.c
     src/fault_log.c
     src/update.c
@@ -59,7 +61,7 @@ target_include_directories(controller PRIVATE
 )
 
 target_compile_definitions(controller PRIVATE
-    PICO_STACK_SIZE=4096
+    PICO_STACK_SIZE=16384
     PICO_CORE1_STACK_SIZE=4096
 )
 
@@ -93,6 +95,9 @@ if(NOT _fw_version_line MATCHES "\"([0-9]+)\\.([0-9]+)\\.([0-9]+)\"")
 endif()
 math(EXPR _fw_image_minor "${CMAKE_MATCH_2} * 256 + ${CMAKE_MATCH_3}")
 pico_set_binary_version(controller MAJOR ${CMAKE_MATCH_1} MINOR ${_fw_image_minor})
+
+# core 0 stack in main SRAM (see memmap_bigstack.ld)
+pico_set_linker_script(controller ${CMAKE_CURRENT_LIST_DIR}/memmap_bigstack.ld)
 
 pico_add_extra_outputs(controller)
 

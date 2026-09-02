@@ -14,6 +14,7 @@
 #include "net/mqtt.h"
 #include "net/net.h"
 #include "settings.h"
+#include "stack_probe.h"
 #include "update.h"
 
 #define WATCHDOG_TIMEOUT_MS 5000
@@ -26,6 +27,7 @@
 #define UPDATE_DEADLINE_MS (10 * 60 * 1000)
 
 int main(void) {
+    stack_probe_paint(); // before anything deepens the stack
     stdio_init_all();
     flash_map_init();
     settings_load();

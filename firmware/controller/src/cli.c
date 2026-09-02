@@ -8,7 +8,9 @@
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
 
+#include "engine/engine.h"
 #include "fault_log.h"
+#include "fault_trap.h"
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
@@ -16,6 +18,7 @@
 #include "net/net.h"
 #include "net/ota_pull.h"
 #include "settings.h"
+#include "stack_probe.h"
 #include "update.h"
 
 #define CLI_LINE_MAX 160
@@ -38,6 +41,7 @@ static void print_help(void) {
            "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness\n"
            "  faults [clear]               persistent fault log\n"
+           "  stack                        per-core stack high-water marks\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS);
@@ -72,7 +76,19 @@ static void print_info(void) {
     printf("mqtt: %s:%u (%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
-    printf("engine: %s\n", ipc_engine_alive() ? "running" : "STALLED");
+    if (ipc_engine_alive())
+        printf("engine: running\n");
+    else
+        printf("engine: STALLED (reached init stage %u of %u at %lu us)\n", engine_stage,
+               ENGINE_STAGE_LOOP, (unsigned long)engine_stage_us);
+    for (int core = 0; core < 2; core++) {
+        const fault_record_t *f = &g_fault[core];
+        if (f->hit)
+            printf("HARDFAULT core%d: pc=%08lx lr=%08lx xpsr=%08lx cfsr=%08lx "
+                   "hfsr=%08lx bfar=%08lx\n", core, (unsigned long)f->pc,
+                   (unsigned long)f->lr, (unsigned long)f->xpsr, (unsigned long)f->cfsr,
+                   (unsigned long)f->hfsr, (unsigned long)f->bfar);
+    }
     if (update_active())
         printf("ota: receiving, %lu bytes into slot %s so far\n",
                (unsigned long)update_bytes(), update_slot_name());
@@ -210,6 +226,14 @@ static void run_line(char *l) {
             printf("pulling; progress lands on this console\n");
         else
             printf("update: %s\n", e);
+    } else if (!strcmp(cmd, "stack")) {
+        for (int core = 0; core < 2; core++) {
+            uint32_t free = stack_probe_free_min(core);
+            printf("core%d (%s): %lu of %lu bytes never touched%s\n", core,
+                   core ? "engine" : "net/ui", (unsigned long)free,
+                   (unsigned long)stack_probe_size(core),
+                   free == 0 ? "  ** OVERFLOWED into the other core's stack **" : "");
+        }
     } else if (!strcmp(cmd, "faults")) {
         const char *op = strtok_r(NULL, " \t", &save);
         if (op && !strcmp(op, "clear")) {
@@ -247,7 +271,11 @@ static void run_line(char *l) {
         settings_defaults();
         printf("defaults loaded (not saved)\n");
     } else if (!strcmp(cmd, "reboot")) {
-        watchdog_reboot(0, 0, 100);
+        // Immediate: a delayed reboot never fires while the main loop keeps
+        // feeding the watchdog (it reloads the countdown every pass).
+        printf("rebooting\n");
+        sleep_ms(20); // let the console flush
+        watchdog_reboot(0, 0, 0);
     } else if (!strcmp(cmd, "bootsel")) {
         reset_usb_boot(0, 0);
     } else {

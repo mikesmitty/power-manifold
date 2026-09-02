@@ -15,6 +15,7 @@
 #include "pins.h"
 #include "port_fsm.h"
 #include "settings.h"
+#include "stack_probe.h"
 #include "tca9539.h"
 #include "tca9548a.h"
 
@@ -34,6 +35,10 @@ static volatile bool exp_irq;
 
 static bool present[NUM_PORTS];
 static uint8_t exp_fail_streak;
+
+volatile uint8_t engine_stage;
+volatile uint32_t engine_stage_us;
+#define STAGE(n) do { engine_stage_us = time_us_32(); engine_stage = (n); } while (0)
 
 // Delivered energy, integrated at the tick rate in mW·ms (µJ). uint64 is
 // centuries of headroom; the mWh views in telemetry wrap after ~4.9 years
@@ -99,6 +104,8 @@ static void dispatch_cmd(const engine_cmd_t *cmd) {
 }
 
 void engine_main(void) {
+    stack_probe_paint();
+    STAGE(ENGINE_STAGE_ENTERED);
     // allow core 0 to write flash (settings) while this core is parked
     flash_safe_execute_core_init();
 
@@ -115,23 +122,29 @@ void engine_main(void) {
 #else
     sim_reset();
 #endif
+    STAGE(ENGINE_STAGE_BUS_INIT);
 
     tca9548a_init();
     tca9539_init(); // outputs low FIRST, then direction (spec §6.4)
+    STAGE(ENGINE_STAGE_MUX_EXP);
     leds_init();
     leds_set_brightness(g_settings.led_brightness);
+    STAGE(ENGINE_STAGE_LEDS);
 
     budget_init(g_settings.budget_mw);
     port_fsm_init();
     fan_policy_init(g_settings.fan_auto != 0);
+    STAGE(ENGINE_STAGE_FSM);
 
 #ifndef PWRMAN_FAKE_BLADES
     gpio_set_irq_enabled_with_callback(PIN_ALERT_N, GPIO_IRQ_EDGE_FALL, true,
                                        gpio_irq_handler);
     gpio_set_irq_enabled(PIN_EXP_INT_N, GPIO_IRQ_EDGE_FALL, true);
 #endif
+    STAGE(ENGINE_STAGE_IRQS);
 
     refresh_presence();
+    STAGE(ENGINE_STAGE_PRESENCE);
 
     uint32_t tick = 0;
     absolute_time_t next = get_absolute_time();
@@ -181,6 +194,7 @@ void engine_main(void) {
         ipc_snapshot_publish(&t);
         leds_render(&t, now_ms);
         ipc_engine_heartbeat();
+        STAGE(ENGINE_STAGE_LOOP);
 
         tick++;
         sleep_until(next);

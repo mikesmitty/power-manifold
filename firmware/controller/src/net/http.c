@@ -22,6 +22,8 @@
 #define STATUS_JSON_MAX 1600
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
+#define POLL_INTERVAL   1    // tcp_poll units of 500ms
+#define IDLE_POLLS      20   // drop a connection that sends no request in ~10s
 
 typedef struct {
     struct tcp_pcb *pcb;
@@ -37,6 +39,7 @@ typedef struct {
     uint16_t static_sent;
     bool updating;      // headers done, body streams into update_write()
     uint32_t body_left; // update body bytes still expected
+    uint8_t idle_polls; // poll ticks with no request yet (browser preconnects)
 } conn_t;
 
 static conn_t conns[MAX_CONNS];
@@ -120,6 +123,7 @@ static void conn_free(conn_t *c) {
     c->static_sent = 0;
     c->updating = false;
     c->body_left = 0;
+    c->idle_polls = 0;
 }
 
 static void conn_close(conn_t *c) {
@@ -127,6 +131,7 @@ static void conn_close(conn_t *c) {
         tcp_arg(c->pcb, NULL);
         tcp_recv(c->pcb, NULL);
         tcp_sent(c->pcb, NULL);
+        tcp_poll(c->pcb, NULL, 0);
         tcp_err(c->pcb, NULL);
         if (tcp_close(c->pcb) != ERR_OK) tcp_abort(c->pcb);
     }
@@ -142,7 +147,12 @@ static bool send_span(conn_t *c, const char *data, uint16_t len, uint16_t *sent,
         uint16_t room = tcp_sndbuf(c->pcb);
         if (room == 0) return false;
         if (chunk > room) chunk = room;
-        if (tcp_write(c->pcb, data + *sent, chunk, flags) != ERR_OK) return false;
+        err_t err = tcp_write(c->pcb, data + *sent, chunk, flags);
+        if (err != ERR_OK) {
+            printf("http: tcp_write %d at %u/%u, retrying on poll\n", (int)err,
+                   (unsigned)*sent, (unsigned)len);
+            return false;
+        }
         *sent += chunk;
     }
     return true;
@@ -339,7 +349,10 @@ static void update_post_start(conn_t *c, const char *body_start) {
 }
 
 static void handle_request(conn_t *c) {
-    char json[STATUS_JSON_MAX];
+    // static: lwIP calls this in IRQ context on core 0's 4KB stack, and the
+    // engine's stack sits directly below it — a 1.6KB frame here plus printf's
+    // float formatting was enough to overflow into it under concurrent load
+    static char json[STATUS_JSON_MAX];
 
     if (!strncmp(c->req, "GET / ", 6)) {
         respond_static(c, 200, "OK", "text/html", INDEX_HTML, sizeof(INDEX_HTML) - 1);
@@ -457,6 +470,24 @@ static err_t sent_cb(void *arg, struct tcp_pcb *pcb, u16_t len) {
     return ERR_OK;
 }
 
+// Every 500ms per connection. Two jobs sent_cb can't do: resume a response
+// whose tcp_write failed with nothing in flight (sent_cb only fires once
+// queued data is acked), and free a slot held by a client that never sends a
+// request — browsers preconnect spare sockets, and with MAX_CONNS slots a few
+// of those would lock everyone else out. An OTA body in progress is exempt;
+// update_begin() has its own stale-transfer handling.
+static err_t poll_cb(void *arg, struct tcp_pcb *pcb) {
+    (void)pcb;
+    conn_t *c = (conn_t *)arg;
+    if (!c) return ERR_OK;
+    if (c->resp_len) {
+        send_more(c);
+    } else if (!c->updating && ++c->idle_polls >= IDLE_POLLS) {
+        conn_close(c);
+    }
+    return ERR_OK;
+}
+
 static void err_cb(void *arg, err_t err) {
     (void)err;
     conn_t *c = (conn_t *)arg;
@@ -476,6 +507,7 @@ static err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
     tcp_arg(newpcb, c);
     tcp_recv(newpcb, recv_cb);
     tcp_sent(newpcb, sent_cb);
+    tcp_poll(newpcb, poll_cb, POLL_INTERVAL);
     tcp_err(newpcb, err_cb);
     return ERR_OK;
 }
