@@ -29034,6 +29034,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
+			(at 90.17 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "3"
 			(uuid "43c92c34-6b0e-4aaf-926a-889fa509de7d")
 		)
@@ -30629,7 +30640,7 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "0;0;0"
+		(property "JLCPCB_CORRECTION" "3.6;-3;270"
 			(at 68.58 31.75 90)
 			(hide yes)
 			(show_name no)
