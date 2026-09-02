@@ -1,0 +1,47 @@
+---
+// Hosted copy of the standard Improv Wi-Fi BLE web provisioner
+// (https://github.com/improv-wifi/sdk-ble-js), bundled from npm so the site
+// pins a version and carries no CDN dependency. The web component owns the
+// whole flow: device chooser, identify, credentials, result + redirect link.
+---
+<div class="improv">
+	<improv-wifi-launch-button>
+		<button slot="activate" class="improv-button">Connect to a controller over Bluetooth</button>
+		<p slot="unsupported" class="improv-unsupported">
+			This browser can't use Web Bluetooth. Open this page in Chrome or Edge on a
+			desktop or Android device, or provision from the Home Assistant app on iOS.
+		</p>
+	</improv-wifi-launch-button>
+</div>
+
+<script>
+	import 'improv-wifi-sdk';
+</script>
+
+<style>
+	.improv {
+		margin: 1.5rem 0;
+	}
+	.improv-button {
+		font: inherit;
+		font-weight: 600;
+		color: var(--sl-color-black);
+		background: var(--sl-color-text-accent);
+		border: 1px solid var(--sl-color-text-accent);
+		border-radius: 999rem;
+		padding: 0.75rem 1.5rem;
+		cursor: pointer;
+	}
+	.improv-button:hover {
+		background: var(--sl-color-accent-high);
+		border-color: var(--sl-color-accent-high);
+	}
+	.improv-unsupported {
+		margin: 0;
+		padding: 0.75rem 1rem;
+		border-inline-start: 4px solid var(--sl-color-orange);
+		background: var(--sl-color-orange-low);
+		color: var(--sl-color-white);
+		border-radius: 0.25rem;
+	}
+</style>

@@ -1,0 +1,62 @@
+---
+title: Power Manifold
+description: A modular six-port USB-C smart PDU for single-board computers, with a managed RP2350 controller, MQTT and Home Assistant integration, and a 3D-printable 1U rack case.
+template: splash
+hero:
+  tagline: A modular, rack-mount USB-C smart PDU for single-board computers.
+  image:
+    file: ../../assets/case.png
+    alt: Power Manifold chassis, isometric render
+  actions:
+    - text: Set up Wi-Fi over Bluetooth
+      link: setup/wifi-provisioning/
+      icon: right-arrow
+    - text: Hardware architecture
+      link: hardware/architecture/
+      icon: open-book
+      variant: minimal
+    - text: Controller firmware
+      link: firmware/controller/
+      icon: rocket
+      variant: minimal
+    - text: Source on GitHub
+      link: https://github.com/mikesmitty/power-manifold
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Power Manifold is a managed USB Power Delivery supply for racks of SBCs such as
+Raspberry Pi, and for PCs that take a barrel plug. Six hot-swappable charger
+blades sit in a backplane behind a single RP2350 management controller that
+budgets power across the chassis, drives per-port status LEDs, and exposes
+everything over MQTT, HTTP, and a serial CLI. The 3D-printable case is 1U and
+fits a 10" half-rack, or two-abreast in a 19" rack.
+
+<CardGrid stagger>
+	<Card title="Six 100 W USB-C ports" icon="puzzle">
+		Each blade is an MPQ4242 buck-boost USB-PD source with an INA226 monitor,
+		on a PCIe x1 card edge so blades can be swapped without tools.
+	</Card>
+	<Card title="Centralized control" icon="setting">
+		One dual-core RP2350 supervises all ports through an I2C mux, enforces a
+		chassis power budget with per-port priorities, and steps ports down
+		before the input supply is oversubscribed.
+	</Card>
+	<Card title="Home Assistant native" icon="star">
+		MQTT discovery publishes every port, the fan, faults, and energy
+		counters. Firmware updates show up as a Home Assistant update entity.
+	</Card>
+	<Card title="Wired or wireless" icon="information">
+		Develop on a Pico 2 W over WiFi; ship on the custom controller with a
+		W6100 wired-Ethernet controller. [Improv BLE](setup/wifi-provisioning/)
+		handles first-time provisioning either way.
+	</Card>
+</CardGrid>
+
+## Renders
+
+![Front of the chassis](../../assets/case-front.png)
+![Chassis with the lid removed](../../assets/case-open.png)
+![Front of the chassis with the lid removed](../../assets/case-front-open.png)

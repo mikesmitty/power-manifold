@@ -1,0 +1,66 @@
+---
+title: Wi-Fi provisioning
+description: Hand the controller its Wi-Fi credentials over Bluetooth, straight from this page, using the Improv Wi-Fi standard and Web Bluetooth.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import ImprovProvisioner from '../../../components/ImprovProvisioner.astro';
+
+A controller with no Wi-Fi credentials advertises the standard
+[Improv Wi-Fi](https://www.improv-wifi.com/ble/) Bluetooth service. This page
+is a hosted copy of the Improv web provisioner: it runs entirely in your
+browser and talks to the controller over Web Bluetooth. Your network password
+goes to the controller and nowhere else.
+
+<ImprovProvisioner />
+
+<Aside type="note" title="Browser support">
+Web Bluetooth is available in Chrome and Edge on desktop and Android. It is not
+available in Safari or Firefox, and not on iPhones or iPads at all. On iOS, use
+the Home Assistant companion app instead: **Settings → Devices & services →
+Add integration → Improv via BLE**. The app also raises a notification on its
+own when it spots an unprovisioned controller nearby.
+</Aside>
+
+## What happens
+
+<Steps>
+
+1. **Power the controller.** While it has no credentials it advertises
+   automatically, so nothing else needs to be plugged in.
+
+2. **Connect.** Press the button above. The browser shows a chooser listing
+   nearby Improv devices. Pick the controller.
+
+3. **Identify (optional).** Flashes the chassis status LEDs so you know which
+   box you are talking to.
+
+4. **Enter the SSID and password.** The controller joins the network. A join
+   that is rejected, or that gets no address within 30 seconds, reports
+   *unable to connect* and the previous credentials come back.
+
+5. **Finish in the web UI.** On success the provisioner shows a link to the
+   controller's web page. Follow it from the same device: the link carries a
+   one-shot setup secret that unlocks the *Settings* panel for ten minutes, so
+   you can set the MQTT broker, the device name, and an API token. Choosing a
+   token locks the API and retires the secret. *Reboot* in the same panel
+   applies the name and broker.
+
+</Steps>
+
+## When the controller is listening
+
+Bluetooth only carries the Wi-Fi credentials, and only while a provisioning
+window is open. A window opens automatically while the controller has no
+credentials or has been off the network for five minutes. To re-provision a
+working controller, open a ten-minute window on demand with `improv on` on the
+USB console, or with the *Open BLE provisioning* button in Home Assistant.
+`improv off` closes it and holds the automatic windows until the next
+`improv on` or reboot. Outside a window the Bluetooth radio is powered down.
+
+The traffic is plaintext, the same trust posture as the rest of the management
+plane: a trusted LAN, and now radio range of a box you can press buttons on.
+
+For the USB console route, wired-only controllers, and the rest of the
+management surfaces, see [First-time setup](../../firmware/controller/#first-time-setup)
+in the firmware guide.
