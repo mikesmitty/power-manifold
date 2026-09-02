@@ -16,18 +16,25 @@
 #include "settings.h"
 #include "update.h"
 
-#define HTTP_PORT     80
-#define MAX_CONNS     4
-#define REQ_MAX       1024
-#define RESP_MAX      2560
+#define HTTP_PORT       80
+#define MAX_CONNS       4
+#define REQ_MAX         1024
+#define STATUS_JSON_MAX 1600
+#define HDR_MAX         128  // the status line + our three headers
+#define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 
 typedef struct {
     struct tcp_pcb *pcb;
     char req[REQ_MAX];
     uint16_t req_len;
-    char resp[RESP_MAX];
+    char resp[RESP_MAX]; // headers, plus any small dynamic body
     uint16_t resp_len;
     uint16_t resp_sent;
+    // Large constant bodies (the embedded page) never land in resp[]: lwIP
+    // references them in flash and they stream after the headers.
+    const char *static_body;
+    uint16_t static_len;
+    uint16_t static_sent;
     bool updating;      // headers done, body streams into update_write()
     uint32_t body_left; // update body bytes still expected
 } conn_t;
@@ -45,25 +52,61 @@ static const char INDEX_HTML[] =
     "th{color:#888;font-weight:600}#chassis{color:#9ad;margin:.8em 0}"
     ".s-active{color:#6f6}.s-idle{color:#fc6}.s-fault{color:#f55}"
     ".s-throttled{color:#ff5}.s-absent{color:#666}.s-probe{color:#6dd}"
-    ".s-disabled{color:#555}</style></head><body>"
+    ".s-disabled{color:#555}"
+    "tr.p{cursor:pointer}tr.p:hover td{background:#1a1a1a}tr.sel td{background:#1c2430}"
+    "tr.d td{padding:.6em .7em .9em;background:#161a20}"
+    ".g{display:grid;grid-template-columns:repeat(3,1fr);gap:.8em}"
+    ".g div{font-size:.8em;color:#888}.g b{color:#eee;font-weight:600}"
+    "svg{display:block;width:100%;height:5em;margin-top:.3em;background:#0d0d0d;"
+    "border:1px solid #333}"
+    "polyline{fill:none;stroke:#9ad;stroke-width:1.5;vector-effect:non-scaling-stroke}"
+    "#hint{font-size:.8em;color:#666;margin-top:.8em;max-width:44em}"
+    "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
+    ".g{grid-template-columns:1fr}}"
+    "</style></head><body>"
     "<h1>Power Manifold</h1><div id='chassis'>loading&hellip;</div>"
     "<table><thead><tr><th>Port</th><th>State</th><th>V</th><th>A</th>"
     "<th title='measured by the INA226'>Draw W</th>"
     "<th title='PD contract wattage held against the chassis budget'>Res W</th>"
     "<th>kWh</th></tr></thead><tbody id='ports'></tbody></table>"
+    "<div id='hint'>Click a port for its last 10 minutes of W / A / V, sampled"
+    " once a second while this page is open.</div>"
     "<script>"
+    // Per-port sample rings live in the page: the 1 Hz status poll already
+    // carries V/A/W, so history costs the firmware nothing. Sparklines are
+    // inline SVG — the device is LAN-only, so no chart library from a CDN.
+    "const N=600,H=[],ports=document.getElementById('ports');let sel=-1,last;"
+    "ports.onclick=e=>{const r=e.target.closest('tr.p');"
+    "if(r){const i=+r.dataset.i;sel=sel==i?-1:i;draw();}};"
+    // Samples fill the strip's width until the ring is full, then scroll;
+    // the caption states the span actually covered so the scale is explicit.
+    "function line(k,u,dp){const s=H[sel]||[],n=s.length,m=Math.max(...s.map(x=>x[k]),1e-9);"
+    "const pts=s.map((x,j)=>`${(300*j/Math.max(n-1,1)).toFixed(1)},"
+    "${(58-56*x[k]/m).toFixed(1)}`).join(' ');"
+    "const sp=Math.max(n-1,0),t=sp<60?sp+'s':Math.floor(sp/60)+'m'+(sp%60?sp%60+'s':'');"
+    "return `<div>${u} now <b>${(n?s[n-1][k]:0).toFixed(dp)}</b>"
+    " &middot; peak ${m.toFixed(dp)} &middot; ${t}"
+    "<svg viewBox='0 0 300 60' preserveAspectRatio='none'>"
+    "<polyline points='${pts}'/></svg></div>`;}"
+    "function draw(){if(!last)return;"
+    "ports.innerHTML=last.ports.map((p,i)=>"
+    "`<tr class='p${i==sel?' sel':''}' data-i='${i}'><td>${i+1}</td>"
+    "<td class='s-${p.state}'>${p.state}</td>"
+    "<td>${p.v.toFixed(2)}</td><td>${p.i.toFixed(2)}</td><td>${p.p.toFixed(1)}</td>"
+    "<td>${p.contract_w.toFixed(0)}</td><td>${p.e.toFixed(3)}</td></tr>`+"
+    "(i==sel?`<tr class='d'><td colspan='7'><div class='g'>${line('p','W',1)}"
+    "${line('i','A',2)}${line('v','V',2)}</div></td></tr>`:'')).join('');}"
     "async function tick(){try{"
-    "const r=await fetch('/api/v1/status');const d=await r.json();"
+    "const r=await fetch('/api/v1/status');const d=await r.json();last=d;"
     "document.getElementById('chassis').textContent="
     "`${d.name} \\u2014 ${d.total_w.toFixed(1)}W drawn, ${d.reserved_w.toFixed(0)}W"
     " reserved of ${d.budget_w.toFixed(0)}W budget"
     " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}`;"
-    "document.getElementById('ports').innerHTML=d.ports.map((p,i)=>"
-    "`<tr><td>${i+1}</td><td class='s-${p.state}'>${p.state}</td>"
-    "<td>${p.v.toFixed(2)}</td><td>${p.i.toFixed(2)}</td><td>${p.p.toFixed(1)}</td>"
-    "<td>${p.contract_w.toFixed(0)}</td><td>${p.e.toFixed(3)}</td></tr>`).join('');"
-    "}catch(e){}}tick();setInterval(tick,1000);"
+    "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
+    "if(H[i].length>N)H[i].shift();});"
+    "draw();}catch(e){}}tick();setInterval(tick,1000);"
     "</script></body></html>";
+_Static_assert(sizeof(INDEX_HTML) - 1 <= UINT16_MAX, "conn_t.static_len is 16-bit");
 
 static void conn_free(conn_t *c) {
     if (c->updating) update_abort(); // transfer died with its connection
@@ -72,6 +115,9 @@ static void conn_free(conn_t *c) {
     c->req_len = 0;
     c->resp_len = 0;
     c->resp_sent = 0;
+    c->static_body = NULL;
+    c->static_len = 0;
+    c->static_sent = 0;
     c->updating = false;
     c->body_left = 0;
 }
@@ -87,28 +133,60 @@ static void conn_close(conn_t *c) {
     conn_free(c);
 }
 
-static void send_more(conn_t *c) {
-    while (c->resp_sent < c->resp_len) {
-        uint16_t chunk = c->resp_len - c->resp_sent;
+// Queue as much of one span as the send buffer takes; true once it is all
+// queued. sent_cb resumes a partial span when the window opens again.
+static bool send_span(conn_t *c, const char *data, uint16_t len, uint16_t *sent,
+                      uint8_t flags) {
+    while (*sent < len) {
+        uint16_t chunk = len - *sent;
         uint16_t room = tcp_sndbuf(c->pcb);
-        if (room == 0) return;
+        if (room == 0) return false;
         if (chunk > room) chunk = room;
-        if (tcp_write(c->pcb, c->resp + c->resp_sent, chunk, TCP_WRITE_FLAG_COPY) != ERR_OK)
-            return;
-        c->resp_sent += chunk;
+        if (tcp_write(c->pcb, data + *sent, chunk, flags) != ERR_OK) return false;
+        *sent += chunk;
     }
-    tcp_output(c->pcb);
-    if (c->resp_sent >= c->resp_len) conn_close(c);
+    return true;
 }
 
+static void send_more(conn_t *c) {
+    // resp[] is reused per request, so lwIP copies it; a static body lives
+    // in flash for good, so lwIP may reference it in place
+    bool done = send_span(c, c->resp, c->resp_len, &c->resp_sent, TCP_WRITE_FLAG_COPY) &&
+                send_span(c, c->static_body, c->static_len, &c->static_sent, 0);
+    tcp_output(c->pcb);
+    if (done) conn_close(c);
+}
+
+#define HDR_FMT "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %u\r\n" \
+                "Connection: close\r\n\r\n"
+
+// Small dynamic body: headers and body together in resp[]. Bodies are the
+// status JSON (STATUS_JSON_MAX) or short error/result objects, so this fits
+// by construction; a body that somehow doesn't becomes a 500 rather than a
+// truncated payload the client would wait on forever.
 static void respond(conn_t *c, int code, const char *status,
                     const char *content_type, const char *body) {
-    int n = snprintf(c->resp, RESP_MAX,
-                     "HTTP/1.1 %d %s\r\nContent-Type: %s\r\n"
-                     "Content-Length: %u\r\nConnection: close\r\n\r\n%s",
-                     code, status, content_type, (unsigned)strlen(body), body);
-    c->resp_len = (uint16_t)(n >= RESP_MAX ? RESP_MAX - 1 : n);
+    int n = snprintf(c->resp, RESP_MAX, HDR_FMT "%s", code, status, content_type,
+                     (unsigned)strlen(body), body);
+    if (n >= RESP_MAX) {
+        n = snprintf(c->resp, RESP_MAX, HDR_FMT "%s", 500, "Internal Server Error",
+                     "text/plain", 18u, "response too large");
+    }
+    c->resp_len = (uint16_t)n;
     c->resp_sent = 0;
+    send_more(c);
+}
+
+// Constant body (flash-resident, any size): only the headers use resp[].
+static void respond_static(conn_t *c, int code, const char *status,
+                           const char *content_type, const char *body, size_t len) {
+    int n = snprintf(c->resp, RESP_MAX, HDR_FMT, code, status, content_type,
+                     (unsigned)len);
+    c->resp_len = (uint16_t)n;
+    c->resp_sent = 0;
+    c->static_body = body;
+    c->static_len = (uint16_t)len;
+    c->static_sent = 0;
     send_more(c);
 }
 
@@ -261,10 +339,10 @@ static void update_post_start(conn_t *c, const char *body_start) {
 }
 
 static void handle_request(conn_t *c) {
-    char json[1600];
+    char json[STATUS_JSON_MAX];
 
     if (!strncmp(c->req, "GET / ", 6)) {
-        respond(c, 200, "OK", "text/html", INDEX_HTML);
+        respond_static(c, 200, "OK", "text/html", INDEX_HTML, sizeof(INDEX_HTML) - 1);
     } else if (!strncmp(c->req, "GET /api/v1/status", 18)) {
         build_status_json(json, sizeof(json));
         respond(c, 200, "OK", "application/json", json);

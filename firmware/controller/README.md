@@ -173,7 +173,10 @@ policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
 
 - **Web UI / API**: `http://<name>.local/` status page — per port and
   chassis-wide, measured draw *and* the budget reservation held against it
-  (an idle powered port draws 0 W but still reserves its 15 W base);
+  (an idle powered port draws 0 W but still reserves its 15 W base); click a
+  port row for sparklines of its last 10 minutes of W / A / V, sampled from
+  the page's own 1 Hz poll (history lives in the tab, so it starts when the
+  page opens — Home Assistant keeps the long-term record);
   `GET /api/v1/status`; `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
   `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`,
