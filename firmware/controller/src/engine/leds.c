@@ -12,6 +12,8 @@ static uint sm;
 static uint offset;
 static uint8_t brightness = 48;
 static uint32_t last_frame_ms;
+static uint32_t identify_until_ms;
+static bool identify_active;
 
 typedef struct { uint8_t r, g, b; } rgb_t;
 
@@ -33,6 +35,11 @@ void leds_init(void) {
 
 void leds_set_brightness(uint8_t b) {
     brightness = b;
+}
+
+void leds_identify(uint32_t until_ms) {
+    identify_until_ms = until_ms;
+    identify_active = true;
 }
 
 static void put_pixel(rgb_t c, uint8_t scale) {
@@ -57,6 +64,16 @@ static uint8_t pulse(uint32_t now_ms, uint32_t period_ms) {
 void leds_render(const telemetry_t *t, uint32_t now_ms) {
     if (now_ms - last_frame_ms < FRAME_INTERVAL_MS) return;
     last_frame_ms = now_ms;
+
+    if (identify_active && (int32_t)(now_ms - identify_until_ms) >= 0)
+        identify_active = false;
+    if (identify_active) {
+        // alternate halves of the chain in blue, 2 Hz: unmistakable from
+        // across the room, unlike any port state
+        for (int i = 0; i < NUM_PORTS; i++)
+            put_pixel(COL_BLUE, ((now_ms / 250) + (uint32_t)i) & 1 ? 255 : 0);
+        return;
+    }
 
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t->port[i];

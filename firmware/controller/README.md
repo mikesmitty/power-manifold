@@ -26,7 +26,8 @@ Two cores, one rule: **only core 1 touches the backplane.**
   in the CLI (0 = highest, default = port number).
 - **Core 0 — management** (`src/net/`, `src/cli.c`): CYW43 WiFi + lwIP,
   MQTT with Home Assistant discovery, embedded web UI + JSON API, USB CDC
-  maintenance console.
+  maintenance console, Improv Wi-Fi provisioning over BLE (BTstack on the
+  same CYW43).
 - **Between them** (`src/ipc.c`): a command queue, an event queue, and a
   seqlock telemetry snapshot. Every management surface is a thin transport
   over the same command/telemetry interface.
@@ -47,8 +48,10 @@ The hardware watchdog is fed only while both cores make progress.
 
 ## Building
 
-Requires the [pico-sdk](https://github.com/raspberrypi/pico-sdk) (2.x) and an
-`arm-none-eabi` toolchain.
+Requires the [pico-sdk](https://github.com/raspberrypi/pico-sdk) (2.x) with
+its `lib/btstack` submodule checked out (BLE provisioning), an
+`arm-none-eabi` toolchain, and Python 3 (BTstack's `compile_gatt.py` turns
+`src/net/improv_profile.gatt` into a header at build time).
 
 ```sh
 export PICO_SDK_PATH=~/.pico-sdk/sdk/2.2.0   # or wherever the SDK lives
@@ -156,7 +159,16 @@ so bump `FW_VERSION` or use `picotool load -f -p <0|1>` at the bench.
 
 ## First-time setup
 
-Connect to the USB console (any serial terminal, 115200) and provision:
+Two ways onto the WiFi. Over Bluetooth, with nothing plugged in: an
+unprovisioned controller advertises the standard
+[Improv Wi-Fi](https://www.improv-wifi.com/ble/) BLE service, so the Home
+Assistant companion app (Settings → Devices → Add → *Improv via BLE*, or
+the notification it raises when it spots one) or the Web Bluetooth
+provisioner at improv-wifi.com in a Chromium browser hands it the SSID and
+password. *Identify* flashes the status LEDs so you know which box you're
+talking to; on success the client is redirected to `http://<ip>/` and the
+credentials are saved. Or over the USB console (any serial terminal,
+115200):
 
 ```
 wifi <ssid> <password>
@@ -168,6 +180,19 @@ reboot
 
 `help` lists everything else (port control and priorities, budget, fan
 policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
+
+BLE only ever carries the WiFi credentials, and only while a provisioning
+window is open: automatically while the device has no credentials or has
+been off the network for 5 minutes, and on request for 10 minutes via
+`improv on` on the console or the *Open BLE provisioning* button in Home
+Assistant (`improv off` closes it and holds the automatic windows until
+the next `improv on` or reboot). Outside a window the Bluetooth controller
+is powered down. A join that is rejected or gets no address within 30 s
+reports *unable to connect* and the previous credentials come back. The
+GATT traffic is plaintext, same trust posture as the rest of the
+management plane (a trusted LAN, and now radio range of a box you can
+press buttons on). `info` and the status JSON (`"ble"`) show the window
+state.
 
 ## Management surfaces
 
@@ -206,5 +231,4 @@ policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
 ## Not yet implemented
 
 - W6100 wired Ethernet netif (hardware path reserved, see GPIO map)
-- BLE provisioning via RM2/BTstack (candidate for initial configuration)
 - Front-panel display (planned as another consumer of the telemetry snapshot)

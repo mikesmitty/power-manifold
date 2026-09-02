@@ -14,6 +14,7 @@
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
+#include "net/improv.h"
 #include "net/mqtt.h"
 #include "net/net.h"
 #include "net/ota_pull.h"
@@ -31,6 +32,7 @@ static void print_help(void) {
            "  status                       port table + chassis power\n"
            "  info                         firmware/network/broker state\n"
            "  wifi <ssid> [pass]           set WiFi credentials\n"
+           "  improv [on|off]              BLE provisioning window (Improv Wi-Fi)\n"
            "  mqtt <host> [port user pass] set MQTT broker (empty host disables)\n"
            "  name <device-name>           hostname / topic id\n"
            "  token <t>|clear              REST API bearer token\n"
@@ -76,6 +78,14 @@ static void print_info(void) {
     printf("mqtt: %s:%u (%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
+    if (improv_available()) {
+        uint32_t left = improv_window_left_s(to_ms_since_boot(get_absolute_time()));
+        printf("ble: improv %s", improv_state_str());
+        if (left) printf(" (closes in %lus)", (unsigned long)left);
+        printf("\n");
+    } else {
+        printf("ble: unavailable\n");
+    }
     if (ipc_engine_alive())
         printf("engine: running\n");
     else
@@ -122,6 +132,18 @@ static void run_line(char *l) {
         snprintf(g_settings.wifi_ssid, sizeof(g_settings.wifi_ssid), "%s", ssid);
         snprintf(g_settings.wifi_pass, sizeof(g_settings.wifi_pass), "%s", pass ? pass : "");
         printf("wifi set; 'save' then 'reboot' to apply\n");
+    } else if (!strcmp(cmd, "improv")) {
+        const char *op = strtok_r(NULL, " \t", &save);
+        if (!op) {
+            printf("improv: %s\n", improv_available() ? improv_state_str() : "unavailable");
+        } else if (!strcmp(op, "on")) {
+            if (!improv_open(IMPROV_WINDOW_MS, "console")) printf("BLE unavailable\n");
+        } else if (!strcmp(op, "off")) {
+            improv_close();
+            printf("improv: off (automatic windows disabled until 'improv on' or reboot)\n");
+        } else {
+            printf("usage: improv [on|off]\n");
+        }
     } else if (!strcmp(cmd, "mqtt")) {
         const char *host = strtok_r(NULL, " \t", &save);
         const char *port = strtok_r(NULL, " \t", &save);

@@ -1,0 +1,18 @@
+// GATT database for Improv Wi-Fi BLE provisioning (https://www.improv-wifi.com/ble/).
+// Compiled by BTstack's compile_gatt.py into improv_profile.h at build time.
+
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ | DYNAMIC,
+
+// Improv service
+PRIMARY_SERVICE, 00467768-6228-2272-4663-277478268000
+// current state (1 byte)
+CHARACTERISTIC, 00467768-6228-2272-4663-277478268001, READ | NOTIFY | DYNAMIC,
+// error state (1 byte)
+CHARACTERISTIC, 00467768-6228-2272-4663-277478268002, READ | NOTIFY | DYNAMIC,
+// RPC command (client -> device)
+CHARACTERISTIC, 00467768-6228-2272-4663-277478268003, WRITE | WRITE_WITHOUT_RESPONSE | DYNAMIC,
+// RPC result (device -> client)
+CHARACTERISTIC, 00467768-6228-2272-4663-277478268004, READ | NOTIFY | DYNAMIC,
+// capabilities (1 byte: bit 0 = identify supported)
+CHARACTERISTIC, 00467768-6228-2272-4663-277478268005, READ | DYNAMIC,

@@ -12,6 +12,7 @@
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
+#include "improv.h"
 #include "net.h"
 #include "settings.h"
 #include "update.h"
@@ -210,7 +211,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"uptime_s\":%lu,\"rssi\":%ld,"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
-        "\"fan_mode\":\"%s\",\"alert\":%s,\"ports\":[",
+        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -218,7 +219,7 @@ static void build_status_json(char *out, size_t cap) {
         t.budget_mw / 1000.0, headroom / 1000.0, t.energy_mwh / 1e6,
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
-        t.alert_active ? "true" : "false");
+        t.alert_active ? "true" : "false", improv_state_str());
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];

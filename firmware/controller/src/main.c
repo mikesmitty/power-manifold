@@ -11,6 +11,7 @@
 #include "ipc.h"
 #include "manifold.h"
 #include "net/http.h"
+#include "net/improv.h"
 #include "net/mqtt.h"
 #include "net/net.h"
 #include "settings.h"
@@ -57,6 +58,7 @@ int main(void) {
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
 
         cli_poll();
+        improv_poll(now_ms); // before net_poll: sees a join result before the retry
         net_poll(now_ms);
         mqtt_poll(now_ms);
 

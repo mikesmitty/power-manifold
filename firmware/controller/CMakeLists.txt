@@ -45,6 +45,9 @@ add_executable(controller
     src/net/mqtt.c
     src/net/http.c
     src/net/ota_pull.c
+    src/net/improv.c
+    src/net/improv_proto.c
+    src/net/btstack_glue.c
     ${DRIVER_SOURCES}
 )
 
@@ -53,11 +56,13 @@ if(FAKE_BLADES)
 endif()
 
 pico_generate_pio_header(controller ${CMAKE_CURRENT_LIST_DIR}/src/engine/ws2812.pio)
+# Improv Wi-Fi GATT database -> improv_profile.h (BTstack's compile_gatt.py)
+pico_btstack_make_gatt_header(controller PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/net/improv_profile.gatt)
 
 target_include_directories(controller PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src
     ${CMAKE_CURRENT_LIST_DIR}/src/engine # driver headers, for the sim seam
-    ${CMAKE_CURRENT_LIST_DIR} # lwipopts.h
+    ${CMAKE_CURRENT_LIST_DIR} # lwipopts.h, btstack_config.h
 )
 
 target_compile_definitions(controller PRIVATE
@@ -80,6 +85,12 @@ target_link_libraries(controller
     pico_lwip_mdns
     pico_lwip_sntp
     pico_lwip_http # http_client for OTA pull (httpd side goes unused)
+    # BLE (Improv provisioning). Deliberately NOT pico_btstack_cyw43: its
+    # flash-backed TLV store would format sectors at the top of flash; the
+    # glue it provides is reimplemented without that in src/net/btstack_glue.c
+    pico_btstack_ble
+    pico_btstack_hci_transport_cyw43
+    pico_btstack_run_loop_async_context
 )
 
 pico_enable_stdio_usb(controller 1)

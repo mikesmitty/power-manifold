@@ -9,6 +9,7 @@
 #include "lwip/apps/sntp.h"
 #include "lwip/netif.h"
 
+#include "improv.h"
 #include "settings.h"
 
 #define RECONNECT_INTERVAL_MS (10 * 1000)
@@ -41,9 +42,26 @@ void net_init(void) {
     if (g_settings.wifi_ssid[0]) {
         start_connect();
     } else {
-        printf("net: no WiFi credentials; use CLI 'wifi <ssid> [pass]'\n");
+        printf("net: no WiFi credentials; use CLI 'wifi <ssid> [pass]' or Improv over BLE\n");
     }
     last_connect_ms = 0;
+
+    improv_init(); // BLE provisioning shares the radio; advertises on demand
+}
+
+void net_reconnect(void) {
+    if (!available || !g_settings.wifi_ssid[0]) return;
+    last_connect_ms = to_ms_since_boot(get_absolute_time());
+    // Drop the current association first: a join to the same SSID with a
+    // different key otherwise rides the existing session for ~25 s before
+    // the AP rejects it, and the link never visibly goes down for a while.
+    cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
+    start_connect();
+}
+
+int net_link_status(void) {
+    if (!available) return CYW43_LINK_FAIL;
+    return cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA);
 }
 
 static void start_services(void) {
@@ -65,6 +83,7 @@ void net_poll(uint32_t now_ms) {
     bool up = status == CYW43_LINK_UP;
 
     if (up && !link_up) {
+        link_up = true; // before the print: net_ip_str() reports through net_up()
         printf("net: up, ip %s\n", net_ip_str());
         if (!services_started) {
             start_services();
@@ -89,7 +108,10 @@ bool net_up(void) {
 }
 
 const char *net_ip_str(void) {
-    if (!net_up()) return "0.0.0.0";
+    // Driver status rather than net_poll's cached flag: callers that run
+    // before net_poll in the same pass (improv's redirect URL) would
+    // otherwise see 0.0.0.0 on the pass the link came up.
+    if (net_link_status() != CYW43_LINK_UP) return "0.0.0.0";
     return ip4addr_ntoa(netif_ip4_addr(netif_default));
 }
 

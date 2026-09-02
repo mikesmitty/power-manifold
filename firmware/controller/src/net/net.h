@@ -14,6 +14,8 @@ void net_init(void);
 void net_poll(uint32_t now_ms);
 bool net_available(void); // radio initialized, lwIP running
 bool net_up(void);        // link up with an IP address
+void net_reconnect(void); // (re)join with the credentials now in g_settings
+int  net_link_status(void); // raw cyw43 link status; <0 = join rejected/failed
 const char *net_ip_str(void);
 int32_t net_rssi(void);
 uint32_t net_epoch(void); // unix time from SNTP, 0 until first sync

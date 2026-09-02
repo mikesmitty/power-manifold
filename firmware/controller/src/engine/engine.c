@@ -83,7 +83,7 @@ static void refresh_presence(void) {
         present[i] = tca9539_present_from(inputs, i);
 }
 
-static void dispatch_cmd(const engine_cmd_t *cmd) {
+static void dispatch_cmd(const engine_cmd_t *cmd, uint32_t now_ms) {
     switch ((cmd_op_t)cmd->op) {
     case CMD_SET_BUDGET:
         budget_set_total(cmd->arg);
@@ -96,6 +96,9 @@ static void dispatch_cmd(const engine_cmd_t *cmd) {
         break;
     case CMD_LED_BRIGHTNESS:
         leds_set_brightness((uint8_t)cmd->arg);
+        break;
+    case CMD_LED_IDENTIFY:
+        leds_identify(now_ms + cmd->arg);
         break;
     default:
         if (cmd->port < NUM_PORTS) port_fsm_cmd(cmd->port, cmd);
@@ -157,7 +160,7 @@ void engine_main(void) {
 #endif
 
         engine_cmd_t cmd;
-        while (ipc_cmd_pop(&cmd)) dispatch_cmd(&cmd);
+        while (ipc_cmd_pop(&cmd)) dispatch_cmd(&cmd, now_ms);
 
         // Fault line first: it is wire-OR'd, so sweep all powered ports.
         // Level-check as well as the IRQ flag in case an edge was missed.

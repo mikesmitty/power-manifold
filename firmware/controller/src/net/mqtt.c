@@ -11,6 +11,7 @@
 #include "lwip/apps/mqtt.h"
 #include "lwip/dns.h"
 
+#include "improv.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "net.h"
@@ -22,11 +23,11 @@
 #define TELEMETRY_MS     1000
 
 // discovery entity table: per-port sensors + switch + buttons + priority
-// number, chassis sensors + fan (the last chassis step retracts the
-// pre-select fan switch config)
+// number, chassis sensors + fan + BLE provisioning button (the last chassis
+// step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 4)
-#define CHASSIS_ENTITIES 7
+#define CHASSIS_ENTITIES 8
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -149,6 +150,8 @@ static void handle_command(const char *topic, const char *data) {
             ipc_cmd_push(&c);
         }
         settings_save_later();
+    } else if (strcmp(sub, "/improv/set") == 0) {
+        if (!strcasecmp(data, "open")) improv_open(IMPROV_WINDOW_MS, "Home Assistant");
     } else if (strcmp(sub, "/update/latest") == 0) {
         // retained release pointer, published by CI or by hand:
         //   {"version":"x.y.z","url":"http://lan-host/controller.uf2"}
@@ -207,6 +210,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         snprintf(topic_buf, sizeof(topic_buf), "%s/update/latest", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/update/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/improv/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         publish_update_state();
         printf("mqtt: connected to %s\n", g_settings.mqtt_host);
@@ -375,6 +380,17 @@ static void publish_update_entity(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_improv_button(void) {
+    discovery_config_topic("button", "improv");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Open BLE provisioning\","
+             "\"uniq_id\":\"pwrman_%s_improv\",\"cmd_t\":\"~/improv/set\","
+             "\"pl_prs\":\"open\",\"ic\":\"mdi:bluetooth-settings\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_fan_select(void) {
     discovery_config_topic("select", "fan_mode");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -421,6 +437,9 @@ static void discovery_step(void) {
         break;
     case 5:
         publish_update_entity();
+        break;
+    case 6:
+        publish_improv_button();
         break;
     default:
         // retire the fan switch this select replaced from older firmware

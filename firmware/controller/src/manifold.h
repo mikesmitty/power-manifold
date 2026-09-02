@@ -74,6 +74,7 @@ typedef enum {
     CMD_FAN,             // arg = 0/1; also drops the fan out of auto mode
     CMD_FAN_AUTO,        // hand the fan back to the engine's auto policy
     CMD_LED_BRIGHTNESS,  // arg = 0-255
+    CMD_LED_IDENTIFY,    // arg = ms: flash the whole chain (Improv identify)
 } cmd_op_t;
 
 typedef struct {
