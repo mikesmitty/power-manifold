@@ -14,11 +14,22 @@
 // the last two sectors of flash (which, on a freshly partitioned board, is
 // where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    2
+#define SETTINGS_VERSION    3
 
-// Version 1 ended where the version-2 fields begin; accepting it means
-// wifi/mqtt credentials survive a firmware upgrade.
-#define SETTINGS_V1_PAYLOAD offsetof(settings_t, fan_auto)
+// Each older layout ended where the next version's fields begin, with its
+// crc 4-byte aligned right after the last field. Accepting them means
+// wifi/mqtt credentials survive a firmware upgrade. The asserts pin the
+// on-flash offsets: they must never move once a version has shipped.
+#define ALIGN4(x) (((x) + 3u) & ~3u)
+#define SETTINGS_V1_PAYLOAD ALIGN4(offsetof(settings_t, fan_auto))
+#define SETTINGS_V2_PAYLOAD ALIGN4(offsetof(settings_t, fan_on_ma))
+_Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
+_Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
+
+// Fan auto-policy defaults, shared by fresh defaults and version upgrades
+#define FAN_ON_W_DEFAULT   80
+#define FAN_OFF_W_DEFAULT  60
+#define FAN_ON_MA_DEFAULT  3000
 
 #define LEGACY_BASE (PICO_FLASH_SIZE_BYTES - SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
 
@@ -51,17 +62,23 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
     return (const settings_t *)flash_map_xip_ptr(sector_off(base, i));
 }
 
+// Payload length of a stored layout version; its crc follows immediately.
+static uint32_t version_payload_len(uint32_t version) {
+    switch (version) {
+    case SETTINGS_VERSION: return payload_len();
+    case 2:                return SETTINGS_V2_PAYLOAD;
+    case 1:                return SETTINGS_V1_PAYLOAD;
+    default:               return 0;
+    }
+}
+
 static bool slot_valid(const settings_t *s) {
     if (s->magic != SETTINGS_MAGIC) return false;
-    if (s->version == SETTINGS_VERSION)
-        return crc32_calc((const uint8_t *)s, payload_len()) == s->crc;
-    if (s->version == 1) {
-        // v1's crc sits right after its last field, where v2's new fields are
-        uint32_t crc;
-        memcpy(&crc, (const uint8_t *)s + SETTINGS_V1_PAYLOAD, sizeof(crc));
-        return crc32_calc((const uint8_t *)s, SETTINGS_V1_PAYLOAD) == crc;
-    }
-    return false;
+    uint32_t len = version_payload_len(s->version);
+    if (!len) return false;
+    uint32_t crc;
+    memcpy(&crc, (const uint8_t *)s + len, sizeof(crc));
+    return crc32_calc((const uint8_t *)s, len) == crc;
 }
 
 static uint32_t resolve_home(void) {
@@ -95,8 +112,9 @@ void settings_defaults(void) {
     }
     g_settings.led_brightness = 48;
     g_settings.fan_auto = 1;
-    g_settings.fan_on_w = 80;
-    g_settings.fan_off_w = 60;
+    g_settings.fan_on_w = FAN_ON_W_DEFAULT;
+    g_settings.fan_off_w = FAN_OFF_W_DEFAULT;
+    g_settings.fan_on_ma = FAN_ON_MA_DEFAULT;
 }
 
 void settings_load(void) {
@@ -108,13 +126,14 @@ void settings_load(void) {
     }
     if (best) {
         memcpy(&g_settings, best, sizeof(g_settings));
-        if (g_settings.version < SETTINGS_VERSION) {
-            // upgrade in place: default the fields the old layout lacked
-            g_settings.version = SETTINGS_VERSION;
+        // upgrade in place: default the fields the old layout lacked
+        if (g_settings.version < 2) {
             g_settings.fan_auto = 1;
-            g_settings.fan_on_w = 80;
-            g_settings.fan_off_w = 60;
+            g_settings.fan_on_w = FAN_ON_W_DEFAULT;
+            g_settings.fan_off_w = FAN_OFF_W_DEFAULT;
         }
+        if (g_settings.version < 3) g_settings.fan_on_ma = FAN_ON_MA_DEFAULT;
+        g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();
     }

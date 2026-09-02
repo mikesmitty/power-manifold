@@ -33,6 +33,8 @@ typedef struct {
     uint8_t  fan_auto;        // 1: engine drives the fan from total power
     uint16_t fan_on_w;        // auto: on at/above this
     uint16_t fan_off_w;       // auto: off at/below this (hysteresis band)
+    // -- added in layout version 3 --
+    uint16_t fan_on_ma;       // auto: also on while any contract exceeds this (0 = off)
     uint32_t crc; // must remain last
 } settings_t;
 

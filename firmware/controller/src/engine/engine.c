@@ -8,6 +8,7 @@
 #include "pico/stdlib.h"
 
 #include "budget.h"
+#include "fan_policy.h"
 #include "ipc.h"
 #include "leds.h"
 #include "manifold.h"
@@ -25,10 +26,6 @@
 #define TICK_MS 10 // 100 Hz supervisory rate
 #define PRESENCE_REFRESH_TICKS 10 // full presence re-read every 100ms
 
-// Auto fan: hysteresis thresholds live in settings; a state change also
-// starts a hold so borderline loads can't flap the fan.
-#define FAN_MIN_HOLD_MS (30 * 1000)
-
 // EVT_PROBE_FAIL port value for chassis-level (non-port) problems
 #define CHASSIS_EVT_PORT 0xFF
 
@@ -36,9 +33,6 @@ static volatile bool alert_irq;
 static volatile bool exp_irq;
 
 static bool present[NUM_PORTS];
-static bool fan_on;
-static bool fan_auto_mode;
-static uint32_t fan_hold_until_ms;
 static uint8_t exp_fail_streak;
 
 // Delivered energy, integrated at the tick rate in mW·ms (µJ). uint64 is
@@ -90,12 +84,10 @@ static void dispatch_cmd(const engine_cmd_t *cmd) {
         budget_set_total(cmd->arg);
         break;
     case CMD_FAN:
-        fan_auto_mode = false;
-        if (tca9539_set_fan(cmd->arg != 0)) fan_on = cmd->arg != 0;
+        fan_policy_set_manual(cmd->arg != 0);
         break;
     case CMD_FAN_AUTO:
-        fan_auto_mode = true;
-        fan_hold_until_ms = 0; // let the policy act immediately
+        fan_policy_set_auto();
         break;
     case CMD_LED_BRIGHTNESS:
         leds_set_brightness((uint8_t)cmd->arg);
@@ -131,7 +123,7 @@ void engine_main(void) {
 
     budget_init(g_settings.budget_mw);
     port_fsm_init();
-    fan_auto_mode = g_settings.fan_auto != 0;
+    fan_policy_init(g_settings.fan_auto != 0);
 
 #ifndef PWRMAN_FAKE_BLADES
     gpio_set_irq_enabled_with_callback(PIN_ALERT_N, GPIO_IRQ_EDGE_FALL, true,
@@ -181,21 +173,9 @@ void engine_main(void) {
         t.reserved_mw = budget_reserved();
         t.budget_mw = budget_total();
 
-        if (fan_auto_mode) {
-            bool want = fan_on;
-            if (!fan_on && t.total_mw >= (uint32_t)g_settings.fan_on_w * 1000u)
-                want = true;
-            else if (fan_on && t.total_mw <= (uint32_t)g_settings.fan_off_w * 1000u)
-                want = false;
-            if (want != fan_on && (int32_t)(now_ms - fan_hold_until_ms) >= 0 &&
-                tca9539_set_fan(want)) {
-                fan_on = want;
-                fan_hold_until_ms = now_ms + FAN_MIN_HOLD_MS;
-            }
-        }
-
-        t.fan_on = fan_on;
-        t.fan_auto = fan_auto_mode;
+        fan_policy_tick(&t, now_ms);
+        t.fan_on = fan_policy_on();
+        t.fan_auto = fan_policy_auto();
         t.alert_active = alert_line_active();
 
         ipc_snapshot_publish(&t);

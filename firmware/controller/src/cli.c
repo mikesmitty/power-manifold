@@ -34,7 +34,8 @@ static void print_help(void) {
            "  budget <watts>               chassis power budget\n"
            "  port <1-%d> on|off|reset|srccap\n"
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
-           "  fan on|off|auto [on_w off_w]  auto follows total power w/ hysteresis\n"
+           "  fan on|off|auto [on_w off_w [on_ma]]\n"
+           "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness\n"
            "  faults [clear]               persistent fault log\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
@@ -161,24 +162,33 @@ static void run_line(char *l) {
         printf(ipc_cmd_push(&c) ? "ok\n" : "queue full\n");
     } else if (!strcmp(cmd, "fan")) {
         const char *op = strtok_r(NULL, " \t", &save);
-        if (!op) { printf("usage: fan on|off|auto [on_w off_w]\n"); return; }
+        if (!op) { printf("usage: fan on|off|auto [on_w off_w [on_ma]]\n"); return; }
         if (!strcmp(op, "auto")) {
             const char *on_w = strtok_r(NULL, " \t", &save);
             const char *off_w = strtok_r(NULL, " \t", &save);
+            const char *on_ma = strtok_r(NULL, " \t", &save);
             if (on_w && off_w) {
                 int on = atoi(on_w), off = atoi(off_w);
+                int ma = on_ma ? atoi(on_ma) : (int)g_settings.fan_on_ma;
                 if (on <= 0 || off < 0 || off >= on || on > 1000) {
                     printf("need 0 <= off_w < on_w <= 1000\n");
                     return;
                 }
+                if (ma < 0 || ma > 10000) {
+                    printf("need 0 <= on_ma <= 10000 (0 disables the current rule)\n");
+                    return;
+                }
                 g_settings.fan_on_w = (uint16_t)on;
                 g_settings.fan_off_w = (uint16_t)off;
+                g_settings.fan_on_ma = (uint16_t)ma;
             }
             g_settings.fan_auto = 1;
             engine_cmd_t c = {.op = CMD_FAN_AUTO};
             ipc_cmd_push(&c);
-            printf("fan auto: on >= %uW, off <= %uW ('save' to persist)\n",
-                   g_settings.fan_on_w, g_settings.fan_off_w);
+            printf("fan auto: on >= %uW", g_settings.fan_on_w);
+            if (g_settings.fan_on_ma)
+                printf(" or any contract > %umA", g_settings.fan_on_ma);
+            printf(", off <= %uW ('save' to persist)\n", g_settings.fan_off_w);
         } else {
             g_settings.fan_auto = 0;
             engine_cmd_t c = {.op = CMD_FAN, .arg = !strcmp(op, "on")};

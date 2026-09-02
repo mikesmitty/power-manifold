@@ -190,8 +190,12 @@ policy, LED brightness, the persistent fault log, OTA pull, `bootsel`).
   `.../update/latest` pointer. Remote settings changes (budget, fan mode,
   priority) persist automatically a few seconds after the last change.
 - **Fan**: `auto` follows total chassis power with hysteresis
-  (`fan auto [on_w off_w]`, defaults 80/60 W, 30 s anti-flap hold);
-  `on`/`off` are manual overrides.
+  (`fan auto [on_w off_w [on_ma]]`, defaults 80/60 W, 30 s anti-flap hold)
+  and also runs while any port holds a contract over `on_ma` (default
+  3000 mA, so the everyday 5 V/3 A contract never trips it; 0 disables) —
+  a 5 V/5 A contract is only 25 W of chassis load but heats the blade as
+  I²R. In auto the fan stays on until both rules are clear; `on`/`off` are
+  manual overrides.
 - **Fault log**: faults and probe failures persist in the data partition
   (~256 records, oldest dropped); `faults` lists them with power/contract
   at the moment of the event and wall-clock time once SNTP has synced.

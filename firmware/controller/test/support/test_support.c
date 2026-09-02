@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "budget.h"
+#include "fan_policy.h"
 #include "ipc.h"
 #include "port_fsm.h"
 #include "settings.h"
@@ -53,9 +54,14 @@ void support_reset(uint32_t budget_mw) {
         g_settings.port_limit_ma[i] = 5000;
         g_settings.port_priority[i] = (uint8_t)i;
     }
+    g_settings.fan_auto = 1; // firmware defaults (settings_defaults)
+    g_settings.fan_on_w = 80;
+    g_settings.fan_off_w = 60;
+    g_settings.fan_on_ma = 3000;
     sim_reset();
     budget_init(budget_mw);
     port_fsm_init();
+    fan_policy_init(g_settings.fan_auto != 0);
     evt_clear();
     now_ms = 0;
     memset(&tele, 0, sizeof(tele));
@@ -67,10 +73,15 @@ void tick(uint32_t n) {
         uint16_t inputs;
         bool have = tca9539_read_inputs(&inputs);
         if (sim_alert_asserted()) port_fsm_alert_sweep(now_ms);
+        tele.total_mw = 0;
         for (uint8_t i = 0; i < NUM_PORTS; i++) {
             bool present = have && tca9539_present_from(inputs, i);
             port_fsm_tick(i, present, now_ms, &tele.port[i]);
+            tele.total_mw += tele.port[i].power_mw;
         }
+        fan_policy_tick(&tele, now_ms);
+        tele.fan_on = fan_policy_on();
+        tele.fan_auto = fan_policy_auto();
     }
 }
 

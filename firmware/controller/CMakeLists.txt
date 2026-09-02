@@ -35,6 +35,7 @@ add_executable(controller
     src/update_image.c
     src/cli.c
     src/engine/engine.c
+    src/engine/fan_policy.c
     src/engine/port_fsm.c
     src/engine/budget.c
     src/engine/leds.c

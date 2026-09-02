@@ -15,8 +15,8 @@ extern telemetry_t tele; // per-port telemetry from the last tick
 void support_reset(uint32_t budget_mw);
 
 // Run n 10ms engine ticks: presence from the sim expander, alert sweep on the
-// sim's wire-OR line, then port_fsm_tick for every port — the same order
-// engine_main() uses.
+// sim's wire-OR line, port_fsm_tick for every port, then the chassis total
+// and the fan policy — the same order engine_main() uses.
 void tick(uint32_t n);
 static inline void tick_ms(uint32_t ms) { tick(ms / 10); }
 
