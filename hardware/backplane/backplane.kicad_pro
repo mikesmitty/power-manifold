@@ -40,8 +40,8 @@
         "other_text_upright": false,
         "pads": {
           "drill": 0.0,
-          "height": 10.66,
-          "width": 7.356
+          "height": 3.502,
+          "width": 2.613
         },
         "silk_line_width": 0.1,
         "silk_text_italic": false,
@@ -63,9 +63,9 @@
           "min_clearance": 0.0,
           "min_island_area": 10.0,
           "min_thickness": 0.25,
-          "pad_connection": 1,
+          "pad_connection": 2,
           "remove_islands": 0,
-          "thermal_relief_gap": 0.2,
+          "thermal_relief_gap": 0.5,
           "thermal_relief_spoke_width": 0.5
         }
       },
@@ -78,6 +78,14 @@
       ],
       "drc_exclusions": [
         [
+          "annular_width|222200000|51350000|52bed0d5-31f6-485a-b9d4-e092e846d80b|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "annular_width|222200000|64850000|f7b9a983-f08a-4bb2-b1ce-6e6ac00fb640|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
           "courtyards_overlap|60645000|73238050|1d56eadb-4437-469e-89f9-cc6dd0ac9614|7e56cb55-a385-40f1-bf26-9225e1ed6728",
           ""
         ],
@@ -87,6 +95,10 @@
         ],
         [
           "hole_to_hole|73997754|64696020|2e0804da-3d83-4116-87fb-1e4c568c1306|74086684-0cb8-40f4-a0d1-f8f101b268e5",
+          ""
+        ],
+        [
+          "lib_footprint_mismatch|223350000|58100000|38c1ccaf-ca23-4fc0-99e1-ec146b5e701b|00000000-0000-0000-0000-000000000000",
           ""
         ],
         [
@@ -131,38 +143,6 @@
         ],
         [
           "starved_thermal|206550000|71725000|a5e5f753-3b68-466a-9855-734eb1593549|6e641d93-0ec2-4bef-b7eb-439971106923|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|42416471|56665000|a5e5f753-3b68-466a-9855-734eb1593549|0d332c1b-5556-4baf-a862-1c58980d7660|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|42416471|57865000|a5e5f753-3b68-466a-9855-734eb1593549|a2a33a91-d5c4-41a6-9b2d-85902c659111|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|43616471|56665000|a5e5f753-3b68-466a-9855-734eb1593549|2f99423d-3414-4c1e-b504-9ce6738b082b|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|43616471|57865000|a5e5f753-3b68-466a-9855-734eb1593549|04794a06-896d-4c89-bb98-2180c3475065|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|44916471|56665000|a5e5f753-3b68-466a-9855-734eb1593549|0b2a74b5-a5eb-4752-91ac-41bb238dff90|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|44916471|57865000|a5e5f753-3b68-466a-9855-734eb1593549|d47ff584-beb6-4934-97af-4c5db6e0688a|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|46016471|56665000|a5e5f753-3b68-466a-9855-734eb1593549|e880581c-301d-4608-99fe-5f21215c233a|F.Cu",
-          ""
-        ],
-        [
-          "starved_thermal|46016471|57865000|a5e5f753-3b68-466a-9855-734eb1593549|fd1e2daf-bc5b-453c-959e-4f058ab63a00|F.Cu",
           ""
         ],
         [
@@ -370,7 +350,7 @@
       "internal_id": "",
       "mfg": "",
       "mpn": "",
-      "sch_revision": "v0.8.0"
+      "sch_revision": "v0.9.0"
     },
     "layer_pairs": [],
     "layer_presets": [],
@@ -833,7 +813,7 @@
         "uuid": "4d913069-4b50-4112-91ac-a1bdeabaace5"
       }
     ],
-    "used_designators": "Q1-2,R1-41,H1-2,L1,C1-33,U1-4,F1,RN1-8,#PWR1-61,D1-10,M1-3,J1-15",
+    "used_designators": "Ue1,J1-15,M1-3,#PWR1-61,D1-10,RN1-8,F1,C1-33,U1-4,R1-41,H1-2,L1,Q1-2",
     "variants": []
   },
   "sheets": [
