@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.9.0...backplane-v0.10.0) (2026-09-02)
+
+
+### Features
+
+* **backplane:** update connector to xt60 ([c6df152](https://github.com/mikesmitty/power-manifold/commit/c6df152e43c9db52de9f9c709f2005145c9f8d67))
+
+
+### Bug Fixes
+
+* **backplane:** switch to lower emi ap64352 buck and 5V rail ([c6df152](https://github.com/mikesmitty/power-manifold/commit/c6df152e43c9db52de9f9c709f2005145c9f8d67))
+
 ## [0.9.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.8.0...backplane-v0.9.0) (2026-08-31)
 
 
