@@ -1,12 +1,9 @@
 ---
 title: Power Manifold
-description: A modular six-port USB-C smart PDU for single-board computers, with a managed RP2350 controller, MQTT and Home Assistant integration, and a 3D-printable 1U rack case.
+description: A modular six-port USB-C smart PDU for single-board computers, with a managed RP2350 controller and MQTT and Home Assistant integration.
 template: splash
 hero:
-  tagline: A modular, rack-mount USB-C smart PDU for single-board computers.
-  image:
-    file: ../../assets/case.png
-    alt: Power Manifold chassis, isometric render
+  tagline: A modular, managed USB-C power supply for single-board computers.
   actions:
     - text: Set up Wi-Fi over Bluetooth
       link: setup/wifi-provisioning/
@@ -27,12 +24,12 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-Power Manifold is a managed USB Power Delivery supply for racks of SBCs such as
-Raspberry Pi, and for PCs that take a barrel plug. Six hot-swappable charger
-blades sit in a backplane behind a single RP2350 management controller that
-budgets power across the chassis, drives per-port status LEDs, and exposes
-everything over MQTT, HTTP, and a serial CLI. The 3D-printable case is 1U and
-fits a 10" half-rack, or two-abreast in a 19" rack.
+Power Manifold is a managed USB Power Delivery supply for racks of SBCs such
+as Raspberry Pi. Six hot-swappable charger blades sit in a backplane behind a
+single RP2350 management controller that budgets power across the chassis,
+drives a status LED per port, and exposes everything over MQTT, HTTP, and a
+serial console. Front-panel light pipes show each port's state even when its
+blade is unseated.
 
 <CardGrid stagger>
 	<Card title="Six 100 W USB-C ports" icon="puzzle">
@@ -54,9 +51,3 @@ fits a 10" half-rack, or two-abreast in a 19" rack.
 		handles first-time provisioning either way.
 	</Card>
 </CardGrid>
-
-## Renders
-
-![Front of the chassis](../../assets/case-front.png)
-![Chassis with the lid removed](../../assets/case-open.png)
-![Front of the chassis with the lid removed](../../assets/case-front-open.png)

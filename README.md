@@ -1,9 +1,74 @@
 # Power Manifold
 
-Power Manifold is a modular 8-port USB-C Smart PDU kit for SBCs such as Raspberry Pi and [PCs with barrel plugs like NUCs](https://www.adafruit.com/product/5452), with optional support for an integrated UPS battery backup. It consists of a wired ethernet control module with MQTT support, a power backplane and slots for up to 8x 100W USB-C charging modules with RGB status LEDs. The 3D-printable case has a 1U form-factor and fits in a 10" half-rack or two-abreast in a full size 19" rack.
+A modular, managed USB-C Power Delivery supply for racks of single-board
+computers. Six hot-swappable 100 W charger blades sit in a backplane behind
+one RP2350 management controller that budgets power across the chassis,
+drives a status LED per port, and exposes everything over MQTT, HTTP, and a
+serial console.
 
-# Images
-![case isometric view](img/case.png)  
-![case front](img/case-front.png)  
-![case open](img/case-open.png)  
-![case open straight on](img/case-front-open.png)  
+**Documentation:** <https://mikesmitty.github.io/power-manifold/>
+
+## How it works
+
+- **Charger blades** (`hardware/charger-module`). Each blade is an MPS
+  MPQ4242 four-switch buck-boost USB-PD source with a TI INA226 power monitor
+  on the blade's shunt. Blades negotiate PD on their own; the controller
+  constrains which PDOs they advertise. The blade is a PCIe x1 card edge, so
+  it slots in and out of the backplane without tools.
+- **Backplane** (`hardware/backplane`). Six blade slots and a management
+  slot. A TCA9548A I2C mux gives every blade its own bus segment, a TCA9539
+  expander handles blade enable, presence detect, and the fan, and six
+  WS2812C LEDs feed front-panel light pipes. DC input is 20–28 V through a
+  Micro-Fit 3.0 connector with ideal-diode reverse protection, a 20 A fuse,
+  and a TVS clamp. A TPS5430 buck makes the single 3.3 V logic rail.
+- **Management controller** (`firmware/controller`). Native pico-sdk
+  firmware for the RP2350. Core 1 runs the port engine and owns the I2C bus;
+  core 0 runs networking and the management surfaces. Development uses a
+  Raspberry Pi Pico 2 W on the `hardware/pcie-breakout` carrier. The
+  production controller is a custom RP2350 card with a WIZnet W6100
+  wired-Ethernet controller for the same slot.
+
+## Features
+
+- Dynamic chassis power budget (360 W by default) with per-port priorities.
+  Lower-priority ports are stepped down or shed before the input supply is
+  oversubscribed, and stepped back up as headroom returns.
+- Home Assistant through MQTT discovery: per-port power, voltage, current,
+  energy, and state, enable switches, priorities, the chassis budget, fan
+  control, fault events, and a firmware update entity.
+- Web UI with live per-port sparklines and a settings panel, backed by a JSON
+  API with optional bearer-token auth.
+- First-time setup over Bluetooth using the Improv Wi-Fi standard, from the
+  [hosted provisioner](https://mikesmitty.github.io/power-manifold/setup/wifi-provisioning/),
+  the Home Assistant app, or any Improv client. A USB serial console covers
+  everything else.
+- A/B firmware slots with try-before-you-buy rollback. Updates arrive by HTTP
+  push, URL pull from the console, or the Home Assistant update entity.
+- Persistent fault log, fan auto-policy on chassis power and port current,
+  and per-port energy counters.
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `hardware/backplane` | Backplane KiCad project |
+| `hardware/charger-module` | Charger blade KiCad project |
+| `hardware/pcie-breakout` | Pico 2 W development carrier for the management slot |
+| `hardware/libraries` | Shared KiCad symbols and footprints |
+| `hardware/CAD` | STEP exports of the boards |
+| `firmware/controller` | Management controller firmware, host tests, and its README |
+| `docs` | The documentation site (Astro + Starlight) |
+| `cases` | V1 3D-printed cases. The V2 chassis is a metal enclosure and is not in the repo yet. |
+
+CI exports KiCad fabrication outputs when a board changes and cuts
+per-component releases with release-please. The earlier V1 design, with an
+RP2040 and ESPHome on every charger module, lives in the git history and the
+older release tags.
+
+## Status
+
+As of September 2026 the V2 backplane, charger module, and development
+carrier are in their first fabrication run. The firmware has been exercised
+on a Pico 2 W against simulated blades, including Wi-Fi, BLE provisioning,
+the web UI, MQTT, and OTA updates; it has not yet driven real blades on a
+live backplane.
