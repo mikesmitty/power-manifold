@@ -654,7 +654,8 @@ static void handle_request(conn_t *c) {
     // float formatting was enough to overflow into it under concurrent load
     static char json[STATUS_JSON_MAX];
 
-    if (!strncmp(c->req, "GET / ", 6)) {
+    if (!strncmp(c->req, "GET /", 5) && (c->req[5] == ' ' || c->req[5] == '?')) {
+        // "/?s=<secret>" is the Improv redirect; the page reads the query itself
         respond_static(c, 200, "OK", "text/html", INDEX_HTML, sizeof(INDEX_HTML) - 1);
     } else if (!strncmp(c->req, "GET /api/v1/status", 18)) {
         build_status_json(json, sizeof(json));
