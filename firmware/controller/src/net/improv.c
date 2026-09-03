@@ -123,15 +123,19 @@ static void set_error(uint8_t e) {
 static void send_pending(void) {
     if (con == HCI_CON_HANDLE_INVALID) { pending = 0; return; }
     pending &= notify_en; // unsubscribed characteristics just keep their value
-    if (pending & NOTIFY_STATE) {
+    // The RPC result goes out before the state change, like ESPHome does: the
+    // official web SDK renders its "Provisioned" dialog on the PROVISIONED
+    // notification and only offers the redirect link if the URL has already
+    // arrived; sent the other way round the dialog ends at a plain "Close".
+    if (pending & NOTIFY_RESULT) {
+        pending &= (uint8_t)~NOTIFY_RESULT;
+        att_server_notify(con, H_RESULT_VALUE, result, result_len);
+    } else if (pending & NOTIFY_STATE) {
         pending &= (uint8_t)~NOTIFY_STATE;
         att_server_notify(con, H_STATE_VALUE, &improv_state, 1);
     } else if (pending & NOTIFY_ERROR) {
         pending &= (uint8_t)~NOTIFY_ERROR;
         att_server_notify(con, H_ERROR_VALUE, &improv_error, 1);
-    } else if (pending & NOTIFY_RESULT) {
-        pending &= (uint8_t)~NOTIFY_RESULT;
-        att_server_notify(con, H_RESULT_VALUE, result, result_len);
     }
     if (pending) att_server_request_can_send_now_event(con);
 }
@@ -461,8 +465,8 @@ void improv_poll(uint32_t now_ms) {
             result_len = (uint8_t)improv_result_build(IMPROV_CMD_WIFI_SETTINGS, url, result,
                                                       sizeof(result));
             set_error(IMPROV_ERR_NONE);
+            queue_notify(NOTIFY_RESULT); // URL first, then the state (see send_pending)
             set_state(IMPROV_STATE_PROVISIONED);
-            queue_notify(NOTIFY_RESULT);
             do_save = true;
             close_at_ms = now_ms + CLOSE_AFTER_MS;
             if (!close_at_ms) close_at_ms = 1;

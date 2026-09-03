@@ -39,8 +39,9 @@ own when it spots an unprovisioned controller nearby.
    that is rejected, or that gets no address within 30 seconds, reports
    *unable to connect* and the previous credentials come back.
 
-5. **Finish in the web UI.** On success the provisioner shows a link to the
-   controller's web page. Follow it from the same device: the link carries a
+5. **Finish in the web UI.** On success the dialog says *Provisioned!* and
+   offers a **Next** button that opens the controller's web page. It does not
+   open on its own. Press it from the same device: the link carries a
    one-shot setup secret that unlocks the *Settings* panel for ten minutes, so
    you can set the MQTT broker, the device name, and an API token. Choosing a
    token locks the API and retires the secret. *Reboot* in the same panel
