@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.3.0...controller-firmware-v0.4.0) (2026-09-02)
+
+
+### Features
+
+* **controller:** fan auto-on for contracts over 3A ([e6c0904](https://github.com/mikesmitty/power-manifold/commit/e6c09046d3a815baecf1f7d63a817d3e2bfcc98a))
+* **controller:** Improv Wi-Fi BLE provisioning ([4398049](https://github.com/mikesmitty/power-manifold/commit/4398049910f927196d6a0950aa6107cd41b24d17))
+* **controller:** make the chassis power budget settable remotely ([c595a2c](https://github.com/mikesmitty/power-manifold/commit/c595a2c6e5b23b354ad1ae42d2b0f5ff5c996f8e))
+* **controller:** per-port history sparklines in the web UI ([f8a24fe](https://github.com/mikesmitty/power-manifold/commit/f8a24fe692447e0029dc59a0d6e5054c8e51d027))
+* **controller:** program the blade PDO table with fixed 12 V and 11 V PPS ([c4cbc17](https://github.com/mikesmitty/power-manifold/commit/c4cbc176b7da49b83af443ab73990c046cf28eef))
+* **controller:** show measured draw alongside budget reservation in the web UI ([5074caf](https://github.com/mikesmitty/power-manifold/commit/5074caf8c3083c259a56c27b774c8d003a46e461))
+* **controller:** W6100 wired Ethernet as an lwIP netif ([1651d55](https://github.com/mikesmitty/power-manifold/commit/1651d55fcddc0f10d7c7b4a6c8fba529dec2657e))
+* **controller:** web UI settings panel with Improv setup secret ([62df4f2](https://github.com/mikesmitty/power-manifold/commit/62df4f23e887e04f8da48a1be3c7834c19bf3bd1))
+
+
+### Bug Fixes
+
+* **controller:** cap the settable power budget at 600W ([747cade](https://github.com/mikesmitty/power-manifold/commit/747cade1f104d65222a9449d4193034fa28e7c2c))
+* **controller:** core 0 stack overflow into the engine, plus bench diagnostics ([0bfd9b2](https://github.com/mikesmitty/power-manifold/commit/0bfd9b22a343fc512659a77cdc8c2a422b50c3fa))
+
 ## [0.3.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.2.0...controller-firmware-v0.3.0) (2026-08-31)
 
 
