@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.4.0...controller-firmware-v0.4.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* **controller:** keep the settings sequence counter across `defaults` ([62376d6](https://github.com/mikesmitty/power-manifold/commit/62376d61701abdbd9222bb82cf88a806b33d2bf1))
+* **controller:** notify the Improv result URL before the provisioned state ([8496781](https://github.com/mikesmitty/power-manifold/commit/84967819c1ce49105ec4818ad2b674b72e16bc59))
+* **controller:** serve the root page when the request carries a query string ([7da4816](https://github.com/mikesmitty/power-manifold/commit/7da481699991dbecc7afc52554d20e881bfa269a))
+
 ## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.3.0...controller-firmware-v0.4.0) (2026-09-02)
 
 
