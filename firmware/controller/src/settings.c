@@ -99,10 +99,13 @@ static const settings_t *best_in(uint32_t base) {
 }
 
 void settings_defaults(void) {
+    // Keep the sequence counter: a defaults+save must outrank the record it
+    // replaces, and a fresh boot has seq 0 here anyway.
+    uint32_t seq = g_settings.seq;
     memset(&g_settings, 0, sizeof(g_settings));
     g_settings.magic = SETTINGS_MAGIC;
     g_settings.version = SETTINGS_VERSION;
-    g_settings.seq = 0;
+    g_settings.seq = seq;
     strcpy(g_settings.device_name, "pwrman");
     g_settings.mqtt_port = 1883;
     g_settings.budget_mw = 360 * 1000; // 15A @ 24V; tune to the chassis supply
