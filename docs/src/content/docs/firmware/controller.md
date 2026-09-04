@@ -297,6 +297,12 @@ state.
   panel, or the per-port Home Assistant select; `status` shows it in the
   `boot` column. Before this, an HA-disabled port came back enabled after
   a power cut.
+- **Staggered power-up**: the blades found seated at boot are enabled one
+  at a time, 250 ms apart, in priority order (slot order among equals;
+  boot-disabled ports hold no slot), so six sinks do not inrush and
+  negotiate on the DC input at once and the highest-priority port claims
+  the budget first. Blades seated later, and ports switched on later, are
+  immediate as before.
 - **Status LEDs**: one WS2812 per slot behind the front-panel light pipes.
   Dim white empty, cyan blink probing, amber idle, blue (below 19 V) or
   green (19 V and up) active, the same colour pulsing at 1 Hz when

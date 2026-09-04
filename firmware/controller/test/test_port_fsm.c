@@ -227,6 +227,41 @@ static void test_boot_policy(void) {
     MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
 }
 
+static void test_boot_stagger(void) {
+    support_reset(360000);
+    g_settings.port_priority[0] = 9; // port 1 demoted to the back of the queue
+    g_settings.port_boot[3] = PORT_BOOT_OFF;
+    port_fsm_init();
+    bool present[NUM_PORTS] = {true, true, false, true, true, true}; // slot 3 empty
+    for (uint8_t i = 0; i < NUM_PORTS; i++) sim_set_present(i, present[i]);
+    port_fsm_boot_inventory(present, now_ms);
+    // queue by priority among the seated, enabled blades: 2, 5, 6, then 1;
+    // the boot-disabled port 4 holds no slot
+    tick(2);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(port_state(3), PORT_STATE_DISABLED);
+    MT_ASSERT_EQ(port_state(4), PORT_STATE_ABSENT); // waiting
+    MT_ASSERT_EQ(port_state(5), PORT_STATE_ABSENT);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ABSENT);
+    tick_ms(250); // t = 270: slot 1 opened at 250
+    MT_ASSERT_EQ(port_state(4), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(port_state(5), PORT_STATE_ABSENT);
+    tick_ms(250); // t = 520
+    MT_ASSERT_EQ(port_state(5), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ABSENT);
+    tick_ms(250); // t = 770
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    // a blade seated after boot is not paced
+    sim_set_present(2, true);
+    tick(2);
+    MT_ASSERT_EQ(port_state(2), PORT_STATE_IDLE);
+    // nor is a boot-disabled port when it is switched on
+    engine_cmd_t on = {.op = CMD_PORT_ENABLE, .port = 3};
+    port_fsm_cmd(3, &on);
+    tick(3);
+    MT_ASSERT_EQ(port_state(3), PORT_STATE_IDLE);
+}
+
 static void test_unseat_powers_down(void) {
     support_reset(360000);
     sim_set_present(0, true);
@@ -256,5 +291,6 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: MPQ fault via poll", test_mpq_fault_via_poll);
     mt_run("fsm: admin disable/enable", test_admin_disable_enable);
     mt_run("fsm: boot policy on/off/last", test_boot_policy);
+    mt_run("fsm: blades seated at boot come up staggered by priority", test_boot_stagger);
     mt_run("fsm: unseat powers down", test_unseat_powers_down);
 }

@@ -151,7 +151,12 @@ void engine_main(void) {
 #endif
     STAGE(ENGINE_STAGE_IRQS);
 
+#ifdef PWRMAN_FAKE_BLADES
+    sim_scenario_tick(to_ms_since_boot(get_absolute_time())); // seat the demo blades first
+#endif
     refresh_presence();
+    // blades already seated come up one at a time, in priority order
+    port_fsm_boot_inventory(present, to_ms_since_boot(get_absolute_time()));
     STAGE(ENGINE_STAGE_PRESENCE);
 
     uint32_t tick = 0;

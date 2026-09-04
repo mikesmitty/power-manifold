@@ -13,6 +13,11 @@
 #define FAULT_COOLDOWN_MS 5000
 #define PROBE_MAX_ATTEMPTS 3
 
+// Power-up stagger between the blades found seated at boot (port_fsm.h).
+// Long enough for one sink's inrush and its first PD negotiation to settle
+// before the next blade's EN rises; six blades take 1.25 s in all.
+#define BOOT_STAGGER_MS 250
+
 // Partial unthrottle: a throttled port takes freed budget in steps of at
 // least this much (avoids renegotiation churn over crumbs), no more than one
 // step per holdoff period.
@@ -31,6 +36,7 @@ typedef struct {
     uint8_t  probe_attempts;
     uint8_t  fault_bits;     // latched for diagnostics until next probe
     uint32_t cooldown_until_ms;
+    uint32_t enable_after_ms; // boot stagger: no probe before this (0 = none)
     uint32_t step_after_ms;  // next partial unthrottle step allowed at
     uint32_t contract_mw;
     uint32_t denied_mw;      // contract that budget refused; unthrottle target
@@ -84,6 +90,7 @@ static void fault(uint8_t i, uint32_t now_ms, uint8_t fault_bits, uint32_t detai
 static void start_probe(uint8_t i) {
     ctx[i].probe_attempts = 0;
     ctx[i].fault_bits = 0;
+    ctx[i].enable_after_ms = 0; // the boot slot is spent; later seatings are immediate
     ctx[i].denied_mw = 0; // stale asks must not inflate a new throttle epoch
     ctx[i].step_after_ms = 0;
     enter(i, PORT_STATE_PROBE);
@@ -264,6 +271,21 @@ void port_fsm_init(void) {
     }
 }
 
+void port_fsm_boot_inventory(const bool *present, uint32_t now_ms) {
+    for (uint8_t i = 0; i < NUM_PORTS; i++) {
+        ctx[i].enable_after_ms = 0;
+        if (!present[i] || !ctx[i].admin_enabled) continue;
+        // rank among the seated, enabled blades: better priority first,
+        // slot order among equals
+        unsigned rank = 0;
+        for (uint8_t j = 0; j < NUM_PORTS; j++) {
+            if (j == i || !present[j] || !ctx[j].admin_enabled) continue;
+            if (prio(j) < prio(i) || (prio(j) == prio(i) && j < i)) rank++;
+        }
+        ctx[i].enable_after_ms = now_ms + rank * BOOT_STAGGER_MS;
+    }
+}
+
 void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
                    port_telemetry_t *out) {
     port_ctx_t *p = &ctx[i];
@@ -271,8 +293,9 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     switch (p->state) {
     case PORT_STATE_ABSENT:
         if (present) {
-            if (p->admin_enabled) start_probe(i);
-            else enter(i, PORT_STATE_DISABLED);
+            if (!p->admin_enabled) enter(i, PORT_STATE_DISABLED);
+            else if ((int32_t)(now_ms - p->enable_after_ms) >= 0) start_probe(i);
+            // else: waiting for its boot slot
         }
         break;
 
