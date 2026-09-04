@@ -14,6 +14,7 @@
 #include "boot_reason_hw.h"
 #include "engine/engine.h"
 #include "fault_log.h"
+#include "fault_text.h"
 #include "fault_trap.h"
 #include "flash_map.h"
 #include "ipc.h"
@@ -315,19 +316,17 @@ static void run_line(char *l) {
         for (int i = 0; i < n && i < 20; i++) {
             fault_rec_t r;
             if (!fault_log_get(i, &r)) break;
-            const char *type = r.type == EVT_FAULT ? "fault" : "probe_fail";
-            char when[24];
+            char text[64], when[24];
+            fault_text(&r, text, sizeof(text));
             if (r.epoch)
                 snprintf(when, sizeof(when), "epoch %lu", (unsigned long)r.epoch);
             else
                 snprintf(when, sizeof(when), "up %lus", (unsigned long)r.uptime_s);
             if (r.port == 0xFF)
-                printf("#%-4lu %-10s chassis   code %-3u              (%s)\n",
-                       (unsigned long)r.seq, type, r.code, when);
+                printf("#%-4lu chassis %-40s (%s)\n", (unsigned long)r.seq, text, when);
             else
-                printf("#%-4lu %-10s port %u    code 0x%02x arg %-3lu %lu/%lumW (%s)\n",
-                       (unsigned long)r.seq, type, r.port + 1, r.code,
-                       (unsigned long)r.arg, (unsigned long)r.power_mw,
+                printf("#%-4lu port %u  %-40s %lu/%lumW (%s)\n",
+                       (unsigned long)r.seq, r.port + 1, text, (unsigned long)r.power_mw,
                        (unsigned long)r.contract_mw, when);
         }
     } else if (!strcmp(cmd, "save")) {

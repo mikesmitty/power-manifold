@@ -13,6 +13,8 @@ set(CMAKE_C_STANDARD 11)
 add_compile_options(-Wall -Wextra -g)
 
 add_executable(engine_tests
+    ../src/boot_reason.c
+    ../src/fault_text.c
     ../src/engine/budget.c
     ../src/engine/fan_policy.c
     ../src/engine/led_pattern.c
@@ -23,6 +25,7 @@ add_executable(engine_tests
     ../src/net/w6100.c
     ../src/update_image.c
     support/test_support.c
+    test_boot.c
     test_budget.c
     test_fan.c
     test_improv.c

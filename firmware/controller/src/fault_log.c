@@ -33,6 +33,8 @@ static uint32_t seq_max;
 static int      next_page;
 static int      valid_count;
 static uint32_t last_append_ms;
+static fault_rec_t last[NUM_PORTS]; // newest fault/probe per port
+static bool        have_last[NUM_PORTS];
 
 static const fault_rec_t *page_ptr(int page) {
     return (const fault_rec_t *)flash_map_xip_ptr(region_off +
@@ -74,6 +76,16 @@ void fault_log_init(void) {
         }
     }
     next_page = max_page < 0 ? 0 : (max_page + 1) % FL_PAGES;
+
+    // seed the per-port "last fault" from the newest records
+    for (int n = 0; n < valid_count; n++) {
+        fault_rec_t r;
+        if (!fault_log_get(n, &r)) break;
+        if (r.port >= NUM_PORTS || have_last[r.port]) continue;
+        if (r.type != EVT_FAULT && r.type != EVT_PROBE_FAIL) continue;
+        last[r.port] = r;
+        have_last[r.port] = true;
+    }
 }
 
 bool fault_log_available(void) {
@@ -140,6 +152,8 @@ void fault_log_event(const engine_evt_t *e) {
         ipc_snapshot_read(&t);
         rec.power_mw = t.port[e->port].power_mw;
         rec.contract_mw = t.port[e->port].contract_mw;
+        last[e->port] = rec; // every event, even the ones the ring rate-limits away
+        have_last[e->port] = true;
     }
     if (!available) return;
 
@@ -155,6 +169,12 @@ bool fault_log_boot(const boot_cause_t *b) {
     rec.power_mw = b->lr;
     rec.contract_mw = b->cfsr;
     return commit(&rec);
+}
+
+bool fault_log_last(unsigned port, fault_rec_t *out) {
+    if (port >= NUM_PORTS || !have_last[port]) return false;
+    *out = last[port];
+    return true;
 }
 
 int fault_log_count(void) {

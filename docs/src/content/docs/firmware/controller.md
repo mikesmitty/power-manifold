@@ -252,6 +252,10 @@ state.
   "led_brightness","led_boot","port_names"}` (`port_names` is an array of
   six strings; saved to flash at once; budget, fan, LEDs and names apply
   live, `POST /api/v1/reboot` applies the name and broker);
+  `GET /api/v1/faults[?offset=N]` pages the fault log newest first (eight
+  records a page, each with a human `text`) and `POST /api/v1/faults/clear`
+  wipes it; the status JSON also carries `boot`, the reason for the last
+  boot, and the *Fault log* panel on the page shows both;
   `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
   `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`,
@@ -269,7 +273,9 @@ state.
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
   select (auto/on/off), an LED brightness number, a diagnostic *Last boot
   reason* sensor, and a firmware update
-  entity fed from the retained `.../update/latest` pointer. Remote settings
+  entity fed from the retained `.../update/latest` pointer. Each port's
+  state sensor carries `last_fault` / `last_fault_at` attributes (the
+  newest fault or probe failure, as text and epoch seconds). Remote settings
   changes (budget, fan mode, priority, LED brightness) persist automatically
   a few seconds after the last change.
 - **Status LEDs**: one WS2812 per slot behind the front-panel light pipes.
@@ -299,7 +305,9 @@ state.
   manual overrides.
 - **Fault log**: faults and probe failures persist in the data partition
   (~256 records, oldest dropped); `faults` lists them with power/contract
-  at the moment of the event and wall-clock time once SNTP has synced.
+  at the moment of the event and wall-clock time once SNTP has synced, and
+  the same records come out of `GET /api/v1/faults` and the page's *Fault
+  log* panel. Every boot adds a record saying why it happened.
 - **Boot reason**: the banner, `info`, the status JSON (`boot`) and Home
   Assistant report why the controller last started: power-on, brown-out,
   RUN pin, debugger, watchdog timeout, a requested reboot, a firmware

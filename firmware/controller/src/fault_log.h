@@ -37,6 +37,11 @@ void fault_log_event(const engine_evt_t *e);
 // One record per boot with what boot_reason worked out; core 0, engine up.
 bool fault_log_boot(const boot_cause_t *b);
 
+// Newest fault/probe record for a port: RAM-tracked from the events seen
+// this boot (so it works without a data partition) and seeded from the ring
+// at init when there is one. Its seq is not meaningful.
+bool fault_log_last(unsigned port, fault_rec_t *out);
+
 int  fault_log_count(void);
 bool fault_log_get(int n, fault_rec_t *out); // n = 0 is the newest record
 bool fault_log_clear(void);

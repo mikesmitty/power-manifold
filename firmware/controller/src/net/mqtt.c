@@ -11,6 +11,8 @@
 #include "lwip/dns.h"
 
 #include "boot_reason_hw.h"
+#include "fault_log.h"
+#include "fault_text.h"
 #include "improv.h"
 #include "jsonlite.h"
 #include "ipc.h"
@@ -309,12 +311,19 @@ static void publish_port_sensor(unsigned port, const sensor_spec_t *s) {
     if (s->dev_class)
         snprintf(extras, sizeof(extras), "\"dev_cla\":\"%s\",\"unit_of_meas\":\"%s\",%s",
                  s->dev_class, s->unit, s->extra);
+    // the state sensor also carries the port's newest fault as attributes
+    char attrs[176] = "";
+    if (!strcmp(s->object, "state"))
+        snprintf(attrs, sizeof(attrs),
+                 "\"json_attr_t\":\"~/port/%u/telemetry\",\"json_attr_tpl\":\"{{ {'last_fault': "
+                 "value_json.last_fault, 'last_fault_at': value_json.last_fault_at} | tojson }}\",",
+                 port);
 
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s %s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"stat_t\":\"~/port/%u/telemetry\",\"avail_t\":\"~/availability\","
-             "%s\"val_tpl\":\"%s\",\"dev\":%s}",
-             base, port_label(port), s->name, uid, object, port, extras, s->template,
+             "%s%s\"val_tpl\":\"%s\",\"dev\":%s}",
+             base, port_label(port), s->name, uid, object, port, extras, attrs, s->template,
              device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -510,14 +519,22 @@ static void publish_telemetry(void) {
     for (unsigned i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
+        fault_rec_t lf;
+        char lf_text[48] = "";
+        uint32_t lf_at = 0;
+        if (fault_log_last(i, &lf)) {
+            fault_text(&lf, lf_text, sizeof(lf_text));
+            lf_at = lf.epoch; // 0 until SNTP had synced at the time
+        }
         snprintf(payload_buf, sizeof(payload_buf),
                  "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
-                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"fault\":%u}",
+                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"fault\":%u,"
+                 "\"last_fault\":\"%s\",\"last_fault_at\":%lu}",
                  port_state_name((port_state_t)p->state), p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
                  p->contract_mw / 1000.0, g_settings.port_priority[i],
-                 p->fault_bits);
+                 p->fault_bits, lf_text, (unsigned long)lf_at);
         publish(topic_buf, payload_buf, 0, 0);
     }
 

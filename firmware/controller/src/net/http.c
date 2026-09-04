@@ -11,6 +11,8 @@
 #include "pico/rand.h"
 
 #include "boot_reason_hw.h"
+#include "fault_log.h"
+#include "fault_text.h"
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
@@ -80,7 +82,7 @@ static const char INDEX_HTML[] =
     "background:#1a1a1a;color:#eee;border:1px solid #333;border-radius:3px;font:inherit}"
     "button{padding:.45em 1em;margin:.6em .6em 0 0;background:#1c2430;color:#eee;"
     "border:1px solid #345;border-radius:3px;cursor:pointer;font:inherit}"
-    "#msg{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
+    "#msg,#flm{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
     "#lock input{display:inline-block;width:14em;margin-right:.5em}"
     "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
     ".g{grid-template-columns:1fr}}"
@@ -92,6 +94,11 @@ static const char INDEX_HTML[] =
     "<th>kWh</th></tr></thead><tbody id='ports'></tbody></table>"
     "<div id='hint'>Click a port for its last 10 minutes of W / A / V, sampled"
     " once a second while this page is open.</div>"
+    // Persistent fault log (data partition): newest first, refreshed while open.
+    "<details id='fl'><summary>Fault log</summary><div id='flm'></div>"
+    "<table id='flt' hidden><thead><tr><th>When</th><th>Port</th><th>Event</th>"
+    "<th title='draw / contract at the moment of the event'>W then</th></tr></thead>"
+    "<tbody></tbody></table><button type='button' id='flc'>Clear log</button></details>"
     // Connection-level settings. Unlocked by the API token, or by the setup
     // secret Improv passes in the redirect URL while no token exists yet.
     "<details id='cfg'><summary>Settings</summary><div id='msg'></div>"
@@ -209,6 +216,24 @@ static const char INDEX_HTML[] =
     "const U=new URL(location),S=U.searchParams.get('s');"
     "if(S){sessionStorage.tok=S;U.searchParams.delete('s');"
     "history.replaceState(null,'',U);CFG.open=true;}"
+    // Fault log panel: newest page of records, human text from the firmware.
+    "const FL=document.getElementById('fl'),FLM=document.getElementById('flm'),"
+    "FLT=document.getElementById('flt');"
+    "const at=f=>f.epoch?new Date(f.epoch*1000).toLocaleString():'up '+f.uptime_s+'s';"
+    "async function flLoad(){let d;try{d=await (await fetch('/api/v1/faults')).json();}"
+    "catch(e){FLM.textContent='No response from the device.';return;}"
+    "if(!d.available){FLM.textContent='No fault log on this board (needs the data partition).';"
+    "FLT.hidden=true;return;}"
+    "FLM.textContent=d.count?`${d.count} record${d.count==1?'':'s'}, newest first`+"
+    "(d.count>d.faults.length?` (showing ${d.faults.length})`:''):'No faults recorded.';"
+    "FLT.hidden=!d.count;FLT.tBodies[0].innerHTML=d.faults.map(f=>`<tr><td>${at(f)}</td>"
+    "<td>${f.port||'chassis'}</td><td>${esc(f.text)}</td><td>${f.type=='boot'?'':"
+    "f.power_w.toFixed(1)+' / '+f.contract_w.toFixed(0)}</td></tr>`).join('');}"
+    "FL.ontoggle=()=>{if(FL.open)flLoad();};setInterval(()=>{if(FL.open)flLoad();},10000);"
+    "document.getElementById('flc').onclick=async()=>{let r;"
+    "try{r=await fetch('/api/v1/faults/clear',{method:'POST',headers:hdr()});}catch(e){}"
+    "FLM.textContent=r&&r.ok?'Cleared.':r&&r.status==401?"
+    "'Unlock Settings with the API token first.':'Clear failed.';if(r&&r.ok)flLoad();};"
     "</script></body></html>";
 _Static_assert(sizeof(INDEX_HTML) - 1 <= UINT16_MAX, "conn_t.static_len is 16-bit");
 
@@ -339,6 +364,36 @@ static void build_status_json(char *out, size_t cap) {
             p->attached ? "true" : "false", p->selected_pdo, p->bus_mv / 1000.0,
             p->current_ma / 1000.0, p->power_mw / 1000.0, p->energy_mwh / 1e6,
             p->contract_mw / 1000.0, g_settings.port_priority[i], p->fault_bits);
+    }
+    if (off < cap) snprintf(out + off, cap - off, "]}");
+}
+
+// One page of the persistent fault log, newest first. Sized so a full page
+// with long boot/hardfault text still fits STATUS_JSON_MAX.
+#define FAULTS_PAGE 8
+
+static void build_faults_json(char *out, size_t cap, int offset) {
+    int count = fault_log_count();
+    size_t off = (size_t)snprintf(out, cap,
+        "{\"available\":%s,\"count\":%d,\"offset\":%d,\"faults\":[",
+        fault_log_available() ? "true" : "false", count, offset);
+    for (int n = 0; n < FAULTS_PAGE && off < cap; n++) {
+        fault_rec_t r;
+        if (!fault_log_get(offset + n, &r)) break;
+        static char text[64]; // static: IRQ stack
+        fault_text(&r, text, sizeof(text));
+        const char *type = r.type == EVT_FAULT ? "fault"
+                         : r.type == EVT_PROBE_FAIL ? "probe_fail"
+                         : r.type == EVT_BOOT ? "boot" : "?";
+        bool port_rec = r.type != EVT_BOOT; // boot records reuse the mW fields
+        off += (size_t)snprintf(out + off, cap - off,
+            "%s{\"seq\":%lu,\"epoch\":%lu,\"uptime_s\":%lu,\"port\":%u,"
+            "\"type\":\"%s\",\"code\":%u,\"arg\":%lu,\"power_w\":%.1f,"
+            "\"contract_w\":%.1f,\"text\":\"%s\"}",
+            n ? "," : "", (unsigned long)r.seq, (unsigned long)r.epoch,
+            (unsigned long)r.uptime_s, r.port == 0xFF ? 0u : r.port + 1u, type, r.code,
+            (unsigned long)r.arg, port_rec ? r.power_mw / 1000.0 : 0.0,
+            port_rec ? r.contract_mw / 1000.0 : 0.0, text);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
@@ -716,6 +771,12 @@ static void handle_request(conn_t *c) {
     } else if (!strncmp(c->req, "GET /api/v1/status", 18)) {
         build_status_json(json, sizeof(json));
         respond(c, 200, "OK", "application/json", json);
+    } else if (!strncmp(c->req, "GET /api/v1/faults", 18)) {
+        int offset = 0;
+        const char *q = strstr(c->req, "?offset=");
+        if (q) offset = atoi(q + 8);
+        build_faults_json(json, sizeof(json), offset < 0 ? 0 : offset);
+        respond(c, 200, "OK", "application/json", json);
     } else if (!strncmp(c->req, "GET /api/v1/settings", 20) ||
                !strncmp(c->req, "POST /api/v1/settings", 21)) {
         bool via_setup;
@@ -754,6 +815,15 @@ static void handle_request(conn_t *c) {
             }
             respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
                     "OK", "application/json", "{\"ok\":true}");
+        } else if (!strncmp(c->req, "POST /api/v1/faults/clear", 25)) {
+            if (!fault_log_available()) {
+                respond(c, 503, "Service Unavailable", "application/json",
+                        "{\"error\":\"no fault log on this board\"}");
+                return;
+            }
+            bool ok = fault_log_clear(); // sector erases via flash_safe_execute, like a settings save
+            respond(c, ok ? 200 : 500, ok ? "OK" : "Internal Server Error", "application/json",
+                    ok ? "{\"ok\":true}" : "{\"error\":\"clear failed\"}");
         } else if (!strncmp(c->req, "POST /api/v1/budget", 19)) {
             const char *w = strstr(body, "\"watts\"");
             long watts = -1;
