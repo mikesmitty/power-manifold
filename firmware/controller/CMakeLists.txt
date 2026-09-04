@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.13)
 
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
 
+# project board headers (e.g. wiznet_w6100_evb_pico2) alongside the SDK's
+list(APPEND PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/boards)
 include(pico_sdk_import.cmake)
 
 project(power_manifold_controller C CXX ASM)

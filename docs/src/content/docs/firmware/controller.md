@@ -77,12 +77,21 @@ build/controller.uf2`.
 Both on is the production shape (RM2 radio + W6100). A Pico 2 W with nothing
 on GP16–21 logs `eth: no W6100 answering` at boot and runs WiFi-only. For a
 board with no radio, such as a WIZnet W6100-EVB-Pico2 in the same socket,
-build a wired-only image (no cyw43 or BTstack blobs, about 220 KB):
+build a wired-only image (no cyw43 or BTstack blobs, about 230 KB). The
+pico-sdk has no board file for that EVB, so `boards/` carries one; it mostly
+exists to declare the EVB's 2 MB flash so the settings and fault-log sectors
+land inside the chip:
 
 ```sh
-cmake -B build-eth -G Ninja -DPICO_BOARD=pico2 -DNET_WIFI=OFF
+cmake -B build-eth -G Ninja -DPICO_BOARD=wiznet_w6100_evb_pico2 -DNET_WIFI=OFF
 ninja -C build-eth
 ```
+
+With 2 MB there is no room for the A/B partition layout, so the EVB runs the
+image unpartitioned (`boot: slot raw`) and OTA is unavailable on it; flash it
+over SWD or BOOTSEL. Give the W6100 its time after reset: the driver waits
+100 ms before the first register read, because at 10 ms the chip does not
+answer yet.
 
 ### Fake-blade mode (no backplane needed)
 
