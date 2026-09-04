@@ -12,6 +12,7 @@
 // the legacy last-two-sectors-of-flash location on unpartitioned boards.
 
 #define SETTINGS_MAGIC 0x504D4643u // "PMFC"
+#define PORT_NAME_MAX  23          // bytes, excluding the NUL
 
 typedef struct {
     uint32_t magic;
@@ -37,6 +38,8 @@ typedef struct {
     uint16_t fan_on_ma;       // auto: also on while any contract exceeds this (0 = off)
     // -- added in layout version 4 --
     uint8_t  led_boot;        // LED_BOOT_*: power-up sweep style
+    // -- added in layout version 5 --
+    char     port_name[NUM_PORTS][PORT_NAME_MAX + 1]; // "" = "Port N"
     uint32_t crc; // must remain last
 } settings_t;
 
@@ -45,6 +48,13 @@ extern settings_t g_settings;
 void settings_load(void);     // falls back to defaults on empty/corrupt flash
 bool settings_save(void);     // core 0 only; engine pauses briefly via flash_safe_execute
 void settings_defaults(void);
+
+// Per-port label for the UI and Home Assistant: the stored name, or "Port N"
+// when none is set (port is 0-based).
+const char *settings_port_name(unsigned port);
+// A label is at most PORT_NAME_MAX bytes of printable text (no control
+// characters, no leading or trailing spaces); empty clears it.
+bool settings_port_name_valid(const char *s);
 
 // Debounced persistence for remote mutations (MQTT/REST): mark now, and the
 // main loop's settings_save_poll flushes once things go quiet for a few

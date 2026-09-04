@@ -1,6 +1,7 @@
 #include "settings.h"
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "hardware/flash.h"
@@ -14,7 +15,7 @@
 // the last two sectors of flash (which, on a freshly partitioned board, is
 // where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    4
+#define SETTINGS_VERSION    5
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -24,9 +25,11 @@
 #define SETTINGS_V1_PAYLOAD ALIGN4(offsetof(settings_t, fan_auto))
 #define SETTINGS_V2_PAYLOAD ALIGN4(offsetof(settings_t, fan_on_ma))
 #define SETTINGS_V3_PAYLOAD ALIGN4(offsetof(settings_t, led_boot))
+#define SETTINGS_V4_PAYLOAD ALIGN4(offsetof(settings_t, port_name))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
+_Static_assert(SETTINGS_V4_PAYLOAD == 384, "settings v4 layout moved"); // led_boot fit in v3's padding
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
 #define FAN_ON_W_DEFAULT   80
@@ -68,6 +71,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t version_payload_len(uint32_t version) {
     switch (version) {
     case SETTINGS_VERSION: return payload_len();
+    case 4:                return SETTINGS_V4_PAYLOAD;
     case 3:                return SETTINGS_V3_PAYLOAD;
     case 2:                return SETTINGS_V2_PAYLOAD;
     case 1:                return SETTINGS_V1_PAYLOAD;
@@ -140,10 +144,30 @@ void settings_load(void) {
         }
         if (g_settings.version < 3) g_settings.fan_on_ma = FAN_ON_MA_DEFAULT;
         if (g_settings.version < 4) g_settings.led_boot = LED_BOOT_WHITE;
+        // the copy above read erased flash (0xFF) past the old record's end
+        if (g_settings.version < 5) memset(g_settings.port_name, 0, sizeof(g_settings.port_name));
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();
     }
+}
+
+const char *settings_port_name(unsigned port) {
+    static char fallback[NUM_PORTS][8];
+    if (port >= NUM_PORTS) return "?";
+    if (g_settings.port_name[port][0]) return g_settings.port_name[port];
+    if (!fallback[port][0]) snprintf(fallback[port], sizeof(fallback[port]), "Port %u", port + 1);
+    return fallback[port];
+}
+
+bool settings_port_name_valid(const char *s) {
+    size_t n = strlen(s);
+    if (n > PORT_NAME_MAX) return false;
+    if (n && (s[0] == ' ' || s[n - 1] == ' ')) return false;
+    for (; *s; s++) {
+        if ((unsigned char)*s < 0x20 || (unsigned char)*s == 0x7F) return false;
+    }
+    return true;
 }
 
 typedef struct {

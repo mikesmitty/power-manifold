@@ -29,3 +29,7 @@ bool mqtt_is_connected(void);
 // Called from the main loop's event drain (see main.c), which also feeds the
 // persistent fault log so logging never depends on broker health.
 void mqtt_event(const engine_evt_t *e);
+
+// A port label changed: re-run discovery so Home Assistant picks up the new
+// entity names (unique ids are unchanged, so entity ids stay put).
+void mqtt_names_changed(void);

@@ -16,6 +16,7 @@
 #include "eth.h"
 #include "improv.h"
 #include "jsonlite.h"
+#include "mqtt.h"
 #include "net.h"
 #include "settings.h"
 #include "update.h"
@@ -23,7 +24,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         2048 // browser headers + a full settings body
-#define STATUS_JSON_MAX 1600
+#define STATUS_JSON_MAX 1792 // six ports with escaped labels, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -116,6 +117,13 @@ static const char INDEX_HTML[] =
     "<input name='led' type='number' min='0' max='255' required></label>"
     "<label>Power-up LED sweep<select name='lboot'><option value='white'>white</option>"
     "<option value='rainbow'>rainbow</option></select></label>"
+    "<label>Port names (blank = Port N; shown in the table and Home Assistant)</label>"
+    "<div class='g'><input name='pn1' maxlength='23' placeholder='Port 1'>"
+    "<input name='pn2' maxlength='23' placeholder='Port 2'>"
+    "<input name='pn3' maxlength='23' placeholder='Port 3'>"
+    "<input name='pn4' maxlength='23' placeholder='Port 4'>"
+    "<input name='pn5' maxlength='23' placeholder='Port 5'>"
+    "<input name='pn6' maxlength='23' placeholder='Port 6'></div>"
     "<label>API token (locks the API and this panel)"
     "<input name='atok' type='password' maxlength='32'></label>"
     "<button type='submit'>Save</button>"
@@ -124,7 +132,8 @@ static const char INDEX_HTML[] =
     // Per-port sample rings live in the page: the 1 Hz status poll already
     // carries V/A/W, so history costs the firmware nothing. Sparklines are
     // inline SVG — the device is LAN-only, so no chart library from a CDN.
-    "const N=600,H=[],ports=document.getElementById('ports');let sel=-1,last;"
+    "const N=600,H=[],ports=document.getElementById('ports'),"
+    "esc=s=>s.replace(/[&<>]/g,c=>'&#'+c.charCodeAt(0)+';');let sel=-1,last;"
     "ports.onclick=e=>{const r=e.target.closest('tr.p');"
     "if(r){const i=+r.dataset.i;sel=sel==i?-1:i;draw();}};"
     // Samples fill the strip's width until the ring is full, then scroll;
@@ -139,7 +148,7 @@ static const char INDEX_HTML[] =
     "<polyline points='${pts}'/></svg></div>`;}"
     "function draw(){if(!last)return;"
     "ports.innerHTML=last.ports.map((p,i)=>"
-    "`<tr class='p${i==sel?' sel':''}' data-i='${i}'><td>${i+1}</td>"
+    "`<tr class='p${i==sel?' sel':''}' data-i='${i}'><td title='Port ${i+1}'>${esc(p.name)}</td>"
     "<td class='s-${p.state}'>${p.state}</td>"
     "<td>${p.v.toFixed(2)}</td><td>${p.i.toFixed(2)}</td><td>${p.p.toFixed(1)}</td>"
     "<td>${p.contract_w.toFixed(0)}</td><td>${p.e.toFixed(3)}</td></tr>`+"
@@ -159,6 +168,7 @@ static const char INDEX_HTML[] =
     // address bar. Blank password/token fields mean "unchanged".
     "const CFG=document.getElementById('cfg'),F=document.getElementById('f'),"
     "M=document.getElementById('msg'),LK=document.getElementById('lock'),"
+    "PN=[...document.querySelectorAll('input[name^=pn]')],"
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot'},"
@@ -171,13 +181,14 @@ static const char INDEX_HTML[] =
     "M.textContent=(sessionStorage.tok?'Token rejected. ':'')+"
     "'Enter the API token to edit settings.';return;}"
     "const d=await r.json();LK.hidden=true;F.hidden=false;"
-    "for(const k in KEYS)F[k].value=d[KEYS[k]];"
+    "for(const k in KEYS)F[k].value=d[KEYS[k]];PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
     "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
     "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
     "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
     " the API and this panel, so keep a copy.';}"
     "F.onsubmit=async e=>{e.preventDefault();const b={};"
     "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
+    "b.port_names=PN.map(e=>e.value.trim());"
     "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
     "let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
     "headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});"
@@ -314,11 +325,13 @@ static void build_status_json(char *out, size_t cap) {
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];
+        static char pn[PORT_NAME_MAX * 6 + 1]; // static: IRQ stack
+        json_escape(pn, sizeof(pn), settings_port_name((unsigned)i));
         off += (size_t)snprintf(out + off, cap - off,
-            "%s{\"state\":\"%s\",\"attached\":%s,\"pdo\":%u,\"v\":%.3f,"
+            "%s{\"name\":\"%s\",\"state\":\"%s\",\"attached\":%s,\"pdo\":%u,\"v\":%.3f,"
             "\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
             "\"fault\":%u}",
-            i ? "," : "", port_state_name((port_state_t)p->state),
+            i ? "," : "", pn, port_state_name((port_state_t)p->state),
             p->attached ? "true" : "false", p->selected_pdo, p->bus_mv / 1000.0,
             p->current_ma / 1000.0, p->power_mw / 1000.0, p->energy_mwh / 1e6,
             p->contract_mw / 1000.0, g_settings.port_priority[i], p->fault_bits);
@@ -395,11 +408,11 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
     json_escape(user, sizeof(user), g_settings.mqtt_user);
     telemetry_t t; // manual fan state is the engine's, not a setting
     ipc_snapshot_read(&t);
-    snprintf(out, cap,
+    int n = snprintf(out, cap,
              "{\"name\":\"%s\",\"mqtt_host\":\"%s\",\"mqtt_port\":%u,\"mqtt_user\":\"%s\","
              "\"mqtt_pass_set\":%s,\"token_set\":%s,\"setup\":%s,"
              "\"budget_w\":%lu,\"fan_mode\":\"%s\",\"fan_on_w\":%u,\"fan_off_w\":%u,"
-             "\"fan_on_ma\":%u,\"led_brightness\":%u,\"led_boot\":\"%s\"}",
+             "\"fan_on_ma\":%u,\"led_brightness\":%u,\"led_boot\":\"%s\",\"port_names\":[",
              name, host, g_settings.mqtt_port, user,
              g_settings.mqtt_pass[0] ? "true" : "false",
              g_settings.api_token[0] ? "true" : "false", via_setup ? "true" : "false",
@@ -408,6 +421,13 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
              g_settings.fan_on_w, g_settings.fan_off_w, g_settings.fan_on_ma,
              g_settings.led_brightness,
              g_settings.led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white");
+    size_t off = n < 0 ? cap : (size_t)n;
+    for (int i = 0; i < NUM_PORTS && off < cap; i++) {
+        static char pn[PORT_NAME_MAX * 6 + 1];
+        json_escape(pn, sizeof(pn), g_settings.port_name[i]); // stored value: "" = unset
+        off += (size_t)snprintf(out + off, cap - off, "%s\"%s\"", i ? "," : "", pn);
+    }
+    if (off < cap) snprintf(out + off, cap - off, "]}");
 }
 
 static bool header_safe(const char *s) { // printable ASCII, no spaces
@@ -504,6 +524,12 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         else if (lb > 0 && !strcmp(boot, "rainbow")) s.led_boot = LED_BOOT_RAINBOW;
         else err = "led_boot: white or rainbow";
     }
+    for (int i = 0; !err && i < NUM_PORTS; i++) {
+        r = json_get_str_at(body, "port_names", (unsigned)i, s.port_name[i], sizeof(s.port_name[i]));
+        if (r < 0) err = "port_names: at most " STR(PORT_NAME_MAX) " characters each";
+        else if (r > 0 && !settings_port_name_valid(s.port_name[i]))
+            err = "port_names: printable text, no leading or trailing spaces";
+    }
     if (!err && m != 0) {
         if (m > 0 && !strcmp(mode, "auto")) {
             s.fan_auto = 1;
@@ -530,7 +556,10 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
                            strcmp(g_settings.mqtt_pass, s.mqtt_pass) != 0;
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
     bool led_changed = g_settings.led_brightness != s.led_brightness;
+    bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;
     g_settings = s;
+
+    if (names_changed) mqtt_names_changed();
 
     if (budget_changed) {
         engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = s.budget_mw};

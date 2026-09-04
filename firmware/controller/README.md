@@ -214,9 +214,9 @@ reboot
 
 A box provisioned this way (or a wired-only one that simply took a DHCP
 lease) has no setup secret: set a `token` on the console and the *Settings*
-panel unlocks with it. `help` lists everything else (port control and
-priorities, budget, fan policy, LED brightness, the persistent fault log,
-OTA pull, `bootsel`).
+panel unlocks with it. `help` lists everything else (port control,
+priorities and names, budget, fan policy, LED brightness, the persistent
+fault log, OTA pull, `bootsel`).
 
 BLE only ever carries the WiFi credentials, and only while a provisioning
 window is open: automatically while the device has no credentials or has
@@ -240,11 +240,15 @@ state.
   the page's own 1 Hz poll (history lives in the tab, so it starts when the
   page opens — Home Assistant keeps the long-term record);
   the *Settings* panel below the table covers the device name, broker, API
-  token, chassis budget and fan policy. `GET /api/v1/status`; `GET` /
-  `POST /api/v1/settings` with any subset of `{"name","mqtt_host",
-  "mqtt_port","mqtt_user","mqtt_pass","token","budget_w","fan_mode",
-  "fan_on_w","fan_off_w","fan_on_ma"}` (saved to flash at once; budget and
-  fan apply live, `POST /api/v1/reboot` applies the name and broker);
+  token, chassis budget, fan policy, status LEDs and port names (up to 23
+  characters each; blank means `Port N`, and the label shows in the table,
+  the console and Home Assistant). `GET /api/v1/status` (each port carries
+  its `name`); `GET` / `POST /api/v1/settings` with any subset of
+  `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass","token",
+  "budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
+  "led_brightness","led_boot","port_names"}` (`port_names` is an array of
+  six strings; saved to flash at once; budget, fan, LEDs and names apply
+  live, `POST /api/v1/reboot` applies the name and broker);
   `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
   `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`,
@@ -254,7 +258,9 @@ state.
   token, or the setup secret from an Improv redirect while none is stored.
 - **MQTT / Home Assistant**: telemetry under `pwrman/<name>/...` at 1 Hz,
   availability via LWT, faults/contract changes on `.../event`. Discovery
-  publishes, per port: power/voltage/current/state sensors, a since-boot
+  publishes, per port (entity names carry the port's label, so `Port 3
+  power` becomes `Desk phone power` after a rename; a rename re-publishes
+  discovery and entity ids stay put): power/voltage/current/state sensors, a since-boot
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
   switch, hard-reset and re-announce-caps buttons, and a priority number —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan

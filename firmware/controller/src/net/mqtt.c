@@ -11,6 +11,7 @@
 #include "lwip/dns.h"
 
 #include "improv.h"
+#include "jsonlite.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "net.h"
@@ -291,6 +292,13 @@ static void discovery_config_topic(const char *component, const char *object) {
              component, uid, object);
 }
 
+// The port's label (settings, or "Port N") escaped for a discovery payload.
+static const char *port_label(unsigned port) {
+    static char buf[PORT_NAME_MAX * 6 + 1];
+    json_escape(buf, sizeof(buf), settings_port_name(port - 1));
+    return buf;
+}
+
 static void publish_port_sensor(unsigned port, const sensor_spec_t *s) {
     char object[32];
     snprintf(object, sizeof(object), "p%u_%s", port, s->object);
@@ -302,10 +310,10 @@ static void publish_port_sensor(unsigned port, const sensor_spec_t *s) {
                  s->dev_class, s->unit, s->extra);
 
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"~\":\"%s\",\"name\":\"Port %u %s\",\"uniq_id\":\"pwrman_%s_%s\","
+             "{\"~\":\"%s\",\"name\":\"%s %s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"stat_t\":\"~/port/%u/telemetry\",\"avail_t\":\"~/availability\","
              "%s\"val_tpl\":\"%s\",\"dev\":%s}",
-             base, port, s->name, uid, object, port, extras, s->template,
+             base, port_label(port), s->name, uid, object, port, extras, s->template,
              device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -316,10 +324,10 @@ static void publish_port_button(unsigned port, const char *action,
     snprintf(object, sizeof(object), "p%u_%s", port, action);
     discovery_config_topic("button", object);
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"~\":\"%s\",\"name\":\"Port %u %s\",\"uniq_id\":\"pwrman_%s_%s\","
+             "{\"~\":\"%s\",\"name\":\"%s %s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"cmd_t\":\"~/port/%u/set\",\"pl_prs\":\"%s\","
              "\"avail_t\":\"~/availability\",\"ent_cat\":\"config\",\"dev\":%s}",
-             base, port, label, uid, object, port, action, device_json);
+             base, port_label(port), label, uid, object, port, action, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
 
@@ -328,13 +336,13 @@ static void publish_port_number(unsigned port) {
     snprintf(object, sizeof(object), "p%u_priority", port);
     discovery_config_topic("number", object);
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"~\":\"%s\",\"name\":\"Port %u priority\","
+             "{\"~\":\"%s\",\"name\":\"%s priority\","
              "\"uniq_id\":\"pwrman_%s_%s\",\"cmd_t\":\"~/port/%u/priority/set\","
              "\"stat_t\":\"~/port/%u/telemetry\","
              "\"val_tpl\":\"{{ value_json.prio }}\","
              "\"min\":0,\"max\":255,\"step\":1,\"mode\":\"box\","
              "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
-             base, port, uid, object, port, port, device_json);
+             base, port_label(port), uid, object, port, port, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
 
@@ -343,12 +351,12 @@ static void publish_port_switch(unsigned port) {
     snprintf(object, sizeof(object), "p%u_enable", port);
     discovery_config_topic("switch", object);
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"~\":\"%s\",\"name\":\"Port %u\",\"uniq_id\":\"pwrman_%s_%s\","
+             "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"cmd_t\":\"~/port/%u/set\",\"stat_t\":\"~/port/%u/telemetry\","
              "\"avail_t\":\"~/availability\","
              "\"val_tpl\":\"{{ 'OFF' if value_json.state == 'disabled' else 'ON' }}\","
              "\"dev\":%s}",
-             base, port, uid, object, port, port, device_json);
+             base, port_label(port), uid, object, port, port, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
 
@@ -472,6 +480,10 @@ static void discovery_step(void) {
         publish(topic_buf, "", 1, 1);
         break;
     }
+}
+
+void mqtt_names_changed(void) {
+    if (state == ST_UP) discovery_idx = 0; // otherwise the next connect does it
 }
 
 // ---- telemetry & events ----------------------------------------------------

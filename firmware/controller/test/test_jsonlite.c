@@ -95,6 +95,36 @@ static void test_escape(void) {
     MT_ASSERT(!strcmp(out, ""));
 }
 
+static void test_get_str_at(void) {
+    char out[32];
+    const char *j = "{\"x\":\"[\",\"port_names\":[\"Desk\", \"a,b]\" ,\"q\\\"]\",\"\"],\"y\":1}";
+    MT_ASSERT_EQ(json_get_str_at(j, "port_names", 0, out, sizeof(out)), 1);
+    MT_ASSERT(!strcmp(out, "Desk"));
+    // commas and brackets inside earlier strings do not end the array
+    MT_ASSERT_EQ(json_get_str_at(j, "port_names", 1, out, sizeof(out)), 1);
+    MT_ASSERT(!strcmp(out, "a,b]"));
+    MT_ASSERT_EQ(json_get_str_at(j, "port_names", 2, out, sizeof(out)), 1);
+    MT_ASSERT(!strcmp(out, "q\"]"));
+    MT_ASSERT_EQ(json_get_str_at(j, "port_names", 3, out, sizeof(out)), 1);
+    MT_ASSERT(!strcmp(out, ""));
+    // past the end, absent, not an array, non-string element, unterminated
+    strcpy(out, "untouched");
+    MT_ASSERT_EQ(json_get_str_at(j, "port_names", 4, out, sizeof(out)), 0);
+    MT_ASSERT_EQ(json_get_str_at(j, "names", 0, out, sizeof(out)), 0);
+    MT_ASSERT_EQ(json_get_str_at(j, "x", 0, out, sizeof(out)), 0);
+    MT_ASSERT_EQ(json_get_str_at("{\"n\":[null,\"b\"]}", "n", 1, out, sizeof(out)), 0);
+    MT_ASSERT_EQ(json_get_str_at("{\"n\":[\"a\" \"b\"]}", "n", 1, out, sizeof(out)), 0);
+    MT_ASSERT_EQ(json_get_str_at("{\"n\":[]}", "n", 0, out, sizeof(out)), 0);
+    MT_ASSERT(!strcmp(out, "untouched"));
+    // the element itself being complete is enough (the array may go on)
+    MT_ASSERT_EQ(json_get_str_at("{\"n\":[\"a\",\"b\"", "n", 1, out, sizeof(out)), 1);
+    MT_ASSERT(!strcmp(out, "b"));
+    // capped like json_get_str
+    char small[4];
+    MT_ASSERT_EQ(json_get_str_at(j, "port_names", 0, small, sizeof(small)), -1);
+    MT_ASSERT(!strcmp(small, "Des"));
+}
+
 void run_jsonlite_tests(void) {
     mt_run("jsonlite: plain strings", test_get_str_plain);
     mt_run("jsonlite: absent / non-string values", test_get_str_absent_or_not_string);
@@ -102,5 +132,6 @@ void run_jsonlite_tests(void) {
     mt_run("jsonlite: escapes and UTF-8", test_get_str_escapes);
     mt_run("jsonlite: capped output", test_get_str_too_long);
     mt_run("jsonlite: integers", test_get_int);
+    mt_run("jsonlite: string array elements", test_get_str_at);
     mt_run("jsonlite: escaping for output", test_escape);
 }

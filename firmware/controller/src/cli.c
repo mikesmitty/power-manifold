@@ -43,6 +43,7 @@ static void print_help(void) {
            "  budget <watts>               chassis power budget\n"
            "  port <1-%d> on|off|reset|srccap\n"
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
+           "  port <1-%d> name <text>|clear   label for the web UI and Home Assistant\n"
            "  fan on|off|auto [on_w off_w [on_ma]]\n"
            "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
@@ -51,20 +52,20 @@ static void print_help(void) {
            "  stack                        per-core stack high-water marks\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
-           NUM_PORTS, NUM_PORTS);
+           NUM_PORTS, NUM_PORTS, NUM_PORTS);
 }
 
 static void print_status(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
-    printf("port state      attach pdo    mV     mA     mW  contract prio\n");
+    printf("port state      attach pdo    mV     mA     mW  contract prio  name\n");
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
-        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %4u\n", i + 1,
+        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %4u  %s\n", i + 1,
                port_state_name((port_state_t)p->state), p->attached ? "yes" : "no",
                p->selected_pdo, p->bus_mv, (long)p->current_ma,
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
-               g_settings.port_priority[i]);
+               g_settings.port_priority[i], settings_port_name(i));
     }
     printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s\n",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
@@ -197,7 +198,22 @@ static void run_line(char *l) {
         const char *n = strtok_r(NULL, " \t", &save);
         const char *op = strtok_r(NULL, " \t", &save);
         uint8_t port;
-        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap\n", NUM_PORTS); return; }
+        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name\n", NUM_PORTS); return; }
+        if (!strcmp(op, "name")) {
+            char *text = strtok_r(NULL, "", &save); // the rest of the line, spaces included
+            while (text && *text == ' ') text++;
+            for (size_t len = text ? strlen(text) : 0; len && text[len - 1] == ' '; len--) text[len - 1] = '\0';
+            if (!text || !*text) { printf("usage: port <1-%d> name <text>|clear\n", NUM_PORTS); return; }
+            if (!strcmp(text, "clear")) text[0] = '\0';
+            if (!settings_port_name_valid(text)) {
+                printf("name: up to %d printable characters\n", PORT_NAME_MAX);
+                return;
+            }
+            snprintf(g_settings.port_name[port], sizeof(g_settings.port_name[port]), "%s", text);
+            mqtt_names_changed();
+            printf("port %u name '%s' ('save' to persist)\n", port + 1, settings_port_name(port));
+            return;
+        }
         if (!strcmp(op, "priority")) {
             const char *p = strtok_r(NULL, " \t", &save);
             if (!p) { printf("usage: port <1-%d> priority <0-255>\n", NUM_PORTS); return; }

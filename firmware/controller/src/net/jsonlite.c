@@ -51,9 +51,10 @@ static bool put_utf8(char *out, size_t cap, size_t *n, unsigned cp) {
     return true;
 }
 
-int json_get_str(const char *json, const char *key, char *out, size_t cap) {
-    const char *p = find_value(json, key);
-    if (!p || *p != '"' || cap == 0) return 0;
+// Decode the quoted string at p (which must point at its opening quote) into
+// out; *end is left on the closing quote. Same result codes as json_get_str.
+static int parse_string(const char *p, char *out, size_t cap, const char **end) {
+    if (*p != '"' || cap == 0) return 0;
     p++;
 
     size_t n = 0;
@@ -99,7 +100,34 @@ int json_get_str(const char *json, const char *key, char *out, size_t cap) {
     }
     out[n] = '\0';
     if (*p != '"') return 0; // unterminated
+    *end = p;
     return full ? -1 : 1;
+}
+
+int json_get_str(const char *json, const char *key, char *out, size_t cap) {
+    const char *p = find_value(json, key), *end;
+    if (!p) return 0;
+    return parse_string(p, out, cap, &end);
+}
+
+static const char *skip_ws(const char *p) {
+    while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+    return p;
+}
+
+int json_get_str_at(const char *json, const char *key, unsigned idx, char *out, size_t cap) {
+    const char *p = find_value(json, key), *end;
+    if (!p || *p != '[') return 0;
+    p = skip_ws(p + 1);
+    for (unsigned i = 0; ; i++) {
+        if (*p == ']') return 0; // fewer elements than idx + 1
+        if (i == idx) return parse_string(p, out, cap, &end);
+        char skip[1]; // earlier elements only need scanning to their close
+        if (!parse_string(p, skip, sizeof(skip), &end)) return 0;
+        p = skip_ws(end + 1);
+        if (*p != ',') return 0;
+        p = skip_ws(p + 1);
+    }
 }
 
 bool json_get_int(const char *json, const char *key, long *out) {

@@ -18,6 +18,11 @@ int json_get_str(const char *json, const char *key, char *out, size_t cap);
 // bare number.
 bool json_get_int(const char *json, const char *key, long *out);
 
+// Element idx (0-based) of the string array under "key", with json_get_str's
+// result codes; 0 when the key is absent, not an array, too short, or the
+// element (or an earlier one) is not a string.
+int json_get_str_at(const char *json, const char *key, unsigned idx, char *out, size_t cap);
+
 // Write in as a JSON string body (no surrounding quotes) into out, escaping
 // the quote, backslash and control characters. Always NUL-terminates and
 // never splits an escape sequence; returns the bytes written (excluding the
