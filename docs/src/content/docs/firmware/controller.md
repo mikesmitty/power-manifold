@@ -252,6 +252,9 @@ state.
   "led_brightness","led_boot","port_names"}` (`port_names` is an array of
   six strings; saved to flash at once; budget, fan, LEDs and names apply
   live, `POST /api/v1/reboot` applies the name and broker);
+  `GET /metrics` is a Prometheus text-exposition endpoint (chassis gauges,
+  a `pwrman_info` line with firmware, slot and boot reason, and every port
+  metric labelled `port` and `name`), never gated;
   `GET /api/v1/faults[?offset=N]` pages the fault log newest first (eight
   records a page, each with a human `text`) and `POST /api/v1/faults/clear`
   wipes it; the status JSON also carries `boot`, the reason for the last

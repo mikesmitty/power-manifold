@@ -49,6 +49,7 @@ typedef struct {
     const char *static_body;
     uint16_t static_len;
     uint16_t static_sent;
+    bool static_copy;   // body is a reusable RAM buffer: lwIP must copy it
     bool updating;      // headers done, body streams into update_write()
     uint32_t body_left; // update body bytes still expected
     uint8_t idle_polls; // poll ticks with no request yet (browser preconnects)
@@ -247,6 +248,7 @@ static void conn_free(conn_t *c) {
     c->static_body = NULL;
     c->static_len = 0;
     c->static_sent = 0;
+    c->static_copy = false;
     c->updating = false;
     c->body_left = 0;
     c->idle_polls = 0;
@@ -288,7 +290,8 @@ static void send_more(conn_t *c) {
     // resp[] is reused per request, so lwIP copies it; a static body lives
     // in flash for good, so lwIP may reference it in place
     bool done = send_span(c, c->resp, c->resp_len, &c->resp_sent, TCP_WRITE_FLAG_COPY) &&
-                send_span(c, c->static_body, c->static_len, &c->static_sent, 0);
+                send_span(c, c->static_body, c->static_len, &c->static_sent,
+                          c->static_copy ? TCP_WRITE_FLAG_COPY : 0);
     tcp_output(c->pcb);
     if (done) conn_close(c);
 }
@@ -314,8 +317,12 @@ static void respond(conn_t *c, int code, const char *status,
 }
 
 // Constant body (flash-resident, any size): only the headers use resp[].
+// copy: body is a RAM buffer that will be rewritten later (lwIP copies it as
+// it goes, so the buffer is free once the whole body is queued); otherwise
+// it lives in flash for good and lwIP references it in place.
 static void respond_static(conn_t *c, int code, const char *status,
-                           const char *content_type, const char *body, size_t len) {
+                           const char *content_type, const char *body, size_t len,
+                           bool copy) {
     int n = snprintf(c->resp, RESP_MAX, HDR_FMT, code, status, content_type,
                      (unsigned)len);
     c->resp_len = (uint16_t)n;
@@ -323,6 +330,7 @@ static void respond_static(conn_t *c, int code, const char *status,
     c->static_body = body;
     c->static_len = (uint16_t)len;
     c->static_sent = 0;
+    c->static_copy = copy;
     send_more(c);
 }
 
@@ -396,6 +404,91 @@ static void build_faults_json(char *out, size_t cap, int offset) {
             port_rec ? r.contract_mw / 1000.0 : 0.0, text);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
+}
+
+// ---- Prometheus text exposition (GET /metrics) --------------------------
+// Too big for a conn's resp[] (six ports of labelled gauges), so it is built
+// in one shared buffer and streamed with the copy flag; a second scrape while
+// one is still being queued gets a 503 rather than a torn buffer.
+#define METRICS_MAX 8192
+static char metrics_buf[METRICS_MAX];
+
+static bool metrics_busy(void) {
+    for (int i = 0; i < MAX_CONNS; i++)
+        if (conns[i].pcb && conns[i].static_body == metrics_buf) return true;
+    return false;
+}
+
+// Prometheus label value: backslash, quote and newline are escaped
+static void prom_label(char *out, size_t cap, const char *in) {
+    size_t n = 0;
+    for (; *in && n + 2 < cap; in++) {
+        if (*in == '\\' || *in == '"') out[n++] = '\\';
+        if (*in == '\n') { out[n++] = '\\'; out[n++] = 'n'; continue; }
+        out[n++] = *in;
+    }
+    out[n] = '\0';
+}
+
+#define M_PUT(...) do { \
+        if (off < cap) off += (size_t)snprintf(out + off, cap - off, __VA_ARGS__); \
+    } while (0)
+
+// Returns the body length, or 0 if it did not fit.
+static size_t build_metrics(char *out, size_t cap) {
+    telemetry_t t;
+    ipc_snapshot_read(&t);
+    uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
+    static char boot_text[80], lbl[PORT_NAME_MAX * 2 + 1]; // static: IRQ stack
+    boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
+    size_t off = 0;
+
+    M_PUT("# TYPE pwrman_info gauge\n"
+          "pwrman_info{name=\"%s\",fw=\"%s\",slot=\"%s\",boot=\"%s\"} 1\n",
+          g_settings.device_name, FW_VERSION, flash_map_slot_name(), boot_text);
+    M_PUT("# TYPE pwrman_uptime_seconds gauge\npwrman_uptime_seconds %lu\n",
+          (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000));
+    M_PUT("# TYPE pwrman_wifi_rssi_dbm gauge\npwrman_wifi_rssi_dbm %ld\n", (long)net_rssi());
+    M_PUT("# TYPE pwrman_mqtt_connected gauge\npwrman_mqtt_connected %d\n", mqtt_is_connected() ? 1 : 0);
+    M_PUT("# TYPE pwrman_total_power_watts gauge\npwrman_total_power_watts %.2f\n", t.total_mw / 1000.0);
+    M_PUT("# TYPE pwrman_reserved_power_watts gauge\npwrman_reserved_power_watts %.1f\n", t.reserved_mw / 1000.0);
+    M_PUT("# TYPE pwrman_budget_watts gauge\npwrman_budget_watts %.1f\n", t.budget_mw / 1000.0);
+    M_PUT("# TYPE pwrman_headroom_watts gauge\npwrman_headroom_watts %.1f\n", headroom / 1000.0);
+    M_PUT("# TYPE pwrman_energy_kwh_total counter\npwrman_energy_kwh_total %.6f\n", t.energy_mwh / 1e6);
+    M_PUT("# TYPE pwrman_fan_on gauge\npwrman_fan_on %d\n", t.fan_on ? 1 : 0);
+    M_PUT("# TYPE pwrman_fan_auto gauge\npwrman_fan_auto %d\n", t.fan_auto ? 1 : 0);
+    M_PUT("# TYPE pwrman_alert_active gauge\npwrman_alert_active %d\n", t.alert_active ? 1 : 0);
+    M_PUT("# TYPE pwrman_fault_log_records gauge\npwrman_fault_log_records %d\n", fault_log_count());
+
+    // per port: one line per metric per port, ports labelled by number and name
+    static const struct { const char *name, *type; } PM[] = {
+        {"pwrman_port_voltage_volts", "gauge"},   {"pwrman_port_current_amps", "gauge"},
+        {"pwrman_port_power_watts", "gauge"},     {"pwrman_port_energy_kwh_total", "counter"},
+        {"pwrman_port_contract_watts", "gauge"},  {"pwrman_port_priority", "gauge"},
+        {"pwrman_port_attached", "gauge"},        {"pwrman_port_pdo", "gauge"},
+        {"pwrman_port_fault_bits", "gauge"},      {"pwrman_port_state_info", "gauge"},
+    };
+    for (size_t m = 0; m < sizeof(PM) / sizeof(PM[0]); m++) {
+        M_PUT("# TYPE %s %s\n", PM[m].name, PM[m].type);
+        for (int i = 0; i < NUM_PORTS; i++) {
+            const port_telemetry_t *p = &t.port[i];
+            prom_label(lbl, sizeof(lbl), settings_port_name((unsigned)i));
+            M_PUT("%s{port=\"%d\",name=\"%s\"", PM[m].name, i + 1, lbl);
+            switch (m) {
+            case 0: M_PUT("} %.3f\n", p->bus_mv / 1000.0); break;
+            case 1: M_PUT("} %.3f\n", p->current_ma / 1000.0); break;
+            case 2: M_PUT("} %.2f\n", p->power_mw / 1000.0); break;
+            case 3: M_PUT("} %.6f\n", p->energy_mwh / 1e6); break;
+            case 4: M_PUT("} %.1f\n", p->contract_mw / 1000.0); break;
+            case 5: M_PUT("} %u\n", g_settings.port_priority[i]); break;
+            case 6: M_PUT("} %d\n", p->attached ? 1 : 0); break;
+            case 7: M_PUT("} %u\n", p->selected_pdo); break;
+            case 8: M_PUT("} %u\n", p->fault_bits); break;
+            default: M_PUT(",state=\"%s\"} 1\n", port_state_name((port_state_t)p->state)); break;
+            }
+        }
+    }
+    return off < cap ? off : 0;
 }
 
 static bool bearer_present(const conn_t *c, const char *token) {
@@ -767,10 +860,22 @@ static void handle_request(conn_t *c) {
 
     if (!strncmp(c->req, "GET /", 5) && (c->req[5] == ' ' || c->req[5] == '?')) {
         // "/?s=<secret>" is the Improv redirect; the page reads the query itself
-        respond_static(c, 200, "OK", "text/html", INDEX_HTML, sizeof(INDEX_HTML) - 1);
+        respond_static(c, 200, "OK", "text/html", INDEX_HTML, sizeof(INDEX_HTML) - 1, false);
     } else if (!strncmp(c->req, "GET /api/v1/status", 18)) {
         build_status_json(json, sizeof(json));
         respond(c, 200, "OK", "application/json", json);
+    } else if (!strncmp(c->req, "GET /metrics", 12)) {
+        if (metrics_busy()) {
+            respond(c, 503, "Service Unavailable", "text/plain", "scrape in progress");
+            return;
+        }
+        size_t len = build_metrics(metrics_buf, sizeof(metrics_buf));
+        if (!len) {
+            respond(c, 500, "Internal Server Error", "text/plain", "metrics too large");
+            return;
+        }
+        respond_static(c, 200, "OK", "text/plain; version=0.0.4; charset=utf-8",
+                       metrics_buf, len, true);
     } else if (!strncmp(c->req, "GET /api/v1/faults", 18)) {
         int offset = 0;
         const char *q = strstr(c->req, "?offset=");
