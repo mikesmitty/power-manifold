@@ -47,6 +47,11 @@ static ip_addr_t broker_ip;
 static uint32_t backoff_until_ms;
 static uint32_t last_telemetry_ms;
 static int discovery_idx;
+static bool disc_publishing; // inside discovery_step's publish call
+static bool disc_inflight;   // a QoS 1 config awaiting its PUBACK
+static uint32_t pub_dropped; // publishes lwIP refused (output buffer / request slots)
+static char     pub_dropped_topic[64];
+static err_t    pub_dropped_err;
 
 static char uid[9];         // short unique board id
 static char base[48];       // pwrman/<device_name>
@@ -81,11 +86,30 @@ bool mqtt_is_connected(void) {
     return state == ST_UP && client && mqtt_client_is_connected(client);
 }
 
+// PUBACK (or failure) of the discovery config in flight: release the next one.
+// Discovery is 60+ QoS 1 configs of ~450 bytes; fired one per poll tick they
+// would overrun both the output ring and the in-flight request slots, and
+// lwIP refuses the excess, which used to drop entities silently.
+static void discovery_cb(void *arg, err_t err) {
+    (void)arg;
+    disc_inflight = false;
+    if (err != ERR_OK && discovery_idx > 0) discovery_idx--; // send it again
+}
+
 static void publish(const char *topic, const char *payload, uint8_t qos,
                     uint8_t retain) {
     if (!client) return;
-    mqtt_publish(client, topic, payload, (uint16_t)strlen(payload), qos, retain,
-                 NULL, NULL);
+    err_t err = mqtt_publish(client, topic, payload, (uint16_t)strlen(payload), qos, retain,
+                             disc_publishing ? discovery_cb : NULL, NULL);
+    if (disc_publishing) {
+        disc_inflight = err == ERR_OK;
+        if (err != ERR_OK && discovery_idx > 0) discovery_idx--; // retry next tick
+    }
+    if (err != ERR_OK) {
+        pub_dropped++;
+        pub_dropped_err = err;
+        snprintf(pub_dropped_topic, sizeof(pub_dropped_topic), "%s", topic);
+    }
 }
 
 // ---- incoming commands -----------------------------------------------------
@@ -209,6 +233,7 @@ static void connection_cb(mqtt_client_t *c, void *arg,
     if (status == MQTT_CONNECT_ACCEPTED) {
         state = ST_UP;
         discovery_idx = 0;
+        disc_inflight = false;
         publish(will_topic, "online", 1, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
@@ -454,9 +479,17 @@ static void publish_fan_select(void) {
 }
 
 // one config per poll tick: paces the burst well inside the output ring buffer
+static void discovery_publish(int i);
+
 static void discovery_step(void) {
-    if (discovery_idx >= N_DISCOVERY) return;
+    if (disc_inflight || discovery_idx >= N_DISCOVERY) return;
     int i = discovery_idx++;
+    disc_publishing = true;
+    discovery_publish(i);
+    disc_publishing = false;
+}
+
+static void discovery_publish(int i) {
     if (i < NUM_PORTS * PORT_ENTITIES) {
         unsigned port = (unsigned)(i / PORT_ENTITIES) + 1;
         int e = i % PORT_ENTITIES;
@@ -516,6 +549,25 @@ static void publish_telemetry(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
 
+    // chassis status first: if the output buffer is tight, the tail of the
+    // burst is what gets refused, and a port sample is the cheaper loss
+    uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
+    char boot_text[80];
+    boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
+    snprintf(topic_buf, sizeof(topic_buf), "%s/status", base);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
+             "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
+             "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
+             "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\"}",
+             t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
+             headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
+             t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
+             t.alert_active ? "true" : "false", (long)net_rssi(),
+             (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
+             g_settings.led_brightness, FW_VERSION, boot_text);
+    publish(topic_buf, payload_buf, 0, 1);
+
     for (unsigned i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
@@ -538,22 +590,11 @@ static void publish_telemetry(void) {
         publish(topic_buf, payload_buf, 0, 0);
     }
 
-    uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
-    char boot_text[80];
-    boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
-    snprintf(topic_buf, sizeof(topic_buf), "%s/status", base);
-    snprintf(payload_buf, sizeof(payload_buf),
-             "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
-             "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
-             "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
-             "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\"}",
-             t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
-             headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
-             t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
-             t.alert_active ? "true" : "false", (long)net_rssi(),
-             (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
-             g_settings.led_brightness, FW_VERSION, boot_text);
-    publish(topic_buf, payload_buf, 0, 1);
+    if (pub_dropped) {
+        printf("mqtt: %lu publish(es) refused by lwIP (last %s, err %d)\n",
+               (unsigned long)pub_dropped, pub_dropped_topic, (int)pub_dropped_err);
+        pub_dropped = 0;
+    }
 }
 
 static const char *evt_name(evt_type_t t) {

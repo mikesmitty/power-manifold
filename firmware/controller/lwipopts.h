@@ -56,7 +56,11 @@
 // MQTT: ring buffer must absorb bursts of HA discovery config publishes
 #define MQTT_OUTPUT_RINGBUF_SIZE    4096
 #define MQTT_VAR_HEADER_BUFFER_LEN  256
-#define MQTT_REQ_MAX_IN_FLIGHT      5
+// lwIP holds a request slot for EVERY publish, QoS 0 included, until the TCP
+// sent callback: the 1 Hz burst is 7 messages (status + six ports) plus any
+// QoS 1 events and one discovery config, so 5 slots refused the last two
+// port samples every second (seen on the bench 2026-09-04).
+#define MQTT_REQ_MAX_IN_FLIGHT      16
 
 // Source-based routing (lwip_hooks.h): with WiFi and Ethernet on one
 // subnet, replies leave via the netif that owns their source address
