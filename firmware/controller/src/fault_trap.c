@@ -3,6 +3,8 @@
 #include "hardware/sync.h"
 #include "pico.h"
 
+#include "boot_reason_hw.h"
+
 fault_record_t g_fault[2];
 
 #define SCB_CFSR (*(volatile uint32_t *)0xE000ED28u)
@@ -18,6 +20,9 @@ void __attribute__((used)) hardfault_record(uint32_t *frame) {
     f->hfsr = SCB_HFSR;
     f->bfar = SCB_BFAR;
     f->hit = 1;
+    // survives the watchdog reboot that follows a stalled core: the next boot
+    // reports it as its reason and logs it
+    boot_reason_mark(BOOT_HARDFAULT, get_core_num(), f->pc, f->lr, f->cfsr);
     for (;;) __wfi();
 }
 

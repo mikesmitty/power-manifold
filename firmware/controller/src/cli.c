@@ -11,6 +11,7 @@
 #include "pico/cyw43_arch.h"
 #endif
 
+#include "boot_reason_hw.h"
 #include "engine/engine.h"
 #include "fault_log.h"
 #include "fault_trap.h"
@@ -77,6 +78,9 @@ static void print_info(void) {
     printf("power-manifold controller %s\n", FW_VERSION);
     printf("boot: slot %s%s\n", flash_map_slot_name(),
            flash_map_update_pending() ? " (TRIAL, uncommitted)" : "");
+    char boot_text[80];
+    boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
+    printf("last boot: %s\n", boot_text);
     printf("device name: %s\n", g_settings.device_name);
 #if PWRMAN_NET_WIFI
     printf("wifi: %s (%s)\n",
@@ -336,6 +340,7 @@ static void run_line(char *l) {
         // feeding the watchdog (it reloads the countdown every pass).
         printf("rebooting\n");
         sleep_ms(20); // let the console flush
+        boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);
         watchdog_reboot(0, 0, 0);
     } else if (!strcmp(cmd, "bootsel")) {
         reset_usb_boot(0, 0);

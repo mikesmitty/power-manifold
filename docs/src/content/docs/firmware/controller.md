@@ -267,7 +267,8 @@ state.
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
   switch, hard-reset and re-announce-caps buttons, and a priority number —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
-  select (auto/on/off), an LED brightness number, and a firmware update
+  select (auto/on/off), an LED brightness number, a diagnostic *Last boot
+  reason* sensor, and a firmware update
   entity fed from the retained `.../update/latest` pointer. Remote settings
   changes (budget, fan mode, priority, LED brightness) persist automatically
   a few seconds after the last change.
@@ -299,6 +300,15 @@ state.
 - **Fault log**: faults and probe failures persist in the data partition
   (~256 records, oldest dropped); `faults` lists them with power/contract
   at the moment of the event and wall-clock time once SNTP has synced.
+- **Boot reason**: the banner, `info`, the status JSON (`boot`) and Home
+  Assistant report why the controller last started: power-on, brown-out,
+  RUN pin, debugger, watchdog timeout, a requested reboot, a firmware
+  update, a trial image reverting, a plain warm reset (a debugger's
+  SYSRESETREQ), or a HardFault with the core, PC, LR and CFSR that a probe
+  would otherwise have been needed for. Deliberate reboots and the fault
+  handler stamp the watchdog scratch registers before the reset, every boot
+  leaves a sentinel there, and the rest comes from the chip's reset-cause
+  bits (which a SYSRESETREQ does not update, hence the sentinel).
 
 ## Not yet implemented
 

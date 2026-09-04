@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "boot_reason.h"
 #include "manifold.h"
 
 // Persistent fault history in the data partition, right after the settings
@@ -22,7 +23,7 @@ typedef struct {
     uint16_t code;
     uint32_t arg;
     uint32_t power_mw;    // port telemetry snapshotted at the event
-    uint32_t contract_mw;
+    uint32_t contract_mw; // (EVT_BOOT reuses these two for lr and cfsr)
     uint8_t  reserved[4]; // 0xFF
 } fault_rec_t;
 
@@ -32,6 +33,9 @@ bool fault_log_available(void);
 // Filters for fault-class events and appends (rate-limited). Anything else
 // is ignored, so the main loop can hand it every engine event.
 void fault_log_event(const engine_evt_t *e);
+
+// One record per boot with what boot_reason worked out; core 0, engine up.
+bool fault_log_boot(const boot_cause_t *b);
 
 int  fault_log_count(void);
 bool fault_log_get(int n, fault_rec_t *out); // n = 0 is the newest record

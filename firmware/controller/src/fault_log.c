@@ -110,32 +110,51 @@ static bool append(const fault_rec_t *rec) {
     return true;
 }
 
+static void record_init(fault_rec_t *rec, uint8_t port, uint8_t type, uint16_t code,
+                        uint32_t arg) {
+    memset(rec, 0xFF, sizeof(*rec));
+    rec->seq = 0; // assigned when committed to flash
+    rec->epoch = net_epoch();
+    rec->uptime_s = to_ms_since_boot(get_absolute_time()) / 1000;
+    rec->port = port;
+    rec->type = type;
+    rec->code = code;
+    rec->arg = arg;
+    rec->power_mw = 0;
+    rec->contract_mw = 0;
+}
+
+static bool commit(fault_rec_t *rec) {
+    if (!available) return false;
+    rec->seq = ++seq_max;
+    return append(rec);
+}
+
 void fault_log_event(const engine_evt_t *e) {
-    if (!available) return;
     if (e->type != EVT_FAULT && e->type != EVT_PROBE_FAIL) return;
 
-    uint32_t now = to_ms_since_boot(get_absolute_time());
-    if (last_append_ms && now - last_append_ms < FL_MIN_GAP_MS) return;
-    last_append_ms = now ? now : 1;
-
     fault_rec_t rec;
-    memset(&rec, 0xFF, sizeof(rec));
-    rec.seq = ++seq_max;
-    rec.epoch = net_epoch();
-    rec.uptime_s = now / 1000;
-    rec.port = e->port;
-    rec.type = e->type;
-    rec.code = e->code;
-    rec.arg = e->arg;
-    rec.power_mw = 0;
-    rec.contract_mw = 0;
+    record_init(&rec, e->port, e->type, e->code, e->arg);
     if (e->port < NUM_PORTS) {
         telemetry_t t;
         ipc_snapshot_read(&t);
         rec.power_mw = t.port[e->port].power_mw;
         rec.contract_mw = t.port[e->port].contract_mw;
     }
-    append(&rec);
+    if (!available) return;
+
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+    if (last_append_ms && now - last_append_ms < FL_MIN_GAP_MS) return;
+    last_append_ms = now ? now : 1;
+    commit(&rec);
+}
+
+bool fault_log_boot(const boot_cause_t *b) {
+    fault_rec_t rec;
+    record_init(&rec, 0xFF, EVT_BOOT, (uint16_t)(b->reason | ((uint16_t)b->core << 8)), b->pc);
+    rec.power_mw = b->lr;
+    rec.contract_mw = b->cfsr;
+    return commit(&rec);
 }
 
 int fault_log_count(void) {

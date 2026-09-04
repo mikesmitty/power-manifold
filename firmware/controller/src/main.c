@@ -4,6 +4,7 @@
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
 
+#include "boot_reason_hw.h"
 #include "cli.h"
 #include "engine/engine.h"
 #include "fault_log.h"
@@ -29,6 +30,7 @@
 
 int main(void) {
     stack_probe_paint(); // before anything deepens the stack
+    boot_reason_read();  // before anything else can touch the watchdog scratch
     stdio_init_all();
     flash_map_init();
     settings_load();
@@ -43,14 +45,17 @@ int main(void) {
     net_init();
     http_init();
 
-    printf("power-manifold controller %s (slot %s%s, 'help' for console)\n> ",
+    char boot_text[80];
+    boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
+    printf("power-manifold controller %s (slot %s%s, boot: %s; 'help' for console)\n> ",
            FW_VERSION, flash_map_slot_name(),
-           flash_map_update_pending() ? ", TRIAL" : "");
+           flash_map_update_pending() ? ", TRIAL" : "", boot_text);
 
     // Arm the watchdog only once the engine has proven alive; afterwards it is
     // fed only while BOTH cores make progress (this loop running + engine
     // heartbeat fresh), so either core stalling reboots the system.
     bool wd_armed = false;
+    bool boot_logged = false; // one fault-log record per boot, once flash writes are safe
     bool trial = flash_map_update_pending();
     uint32_t healthy_since = 0;
     uint8_t led_flags_sent = 0; // engine's view starts with no chassis overlay
@@ -84,6 +89,7 @@ int main(void) {
             if (settings_save_pending()) settings_save();
             printf("http: rebooting\n");
             sleep_ms(20);
+            boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);
             watchdog_reboot(0, 0, 0);
         }
         if (update_reboot_due()) {
@@ -99,6 +105,11 @@ int main(void) {
                 wd_armed = true;
             }
             watchdog_update();
+
+            if (!boot_logged) {
+                boot_logged = true;
+                fault_log_boot(boot_reason_last());
+            }
 
             if (settings_migration_pending()) {
                 printf(settings_migrate()
@@ -132,6 +143,7 @@ int main(void) {
             if (trial && now_ms >= UPDATE_DEADLINE_MS) {
                 printf("update: never became healthy; reverting to previous image\n");
                 sleep_ms(50);
+                boot_reason_mark(BOOT_TRIAL_REVERT, 0, 0, 0, 0);
                 watchdog_reboot(0, 0, 0);
             }
         }

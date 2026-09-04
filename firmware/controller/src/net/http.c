@@ -10,6 +10,7 @@
 #include "lwip/tcp.h"
 #include "pico/rand.h"
 
+#include "boot_reason_hw.h"
 #include "flash_map.h"
 #include "ipc.h"
 #include "manifold.h"
@@ -159,7 +160,8 @@ static const char INDEX_HTML[] =
     "document.getElementById('chassis').textContent="
     "`${d.name} \\u2014 ${d.total_w.toFixed(1)}W drawn, ${d.reserved_w.toFixed(0)}W"
     " reserved of ${d.budget_w.toFixed(0)}W budget"
-    " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}`;"
+    " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}"
+    " \\u2014 last boot ${d.boot}`;"
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
     "if(H[i].length>N)H[i].shift();});"
     "draw();}catch(e){}}tick();setInterval(tick,1000);"
@@ -304,6 +306,8 @@ static void build_status_json(char *out, size_t cap) {
     ipc_snapshot_read(&t);
     uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
 
+    static char boot_text[80]; // static: IRQ stack
+    boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
     char ethf[64] = "";
 #if PWRMAN_NET_ETH
     snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
@@ -313,7 +317,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
-        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"ports\":[",
+        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -321,7 +325,7 @@ static void build_status_json(char *out, size_t cap) {
         t.budget_mw / 1000.0, headroom / 1000.0, t.energy_mwh / 1e6,
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
-        t.alert_active ? "true" : "false", improv_state_str());
+        t.alert_active ? "true" : "false", improv_state_str(), boot_text);
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];

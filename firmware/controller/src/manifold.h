@@ -100,6 +100,7 @@ typedef enum {
     EVT_CONTRACT,     // code = selected PDO, arg = contract mW
     EVT_PROBE_FAIL,   // code = which probe step failed
     EVT_THROTTLE,     // code = THROTTLE_*, arg = granted/restored mW
+    EVT_BOOT,         // core 0 only, fault-log record: code = boot_reason_t | core << 8, arg = pc
 } evt_type_t;
 
 // EVT_THROTTLE codes

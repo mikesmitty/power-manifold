@@ -40,6 +40,8 @@ add_executable(controller
     src/flash_map.c
     src/stack_probe.c
     src/fault_trap.c
+    src/boot_reason.c
+    src/boot_reason_hw.c
     src/settings.c
     src/fault_log.c
     src/update.c

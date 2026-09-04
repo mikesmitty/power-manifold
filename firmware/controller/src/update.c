@@ -7,6 +7,8 @@
 #include "hardware/flash.h"
 #include "hardware/watchdog.h"
 #include "pico/bootrom.h"
+
+#include "boot_reason_hw.h"
 #include "pico/flash.h"
 #include "pico/time.h"
 
@@ -311,6 +313,7 @@ void update_reboot_now(void) {
     // Flash-update boot of the freshly written slot: the only boot path that
     // will run a TBYB-flagged image (and what arms the buy-pending flag the
     // health gate in main() later commits).
+    boot_reason_mark(BOOT_UPDATE, 0, 0, 0, 0);
     rom_reboot(REBOOT2_FLAG_REBOOT_TYPE_FLASH_UPDATE | REBOOT2_FLAG_NO_RETURN_ON_SUCCESS,
                10, XIP_BASE + up.target_off, 0);
     for (;;) tight_loop_contents(); // unreachable unless the ROM call failed

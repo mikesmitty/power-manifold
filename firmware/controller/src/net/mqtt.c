@@ -10,6 +10,7 @@
 #include "lwip/apps/mqtt.h"
 #include "lwip/dns.h"
 
+#include "boot_reason_hw.h"
 #include "improv.h"
 #include "jsonlite.h"
 #include "ipc.h"
@@ -27,7 +28,7 @@
 // step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 4)
-#define CHASSIS_ENTITIES 9
+#define CHASSIS_ENTITIES 10
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -421,6 +422,17 @@ static void publish_improv_button(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_boot_sensor(void) {
+    discovery_config_topic("sensor", "boot");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Last boot reason\",\"uniq_id\":\"pwrman_%s_boot\","
+             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\","
+             "\"val_tpl\":\"{{ value_json.boot }}\",\"ic\":\"mdi:restart\","
+             "\"ent_cat\":\"diagnostic\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_fan_select(void) {
     discovery_config_topic("select", "fan_mode");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -474,6 +486,9 @@ static void discovery_step(void) {
     case 7:
         publish_led_number();
         break;
+    case 8:
+        publish_boot_sensor();
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -507,18 +522,20 @@ static void publish_telemetry(void) {
     }
 
     uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
+    char boot_text[80];
+    boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
     snprintf(topic_buf, sizeof(topic_buf), "%s/status", base);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
              "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
-             "\"led\":%u,\"fw\":\"%s\"}",
+             "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
              t.alert_active ? "true" : "false", (long)net_rssi(),
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
-             g_settings.led_brightness, FW_VERSION);
+             g_settings.led_brightness, FW_VERSION, boot_text);
     publish(topic_buf, payload_buf, 0, 1);
 }
 
@@ -529,6 +546,7 @@ static const char *evt_name(evt_type_t t) {
     case EVT_CONTRACT:     return "contract";
     case EVT_PROBE_FAIL:   return "probe_fail";
     case EVT_THROTTLE:     return "throttle";
+    case EVT_BOOT:         return "boot";
     default:               return "?";
     }
 }
