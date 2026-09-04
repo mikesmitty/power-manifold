@@ -13,6 +13,7 @@
 #include "boot_reason_hw.h"
 #include "fault_log.h"
 #include "fault_text.h"
+#include "health.h"
 #include "improv.h"
 #include "jsonlite.h"
 #include "ipc.h"
@@ -31,7 +32,7 @@
 // switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 6)
-#define CHASSIS_ENTITIES 10
+#define CHASSIS_ENTITIES 11
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -517,6 +518,18 @@ static void publish_boot_sensor(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_problem_sensor(void) {
+    discovery_config_topic("binary_sensor", "problem");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Problem\",\"uniq_id\":\"pwrman_%s_problem\","
+             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\",\"dev_cla\":\"problem\","
+             "\"val_tpl\":\"{{ value_json.problem }}\",\"json_attr_t\":\"~/status\","
+             "\"json_attr_tpl\":\"{{ {'detail': value_json.problems} | tojson }}\","
+             "\"ent_cat\":\"diagnostic\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_fan_select(void) {
     discovery_config_topic("select", "fan_mode");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -583,6 +596,9 @@ static void discovery_publish(int i) {
     case 8:
         publish_boot_sensor();
         break;
+    case 9:
+        publish_problem_sensor();
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -606,18 +622,23 @@ static void publish_telemetry(void) {
     uint32_t headroom = t.budget_mw > t.reserved_mw ? t.budget_mw - t.reserved_mw : 0;
     char boot_text[80];
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
+    char problems[192];
+    static char problems_json[256]; // labels are user text
+    unsigned n_problems = health_problems(&t, problems, sizeof(problems));
+    json_escape(problems_json, sizeof(problems_json), problems);
     snprintf(topic_buf, sizeof(topic_buf), "%s/status", base);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
              "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
-             "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\"}",
+             "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
              t.alert_active ? "true" : "false", (long)net_rssi(),
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
-             g_settings.led_brightness, FW_VERSION, boot_text);
+             g_settings.led_brightness, FW_VERSION, boot_text,
+             n_problems ? "ON" : "OFF", problems_json);
     publish(topic_buf, payload_buf, 0, 1);
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {

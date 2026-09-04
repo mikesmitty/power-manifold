@@ -14,6 +14,7 @@
 #include "fault_log.h"
 #include "fault_text.h"
 #include "flash_map.h"
+#include "health.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "eth.h"
@@ -27,7 +28,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         2048 // browser headers + a full settings body
-#define STATUS_JSON_MAX 1792 // six ports with escaped labels, worst case
+#define STATUS_JSON_MAX 2304 // six ports with escaped labels + the problem text, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -71,6 +72,7 @@ static const char INDEX_HTML[] =
     "h1{font-size:1.3em}table{border-collapse:collapse;width:100%;max-width:44em}"
     "td,th{padding:.4em .7em;text-align:left;border-bottom:1px solid #333}"
     "th{color:#888;font-weight:600}#chassis{color:#9ad;margin:.8em 0}"
+    "#prob{color:#f55;margin:-.3em 0 .8em;max-width:44em}#prob:empty{display:none}"
     ".s-active{color:#6f6}.s-idle{color:#fc6}.s-fault{color:#f55}"
     ".s-throttled{color:#ff5}.s-absent{color:#666}.s-probe{color:#6dd}"
     ".s-disabled{color:#555}"
@@ -93,7 +95,7 @@ static const char INDEX_HTML[] =
     "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
     ".g{grid-template-columns:1fr}}"
     "</style></head><body>"
-    "<h1>Power Manifold</h1><div id='chassis'>loading&hellip;</div>"
+    "<h1>Power Manifold</h1><div id='chassis'>loading&hellip;</div><div id='prob'></div>"
     "<table><thead><tr><th>Port</th><th>State</th><th>V</th><th>A</th>"
     "<th title='measured by the INA226'>Draw W</th>"
     "<th title='PD contract wattage held against the chassis budget'>Res W</th>"
@@ -186,6 +188,7 @@ static const char INDEX_HTML[] =
     " reserved of ${d.budget_w.toFixed(0)}W budget"
     " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}"
     " \\u2014 last boot ${d.boot}`;"
+    "document.getElementById('prob').textContent=d.problems?'\\u26a0 '+d.problems:'';"
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
     "if(H[i].length>N)H[i].shift();});"
     "draw();}catch(e){}}tick();setInterval(tick,1000);"
@@ -361,6 +364,9 @@ static void build_status_json(char *out, size_t cap) {
 
     static char boot_text[80]; // static: IRQ stack
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
+    static char problems[192], problems_json[256];
+    unsigned n_problems = health_problems(&t, problems, sizeof(problems));
+    json_escape(problems_json, sizeof(problems_json), problems);
     char ethf[64] = "";
 #if PWRMAN_NET_ETH
     snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
@@ -370,7 +376,8 @@ static void build_status_json(char *out, size_t cap) {
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
-        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"ports\":[",
+        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\","
+        "\"problem\":%s,\"problems\":\"%s\",\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -378,7 +385,8 @@ static void build_status_json(char *out, size_t cap) {
         t.budget_mw / 1000.0, headroom / 1000.0, t.energy_mwh / 1e6,
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
-        t.alert_active ? "true" : "false", improv_state_str(), boot_text);
+        t.alert_active ? "true" : "false", improv_state_str(), boot_text,
+        n_problems ? "true" : "false", problems_json);
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];

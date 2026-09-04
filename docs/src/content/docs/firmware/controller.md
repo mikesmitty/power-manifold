@@ -264,7 +264,8 @@ state.
   `GET /api/v1/faults[?offset=N]` pages the fault log newest first (eight
   records a page, each with a human `text`) and `POST /api/v1/faults/clear`
   wipes it; the status JSON also carries `boot`, the reason for the last
-  boot, and the *Fault log* panel on the page shows both;
+  boot, and `problem` / `problems` (below), and the page shows the fault
+  log in its own panel and any problem in red under the chassis line;
   `POST /api/v1/port/<n>` with
   `{"action":"enable"|"disable"|"hard_reset"|"src_cap"}`,
   `POST /api/v1/fan` with `{"on":true}` or `{"mode":"auto"}`,
@@ -282,7 +283,7 @@ state.
   current-limit numbers, and a power-up state select (on/off/last) —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
   select (auto/on/off), an LED brightness number, a diagnostic *Last boot
-  reason* sensor, and a firmware update
+  reason* sensor, a *Problem* binary sensor (see below), and a firmware update
   entity fed from the retained `.../update/latest` pointer. Each port's
   state sensor carries `last_fault` / `last_fault_at` attributes (the
   newest fault or probe failure, as text and epoch seconds). Remote settings
@@ -333,6 +334,14 @@ state.
   at the moment of the event and wall-clock time once SNTP has synced, and
   the same records come out of `GET /api/v1/faults` and the page's *Fault
   log* panel. Every boot adds a record saying why it happened.
+- **Problem indicator**: one aggregate "needs attention" flag — any port
+  in `fault`, the engine stalled, a trial firmware image not yet
+  committed, or the wired link down while WiFi carries the traffic — with
+  a short description naming the ports (`faults: Port 2, Desk; trial
+  firmware uncommitted`). It is the `problem` / `problems` pair in the
+  status JSON and MQTT status, a line in `info`, a red line on the page,
+  and a diagnostic *Problem* binary sensor in Home Assistant whose
+  `detail` attribute carries the description.
 - **Boot reason**: the banner, `info`, the status JSON (`boot`) and Home
   Assistant report why the controller last started: power-on, brown-out,
   RUN pin, debugger, watchdog timeout, a requested reboot, a firmware

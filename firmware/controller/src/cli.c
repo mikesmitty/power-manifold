@@ -17,6 +17,7 @@
 #include "fault_text.h"
 #include "fault_trap.h"
 #include "flash_map.h"
+#include "health.h"
 #include "ipc.h"
 #include "manifold.h"
 #include "net/eth.h"
@@ -115,6 +116,11 @@ static void print_info(void) {
     else
         printf("engine: STALLED (reached init stage %u of %u at %lu us)\n", engine_stage,
                ENGINE_STAGE_LOOP, (unsigned long)engine_stage_us);
+    telemetry_t t;
+    ipc_snapshot_read(&t);
+    char problems[192];
+    health_problems(&t, problems, sizeof(problems));
+    printf("problems: %s\n", problems[0] ? problems : "none");
     for (int core = 0; core < 2; core++) {
         const fault_record_t *f = &g_fault[core];
         if (f->hit)
