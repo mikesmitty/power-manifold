@@ -291,6 +291,13 @@ static void conn_close(conn_t *c) {
 
 // Queue as much of one span as the send buffer takes; true once it is all
 // queued. sent_cb resumes a partial span when the window opens again.
+//
+// One tcp_write per segment: the CYW43 netif needs single-pbuf frames
+// (LWIP_NETIF_TX_SINGLE_PBUF), so lwIP copies every write into its heap,
+// flash bodies included, and a write is all-or-nothing. Offering the whole
+// send window at once (eight segments, ~12 KB of a 16 KB heap) fails for
+// good while MQTT holds a few KB of it; a segment at a time streams the
+// page as heap frees up, the rest following from sent_cb / poll_cb.
 static bool send_span(conn_t *c, const char *data, uint16_t len, uint16_t *sent,
                       uint8_t flags) {
     while (*sent < len) {
@@ -298,6 +305,7 @@ static bool send_span(conn_t *c, const char *data, uint16_t len, uint16_t *sent,
         uint16_t room = tcp_sndbuf(c->pcb);
         if (room == 0) return false;
         if (chunk > room) chunk = room;
+        if (chunk > TCP_MSS) chunk = TCP_MSS;
         err_t err = tcp_write(c->pcb, data + *sent, chunk, flags);
         if (err != ERR_OK) {
             printf("http: tcp_write %d at %u/%u, retrying on poll\n", (int)err,
@@ -310,8 +318,8 @@ static bool send_span(conn_t *c, const char *data, uint16_t len, uint16_t *sent,
 }
 
 static void send_more(conn_t *c) {
-    // resp[] is reused per request, so lwIP copies it; a static body lives
-    // in flash for good, so lwIP may reference it in place
+    // resp[] is reused per request, so lwIP must copy it; a static body may
+    // be referenced in place where the netif allows it (see send_span)
     bool done = send_span(c, c->resp, c->resp_len, &c->resp_sent, TCP_WRITE_FLAG_COPY) &&
                 send_span(c, c->static_body, c->static_len, &c->static_sent,
                           c->static_copy ? TCP_WRITE_FLAG_COPY : 0);
@@ -342,7 +350,8 @@ static void respond(conn_t *c, int code, const char *status,
 // Constant body (flash-resident, any size): only the headers use resp[].
 // copy: body is a RAM buffer that will be rewritten later (lwIP copies it as
 // it goes, so the buffer is free once the whole body is queued); otherwise
-// it lives in flash for good and lwIP references it in place.
+// it lives in flash for good and lwIP may reference it in place (on the
+// CYW43 netif it copies regardless, see send_span).
 static void respond_static(conn_t *c, int code, const char *status,
                            const char *content_type, const char *body, size_t len,
                            bool copy) {
