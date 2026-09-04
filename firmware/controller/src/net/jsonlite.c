@@ -130,6 +130,36 @@ int json_get_str_at(const char *json, const char *key, unsigned idx, char *out, 
     }
 }
 
+bool json_get_int_at(const char *json, const char *key, unsigned idx, long *out) {
+    const char *p = find_value(json, key), *end;
+    if (!p || *p != '[') return false;
+    p = skip_ws(p + 1);
+    for (unsigned i = 0; ; i++) {
+        if (*p == ']') return false;
+        if (i == idx) {
+            if (*p != '-' && !isdigit((unsigned char)*p)) return false;
+            char *e;
+            long v = strtol(p, &e, 10);
+            if (e == p) return false;
+            *out = v;
+            return true;
+        }
+        if (*p == '"') {
+            char skip[1];
+            if (!parse_string(p, skip, sizeof(skip), &end)) return false;
+            p = end + 1;
+        } else {
+            char *e;
+            strtol(p, &e, 10);
+            if (e == p) return false;
+            p = e;
+        }
+        p = skip_ws(p);
+        if (*p != ',') return false;
+        p = skip_ws(p + 1);
+    }
+}
+
 bool json_get_int(const char *json, const char *key, long *out) {
     const char *p = find_value(json, key);
     if (!p) return false;

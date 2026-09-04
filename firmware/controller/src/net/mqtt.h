@@ -15,6 +15,7 @@
 //   base/port/N/telemetry      1 Hz per-port JSON (N = 1-based)
 //   base/port/N/set            command: ON/OFF (admin enable), hard_reset, src_cap
 //   base/port/N/priority/set   command: 0-255 (0 = highest)
+//   base/port/N/limit/set      command: advertised current ceiling, mA (500-5000)
 //   base/fan/set               command: auto/on/off (legacy ON/OFF accepted)
 //   base/budget/set            command: chassis budget in watts
 //   base/event                 fault/contract/state events, QoS 1

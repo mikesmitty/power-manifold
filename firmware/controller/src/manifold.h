@@ -76,7 +76,17 @@ typedef enum {
     CMD_LED_BRIGHTNESS,  // arg = 0-255
     CMD_LED_IDENTIFY,    // arg = ms: flash the whole chain (Improv identify)
     CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags overlaid on the chain
+    CMD_PORT_LIMIT,      // port, arg = mA: new advertised current ceiling (g_settings already holds it)
 } cmd_op_t;
+
+// Per-port advertised current ceiling (settings port_limit_ma). It is the
+// current field of every PDO the blade advertises, so the wattage ceiling
+// scales with the voltage the sink picks. The blade's own hardware limit is
+// PORT_HW_MAX_MA; the INA226 emergency trip sits at 125 % of that and does
+// not move with the setting (the MPQ4242 enforces its own OCP).
+#define PORT_HW_MAX_MA    5000
+#define PORT_LIMIT_MIN_MA 500
+#define PORT_LIMIT_MAX_MA PORT_HW_MAX_MA
 
 // CMD_LED_CHASSIS flags: core 0's view of the management plane, shown as a
 // comet crossing the chain (see engine/led_pattern.h)

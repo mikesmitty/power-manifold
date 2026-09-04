@@ -2,6 +2,7 @@
 #include "manifold.h"
 #include "microtest.h"
 #include "port_fsm.h"
+#include "settings.h"
 #include "test_support.h"
 
 // Timing notes: seating a blade costs one tick to enter PROBE and one probe
@@ -16,7 +17,7 @@ static void test_probe_to_idle(void) {
     MT_ASSERT(sim_en(0));
     MT_ASSERT_EQ(budget_port_reservation(0), BUDGET_BASE_RESERVE_MW);
     MT_ASSERT_EQ(sim_advertised_ma(0), 5000);
-    MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250); // 125% of the 5A port limit
+    MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250); // emergency trip: 125% of the blade's 5 A ceiling
     MT_ASSERT(evt_count(EVT_STATE_CHANGE, 0) >= 2); // absent->probe->idle
 }
 
@@ -89,6 +90,47 @@ static void test_small_contract_reserves_base(void) {
     tick(2);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
     MT_ASSERT_EQ(budget_port_reservation(0), BUDGET_BASE_RESERVE_MW);
+}
+
+static void test_limit_applies_live(void) {
+    support_reset(360000);
+    sim_set_present(0, true);
+    tick(2);
+    sim_attach(0, 20000, 3000); // 60W laptop
+    tick(2);
+    MT_ASSERT_EQ(sim_contract_mw(0), 60000);
+    uint32_t caps = sim_src_cap_count(0);
+    g_settings.port_limit_ma[0] = 1000; // core 0 stores it, then commands the engine
+    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 1000};
+    port_fsm_cmd(0, &c);
+    tick(2);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 1000);
+    MT_ASSERT_EQ(sim_src_cap_count(0), caps + 1); // renegotiated at once
+    MT_ASSERT_EQ(sim_contract_mw(0), 20000);       // 20 V x 1 A
+    MT_ASSERT_EQ(budget_port_reservation(0), 20000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250); // the emergency trip does not follow the cap
+    // the ceiling sticks across a detach / re-attach
+    sim_detach(0);
+    tick(2);
+    sim_attach(0, 20000, 3000);
+    tick(2);
+    MT_ASSERT_EQ(sim_contract_mw(0), 20000);
+}
+
+static void test_limit_set_while_idle(void) {
+    support_reset(360000);
+    sim_set_present(0, true);
+    tick(2);
+    uint32_t caps = sim_src_cap_count(0);
+    g_settings.port_limit_ma[0] = 1500;
+    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 1500};
+    port_fsm_cmd(0, &c);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 1500);
+    MT_ASSERT_EQ(sim_src_cap_count(0), caps); // nobody to renegotiate with
+    sim_attach(0, 20000, 3000);
+    tick(2);
+    MT_ASSERT_EQ(sim_contract_mw(0), 30000); // 20 V x 1.5 A
 }
 
 static void test_detach_returns_to_idle(void) {
@@ -186,6 +228,8 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: attach 12V lands PDO3", test_attach_12v_contract);
     mt_run("fsm: attach 15V lands PDO4", test_attach_15v_contract);
     mt_run("fsm: small contract reserves base", test_small_contract_reserves_base);
+    mt_run("fsm: current limit applies live", test_limit_applies_live);
+    mt_run("fsm: current limit set while idle", test_limit_set_while_idle);
     mt_run("fsm: detach returns to idle", test_detach_returns_to_idle);
     mt_run("fsm: OCP faults then recovers", test_ocp_faults_then_recovers);
     mt_run("fsm: MPQ fault via poll", test_mpq_fault_via_poll);

@@ -95,7 +95,7 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
     } else if (!ina226_probe() || !ina226_configure() ||
-               !ina226_set_alert_ma((g_settings.port_limit_ma[i] * 125) / 100)) {
+               !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100)) { // emergency trip, fixed
         fail = PROBE_FAIL_INA226;
     } else if (!mpq4242_probe() ||
                !mpq4242_configure(g_settings.port_limit_ma[i])) {
@@ -364,6 +364,18 @@ void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {
     case CMD_PORT_SRC_CAP:
         if (powered && tca9548a_select(i)) mpq4242_send_src_cap();
         break;
+    case CMD_PORT_LIMIT: {
+        // core 0 stored the new setting first; a port that is not powered
+        // picks it up when it next probes. The INA226 trip stays put.
+        uint32_t limit = cmd->arg;
+        if (!powered || !tca9548a_select(i)) break;
+        if (ctx[i].state == PORT_STATE_THROTTLED && ctx[i].granted_ma <= limit)
+            break; // the budget clamp is tighter; recovery restores to the new limit
+        mpq4242_set_max_current_ma(limit);
+        ctx[i].granted_ma = limit;
+        if (ctx[i].mpq.attached) mpq4242_send_src_cap(); // renegotiate now
+        break;
+    }
     default:
         break;
     }

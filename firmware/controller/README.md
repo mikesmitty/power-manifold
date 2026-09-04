@@ -215,8 +215,8 @@ reboot
 A box provisioned this way (or a wired-only one that simply took a DHCP
 lease) has no setup secret: set a `token` on the console and the *Settings*
 panel unlocks with it. `help` lists everything else (port control,
-priorities and names, budget, fan policy, LED brightness, the persistent
-fault log, OTA pull, `bootsel`).
+priorities, names and current limits, budget, fan policy, LED brightness,
+the persistent fault log, OTA pull, `bootsel`).
 
 BLE only ever carries the WiFi credentials, and only while a provisioning
 window is open: automatically while the device has no credentials or has
@@ -240,15 +240,20 @@ state.
   the page's own 1 Hz poll (history lives in the tab, so it starts when the
   page opens — Home Assistant keeps the long-term record);
   the *Settings* panel below the table covers the device name, broker, API
-  token, chassis budget, fan policy, status LEDs and port names (up to 23
+  token, chassis budget, fan policy, status LEDs, port names (up to 23
   characters each; blank means `Port N`, and the label shows in the table,
-  the console and Home Assistant). `GET /api/v1/status` (each port carries
-  its `name`); `GET` / `POST /api/v1/settings` with any subset of
-  `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass","token",
-  "budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
-  "led_brightness","led_boot","port_names"}` (`port_names` is an array of
-  six strings; saved to flash at once; budget, fan, LEDs and names apply
-  live, `POST /api/v1/reboot` applies the name and broker);
+  the console and Home Assistant) and per-port current limits (500 to
+  5000 mA: the current field of every PDO the port advertises, so the
+  wattage ceiling scales with the voltage the device picks; a live port
+  renegotiates at once, and the INA226 emergency trip stays at 125 % of
+  the blade's 5 A ceiling regardless). `GET /api/v1/status` (each port
+  carries its `name` and `limit_ma`); `GET` / `POST /api/v1/settings` with
+  any subset of `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass",
+  "token","budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
+  "led_brightness","led_boot","port_names","port_limits_ma"}` (the last
+  two are arrays of six; saved to flash at once; budget, fan, LEDs, names
+  and limits apply live, `POST /api/v1/reboot` applies the name and
+  broker);
   `GET /metrics` is a Prometheus text-exposition endpoint (chassis gauges,
   a `pwrman_info` line with firmware, slot and boot reason, and every port
   metric labelled `port` and `name`), never gated;
@@ -269,14 +274,15 @@ state.
   power` becomes `Desk phone power` after a rename; a rename re-publishes
   discovery and entity ids stay put): power/voltage/current/state sensors, a since-boot
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
-  switch, hard-reset and re-announce-caps buttons, and a priority number —
+  switch, hard-reset and re-announce-caps buttons, and priority and
+  current-limit numbers —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
   select (auto/on/off), an LED brightness number, a diagnostic *Last boot
   reason* sensor, and a firmware update
   entity fed from the retained `.../update/latest` pointer. Each port's
   state sensor carries `last_fault` / `last_fault_at` attributes (the
   newest fault or probe failure, as text and epoch seconds). Remote settings
-  changes (budget, fan mode, priority, LED brightness) persist automatically
+  changes (budget, fan mode, priority, current limit, LED brightness) persist automatically
   a few seconds after the last change.
 - **Status LEDs**: one WS2812 per slot behind the front-panel light pipes.
   Dim white empty, cyan blink probing, amber idle, blue (below 19 V) or

@@ -46,6 +46,7 @@ static void print_help(void) {
            "  port <1-%d> on|off|reset|srccap\n"
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  port <1-%d> name <text>|clear   label for the web UI and Home Assistant\n"
+           "  port <1-%d> limit <500-5000>    advertised current ceiling, mA (all PDOs)\n"
            "  fan on|off|auto [on_w off_w [on_ma]]\n"
            "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
@@ -54,20 +55,21 @@ static void print_help(void) {
            "  stack                        per-core stack high-water marks\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
-           NUM_PORTS, NUM_PORTS, NUM_PORTS);
+           NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
 }
 
 static void print_status(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
-    printf("port state      attach pdo    mV     mA     mW  contract prio  name\n");
+    printf("port state      attach pdo    mV     mA     mW  contract limit prio  name\n");
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
-        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %4u  %s\n", i + 1,
+        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %5lu %4u  %s\n", i + 1,
                port_state_name((port_state_t)p->state), p->attached ? "yes" : "no",
                p->selected_pdo, p->bus_mv, (long)p->current_ma,
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
-               g_settings.port_priority[i], settings_port_name(i));
+               (unsigned long)g_settings.port_limit_ma[i], g_settings.port_priority[i],
+               settings_port_name(i));
     }
     printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s\n",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
@@ -203,7 +205,19 @@ static void run_line(char *l) {
         const char *n = strtok_r(NULL, " \t", &save);
         const char *op = strtok_r(NULL, " \t", &save);
         uint8_t port;
-        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name\n", NUM_PORTS); return; }
+        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name|limit\n", NUM_PORTS); return; }
+        if (!strcmp(op, "limit")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            int ma = v ? atoi(v) : 0;
+            if (!v || ma < PORT_LIMIT_MIN_MA || ma > PORT_LIMIT_MAX_MA) {
+                printf("usage: port <1-%d> limit <%d-%d> (mA)\n", NUM_PORTS, PORT_LIMIT_MIN_MA, PORT_LIMIT_MAX_MA);
+                return;
+            }
+            g_settings.port_limit_ma[port] = (uint32_t)ma;
+            engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = port, .arg = (uint32_t)ma};
+            printf(ipc_cmd_push(&c) ? "port %u limit %d mA ('save' to persist)\n" : "queue full\n", port + 1, ma);
+            return;
+        }
         if (!strcmp(op, "name")) {
             char *text = strtok_r(NULL, "", &save); // the rest of the line, spaces included
             while (text && *text == ' ') text++;

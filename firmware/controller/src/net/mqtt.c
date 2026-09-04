@@ -29,7 +29,7 @@
 // number, chassis sensors + fan + BLE provisioning button (the last chassis
 // step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
-#define PORT_ENTITIES    (PORT_SENSOR_N + 4)
+#define PORT_ENTITIES    (PORT_SENSOR_N + 5)
 #define CHASSIS_ENTITIES 10
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
@@ -143,7 +143,16 @@ static void handle_command(const char *topic, const char *data) {
     bool on = strncmp(data, "ON", 2) == 0;
 
     unsigned port;
-    if (sscanf(sub, "/port/%u/priority/set", &port) == 1 &&
+    if (sscanf(sub, "/port/%u/limit/set", &port) == 1 &&
+        strstr(sub, "/limit/set") != NULL && port >= 1 && port <= NUM_PORTS) {
+        int ma = atoi(data); // HA sends the box value, possibly as "3000.0"
+        if (data[0] >= '0' && data[0] <= '9' && ma >= PORT_LIMIT_MIN_MA && ma <= PORT_LIMIT_MAX_MA) {
+            g_settings.port_limit_ma[port - 1] = (uint32_t)ma;
+            engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = (uint8_t)(port - 1), .arg = (uint32_t)ma};
+            ipc_cmd_push(&c);
+            settings_save_later();
+        }
+    } else if (sscanf(sub, "/port/%u/priority/set", &port) == 1 &&
         strstr(sub, "/priority/set") != NULL && port >= 1 && port <= NUM_PORTS) {
         int prio = atoi(data);
         if (prio >= 0 && prio <= 255) {
@@ -238,6 +247,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/priority/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/limit/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/fan/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
@@ -381,6 +392,22 @@ static void publish_port_number(unsigned port) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_port_limit_number(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_limit", port);
+    discovery_config_topic("number", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s current limit\","
+             "\"uniq_id\":\"pwrman_%s_%s\",\"cmd_t\":\"~/port/%u/limit/set\","
+             "\"stat_t\":\"~/port/%u/telemetry\","
+             "\"val_tpl\":\"{{ value_json.limit_ma }}\",\"unit_of_meas\":\"mA\","
+             "\"min\":%d,\"max\":%d,\"step\":20,\"mode\":\"box\",\"ic\":\"mdi:current-dc\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, port_label(port), uid, object, port, port, PORT_LIMIT_MIN_MA, PORT_LIMIT_MAX_MA,
+             device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_port_switch(unsigned port) {
     char object[32];
     snprintf(object, sizeof(object), "p%u_enable", port);
@@ -497,7 +524,8 @@ static void discovery_publish(int i) {
         else if (e == PORT_SENSOR_N) publish_port_switch(port);
         else if (e == PORT_SENSOR_N + 1) publish_port_button(port, "hard_reset", "hard reset");
         else if (e == PORT_SENSOR_N + 2) publish_port_button(port, "src_cap", "re-announce caps");
-        else publish_port_number(port);
+        else if (e == PORT_SENSOR_N + 3) publish_port_number(port);
+        else publish_port_limit_number(port);
         return;
     }
     switch (i - NUM_PORTS * PORT_ENTITIES) {
@@ -580,13 +608,14 @@ static void publish_telemetry(void) {
         }
         snprintf(payload_buf, sizeof(payload_buf),
                  "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
-                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"fault\":%u,"
+                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"fault\":%u,"
                  "\"last_fault\":\"%s\",\"last_fault_at\":%lu}",
                  port_state_name((port_state_t)p->state), p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
                  p->contract_mw / 1000.0, g_settings.port_priority[i],
-                 p->fault_bits, lf_text, (unsigned long)lf_at);
+                 (unsigned long)g_settings.port_limit_ma[i], p->fault_bits, lf_text,
+                 (unsigned long)lf_at);
         publish(topic_buf, payload_buf, 0, 0);
     }
 

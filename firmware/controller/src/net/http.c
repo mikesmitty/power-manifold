@@ -133,6 +133,14 @@ static const char INDEX_HTML[] =
     "<input name='pn4' maxlength='23' placeholder='Port 4'>"
     "<input name='pn5' maxlength='23' placeholder='Port 5'>"
     "<input name='pn6' maxlength='23' placeholder='Port 6'></div>"
+    "<label>Port current limits (mA, " STR(PORT_LIMIT_MIN_MA) "-" STR(PORT_LIMIT_MAX_MA) ": the current every PDO"
+    " advertises, so the watt ceiling scales with the voltage the device picks)</label>"
+    "<div class='g'><input name='pl1' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
+    "<input name='pl2' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
+    "<input name='pl3' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
+    "<input name='pl4' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
+    "<input name='pl5' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
+    "<input name='pl6' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required></div>"
     "<label>API token (locks the API and this panel)"
     "<input name='atok' type='password' maxlength='32'></label>"
     "<button type='submit'>Save</button>"
@@ -179,6 +187,7 @@ static const char INDEX_HTML[] =
     "const CFG=document.getElementById('cfg'),F=document.getElementById('f'),"
     "M=document.getElementById('msg'),LK=document.getElementById('lock'),"
     "PN=[...document.querySelectorAll('input[name^=pn]')],"
+    "PL=[...document.querySelectorAll('input[name^=pl]')],"
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot'},"
@@ -192,13 +201,14 @@ static const char INDEX_HTML[] =
     "'Enter the API token to edit settings.';return;}"
     "const d=await r.json();LK.hidden=true;F.hidden=false;"
     "for(const k in KEYS)F[k].value=d[KEYS[k]];PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
+    "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);"
     "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
     "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
     "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
     " the API and this panel, so keep a copy.';}"
     "F.onsubmit=async e=>{e.preventDefault();const b={};"
     "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
-    "b.port_names=PN.map(e=>e.value.trim());"
+    "b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);"
     "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
     "let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
     "headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});"
@@ -367,11 +377,12 @@ static void build_status_json(char *out, size_t cap) {
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"attached\":%s,\"pdo\":%u,\"v\":%.3f,"
             "\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
-            "\"fault\":%u}",
+            "\"limit_ma\":%lu,\"fault\":%u}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state),
             p->attached ? "true" : "false", p->selected_pdo, p->bus_mv / 1000.0,
             p->current_ma / 1000.0, p->power_mw / 1000.0, p->energy_mwh / 1e6,
-            p->contract_mw / 1000.0, g_settings.port_priority[i], p->fault_bits);
+            p->contract_mw / 1000.0, g_settings.port_priority[i],
+            (unsigned long)g_settings.port_limit_ma[i], p->fault_bits);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
@@ -466,7 +477,8 @@ static size_t build_metrics(char *out, size_t cap) {
         {"pwrman_port_power_watts", "gauge"},     {"pwrman_port_energy_kwh_total", "counter"},
         {"pwrman_port_contract_watts", "gauge"},  {"pwrman_port_priority", "gauge"},
         {"pwrman_port_attached", "gauge"},        {"pwrman_port_pdo", "gauge"},
-        {"pwrman_port_fault_bits", "gauge"},      {"pwrman_port_state_info", "gauge"},
+        {"pwrman_port_fault_bits", "gauge"},      {"pwrman_port_limit_amps", "gauge"},
+        {"pwrman_port_state_info", "gauge"},
     };
     for (size_t m = 0; m < sizeof(PM) / sizeof(PM[0]); m++) {
         M_PUT("# TYPE %s %s\n", PM[m].name, PM[m].type);
@@ -484,6 +496,7 @@ static size_t build_metrics(char *out, size_t cap) {
             case 6: M_PUT("} %d\n", p->attached ? 1 : 0); break;
             case 7: M_PUT("} %u\n", p->selected_pdo); break;
             case 8: M_PUT("} %u\n", p->fault_bits); break;
+            case 9: M_PUT("} %.2f\n", g_settings.port_limit_ma[i] / 1000.0); break;
             default: M_PUT(",state=\"%s\"} 1\n", port_state_name((port_state_t)p->state)); break;
             }
         }
@@ -579,6 +592,10 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
         json_escape(pn, sizeof(pn), g_settings.port_name[i]); // stored value: "" = unset
         off += (size_t)snprintf(out + off, cap - off, "%s\"%s\"", i ? "," : "", pn);
     }
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "],\"port_limits_ma\":[");
+    for (int i = 0; i < NUM_PORTS && off < cap; i++)
+        off += (size_t)snprintf(out + off, cap - off, "%s%lu", i ? "," : "",
+                                (unsigned long)g_settings.port_limit_ma[i]);
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
 
@@ -677,6 +694,11 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         else err = "led_boot: white or rainbow";
     }
     for (int i = 0; !err && i < NUM_PORTS; i++) {
+        if (json_get_int_at(body, "port_limits_ma", (unsigned)i, &v)) {
+            if (v < PORT_LIMIT_MIN_MA || v > PORT_LIMIT_MAX_MA)
+                err = "port_limits_ma: " STR(PORT_LIMIT_MIN_MA) "-" STR(PORT_LIMIT_MAX_MA) " mA each";
+            else s.port_limit_ma[i] = (uint32_t)v;
+        }
         r = json_get_str_at(body, "port_names", (unsigned)i, s.port_name[i], sizeof(s.port_name[i]));
         if (r < 0) err = "port_names: at most " STR(PORT_NAME_MAX) " characters each";
         else if (r > 0 && !settings_port_name_valid(s.port_name[i]))
@@ -709,8 +731,15 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
     bool led_changed = g_settings.led_brightness != s.led_brightness;
     bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;
+    uint32_t old_limit[NUM_PORTS];
+    memcpy(old_limit, g_settings.port_limit_ma, sizeof(old_limit));
     g_settings = s;
 
+    for (uint8_t i = 0; i < NUM_PORTS; i++) {
+        if (old_limit[i] == s.port_limit_ma[i]) continue;
+        engine_cmd_t cmd = {.op = CMD_PORT_LIMIT, .port = i, .arg = s.port_limit_ma[i]};
+        ipc_cmd_push(&cmd);
+    }
     if (names_changed) mqtt_names_changed();
 
     if (budget_changed) {

@@ -125,6 +125,21 @@ static void test_get_str_at(void) {
     MT_ASSERT(!strcmp(small, "Des"));
 }
 
+static void test_get_int_at(void) {
+    long v = 7;
+    const char *j = "{\"port_limits_ma\":[5000, 3000 ,\"x,]\",-1],\"n\":1}";
+    MT_ASSERT(json_get_int_at(j, "port_limits_ma", 0, &v)); MT_ASSERT_EQ(v, 5000);
+    MT_ASSERT(json_get_int_at(j, "port_limits_ma", 1, &v)); MT_ASSERT_EQ(v, 3000);
+    MT_ASSERT(!json_get_int_at(j, "port_limits_ma", 2, &v)); // a string is not a number
+    MT_ASSERT(json_get_int_at(j, "port_limits_ma", 3, &v)); MT_ASSERT_EQ(v, -1);
+    MT_ASSERT(!json_get_int_at(j, "port_limits_ma", 4, &v));
+    MT_ASSERT(!json_get_int_at(j, "n", 0, &v));      // not an array
+    MT_ASSERT(!json_get_int_at(j, "absent", 0, &v));
+    MT_ASSERT(!json_get_int_at("{\"a\":[]}", "a", 0, &v));
+    MT_ASSERT(!json_get_int_at("{\"a\":[null,2]}", "a", 1, &v)); // unknown token stops the scan
+    MT_ASSERT_EQ(v, -1); // untouched by the failures
+}
+
 void run_jsonlite_tests(void) {
     mt_run("jsonlite: plain strings", test_get_str_plain);
     mt_run("jsonlite: absent / non-string values", test_get_str_absent_or_not_string);
@@ -133,5 +148,6 @@ void run_jsonlite_tests(void) {
     mt_run("jsonlite: capped output", test_get_str_too_long);
     mt_run("jsonlite: integers", test_get_int);
     mt_run("jsonlite: string array elements", test_get_str_at);
+    mt_run("jsonlite: integer array elements", test_get_int_at);
     mt_run("jsonlite: escaping for output", test_escape);
 }
