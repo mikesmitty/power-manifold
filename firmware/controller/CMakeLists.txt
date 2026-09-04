@@ -42,6 +42,7 @@ add_executable(controller
     src/fault_trap.c
     src/boot_reason.c
     src/boot_reason_hw.c
+    src/event_kind.c
     src/fault_text.c
     src/health.c
     src/settings.c

@@ -19,7 +19,9 @@
 //   base/port/N/boot/set       command: on/off/last — administrative state at power-up
 //   base/fan/set               command: auto/on/off (legacy ON/OFF accepted)
 //   base/budget/set            command: chassis budget in watts
-//   base/event                 fault/contract/state events, QoS 1
+//   base/event                 engine events, QoS 1: {"port":N,"event":"state|fault|
+//                              contract|probe_fail|throttle","kind":"<HA event type,
+//                              see event_kind.h>","code":..,"arg":..,"text":"..","ts":epoch}
 //   base/update/latest         in, retained: {"version":"x.y.z","url":"http://..."}
 //   base/update/state          out, retained: installed/latest for HA's update entity
 //   base/update/set            command: "install" -> pull the latest url (OTA)

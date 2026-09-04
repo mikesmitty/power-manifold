@@ -274,13 +274,20 @@ state.
   Bearer token once `token` is set; `/settings` always wants one — the
   token, or the setup secret from an Improv redirect while none is stored.
 - **MQTT / Home Assistant**: telemetry under `pwrman/<name>/...` at 1 Hz,
-  availability via LWT, faults/contract changes on `.../event`. Discovery
+  availability via LWT, engine events on `.../event` (each with a `kind`
+  in Home Assistant's vocabulary and, for faults, a human `text`). Discovery
   publishes, per port (entity names carry the port's label, so `Port 3
   power` becomes `Desk phone power` after a rename; a rename re-publishes
   discovery and entity ids stay put): power/voltage/current/state sensors, a since-boot
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
   switch, hard-reset and re-announce-caps buttons, priority and
-  current-limit numbers, and a power-up state select (on/off/last) —
+  current-limit numbers, a power-up state select (on/off/last), and an
+  *events* entity fed from `.../event` — event types `inserted`, `ready`,
+  `attached`, `detached`, `removed`, `enabled`, `disabled`, `contract`,
+  `throttled`, `restored`, `fault` and `probe_failed`, with the raw
+  `code` / `arg` and the fault `text` as attributes, so an automation
+  triggers on `event.<label>_events` directly instead of templating over
+  the state sensor —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
   select (auto/on/off), an LED brightness number, a diagnostic *Last boot
   reason* sensor, a *Problem* binary sensor (see below), and a firmware update

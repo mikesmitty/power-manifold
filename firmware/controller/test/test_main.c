@@ -4,6 +4,7 @@
 
 void run_boot_tests(void);
 void run_budget_tests(void);
+void run_event_tests(void);
 void run_fan_tests(void);
 void run_improv_tests(void);
 void run_jsonlite_tests(void);
@@ -17,6 +18,7 @@ int main(void) {
     printf("controller engine tests\n");
     run_boot_tests();
     run_budget_tests();
+    run_event_tests();
     run_fan_tests();
     run_improv_tests();
     run_jsonlite_tests();

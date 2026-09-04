@@ -11,6 +11,7 @@
 #include "lwip/dns.h"
 
 #include "boot_reason_hw.h"
+#include "event_kind.h"
 #include "fault_log.h"
 #include "fault_text.h"
 #include "health.h"
@@ -27,11 +28,11 @@
 #define TELEMETRY_MS     1000
 
 // discovery entity table: per-port sensors + switch + buttons + priority,
-// current-limit and boot-policy controls; chassis sensors + fan + BLE
-// provisioning button (the last chassis step retracts the pre-select fan
-// switch config)
+// current-limit and boot-policy controls + event entity; chassis sensors +
+// fan + BLE provisioning button (the last chassis step retracts the
+// pre-select fan switch config)
 #define PORT_SENSOR_N    5
-#define PORT_ENTITIES    (PORT_SENSOR_N + 6)
+#define PORT_ENTITIES    (PORT_SENSOR_N + 7)
 #define CHASSIS_ENTITIES 11
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
@@ -67,7 +68,7 @@ static char latest_version[16]; // from the retained update/latest pointer
 static char latest_url[160];
 
 static char topic_buf[160];
-static char payload_buf[768];
+static char payload_buf[1024]; // largest: a port's event entity config
 static char device_json[192];
 
 static void ensure_ids(void) {
@@ -432,6 +433,28 @@ static void publish_port_boot_select(unsigned port) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+// One HA event entity per port, fed from the shared base/event topic: the
+// template keeps this port's events with a kind and drops the rest (an
+// empty render is ignored). code/arg/text ride along as attributes.
+static void publish_port_event(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_event", port);
+    discovery_config_topic("event", object);
+    char tpl[224];
+    snprintf(tpl, sizeof(tpl),
+             "{%% if value_json.port == %u and value_json.kind %%}"
+             "{{ {'event_type': value_json.kind, 'code': value_json.code, "
+             "'arg': value_json.arg, 'text': value_json.text} | tojson }}{%% endif %%}",
+             port);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s events\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"stat_t\":\"~/event\",\"avail_t\":\"~/availability\","
+             "\"event_types\":" EVENT_KINDS_JSON ",\"val_tpl\":\"%s\","
+             "\"ic\":\"mdi:usb-port\",\"dev\":%s}",
+             base, port_label(port), uid, object, tpl, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_port_switch(unsigned port) {
     char object[32];
     snprintf(object, sizeof(object), "p%u_enable", port);
@@ -562,7 +585,8 @@ static void discovery_publish(int i) {
         else if (e == PORT_SENSOR_N + 2) publish_port_button(port, "src_cap", "re-announce caps");
         else if (e == PORT_SENSOR_N + 3) publish_port_number(port);
         else if (e == PORT_SENSOR_N + 4) publish_port_limit_number(port);
-        else publish_port_boot_select(port);
+        else if (e == PORT_SENSOR_N + 5) publish_port_boot_select(port);
+        else publish_port_event(port);
         return;
     }
     switch (i - NUM_PORTS * PORT_ENTITIES) {
@@ -686,12 +710,18 @@ static const char *evt_name(evt_type_t t) {
 
 void mqtt_event(const engine_evt_t *e) {
     if (!mqtt_is_connected()) return; // transient events aren't queued
+    char text[48] = "";
+    if (e->type == EVT_FAULT || e->type == EVT_PROBE_FAIL) {
+        fault_rec_t r = {.port = e->port, .type = e->type, .code = e->code, .arg = e->arg};
+        fault_text(&r, text, sizeof(text)); // plain words: no escaping needed
+    }
     net_lock();
     snprintf(topic_buf, sizeof(topic_buf), "%s/event", base);
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"port\":%u,\"event\":\"%s\",\"code\":%u,\"arg\":%lu,\"ts\":%lu}",
-             e->port + 1, evt_name((evt_type_t)e->type), e->code,
-             (unsigned long)e->arg, (unsigned long)net_epoch());
+             "{\"port\":%u,\"event\":\"%s\",\"kind\":\"%s\",\"code\":%u,\"arg\":%lu,"
+             "\"text\":\"%s\",\"ts\":%lu}",
+             e->port + 1, evt_name((evt_type_t)e->type), event_kind(e), e->code,
+             (unsigned long)e->arg, text, (unsigned long)net_epoch());
     publish(topic_buf, payload_buf, 1, 0);
     net_unlock();
 }
