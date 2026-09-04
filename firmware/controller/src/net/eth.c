@@ -70,8 +70,10 @@ static void rx_work(async_context_t *ctx, async_when_pending_worker_t *w) {
 }
 
 static const char *speed_str(void) {
-    return (phy & 0x02) ? ((phy & 0x04) ? "100M full" : "100M half")
-                        : ((phy & 0x04) ? "10M full" : "10M half");
+    // PHYSR: SPD bit set = 10 Mbps, DPX bit set = half duplex (verified on
+    // a W6100-EVB-Pico2 against a 100M/full switch port)
+    return (phy & 0x02) ? ((phy & 0x04) ? "10M half" : "10M full")
+                        : ((phy & 0x04) ? "100M half" : "100M full");
 }
 
 static void link_work(async_context_t *ctx, async_at_time_worker_t *w) {
@@ -127,7 +129,9 @@ bool eth_init(void) {
     memcpy(mac + 1, id.id + 3, 5);
 
     if (!w6100_init(mac)) {
-        printf("eth: no W6100 answering on SPI0 (GP16-21); wired path off\n");
+        const w6100_fail_t *f = w6100_last_failure();
+        printf("eth: no W6100 answering on SPI0 (GP16-21): %s failed, CIDR %04x VER %04x"
+               " SYSR %02x; wired path off\n", f->step, f->cidr, f->ver, f->sysr);
         return false;
     }
     present = true;

@@ -18,10 +18,14 @@
 // interrupt routing (socket 0 RECV on INTn) and MACRAW open. False when no
 // chip answers (CIDR wrong) or the socket refuses MACRAW.
 bool w6100_init(const uint8_t mac[6]);
+// Why the last w6100_init() failed, with the raw reads taken at that point
+// (boot-log material: an absent chip reads as all-ones or all-zeros).
+typedef struct { const char *step; uint16_t cidr, ver; uint8_t sysr; } w6100_fail_t;
+const w6100_fail_t *w6100_last_failure(void);
 uint16_t w6100_version(void); // VER register, valid after init
 
 bool w6100_link_up(void);
-uint8_t w6100_phy_status(void); // raw PHYSR: LNK bit0, SPD bit1 (1 = 100M), DPX bit2 (1 = full)
+uint8_t w6100_phy_status(void); // raw PHYSR: LNK bit0 (1 = up), SPD bit1 (1 = 10M), DPX bit2 (1 = half)
 
 // Receive: begin returns the next frame's length (0 = nothing waiting) and
 // leaves the frame ready for sequential reads; end releases it to the

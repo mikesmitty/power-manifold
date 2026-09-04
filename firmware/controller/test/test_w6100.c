@@ -416,9 +416,9 @@ static void test_link_follows_physr(void) {
     MT_ASSERT(setup());
     creg[0x3000] = 0x00;
     MT_ASSERT(!w6100_link_up());
-    creg[0x3000] = 0x07; // link, 100M, full
+    creg[0x3000] = 0x01; // link up; SPD/DPX clear = 100M full
     MT_ASSERT(w6100_link_up());
-    MT_ASSERT_EQ(w6100_phy_status(), 0x07);
+    MT_ASSERT_EQ(w6100_phy_status(), 0x01);
 }
 
 void run_w6100_tests(void) {

@@ -140,6 +140,19 @@ static bool wait_sysr(uint8_t mask, bool set) {
 // ---- init ------------------------------------------------------------------
 
 static uint16_t version;
+static w6100_fail_t fail;
+
+static bool failed(const char *step) {
+    fail.step = step;
+    fail.cidr = rd16(BLK_COMMON, CIDR);
+    fail.ver = rd16(BLK_COMMON, VER);
+    fail.sysr = rd8(BLK_COMMON, SYSR);
+    return false;
+}
+
+const w6100_fail_t *w6100_last_failure(void) {
+    return &fail;
+}
 
 bool w6100_init(const uint8_t mac[6]) {
     w6100_hw_init();
@@ -147,20 +160,23 @@ bool w6100_init(const uint8_t mac[6]) {
     w6100_hw_reset(true);
     w6100_hw_delay_ms(2);
     w6100_hw_reset(false);
-    w6100_hw_delay_ms(10);
+    w6100_hw_delay_ms(100); // WIZnet's own examples give it this long
+
+    // identity first: an absent chip fails here in one read
+    if (rd16(BLK_COMMON, CIDR) != 0x6100) return failed("id");
 
     // software reset needs the chip block unlocked; the chip relocks itself
     wr8(BLK_COMMON, CHPLCKR, CHPLCKR_UNLOCK);
-    if (!wait_sysr(SYSR_CHPL, false)) return false;
+    if (!wait_sysr(SYSR_CHPL, false)) return failed("unlock");
     wr8(BLK_COMMON, SYCR0, SYCR0_RST);
-    if (!wait_sysr(SYSR_CHPL, true)) return false;
+    if (!wait_sysr(SYSR_CHPL, true)) return failed("soft reset");
 
     wr8(BLK_COMMON, CHPLCKR, CHPLCKR_UNLOCK);
     wr8(BLK_COMMON, NETLCKR, NETLCKR_UNLOCK);
     wr8(BLK_COMMON, PHYLCKR, PHYLCKR_UNLOCK);
-    if (!wait_sysr(SYSR_CHPL | SYSR_NETL | SYSR_PHYL, false)) return false;
+    if (!wait_sysr(SYSR_CHPL | SYSR_NETL | SYSR_PHYL, false)) return failed("unlock all");
 
-    if (rd16(BLK_COMMON, CIDR) != 0x6100) return false;
+    if (rd16(BLK_COMMON, CIDR) != 0x6100) return failed("id after reset");
     version = rd16(BLK_COMMON, VER);
 
     // the whole buffer to socket 0: others must give theirs up first so the
@@ -183,7 +199,8 @@ bool w6100_init(const uint8_t mac[6]) {
 
     wr8(BLK_SREG(SOCK), Sn_MR, Sn_MR_MACRAW | Sn_MR_MF);
     cmd(Sn_CR_OPEN);
-    return rd8(BLK_SREG(SOCK), Sn_SR) == SOCK_MACRAW;
+    if (rd8(BLK_SREG(SOCK), Sn_SR) != SOCK_MACRAW) return failed("open");
+    return true;
 }
 
 uint16_t w6100_version(void) {
