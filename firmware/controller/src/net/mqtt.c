@@ -26,7 +26,7 @@
 // step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 4)
-#define CHASSIS_ENTITIES 8
+#define CHASSIS_ENTITIES 9
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -137,6 +137,14 @@ static void handle_command(const char *topic, const char *data) {
             ipc_cmd_push(&c);
             settings_save_later();
         }
+    } else if (strcmp(sub, "/led/set") == 0) {
+        int b = atoi(data); // HA sends the slider value, possibly as "48.0"
+        if (data[0] >= '0' && data[0] <= '9' && b >= 0 && b <= 255) {
+            g_settings.led_brightness = (uint8_t)b;
+            engine_cmd_t c = {.op = CMD_LED_BRIGHTNESS, .arg = (uint32_t)b};
+            ipc_cmd_push(&c);
+            settings_save_later();
+        }
     } else if (strcmp(sub, "/fan/set") == 0) {
         // fan mode select: "auto"/"on"/"off" (plus legacy switch ON/OFF)
         if (!strcasecmp(data, "auto")) {
@@ -205,6 +213,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         snprintf(topic_buf, sizeof(topic_buf), "%s/fan/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/budget/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/led/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/update/latest", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
@@ -368,6 +378,19 @@ static void publish_budget_number(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_led_number(void) {
+    discovery_config_topic("number", "led");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"LED brightness\","
+             "\"uniq_id\":\"pwrman_%s_led\",\"cmd_t\":\"~/led/set\","
+             "\"stat_t\":\"~/status\",\"val_tpl\":\"{{ value_json.led }}\","
+             "\"min\":0,\"max\":255,\"step\":1,\"mode\":\"slider\","
+             "\"ic\":\"mdi:led-on\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_update_entity(void) {
     discovery_config_topic("update", "fw");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -440,6 +463,9 @@ static void discovery_step(void) {
     case 6:
         publish_improv_button();
         break;
+    case 7:
+        publish_led_number();
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -474,13 +500,13 @@ static void publish_telemetry(void) {
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
              "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
-             "\"fw\":\"%s\"}",
+             "\"led\":%u,\"fw\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
              t.alert_active ? "true" : "false", (long)net_rssi(),
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
-             FW_VERSION);
+             g_settings.led_brightness, FW_VERSION);
     publish(topic_buf, payload_buf, 0, 1);
 }
 

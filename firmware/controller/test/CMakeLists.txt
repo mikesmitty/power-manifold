@@ -15,6 +15,7 @@ add_compile_options(-Wall -Wextra -g)
 add_executable(engine_tests
     ../src/engine/budget.c
     ../src/engine/fan_policy.c
+    ../src/engine/led_pattern.c
     ../src/engine/port_fsm.c
     ../src/engine/sim/sim_blades.c
     ../src/net/improv_proto.c
@@ -26,6 +27,7 @@ add_executable(engine_tests
     test_fan.c
     test_improv.c
     test_jsonlite.c
+    test_leds.c
     test_port_fsm.c
     test_priority.c
     test_update_image.c

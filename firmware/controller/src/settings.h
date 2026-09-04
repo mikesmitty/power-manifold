@@ -35,6 +35,8 @@ typedef struct {
     uint16_t fan_off_w;       // auto: off at/below this (hysteresis band)
     // -- added in layout version 3 --
     uint16_t fan_on_ma;       // auto: also on while any contract exceeds this (0 = off)
+    // -- added in layout version 4 --
+    uint8_t  led_boot;        // LED_BOOT_*: power-up sweep style
     uint32_t crc; // must remain last
 } settings_t;
 

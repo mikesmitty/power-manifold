@@ -53,6 +53,7 @@ int main(void) {
     bool wd_armed = false;
     bool trial = flash_map_update_pending();
     uint32_t healthy_since = 0;
+    uint8_t led_flags_sent = 0; // engine's view starts with no chassis overlay
 
     for (;;) {
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
@@ -61,6 +62,14 @@ int main(void) {
         improv_poll(now_ms); // before net_poll: sees a join result before the retry
         net_poll(now_ms);
         mqtt_poll(now_ms);
+
+        // chassis conditions the LED chain overlays as a comet (led_pattern.h)
+        uint8_t led_flags = (uint8_t)((improv_active() ? LED_CHASSIS_BLE_OPEN : 0) |
+                                      (net_up() ? 0 : LED_CHASSIS_NET_DOWN));
+        if (led_flags != led_flags_sent) {
+            engine_cmd_t c = {.op = CMD_LED_CHASSIS, .arg = led_flags};
+            if (ipc_cmd_push(&c)) led_flags_sent = led_flags;
+        }
 
         // engine events: log faults durably first, then publish (best-effort)
         engine_evt_t evt;

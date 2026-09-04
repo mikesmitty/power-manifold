@@ -252,9 +252,20 @@ state.
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
   switch, hard-reset and re-announce-caps buttons, and a priority number —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
-  select (auto/on/off), and a firmware update entity fed from the retained
-  `.../update/latest` pointer. Remote settings changes (budget, fan mode,
-  priority) persist automatically a few seconds after the last change.
+  select (auto/on/off), an LED brightness number, and a firmware update
+  entity fed from the retained `.../update/latest` pointer. Remote settings
+  changes (budget, fan mode, priority, LED brightness) persist automatically
+  a few seconds after the last change.
+- **Status LEDs**: one WS2812 per slot behind the front-panel light pipes.
+  Dim white empty, cyan blink probing, amber idle, blue (below 19 V) or
+  green (19 V and up) active, the same colour pulsing at 1 Hz when
+  throttled, red blink at 5 Hz on a fault, off when disabled. A short comet
+  crosses the chain every 3 s while something needs attention: blue while
+  the BLE provisioning window is open, white while no link has an address.
+  Power-up runs a sweep across the six pixels (`led boot white|rainbow`),
+  which also proves the chain order. `led 0` blanks the chain but a faulted
+  port keeps blinking at a floor level; brightness is also a Home Assistant
+  number and a field in the web *Settings* panel.
 - **Wired Ethernet**: the W6100 runs in MACRAW mode, so it is just another
   lwIP netif and everything above it (DHCP, mDNS, MQTT, HTTP, OTA pull) is
   the same code as over WiFi. Its MAC is locally administered, derived from

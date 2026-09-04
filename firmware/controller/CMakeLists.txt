@@ -48,6 +48,7 @@ add_executable(controller
     src/engine/port_fsm.c
     src/engine/budget.c
     src/engine/leds.c
+    src/engine/led_pattern.c
     src/net/net.c
     src/net/mqtt.c
     src/net/http.c

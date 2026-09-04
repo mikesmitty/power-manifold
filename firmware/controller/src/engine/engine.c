@@ -100,6 +100,9 @@ static void dispatch_cmd(const engine_cmd_t *cmd, uint32_t now_ms) {
     case CMD_LED_IDENTIFY:
         leds_identify(now_ms + cmd->arg);
         break;
+    case CMD_LED_CHASSIS:
+        leds_set_chassis((uint8_t)cmd->arg);
+        break;
     default:
         if (cmd->port < NUM_PORTS) port_fsm_cmd(cmd->port, cmd);
         break;
@@ -132,6 +135,8 @@ void engine_main(void) {
     STAGE(ENGINE_STAGE_MUX_EXP);
     leds_init();
     leds_set_brightness(g_settings.led_brightness);
+    leds_set_boot_style(g_settings.led_boot);
+    leds_boot_sweep(to_ms_since_boot(get_absolute_time())); // also a chain-order check
     STAGE(ENGINE_STAGE_LEDS);
 
     budget_init(g_settings.budget_mw);

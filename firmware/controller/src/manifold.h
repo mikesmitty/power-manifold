@@ -75,7 +75,17 @@ typedef enum {
     CMD_FAN_AUTO,        // hand the fan back to the engine's auto policy
     CMD_LED_BRIGHTNESS,  // arg = 0-255
     CMD_LED_IDENTIFY,    // arg = ms: flash the whole chain (Improv identify)
+    CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags overlaid on the chain
 } cmd_op_t;
+
+// CMD_LED_CHASSIS flags: core 0's view of the management plane, shown as a
+// comet crossing the chain (see engine/led_pattern.h)
+#define LED_CHASSIS_BLE_OPEN  (1u << 0) // Improv provisioning window open: blue
+#define LED_CHASSIS_NET_DOWN  (1u << 1) // no link holds an address: white
+
+// Power-up LED sweep style (settings.led_boot)
+#define LED_BOOT_WHITE   0
+#define LED_BOOT_RAINBOW 1
 
 typedef struct {
     uint8_t  op;   // cmd_op_t

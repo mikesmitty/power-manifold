@@ -112,6 +112,10 @@ static const char INDEX_HTML[] =
     "<input name='foff' type='number' min='0' max='999' required></label>"
     "<label>Fan auto: also on while any contract exceeds (mA, 0 = off)"
     "<input name='fma' type='number' min='0' max='10000' required></label>"
+    "<label>Status LED brightness (0-255, 0 = off but faults still show)"
+    "<input name='led' type='number' min='0' max='255' required></label>"
+    "<label>Power-up LED sweep<select name='lboot'><option value='white'>white</option>"
+    "<option value='rainbow'>rainbow</option></select></label>"
     "<label>API token (locks the API and this panel)"
     "<input name='atok' type='password' maxlength='32'></label>"
     "<button type='submit'>Save</button>"
@@ -156,8 +160,9 @@ static const char INDEX_HTML[] =
     "const CFG=document.getElementById('cfg'),F=document.getElementById('f'),"
     "M=document.getElementById('msg'),LK=document.getElementById('lock'),"
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
-    "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma'},"
-    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1},"
+    "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
+    "led:'led_brightness',lboot:'led_boot'},"
+    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1},"
     "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
     "async function cfgLoad(){let r;"
     "try{r=await fetch('/api/v1/settings',{headers:hdr()});}"
@@ -394,13 +399,15 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
              "{\"name\":\"%s\",\"mqtt_host\":\"%s\",\"mqtt_port\":%u,\"mqtt_user\":\"%s\","
              "\"mqtt_pass_set\":%s,\"token_set\":%s,\"setup\":%s,"
              "\"budget_w\":%lu,\"fan_mode\":\"%s\",\"fan_on_w\":%u,\"fan_off_w\":%u,"
-             "\"fan_on_ma\":%u}",
+             "\"fan_on_ma\":%u,\"led_brightness\":%u,\"led_boot\":\"%s\"}",
              name, host, g_settings.mqtt_port, user,
              g_settings.mqtt_pass[0] ? "true" : "false",
              g_settings.api_token[0] ? "true" : "false", via_setup ? "true" : "false",
              (unsigned long)(g_settings.budget_mw / 1000u),
              g_settings.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
-             g_settings.fan_on_w, g_settings.fan_off_w, g_settings.fan_on_ma);
+             g_settings.fan_on_w, g_settings.fan_off_w, g_settings.fan_on_ma,
+             g_settings.led_brightness,
+             g_settings.led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white");
 }
 
 static bool header_safe(const char *s) { // printable ASCII, no spaces
@@ -486,6 +493,17 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         else s.fan_on_ma = (uint16_t)v;
         fan_touched = true;
     }
+    if (!err && json_get_int(body, "led_brightness", &v)) {
+        if (v < 0 || v > 255) err = "led_brightness: 0-255";
+        else s.led_brightness = (uint8_t)v;
+    }
+    char boot[8];
+    int lb = json_get_str(body, "led_boot", boot, sizeof(boot));
+    if (!err && lb != 0) {
+        if (lb > 0 && !strcmp(boot, "white")) s.led_boot = LED_BOOT_WHITE;
+        else if (lb > 0 && !strcmp(boot, "rainbow")) s.led_boot = LED_BOOT_RAINBOW;
+        else err = "led_boot: white or rainbow";
+    }
     if (!err && m != 0) {
         if (m > 0 && !strcmp(mode, "auto")) {
             s.fan_auto = 1;
@@ -511,10 +529,15 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
                            strcmp(g_settings.mqtt_user, s.mqtt_user) != 0 ||
                            strcmp(g_settings.mqtt_pass, s.mqtt_pass) != 0;
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
+    bool led_changed = g_settings.led_brightness != s.led_brightness;
     g_settings = s;
 
     if (budget_changed) {
         engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = s.budget_mw};
+        ipc_cmd_push(&cmd);
+    }
+    if (led_changed) {
+        engine_cmd_t cmd = {.op = CMD_LED_BRIGHTNESS, .arg = s.led_brightness};
         ipc_cmd_push(&cmd);
     }
     if (m != 0) { // an explicit mode: apply it (the CLI's fan on|off|auto)

@@ -45,7 +45,8 @@ static void print_help(void) {
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  fan on|off|auto [on_w off_w [on_ma]]\n"
            "                               auto: on at total >= on_w or any contract > on_ma\n"
-           "  led <0-255>                  status LED brightness\n"
+           "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
+           "  led boot white|rainbow       power-up sweep style (next boot)\n"
            "  faults [clear]               persistent fault log\n"
            "  stack                        per-core stack high-water marks\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
@@ -90,6 +91,8 @@ static void print_info(void) {
     printf("mqtt: %s:%u (%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
+    printf("leds: brightness %u, boot %s\n", g_settings.led_brightness,
+           g_settings.led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white");
     if (improv_available()) {
         uint32_t left = improv_window_left_s(to_ms_since_boot(get_absolute_time()));
         printf("ble: improv %s", improv_state_str());
@@ -247,7 +250,15 @@ static void run_line(char *l) {
         }
     } else if (!strcmp(cmd, "led")) {
         const char *b = strtok_r(NULL, " \t", &save);
-        if (!b) { printf("usage: led <0-255>\n"); return; }
+        if (!b) { printf("usage: led <0-255> | led boot white|rainbow\n"); return; }
+        if (!strcmp(b, "boot")) {
+            const char *s = strtok_r(NULL, " \t", &save);
+            if (s && !strcmp(s, "white")) g_settings.led_boot = LED_BOOT_WHITE;
+            else if (s && !strcmp(s, "rainbow")) g_settings.led_boot = LED_BOOT_RAINBOW;
+            else { printf("usage: led boot white|rainbow\n"); return; }
+            printf("ok (shown at the next boot; 'save' to keep)\n");
+            return;
+        }
         g_settings.led_brightness = (uint8_t)atoi(b);
         engine_cmd_t c = {.op = CMD_LED_BRIGHTNESS, .arg = g_settings.led_brightness};
         ipc_cmd_push(&c);
