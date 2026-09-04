@@ -88,6 +88,13 @@ typedef enum {
 #define PORT_LIMIT_MIN_MA 500
 #define PORT_LIMIT_MAX_MA PORT_HW_MAX_MA
 
+// Administrative state a port takes at power-up (settings port_boot). Every
+// surface that switches a port on or off records the new state in
+// settings port_off_mask so PORT_BOOT_LAST can restore it.
+#define PORT_BOOT_ON   0 // enabled (default)
+#define PORT_BOOT_OFF  1 // disabled until switched on
+#define PORT_BOOT_LAST 2 // whatever it was last switched to
+
 // CMD_LED_CHASSIS flags: core 0's view of the management plane, shown as a
 // comet crossing the chain (see engine/led_pattern.h)
 #define LED_CHASSIS_BLE_OPEN  (1u << 0) // Improv provisioning window open: blue

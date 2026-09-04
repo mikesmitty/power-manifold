@@ -47,6 +47,7 @@ static void print_help(void) {
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  port <1-%d> name <text>|clear   label for the web UI and Home Assistant\n"
            "  port <1-%d> limit <500-5000>    advertised current ceiling, mA (all PDOs)\n"
+           "  port <1-%d> boot on|off|last    state at power-up (last = as switched)\n"
            "  fan on|off|auto [on_w off_w [on_ma]]\n"
            "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
@@ -55,21 +56,21 @@ static void print_help(void) {
            "  stack                        per-core stack high-water marks\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
-           NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
+           NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
 }
 
 static void print_status(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
-    printf("port state      attach pdo    mV     mA     mW  contract limit prio  name\n");
+    printf("port state      attach pdo    mV     mA     mW  contract limit prio boot  name\n");
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
-        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %5lu %4u  %s\n", i + 1,
+        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %5lu %4u %-5s %s\n", i + 1,
                port_state_name((port_state_t)p->state), p->attached ? "yes" : "no",
                p->selected_pdo, p->bus_mv, (long)p->current_ma,
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
                (unsigned long)g_settings.port_limit_ma[i], g_settings.port_priority[i],
-               settings_port_name(i));
+               settings_port_boot_name(g_settings.port_boot[i]), settings_port_name(i));
     }
     printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s\n",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
@@ -205,7 +206,16 @@ static void run_line(char *l) {
         const char *n = strtok_r(NULL, " \t", &save);
         const char *op = strtok_r(NULL, " \t", &save);
         uint8_t port;
-        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name|limit\n", NUM_PORTS); return; }
+        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name|limit|boot\n", NUM_PORTS); return; }
+        if (!strcmp(op, "boot")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (!v || !settings_port_boot_parse(v, &g_settings.port_boot[port])) {
+                printf("usage: port <1-%d> boot on|off|last\n", NUM_PORTS);
+                return;
+            }
+            printf("port %u boots %s ('save' to persist)\n", port + 1, v);
+            return;
+        }
         if (!strcmp(op, "limit")) {
             const char *v = strtok_r(NULL, " \t", &save);
             int ma = v ? atoi(v) : 0;
@@ -247,7 +257,11 @@ static void run_line(char *l) {
         else if (!strcmp(op, "reset")) c.op = CMD_PORT_HARD_RESET;
         else if (!strcmp(op, "srccap")) c.op = CMD_PORT_SRC_CAP;
         else { printf("unknown op '%s'\n", op); return; }
-        printf(ipc_cmd_push(&c) ? "ok\n" : "queue full\n");
+        if (!ipc_cmd_push(&c)) { printf("queue full\n"); return; }
+        bool remembered = (c.op == CMD_PORT_ENABLE || c.op == CMD_PORT_DISABLE) &&
+                          settings_port_admin_note(port, c.op == CMD_PORT_ENABLE);
+        if (remembered) settings_save_later(); // the "last" policy keeps it across reboots
+        printf(remembered ? "ok (kept for the next boot)\n" : "ok\n");
     } else if (!strcmp(cmd, "fan")) {
         const char *op = strtok_r(NULL, " \t", &save);
         if (!op) { printf("usage: fan on|off|auto [on_w off_w [on_ma]]\n"); return; }

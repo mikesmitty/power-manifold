@@ -37,6 +37,11 @@
 #define STR_(x) #x
 #define STR(x) STR_(x)
 
+// one per-port power-up policy select in the settings panel
+#define PORT_BOOT_SELECT(n) \
+    "<select name='pb" #n "' title='Port " #n "'><option value='on'>on</option>" \
+    "<option value='off'>off</option><option value='last'>last</option></select>"
+
 typedef struct {
     struct tcp_pcb *pcb;
     char req[REQ_MAX];
@@ -141,6 +146,9 @@ static const char INDEX_HTML[] =
     "<input name='pl4' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl5' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl6' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required></div>"
+    "<label>Port state at power-up (last = however it was switched, from any surface)</label>"
+    "<div class='g'>" PORT_BOOT_SELECT(1) PORT_BOOT_SELECT(2) PORT_BOOT_SELECT(3)
+    PORT_BOOT_SELECT(4) PORT_BOOT_SELECT(5) PORT_BOOT_SELECT(6) "</div>"
     "<label>API token (locks the API and this panel)"
     "<input name='atok' type='password' maxlength='32'></label>"
     "<button type='submit'>Save</button>"
@@ -188,6 +196,7 @@ static const char INDEX_HTML[] =
     "M=document.getElementById('msg'),LK=document.getElementById('lock'),"
     "PN=[...document.querySelectorAll('input[name^=pn]')],"
     "PL=[...document.querySelectorAll('input[name^=pl]')],"
+    "PB=[...document.querySelectorAll('select[name^=pb]')],"
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot'},"
@@ -201,7 +210,7 @@ static const char INDEX_HTML[] =
     "'Enter the API token to edit settings.';return;}"
     "const d=await r.json();LK.hidden=true;F.hidden=false;"
     "for(const k in KEYS)F[k].value=d[KEYS[k]];PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
-    "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);"
+    "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);"
     "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
     "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
     "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
@@ -209,6 +218,7 @@ static const char INDEX_HTML[] =
     "F.onsubmit=async e=>{e.preventDefault();const b={};"
     "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
     "b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);"
+    "b.port_boot=PB.map(e=>e.value);"
     "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
     "let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
     "headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});"
@@ -377,12 +387,13 @@ static void build_status_json(char *out, size_t cap) {
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"attached\":%s,\"pdo\":%u,\"v\":%.3f,"
             "\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
-            "\"limit_ma\":%lu,\"fault\":%u}",
+            "\"limit_ma\":%lu,\"boot\":\"%s\",\"fault\":%u}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state),
             p->attached ? "true" : "false", p->selected_pdo, p->bus_mv / 1000.0,
             p->current_ma / 1000.0, p->power_mw / 1000.0, p->energy_mwh / 1e6,
             p->contract_mw / 1000.0, g_settings.port_priority[i],
-            (unsigned long)g_settings.port_limit_ma[i], p->fault_bits);
+            (unsigned long)g_settings.port_limit_ma[i],
+            settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
@@ -596,6 +607,10 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
     for (int i = 0; i < NUM_PORTS && off < cap; i++)
         off += (size_t)snprintf(out + off, cap - off, "%s%lu", i ? "," : "",
                                 (unsigned long)g_settings.port_limit_ma[i]);
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "],\"port_boot\":[");
+    for (int i = 0; i < NUM_PORTS && off < cap; i++)
+        off += (size_t)snprintf(out + off, cap - off, "%s\"%s\"", i ? "," : "",
+                                settings_port_boot_name(g_settings.port_boot[i]));
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
 
@@ -703,6 +718,10 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         if (r < 0) err = "port_names: at most " STR(PORT_NAME_MAX) " characters each";
         else if (r > 0 && !settings_port_name_valid(s.port_name[i]))
             err = "port_names: printable text, no leading or trailing spaces";
+        char pb[8];
+        r = json_get_str_at(body, "port_boot", (unsigned)i, pb, sizeof(pb));
+        if (r < 0 || (r > 0 && !settings_port_boot_parse(pb, &s.port_boot[i])))
+            err = "port_boot: on, off or last each";
     }
     if (!err && m != 0) {
         if (m > 0 && !strcmp(mode, "auto")) {
@@ -947,8 +966,11 @@ static void handle_request(conn_t *c) {
                         "{\"error\":\"unknown action\"}");
                 return;
             }
-            respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
-                    "OK", "application/json", "{\"ok\":true}");
+            bool queued = ipc_cmd_push(&cmd);
+            if (queued && (cmd.op == CMD_PORT_ENABLE || cmd.op == CMD_PORT_DISABLE) &&
+                settings_port_admin_note(port - 1, cmd.op == CMD_PORT_ENABLE))
+                settings_save_later(); // the "last" boot policy keeps it
+            respond(c, queued ? 200 : 503, "OK", "application/json", "{\"ok\":true}");
         } else if (!strncmp(c->req, "POST /api/v1/faults/clear", 25)) {
             if (!fault_log_available()) {
                 respond(c, 503, "Service Unavailable", "application/json",

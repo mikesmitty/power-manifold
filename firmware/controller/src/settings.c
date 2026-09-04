@@ -15,7 +15,7 @@
 // the last two sectors of flash (which, on a freshly partitioned board, is
 // where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    5
+#define SETTINGS_VERSION    6
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -26,10 +26,12 @@
 #define SETTINGS_V2_PAYLOAD ALIGN4(offsetof(settings_t, fan_on_ma))
 #define SETTINGS_V3_PAYLOAD ALIGN4(offsetof(settings_t, led_boot))
 #define SETTINGS_V4_PAYLOAD ALIGN4(offsetof(settings_t, port_name))
+#define SETTINGS_V5_PAYLOAD ALIGN4(offsetof(settings_t, port_boot))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
 _Static_assert(SETTINGS_V4_PAYLOAD == 384, "settings v4 layout moved"); // led_boot fit in v3's padding
+_Static_assert(SETTINGS_V5_PAYLOAD == 528, "settings v5 layout moved");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
 #define FAN_ON_W_DEFAULT   80
@@ -71,6 +73,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t version_payload_len(uint32_t version) {
     switch (version) {
     case SETTINGS_VERSION: return payload_len();
+    case 5:                return SETTINGS_V5_PAYLOAD;
     case 4:                return SETTINGS_V4_PAYLOAD;
     case 3:                return SETTINGS_V3_PAYLOAD;
     case 2:                return SETTINGS_V2_PAYLOAD;
@@ -146,6 +149,10 @@ void settings_load(void) {
         if (g_settings.version < 4) g_settings.led_boot = LED_BOOT_WHITE;
         // the copy above read erased flash (0xFF) past the old record's end
         if (g_settings.version < 5) memset(g_settings.port_name, 0, sizeof(g_settings.port_name));
+        if (g_settings.version < 6) {
+            memset(g_settings.port_boot, PORT_BOOT_ON, sizeof(g_settings.port_boot));
+            g_settings.port_off_mask = 0;
+        }
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();
@@ -158,6 +165,31 @@ const char *settings_port_name(unsigned port) {
     if (g_settings.port_name[port][0]) return g_settings.port_name[port];
     if (!fallback[port][0]) snprintf(fallback[port], sizeof(fallback[port]), "Port %u", port + 1);
     return fallback[port];
+}
+
+bool settings_port_admin_note(unsigned port, bool on) {
+    if (port >= NUM_PORTS) return false;
+    uint8_t bit = (uint8_t)(1u << port);
+    uint8_t was = g_settings.port_off_mask;
+    if (on) g_settings.port_off_mask &= (uint8_t)~bit;
+    else g_settings.port_off_mask |= bit;
+    return g_settings.port_boot[port] == PORT_BOOT_LAST && g_settings.port_off_mask != was;
+}
+
+const char *settings_port_boot_name(uint8_t policy) {
+    switch (policy) {
+    case PORT_BOOT_OFF:  return "off";
+    case PORT_BOOT_LAST: return "last";
+    default:             return "on";
+    }
+}
+
+bool settings_port_boot_parse(const char *s, uint8_t *policy) {
+    if (!strcmp(s, "on")) *policy = PORT_BOOT_ON;
+    else if (!strcmp(s, "off")) *policy = PORT_BOOT_OFF;
+    else if (!strcmp(s, "last")) *policy = PORT_BOOT_LAST;
+    else return false;
+    return true;
 }
 
 bool settings_port_name_valid(const char *s) {

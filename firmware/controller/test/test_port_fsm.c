@@ -206,6 +206,27 @@ static void test_admin_disable_enable(void) {
     MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
 }
 
+static void test_boot_policy(void) {
+    support_reset(360000);
+    g_settings.port_boot[0] = PORT_BOOT_OFF;
+    g_settings.port_boot[1] = PORT_BOOT_LAST;
+    g_settings.port_boot[2] = PORT_BOOT_LAST;
+    g_settings.port_off_mask = 1u << 1; // port 2 was switched off, port 3 was not
+    port_fsm_init();                   // power-up with these settings
+    for (uint8_t i = 0; i < 4; i++) sim_set_present(i, true);
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED); // policy off
+    MT_ASSERT(!sim_en(0));
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_DISABLED); // last: was off
+    MT_ASSERT_EQ(port_state(2), PORT_STATE_IDLE);     // last: was on
+    MT_ASSERT_EQ(port_state(3), PORT_STATE_IDLE);     // default: on
+    // switching a boot-disabled port on brings it up at once
+    engine_cmd_t on = {.op = CMD_PORT_ENABLE, .port = 0};
+    port_fsm_cmd(0, &on);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+}
+
 static void test_unseat_powers_down(void) {
     support_reset(360000);
     sim_set_present(0, true);
@@ -234,5 +255,6 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: OCP faults then recovers", test_ocp_faults_then_recovers);
     mt_run("fsm: MPQ fault via poll", test_mpq_fault_via_poll);
     mt_run("fsm: admin disable/enable", test_admin_disable_enable);
+    mt_run("fsm: boot policy on/off/last", test_boot_policy);
     mt_run("fsm: unseat powers down", test_unseat_powers_down);
 }

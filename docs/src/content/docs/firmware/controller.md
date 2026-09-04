@@ -249,12 +249,13 @@ state.
   5000 mA: the current field of every PDO the port advertises, so the
   wattage ceiling scales with the voltage the device picks; a live port
   renegotiates at once, and the INA226 emergency trip stays at 125 % of
-  the blade's 5 A ceiling regardless). `GET /api/v1/status` (each port
-  carries its `name` and `limit_ma`); `GET` / `POST /api/v1/settings` with
+  the blade's 5 A ceiling regardless), and each port's state at power-up
+  (`on`, `off` or `last`, see below). `GET /api/v1/status` (each port
+  carries its `name`, `limit_ma` and `boot`); `GET` / `POST /api/v1/settings` with
   any subset of `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass",
   "token","budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
-  "led_brightness","led_boot","port_names","port_limits_ma"}` (the last
-  two are arrays of six; saved to flash at once; budget, fan, LEDs, names
+  "led_brightness","led_boot","port_names","port_limits_ma","port_boot"}` (the last
+  three are arrays of six; saved to flash at once; budget, fan, LEDs, names
   and limits apply live, `POST /api/v1/reboot` applies the name and
   broker);
   `GET /metrics` is a Prometheus text-exposition endpoint (chassis gauges,
@@ -277,16 +278,25 @@ state.
   power` becomes `Desk phone power` after a rename; a rename re-publishes
   discovery and entity ids stay put): power/voltage/current/state sensors, a since-boot
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
-  switch, hard-reset and re-announce-caps buttons, and priority and
-  current-limit numbers —
+  switch, hard-reset and re-announce-caps buttons, priority and
+  current-limit numbers, and a power-up state select (on/off/last) —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
   select (auto/on/off), an LED brightness number, a diagnostic *Last boot
   reason* sensor, and a firmware update
   entity fed from the retained `.../update/latest` pointer. Each port's
   state sensor carries `last_fault` / `last_fault_at` attributes (the
   newest fault or probe failure, as text and epoch seconds). Remote settings
-  changes (budget, fan mode, priority, current limit, LED brightness) persist automatically
-  a few seconds after the last change.
+  changes (budget, fan mode, priority, current limit, power-up state, LED
+  brightness) persist automatically a few seconds after the last change.
+- **Port state at power-up**: each port has a boot policy — `on` (the
+  default), `off` (stays disabled until switched on), or `last` (comes back
+  however it was last switched, from the console, the API, the page or the
+  Home Assistant switch; the firmware records every switch and, under
+  `last`, saves it a few seconds later). Set it with `port <n> boot
+  on|off|last`, the `port_boot` settings array, the page's *Settings*
+  panel, or the per-port Home Assistant select; `status` shows it in the
+  `boot` column. Before this, an HA-disabled port came back enabled after
+  a power cut.
 - **Status LEDs**: one WS2812 per slot behind the front-panel light pipes.
   Dim white empty, cyan blink probing, amber idle, blue (below 19 V) or
   green (19 V and up) active, the same colour pulsing at 1 Hz when

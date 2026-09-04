@@ -247,11 +247,20 @@ static void track_contract(uint8_t i) {
     emit(EVT_CONTRACT, i, ctx[i].mpq.selected_pdo, want);
 }
 
+// Administrative state at power-up, per the port's boot policy (settings)
+static bool boot_enabled(uint8_t i) {
+    switch (g_settings.port_boot[i]) {
+    case PORT_BOOT_OFF:  return false;
+    case PORT_BOOT_LAST: return !(g_settings.port_off_mask & (1u << i));
+    default:             return true;
+    }
+}
+
 void port_fsm_init(void) {
     memset(ctx, 0, sizeof(ctx));
-    for (int i = 0; i < NUM_PORTS; i++) {
+    for (uint8_t i = 0; i < NUM_PORTS; i++) {
         ctx[i].state = PORT_STATE_ABSENT;
-        ctx[i].admin_enabled = true;
+        ctx[i].admin_enabled = boot_enabled(i);
     }
 }
 

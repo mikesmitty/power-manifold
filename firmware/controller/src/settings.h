@@ -40,6 +40,9 @@ typedef struct {
     uint8_t  led_boot;        // LED_BOOT_*: power-up sweep style
     // -- added in layout version 5 --
     char     port_name[NUM_PORTS][PORT_NAME_MAX + 1]; // "" = "Port N"
+    // -- added in layout version 6 --
+    uint8_t  port_boot[NUM_PORTS]; // PORT_BOOT_*: administrative state at power-up
+    uint8_t  port_off_mask;        // bit N set: port N was last switched off (PORT_BOOT_LAST)
     uint32_t crc; // must remain last
 } settings_t;
 
@@ -55,6 +58,15 @@ const char *settings_port_name(unsigned port);
 // A label is at most PORT_NAME_MAX bytes of printable text (no control
 // characters, no leading or trailing spaces); empty clears it.
 bool settings_port_name_valid(const char *s);
+
+// Bookkeeping for the PORT_BOOT_LAST policy: every surface that switches a
+// port on or off records the new state here (core 0). Returns true when the
+// change is worth a flash write — the port's policy is "last" and the state
+// actually moved — so the caller can settings_save_later().
+bool settings_port_admin_note(unsigned port, bool on);
+// PORT_BOOT_* <-> "on" / "off" / "last"
+const char *settings_port_boot_name(uint8_t policy);
+bool settings_port_boot_parse(const char *s, uint8_t *policy);
 
 // Debounced persistence for remote mutations (MQTT/REST): mark now, and the
 // main loop's settings_save_poll flushes once things go quiet for a few
