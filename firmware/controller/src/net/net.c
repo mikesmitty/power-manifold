@@ -18,6 +18,7 @@
 
 #include "eth.h"
 #include "improv.h"
+#include "ip4_text.h"
 #include "settings.h"
 
 #define RECONNECT_INTERVAL_MS (10 * 1000)
@@ -191,23 +192,17 @@ const char *net_dns_str(void) {
 }
 
 bool net_ip4_parse(const char *s, uint32_t *addr_nbo) {
-    ip4_addr_t a;
-    if (!ip4addr_aton(s, &a)) return false;
-    *addr_nbo = a.addr;
-    return true;
+    return ip4_parse(s, addr_nbo);
 }
 
 const char *net_ip4_str(uint32_t addr_nbo) {
-    if (!addr_nbo) return "";
-    ip4_addr_t a = {.addr = addr_nbo};
-    return ip4addr_ntoa(&a);
+    static char buf[16];
+    ip4_format(buf, sizeof(buf), addr_nbo);
+    return buf;
 }
 
 bool net_ip4_mask_valid(uint32_t mask_nbo) {
-    uint32_t m = lwip_ntohl(mask_nbo);
-    if (!m) return false;
-    uint32_t inv = ~m;                // zeros of the mask, as ones
-    return (inv & (inv + 1)) == 0;    // ...and they must be a trailing run
+    return ip4_mask_valid(mask_nbo);
 }
 
 // lwIP hook (lwip_hooks.h): a packet with a source address that belongs to

@@ -16,7 +16,10 @@ add_executable(engine_tests
     ../src/boot_reason.c
     ../src/event_kind.c
     ../src/fault_text.c
+    ../src/ip4_text.c
     ../src/log_ring.c
+    ../src/settings_json.c
+    ../src/settings_util.c
     ../src/engine/budget.c
     ../src/engine/fan_policy.c
     ../src/engine/led_pattern.c
@@ -37,6 +40,7 @@ add_executable(engine_tests
     test_log_ring.c
     test_port_fsm.c
     test_priority.c
+    test_settings_json.c
     test_update_image.c
     test_w6100.c
     test_main.c

@@ -26,11 +26,12 @@
 #include "mqtt.h"
 #include "net.h"
 #include "settings.h"
+#include "settings_json.h"
 #include "update.h"
 
 #define HTTP_PORT       80
 #define MAX_CONNS       4
-#define REQ_MAX         2048 // browser headers + a full settings body
+#define REQ_MAX         3072 // browser headers + a full settings export posted back
 #define STATUS_JSON_MAX 2304 // six ports with escaped labels + the problem text, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
@@ -97,6 +98,8 @@ static const char INDEX_HTML[] =
     "pre{white-space:pre-wrap;word-break:break-all;font-size:.75em;background:#0d0d0d;"
     "border:1px solid #333;padding:.6em;max-height:24em;overflow:auto;margin:.4em 0}"
     "#lock input{display:inline-block;width:14em;margin-right:.5em}"
+    "#bk{margin-top:1em;border-top:1px solid #333;padding-top:.4em}"
+    "#bk input[type=checkbox]{display:inline;width:auto;margin-right:.4em}"
     "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
     ".g{grid-template-columns:1fr}}"
     "</style></head><body>"
@@ -173,7 +176,13 @@ static const char INDEX_HTML[] =
     "<label>API token (locks the API and this panel)"
     "<input name='atok' type='password' maxlength='32'></label>"
     "<button type='submit'>Save</button>"
-    "<button type='button' id='rb'>Reboot</button></form></details>"
+    "<button type='button' id='rb'>Reboot</button>"
+    // Backup: the export is the settings object; importing posts it back.
+    "<div id='bk'><label><input type='checkbox' id='xps'> include the WiFi and MQTT"
+    " passwords and the API token in the export</label>"
+    "<button type='button' id='xpb'>Export</button>"
+    "<button type='button' id='imb'>Import&hellip;</button>"
+    "<input type='file' id='imf' accept='.json,application/json' hidden></div></form></details>"
     "<script>"
     // Per-port sample rings live in the page: the 1 Hz status poll already
     // carries V/A/W, so history costs the firmware nothing. Sparklines are
@@ -254,6 +263,21 @@ static const char INDEX_HTML[] =
     "try{await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}"
     "M.textContent='Rebooting; this page reloads in a few seconds.';"
     "setTimeout(()=>location.reload(),6000);};"
+    "document.getElementById('xpb').onclick=async()=>{let r;"
+    "try{r=await fetch('/api/v1/settings/export'+(document.getElementById('xps').checked?"
+    "'?secrets=1':''),{headers:hdr()});}catch(e){}"
+    "if(!r||!r.ok){M.textContent='Export failed'+(r?' ('+r.status+')':'')+'.';return;}"
+    "const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());"
+    "a.download=(F.dname.value||'pwrman')+'-settings.json';a.click();"
+    "URL.revokeObjectURL(a.href);M.textContent='Exported.';};"
+    "const IMF=document.getElementById('imf');"
+    "document.getElementById('imb').onclick=()=>IMF.click();"
+    "IMF.onchange=async()=>{const f=IMF.files[0];if(!f)return;const t=await f.text();"
+    "IMF.value='';let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
+    "headers:{...hdr(),'Content-Type':'application/json'},body:t});d=await r.json();}catch(e){}"
+    "if(!r||!r.ok){M.textContent='Not imported: '+(d.error||'no response');return;}"
+    "await cfgLoad();M.textContent=d.reboot_required?"
+    "'Imported. Reboot to apply the name, network and broker.':'Imported and applied.';};"
     "document.getElementById('ul').onclick=()=>{"
     "sessionStorage.tok=document.getElementById('tok').value;cfgLoad();};"
     "CFG.ontoggle=()=>{if(CFG.open)cfgLoad();};"
@@ -629,226 +653,41 @@ bool http_reboot_due(uint32_t now_ms) {
 // place (WiFi excepted: that is Improv's job over BLE). Budget and fan apply
 // live; name and broker take a reboot.
 
-static void build_settings_json(char *out, size_t cap, bool via_setup) {
-    // static: escaping can grow a field sixfold, and this runs on the IRQ stack
-    static char name[sizeof(g_settings.device_name) * 6];
-    static char host[sizeof(g_settings.mqtt_host) * 6];
-    static char user[sizeof(g_settings.mqtt_user) * 6];
-    static char slh[sizeof(g_settings.syslog_host) * 6];
-    json_escape(name, sizeof(name), g_settings.device_name);
-    json_escape(host, sizeof(host), g_settings.mqtt_host);
-    json_escape(user, sizeof(user), g_settings.mqtt_user);
-    json_escape(slh, sizeof(slh), g_settings.syslog_host);
+static void build_settings_json(char *out, size_t cap, bool via_setup, bool secrets,
+                                bool export) {
     telemetry_t t; // manual fan state is the engine's, not a setting
     ipc_snapshot_read(&t);
-    int n = snprintf(out, cap,
-             "{\"name\":\"%s\",\"mqtt_host\":\"%s\",\"mqtt_port\":%u,\"mqtt_user\":\"%s\","
-             "\"mqtt_pass_set\":%s,\"token_set\":%s,\"setup\":%s,"
-             "\"budget_w\":%lu,\"fan_mode\":\"%s\",\"fan_on_w\":%u,\"fan_off_w\":%u,"
-             "\"fan_on_ma\":%u,\"led_brightness\":%u,\"led_boot\":\"%s\",",
-             name, host, g_settings.mqtt_port, user,
-             g_settings.mqtt_pass[0] ? "true" : "false",
-             g_settings.api_token[0] ? "true" : "false", via_setup ? "true" : "false",
-             (unsigned long)(g_settings.budget_mw / 1000u),
-             g_settings.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
-             g_settings.fan_on_w, g_settings.fan_off_w, g_settings.fan_on_ma,
-             g_settings.led_brightness,
-             g_settings.led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white");
-    size_t off = n < 0 ? cap : (size_t)n;
-    // addressing: four dotted quads, "" = unset (net_ip4_str is one static buffer)
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"ip_mode\":\"%s\",\"ip\":\"%s\",",
-                                           g_settings.ip_static ? "static" : "dhcp",
-                                           net_ip4_str(g_settings.ip_addr));
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"netmask\":\"%s\",",
-                                           net_ip4_str(g_settings.ip_mask));
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"gateway\":\"%s\",",
-                                           net_ip4_str(g_settings.ip_gw));
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"dns\":\"%s\",",
-                                           net_ip4_str(g_settings.ip_dns));
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off,
-                                           "\"syslog_host\":\"%s\",\"syslog_port\":%u,\"port_names\":[",
-                                           slh, g_settings.syslog_port);
-    for (int i = 0; i < NUM_PORTS && off < cap; i++) {
-        static char pn[PORT_NAME_MAX * 6 + 1];
-        json_escape(pn, sizeof(pn), g_settings.port_name[i]); // stored value: "" = unset
-        off += (size_t)snprintf(out + off, cap - off, "%s\"%s\"", i ? "," : "", pn);
-    }
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "],\"port_limits_ma\":[");
-    for (int i = 0; i < NUM_PORTS && off < cap; i++)
-        off += (size_t)snprintf(out + off, cap - off, "%s%lu", i ? "," : "",
-                                (unsigned long)g_settings.port_limit_ma[i]);
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "],\"port_boot\":[");
-    for (int i = 0; i < NUM_PORTS && off < cap; i++)
-        off += (size_t)snprintf(out + off, cap - off, "%s\"%s\"", i ? "," : "",
-                                settings_port_boot_name(g_settings.port_boot[i]));
-    if (off < cap) snprintf(out + off, cap - off, "]}");
-}
-
-static bool header_safe(const char *s) { // printable ASCII, no spaces
-    for (; *s; s++) {
-        if ((unsigned char)*s < 0x21 || (unsigned char)*s > 0x7E) return false;
-    }
-    return true;
-}
-
-static bool no_controls(const char *s) {
-    for (; *s; s++) {
-        if ((unsigned char)*s < 0x20 || (unsigned char)*s == 0x7F) return false;
-    }
-    return true;
-}
-
-static bool valid_name(const char *s) { // one hostname label
-    size_t n = strlen(s);
-    if (!n || s[0] == '-' || s[n - 1] == '-') return false;
-    for (; *s; s++) {
-        if (!isalnum((unsigned char)*s) && *s != '-') return false;
-    }
-    return true;
+    settings_json_opts_t o = {.fan_on = t.fan_on, .setup = via_setup, .secrets = secrets,
+                              .export = export};
+    if (!settings_json_build(out, cap, &g_settings, &o))
+        snprintf(out, cap, "{\"error\":\"settings do not fit the response\"}");
 }
 
 // Any subset of the fields; absent ones keep their value. The whole record
-// is validated into a copy first so a bad field changes nothing.
+// is validated into a copy first (settings_json_apply) so a bad field
+// changes nothing. An export posted back is the import path.
 static void settings_post(conn_t *c, const char *body, bool via_setup) {
     static settings_t s; // static: a few hundred bytes, IRQ stack
     s = g_settings;
-    const char *err = NULL;
-    long port;
-    int r;
-
-    if ((r = json_get_str(body, "name", s.device_name, sizeof(s.device_name))) < 0)
-        err = "name too long";
-    else if (r > 0 && !valid_name(s.device_name))
-        err = "name: letters, digits and hyphens only";
-    else if ((r = json_get_str(body, "mqtt_host", s.mqtt_host, sizeof(s.mqtt_host))) < 0)
-        err = "mqtt_host too long";
-    else if (r > 0 && !header_safe(s.mqtt_host))
-        err = "mqtt_host: no spaces or control characters";
-    else if ((r = json_get_str(body, "mqtt_user", s.mqtt_user, sizeof(s.mqtt_user))) < 0)
-        err = "mqtt_user too long";
-    else if (r > 0 && !no_controls(s.mqtt_user))
-        err = "mqtt_user: no control characters";
-    else if ((r = json_get_str(body, "mqtt_pass", s.mqtt_pass, sizeof(s.mqtt_pass))) < 0)
-        err = "mqtt_pass too long";
-    else if (r > 0 && !no_controls(s.mqtt_pass))
-        err = "mqtt_pass: no control characters";
-    else if ((r = json_get_str(body, "token", s.api_token, sizeof(s.api_token))) < 0)
-        err = "token too long";
-    else if (r > 0 && !header_safe(s.api_token))
-        err = "token: no spaces or control characters";
-    else if ((r = json_get_str(body, "syslog_host", s.syslog_host, sizeof(s.syslog_host))) < 0)
-        err = "syslog_host too long";
-    else if (r > 0 && !header_safe(s.syslog_host))
-        err = "syslog_host: no spaces or control characters";
-    else if (json_get_int(body, "syslog_port", &port) && (port < 1 || port > 65535))
-        err = "syslog_port out of range";
-    else if (json_get_int(body, "mqtt_port", &port) && (port < 1 || port > 65535))
-        err = "mqtt_port out of range";
-    else if (via_setup && !s.api_token[0])
-        err = "set an API token to finish setup";
-
-    // addressing: any subset; validated as a whole once applied
-    char ipt[20];
-    int ipr = json_get_str(body, "ip_mode", ipt, sizeof(ipt));
-    if (!err && ipr != 0) {
-        if (ipr > 0 && !strcmp(ipt, "dhcp")) s.ip_static = 0;
-        else if (ipr > 0 && !strcmp(ipt, "static")) s.ip_static = 1;
-        else err = "ip_mode: dhcp or static";
-    }
-    static const struct { const char *key; size_t off; } IPF[] = {
-        {"ip", offsetof(settings_t, ip_addr)}, {"netmask", offsetof(settings_t, ip_mask)},
-        {"gateway", offsetof(settings_t, ip_gw)}, {"dns", offsetof(settings_t, ip_dns)},
-    };
-    for (size_t i = 0; !err && i < sizeof(IPF) / sizeof(IPF[0]); i++) {
-        int r2 = json_get_str(body, IPF[i].key, ipt, sizeof(ipt));
-        if (r2 == 0) continue;
-        uint32_t a = 0;
-        if (r2 < 0 || (ipt[0] && !net_ip4_parse(ipt, &a))) err = "ip/netmask/gateway/dns: dotted quad or empty";
-        else memcpy((uint8_t *)&s + IPF[i].off, &a, sizeof(a));
-    }
-    if (!err && s.ip_static && (!s.ip_addr || !s.ip_gw || !net_ip4_mask_valid(s.ip_mask)))
-        err = "static addressing needs ip, a valid netmask and gateway";
-
-    // operational fields: applied to the engine below, not just persisted
-    long v;
-    char mode[8];
-    int m = json_get_str(body, "fan_mode", mode, sizeof(mode));
-    bool fan_touched = m != 0, fan_manual_on = false;
-    if (!err && json_get_int(body, "budget_w", &v)) {
-        if (v < BUDGET_MIN_W || v > BUDGET_MAX_W) err = "budget_w out of range";
-        else s.budget_mw = (uint32_t)v * 1000u;
-    }
-    if (!err && json_get_int(body, "fan_on_w", &v)) {
-        if (v < 1 || v > 1000) err = "fan_on_w: 1-1000";
-        else s.fan_on_w = (uint16_t)v;
-        fan_touched = true;
-    }
-    if (!err && json_get_int(body, "fan_off_w", &v)) {
-        if (v < 0 || v > 1000) err = "fan_off_w: 0-1000";
-        else s.fan_off_w = (uint16_t)v;
-        fan_touched = true;
-    }
-    if (!err && fan_touched && s.fan_off_w >= s.fan_on_w)
-        err = "fan_off_w must be below fan_on_w";
-    if (!err && json_get_int(body, "fan_on_ma", &v)) {
-        if (v < 0 || v > 10000) err = "fan_on_ma: 0-10000 (0 disables)";
-        else s.fan_on_ma = (uint16_t)v;
-        fan_touched = true;
-    }
-    if (!err && json_get_int(body, "led_brightness", &v)) {
-        if (v < 0 || v > 255) err = "led_brightness: 0-255";
-        else s.led_brightness = (uint8_t)v;
-    }
-    char boot[8];
-    int lb = json_get_str(body, "led_boot", boot, sizeof(boot));
-    if (!err && lb != 0) {
-        if (lb > 0 && !strcmp(boot, "white")) s.led_boot = LED_BOOT_WHITE;
-        else if (lb > 0 && !strcmp(boot, "rainbow")) s.led_boot = LED_BOOT_RAINBOW;
-        else err = "led_boot: white or rainbow";
-    }
-    for (int i = 0; !err && i < NUM_PORTS; i++) {
-        if (json_get_int_at(body, "port_limits_ma", (unsigned)i, &v)) {
-            if (v < PORT_LIMIT_MIN_MA || v > PORT_LIMIT_MAX_MA)
-                err = "port_limits_ma: " STR(PORT_LIMIT_MIN_MA) "-" STR(PORT_LIMIT_MAX_MA) " mA each";
-            else s.port_limit_ma[i] = (uint32_t)v;
-        }
-        r = json_get_str_at(body, "port_names", (unsigned)i, s.port_name[i], sizeof(s.port_name[i]));
-        if (r < 0) err = "port_names: at most " STR(PORT_NAME_MAX) " characters each";
-        else if (r > 0 && !settings_port_name_valid(s.port_name[i]))
-            err = "port_names: printable text, no leading or trailing spaces";
-        char pb[8];
-        r = json_get_str_at(body, "port_boot", (unsigned)i, pb, sizeof(pb));
-        if (r < 0 || (r > 0 && !settings_port_boot_parse(pb, &s.port_boot[i])))
-            err = "port_boot: on, off or last each";
-    }
-    if (!err && m != 0) {
-        if (m > 0 && !strcmp(mode, "auto")) {
-            s.fan_auto = 1;
-        } else if (m > 0 && (!strcmp(mode, "on") || !strcmp(mode, "off"))) {
-            s.fan_auto = 0;
-            fan_manual_on = mode[1] == 'n';
-        } else {
-            err = "fan_mode: auto, on or off";
-        }
-    }
-
+    settings_apply_t ap;
+    const char *err = settings_json_apply(body, &s, via_setup, &ap);
     if (err) {
         char b[128];
         snprintf(b, sizeof(b), "{\"error\":\"%s\"}", err);
         respond(c, 400, "Bad Request", "application/json", b);
         return;
     }
-    if (json_get_int(body, "mqtt_port", &port)) s.mqtt_port = (uint16_t)port;
-    if (json_get_int(body, "syslog_port", &port)) s.syslog_port = (uint16_t)port;
 
     bool reboot_required = strcmp(g_settings.device_name, s.device_name) != 0 ||
+                           strcmp(g_settings.wifi_ssid, s.wifi_ssid) != 0 ||
+                           strcmp(g_settings.wifi_pass, s.wifi_pass) != 0 ||
                            strcmp(g_settings.mqtt_host, s.mqtt_host) != 0 ||
                            g_settings.mqtt_port != s.mqtt_port ||
                            strcmp(g_settings.mqtt_user, s.mqtt_user) != 0 ||
                            strcmp(g_settings.mqtt_pass, s.mqtt_pass) != 0 ||
                            g_settings.ip_static != s.ip_static ||
                            g_settings.ip_addr != s.ip_addr || g_settings.ip_mask != s.ip_mask ||
-                           g_settings.ip_gw != s.ip_gw; // dns applies live (net_poll)
+                           g_settings.ip_gw != s.ip_gw; // dns and syslog apply live
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
     bool led_changed = g_settings.led_brightness != s.led_brightness;
     bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;
@@ -871,11 +710,11 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         engine_cmd_t cmd = {.op = CMD_LED_BRIGHTNESS, .arg = s.led_brightness};
         ipc_cmd_push(&cmd);
     }
-    if (m != 0) { // an explicit mode: apply it (the CLI's fan on|off|auto)
+    if (ap.fan_mode_given) { // an explicit mode: apply it (the CLI's fan on|off|auto)
         engine_cmd_t cmd = s.fan_auto ? (engine_cmd_t){.op = CMD_FAN_AUTO}
-                                      : (engine_cmd_t){.op = CMD_FAN, .arg = fan_manual_on};
+                                      : (engine_cmd_t){.op = CMD_FAN, .arg = ap.fan_manual_on};
         ipc_cmd_push(&cmd);
-    } else if (fan_touched && s.fan_auto) { // new thresholds under auto: re-arm
+    } else if (ap.fan_thresholds && s.fan_auto) { // new thresholds under auto: re-arm
         engine_cmd_t cmd = {.op = CMD_FAN_AUTO};
         ipc_cmd_push(&cmd);
     }
@@ -1042,6 +881,16 @@ static void handle_request(conn_t *c) {
         if (q) offset = atoi(q + 8);
         build_faults_json(json, sizeof(json), offset < 0 ? 0 : offset);
         respond(c, 200, "OK", "application/json", json);
+    } else if (!strncmp(c->req, "GET /api/v1/settings/export", 27)) {
+        bool via_setup;
+        if (!settings_authorized(c, &via_setup)) {
+            respond(c, 401, "Unauthorized", "application/json",
+                    "{\"error\":\"bearer token required\"}");
+            return;
+        }
+        bool secrets = !strncmp(c->req + 27, "?secrets=1 ", 11);
+        build_settings_json(json, sizeof(json), via_setup, secrets, true);
+        respond(c, 200, "OK", "application/json", json);
     } else if (!strncmp(c->req, "GET /api/v1/settings", 20) ||
                !strncmp(c->req, "POST /api/v1/settings", 21)) {
         bool via_setup;
@@ -1051,7 +900,7 @@ static void handle_request(conn_t *c) {
             return;
         }
         if (c->req[0] == 'G') {
-            build_settings_json(json, sizeof(json), via_setup);
+            build_settings_json(json, sizeof(json), via_setup, false, false);
             respond(c, 200, "OK", "application/json", json);
         } else {
             const char *body = strstr(c->req, "\r\n\r\n");

@@ -27,6 +27,7 @@
 #include "net/net.h"
 #include "net/ota_pull.h"
 #include "settings.h"
+#include "settings_json.h"
 #include "stack_probe.h"
 #include "update.h"
 
@@ -60,6 +61,7 @@ static void print_help(void) {
            "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
            "  led boot white|rainbow       power-up sweep style (next boot)\n"
            "  faults [clear]               persistent fault log\n"
+           "  export                       every setting as JSON (no passwords; POST it to import)\n"
            "  stack                        per-core stack high-water marks\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
@@ -426,6 +428,13 @@ static void run_line(char *l) {
                        (unsigned long)r.seq, r.port + 1, text, (unsigned long)r.power_mw,
                        (unsigned long)r.contract_mw, when);
         }
+    } else if (!strcmp(cmd, "export")) {
+        static char json[2560]; // static: the console runs on core 0's small stack
+        telemetry_t t;
+        ipc_snapshot_read(&t);
+        settings_json_opts_t o = {.fan_on = t.fan_on, .export = true};
+        if (settings_json_build(json, sizeof(json), &g_settings, &o)) printf("%s\n", json);
+        else printf("export: does not fit\n");
     } else if (!strcmp(cmd, "save")) {
         printf(settings_save() ? "saved\n" : "save FAILED\n");
     } else if (!strcmp(cmd, "defaults")) {

@@ -255,10 +255,13 @@ state.
   any subset of `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass",
   "token","budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
   "led_brightness","led_boot","port_names","port_limits_ma","port_boot",
-  "ip_mode","ip","netmask","gateway","dns","syslog_host","syslog_port"}`
-  (the three `port_*` keys are arrays of six; saved to flash at once;
+  "ip_mode","ip","netmask","gateway","dns","syslog_host","syslog_port",
+  "wifi_ssid","wifi_pass","port_priorities"}`
+  (the four `port_*` keys are arrays of six; saved to flash at once;
   budget, fan, LEDs, names, limits, DNS and syslog apply live,
-  `POST /api/v1/reboot` applies the name, broker and addressing);
+  `POST /api/v1/reboot` applies the name, WiFi, broker and addressing);
+  `GET /api/v1/settings/export` is the same object with every setting,
+  ready to be posted back (see *Backup* below);
   `GET /metrics` is a Prometheus text-exposition endpoint (chassis gauges,
   a `pwrman_info` line with firmware, slot and boot reason, and every port
   metric labelled `port` and `name`), never gated;
@@ -334,6 +337,16 @@ state.
   configured one back); with none set, static mode resolves through the
   gateway. Addressing applies at the next boot, DNS at once; `info` shows
   the mode, netmask, gateway and resolver in use.
+- **Backup**: `GET /api/v1/settings/export` returns every setting as one
+  JSON object (plus `format` and `fw`), without the WiFi password, MQTT
+  password and API token unless `?secrets=1` is added; the page's
+  *Export* button downloads it (a checkbox includes the secrets) and
+  `export` prints it on the console. Restoring is `POST /api/v1/settings`
+  with that file as the body — the page's *Import…* button does exactly
+  that — so an export without secrets restores everything else and leaves
+  the box's own passwords and token in place. Unknown keys are ignored
+  and a bad value refuses the whole file, so a file from a newer or older
+  firmware imports what both understand.
 - **Console log**: everything the firmware prints is mirrored into a 4 KB
   ring (boot banner, link and broker events, settings saves, OTA
   progress, HTTP retries). `GET /api/v1/log` and the page's *Console log*
