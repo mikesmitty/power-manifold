@@ -42,10 +42,12 @@ add_executable(controller
     src/fault_trap.c
     src/boot_reason.c
     src/boot_reason_hw.c
+    src/civil_time.c
     src/event_kind.c
     src/fault_text.c
     src/health.c
     src/ip4_text.c
+    src/led_sched.c
     src/log_ring.c
     src/log_sink.c
     src/settings_json.c

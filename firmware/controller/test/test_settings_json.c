@@ -42,6 +42,11 @@ static void fill(settings_t *s) {
     s->charged_mw = 750;
     s->charged_min = 20;
     s->port_auto_off = 0x15;
+    s->led_dim = 3;
+    s->led_night_start = 22 * 60;
+    s->led_night_end = 6 * 60 + 30;
+    s->led_idle_min = 45;
+    s->tz_offset_min = -240;
     for (int i = 0; i < NUM_PORTS; i++) {
         snprintf(s->port_name[i], sizeof(s->port_name[i]), "Slot %d <b>&", i + 1);
         s->port_limit_ma[i] = 1000u + 500u * (uint32_t)i;
@@ -65,6 +70,8 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"ip\":\"10.100.55.202\"") != NULL);
     MT_ASSERT(strstr(json, "\"port_priorities\":[5,4,3,2,1,0]") != NULL);
     MT_ASSERT(strstr(json, "\"port_auto_off\":[1,0,1,0,1,0]") != NULL);
+    MT_ASSERT(strstr(json, "\"led_night\":\"22:00-06:30\"") != NULL);
+    MT_ASSERT(strstr(json, "\"tz_offset_min\":-240") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
 
     memset(&dst, 0, sizeof(dst)); // a blank box importing the export
@@ -118,6 +125,9 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_auto_off\":[2]}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"led_night\":\"22:00\"}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"tz_offset_min\":900}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"led_night\":\"\",\"led_idle_min\":60}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"fan_mode\":\"on\",\"fan_on_w\":50,\"fan_off_w\":60}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"name\":\"ok\"}", true) != NULL); // setup needs a token
     MT_ASSERT(apply_fresh("{\"name\":\"ok\",\"token\":\"t\"}", true) == NULL);

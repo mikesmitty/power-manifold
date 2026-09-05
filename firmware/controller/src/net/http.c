@@ -21,6 +21,7 @@
 #include "eth.h"
 #include "improv.h"
 #include "jsonlite.h"
+#include "led_sched.h"
 #include "log_ring.h"
 #include "log_sink.h"
 #include "mqtt.h"
@@ -160,6 +161,14 @@ static const char INDEX_HTML[] =
     "<input name='led' type='number' min='0' max='255' required></label>"
     "<label>Power-up LED sweep<select name='lboot'><option value='white'>white</option>"
     "<option value='rainbow'>rainbow</option></select></label>"
+    "<label>Dimmed LED brightness (night window or idle)"
+    "<input name='ldim' type='number' min='0' max='255' required></label>"
+    "<label>Night window, local time (both blank = off; may wrap midnight)</label>"
+    "<div class='g'><input name='lns' type='time'><input name='lne' type='time'></div>"
+    "<label>Dim after this long without a port event (minutes, 0 = never)"
+    "<input name='lidle' type='number' min='0' max='1440' required></label>"
+    "<label>UTC offset in minutes for local time (e.g. -240 for UTC-4)"
+    "<input name='tz' type='number' min='-720' max='840' required></label>"
     "<label>Port names (blank = Port N; shown in the table and Home Assistant)</label>"
     "<div class='g'><input name='pn1' maxlength='23' placeholder='Port 1'>"
     "<input name='pn2' maxlength='23' placeholder='Port 2'>"
@@ -234,7 +243,7 @@ static const char INDEX_HTML[] =
     "`${d.name} \\u2014 ${d.total_w.toFixed(1)}W drawn, ${d.reserved_w.toFixed(0)}W"
     " reserved of ${d.budget_w.toFixed(0)}W budget"
     " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}"
-    " \\u2014 last boot ${d.boot}`;"
+    " \\u2014 last boot ${d.boot}${d.led_mode!='normal'?' \\u2014 LEDs dimmed ('+d.led_mode+')':''}`;"
     "document.getElementById('prob').textContent=d.problems?'\\u26a0 '+d.problems:'';"
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
     "if(H[i].length>N)H[i].shift();});"
@@ -253,8 +262,8 @@ static const char INDEX_HTML[] =
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',"
     "gw:'gateway',dns:'dns',slh:'syslog_host',slp:'syslog_port',chmw:'charged_mw',"
-    "chmin:'charged_min'},"
-    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1},"
+    "chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},"
+    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1},"
     "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
     "async function cfgLoad(){let r;"
     "try{r=await fetch('/api/v1/settings',{headers:hdr()});}"
@@ -266,6 +275,7 @@ static const char INDEX_HTML[] =
     "for(const k in KEYS)F[k].value=d[KEYS[k]];PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
     "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);"
     "PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);"
+    "const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';"
     "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
     "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
     "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
@@ -275,6 +285,7 @@ static const char INDEX_HTML[] =
     "b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);"
     "b.port_boot=PB.map(e=>e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);"
     "b.port_sleep_min=PS.map(e=>+e.value);"
+    "b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';"
     "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
     "let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
     "headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});"
@@ -463,7 +474,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\","
-        "\"problem\":%s,\"problems\":\"%s\",\"ports\":[",
+        "\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -472,7 +483,8 @@ static void build_status_json(char *out, size_t cap) {
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
-        n_problems ? "true" : "false", problems_json);
+        n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
+        led_sched_level(&g_settings, led_sched_current()));
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];

@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "civil_time.h"
+
 static char ring[LOG_RING_SIZE];
 static uint32_t head;    // bytes ever written; the next goes to ring[head % SIZE]
 static uint32_t tail;    // the line reader's position
@@ -99,25 +101,12 @@ size_t log_ring_snapshot(char *out, size_t cap) {
     return n;
 }
 
-// days since 1970-01-01 -> y/m/d (Howard Hinnant's civil_from_days)
-static void civil(uint32_t days, unsigned *y, unsigned *m, unsigned *d) {
-    int64_t z = (int64_t)days + 719468;
-    int64_t era = z / 146097;
-    unsigned doe = (unsigned)(z - era * 146097);
-    unsigned yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-    unsigned doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    unsigned mp = (5 * doy + 2) / 153;
-    *d = doy - (153 * mp + 2) / 5 + 1;
-    *m = mp < 10 ? mp + 3 : mp - 9;
-    *y = (unsigned)(yoe + era * 400) + (*m <= 2);
-}
-
 size_t log_syslog_format(char *out, size_t cap, uint32_t epoch, const char *host,
                          const char *msg) {
     char ts[24] = "-";
     if (epoch) {
         unsigned y, m, d;
-        civil(epoch / 86400, &y, &m, &d);
+        civil_from_days(epoch / 86400, &y, &m, &d);
         uint32_t rem = epoch % 86400;
         snprintf(ts, sizeof(ts), "%04u-%02u-%02uT%02lu:%02lu:%02luZ", y, m, d,
                  (unsigned long)(rem / 3600), (unsigned long)(rem % 3600 / 60),

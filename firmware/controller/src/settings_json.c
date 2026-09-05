@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "ip4_text.h"
+#include "led_sched.h"
 #include "net/jsonlite.h"
 #include "manifold.h"
 
@@ -54,6 +55,10 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
                s->fan_auto ? "auto" : (o->fan_on ? "on" : "off"),
                s->fan_on_w, s->fan_off_w, s->fan_on_ma, s->led_brightness,
                s->led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white");
+    char night[16];
+    night_format(night, sizeof(night), s->led_night_start, s->led_night_end);
+    off = putf(out, cap, off, "\"led_dim\":%u,\"led_night\":\"%s\",\"led_idle_min\":%u,"
+               "\"tz_offset_min\":%d,", s->led_dim, night, s->led_idle_min, s->tz_offset_min);
     off = putf(out, cap, off, "\"ip_mode\":\"%s\",", s->ip_static ? "static" : "dhcp");
     off = put_ip(out, cap, off, "ip", s->ip_addr);
     off = put_ip(out, cap, off, "netmask", s->ip_mask);
@@ -228,6 +233,21 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         if (r > 0 && !strcmp(t, "white")) s->led_boot = LED_BOOT_WHITE;
         else if (r > 0 && !strcmp(t, "rainbow")) s->led_boot = LED_BOOT_RAINBOW;
         else return "led_boot: white or rainbow";
+    }
+    if (json_get_int(body, "led_dim", &v)) {
+        if (v < 0 || v > 255) return "led_dim: 0-255";
+        s->led_dim = (uint8_t)v;
+    }
+    r = json_get_str(body, "led_night", t, sizeof(t));
+    if (r < 0 || (r > 0 && !night_parse(t, &s->led_night_start, &s->led_night_end)))
+        return "led_night: HH:MM-HH:MM or empty";
+    if (json_get_int(body, "led_idle_min", &v)) {
+        if (v < 0 || v > 1440) return "led_idle_min: 0-1440";
+        s->led_idle_min = (uint16_t)v;
+    }
+    if (json_get_int(body, "tz_offset_min", &v)) {
+        if (v < -720 || v > 840) return "tz_offset_min: -720 to 840";
+        s->tz_offset_min = (int16_t)v;
     }
 
     // addressing: any subset, validated as a whole

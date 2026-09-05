@@ -8,6 +8,7 @@ void run_event_tests(void);
 void run_fan_tests(void);
 void run_improv_tests(void);
 void run_jsonlite_tests(void);
+void run_led_sched_tests(void);
 void run_led_tests(void);
 void run_log_ring_tests(void);
 void run_port_fsm_tests(void);
@@ -24,6 +25,7 @@ int main(void) {
     run_fan_tests();
     run_improv_tests();
     run_jsonlite_tests();
+    run_led_sched_tests();
     run_led_tests();
     run_log_ring_tests();
     run_port_fsm_tests();

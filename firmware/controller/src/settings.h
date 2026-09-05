@@ -57,6 +57,12 @@ typedef struct {
     uint8_t  charged_min;     // ...for this many minutes marks the sink charged
     uint8_t  port_auto_off;   // bit N set: port N switches off once charged
     uint16_t port_sleep_min[NUM_PORTS]; // switch off this long after a sink attaches (0 = never)
+    // -- added in layout version 10 --
+    uint8_t  led_dim;          // brightness while dimmed (night window / idle), see led_sched.h
+    uint16_t led_night_start;  // minutes after local midnight; start == end = no window
+    uint16_t led_night_end;
+    uint16_t led_idle_min;     // dim after this long without a port event (0 = never)
+    int16_t  tz_offset_min;    // local time = UTC + this (SNTP is UTC; no tz database)
     uint32_t crc; // must remain last
 } settings_t;
 

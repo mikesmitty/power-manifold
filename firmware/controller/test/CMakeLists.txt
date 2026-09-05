@@ -14,9 +14,11 @@ add_compile_options(-Wall -Wextra -g)
 
 add_executable(engine_tests
     ../src/boot_reason.c
+    ../src/civil_time.c
     ../src/event_kind.c
     ../src/fault_text.c
     ../src/ip4_text.c
+    ../src/led_sched.c
     ../src/log_ring.c
     ../src/settings_json.c
     ../src/settings_util.c
@@ -36,6 +38,7 @@ add_executable(engine_tests
     test_fan.c
     test_improv.c
     test_jsonlite.c
+    test_led_sched.c
     test_leds.c
     test_log_ring.c
     test_port_fsm.c

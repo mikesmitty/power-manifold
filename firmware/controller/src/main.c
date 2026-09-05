@@ -10,6 +10,7 @@
 #include "fault_log.h"
 #include "flash_map.h"
 #include "ipc.h"
+#include "led_sched.h"
 #include "log_sink.h"
 #include "manifold.h"
 #include "net/http.h"
@@ -61,6 +62,8 @@ int main(void) {
     bool trial = flash_map_update_pending();
     uint32_t healthy_since = 0;
     uint8_t led_flags_sent = 0; // engine's view starts with no chassis overlay
+    uint8_t led_level_sent = g_settings.led_brightness; // what the engine applied at init
+    uint8_t led_base_seen = g_settings.led_brightness;
 
     for (;;) {
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
@@ -79,9 +82,23 @@ int main(void) {
             if (ipc_cmd_push(&c)) led_flags_sent = led_flags;
         }
 
+        // LED schedule: night window / idle dimming, re-pushed whenever the
+        // effective level or the base brightness moved (a direct `led N`
+        // from any surface shows at once, then the schedule has its say)
+        led_mode_t lm = led_sched_update(&g_settings, net_epoch(), now_ms);
+        uint8_t led_level = led_sched_level(&g_settings, lm);
+        if (led_level != led_level_sent || g_settings.led_brightness != led_base_seen) {
+            engine_cmd_t c = {.op = CMD_LED_BRIGHTNESS, .arg = led_level};
+            if (ipc_cmd_push(&c)) {
+                led_level_sent = led_level;
+                led_base_seen = g_settings.led_brightness;
+            }
+        }
+
         // engine events: log faults durably first, then publish (best-effort)
         engine_evt_t evt;
         while (ipc_evt_pop(&evt)) {
+            if (evt.type == EVT_STATE_CHANGE) led_sched_activity(now_ms); // wakes the LEDs
             fault_log_event(&evt);
             mqtt_event(&evt);
             // a port that switched itself off is administratively off now:

@@ -18,6 +18,7 @@
 #include "improv.h"
 #include "jsonlite.h"
 #include "ipc.h"
+#include "led_sched.h"
 #include "manifold.h"
 #include "net.h"
 #include "ota_pull.h"
@@ -33,7 +34,7 @@
 // pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 10)
-#define CHASSIS_ENTITIES 13
+#define CHASSIS_ENTITIES 14
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -644,6 +645,17 @@ static void publish_problem_sensor(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_led_mode_sensor(void) {
+    discovery_config_topic("sensor", "led_mode");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"LED mode\",\"uniq_id\":\"pwrman_%s_led_mode\","
+             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\","
+             "\"val_tpl\":\"{{ value_json.led_mode }}\",\"ic\":\"mdi:brightness-6\","
+             "\"ent_cat\":\"diagnostic\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_fan_select(void) {
     discovery_config_topic("select", "fan_mode");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -723,6 +735,9 @@ static void discovery_publish(int i) {
     case 11:
         publish_charged_numbers(1);
         break;
+    case 12:
+        publish_led_mode_sensor();
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -756,7 +771,7 @@ static void publish_telemetry(void) {
              "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
              "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
-             "\"charged_mw\":%u,\"charged_min\":%u}",
+             "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -764,7 +779,7 @@ static void publish_telemetry(void) {
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
              g_settings.led_brightness, FW_VERSION, boot_text,
              n_problems ? "ON" : "OFF", problems_json, g_settings.charged_mw,
-             g_settings.charged_min);
+             g_settings.charged_min, led_mode_name(led_sched_current()));
     publish(topic_buf, payload_buf, 0, 1);
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {

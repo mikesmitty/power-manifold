@@ -257,7 +257,8 @@ state.
   "led_brightness","led_boot","port_names","port_limits_ma","port_boot",
   "ip_mode","ip","netmask","gateway","dns","syslog_host","syslog_port",
   "wifi_ssid","wifi_pass","port_priorities","charged_mw","charged_min",
-  "port_auto_off","port_sleep_min"}`
+  "port_auto_off","port_sleep_min","led_dim","led_night","led_idle_min",
+  "tz_offset_min"}`
   (the six `port_*` keys are arrays of six; saved to flash at once;
   budget, fan, LEDs, names, limits, DNS and syslog apply live,
   `POST /api/v1/reboot` applies the name, WiFi, broker and addressing);
@@ -352,7 +353,19 @@ state.
   Power-up runs a sweep across the six pixels (`led boot white|rainbow`),
   which also proves the chain order. `led 0` blanks the chain but a faulted
   port keeps blinking at a floor level; brightness is also a Home Assistant
-  number and a field in the web *Settings* panel.
+  number and a field in the web *Settings* panel. Two schedules drop the
+  chain to a dimmed level (`led dim <0-255>`, default 4, just visible in a
+  dark room): a night window in local time (`led night 22:00 07:00`, may
+  wrap midnight; `led night off`) and idle dimming (`led idle 30`: no port
+  event — plug, unplug, fault — for that long; any event brings full
+  brightness back). Local time is SNTP's UTC plus `tz <+HH:MM|-HH:MM>`
+  (there is no timezone database, so adjust it at DST changes); until the
+  clock has synced the night window is ignored and idle dimming still
+  works. `info` shows the schedule, the current mode and the local time;
+  the status JSON carries `led_mode` / `led_now`, the page notes a dimmed
+  chain in its chassis line, Home Assistant gets a diagnostic *LED mode*
+  sensor, and the settings keys are `led_dim`, `led_night`
+  (`"HH:MM-HH:MM"` or `""`), `led_idle_min` and `tz_offset_min`.
 - **Addressing**: DHCP on every link by default. `ip static <addr>
   <netmask> <gateway>` (or the page's *Addressing* block, or the
   `ip_mode`/`ip`/`netmask`/`gateway` settings keys) gives the box a fixed

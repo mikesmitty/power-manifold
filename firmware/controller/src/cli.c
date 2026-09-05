@@ -12,6 +12,7 @@
 #endif
 
 #include "boot_reason_hw.h"
+#include "civil_time.h"
 #include "engine/engine.h"
 #include "fault_log.h"
 #include "fault_text.h"
@@ -19,6 +20,7 @@
 #include "flash_map.h"
 #include "health.h"
 #include "ipc.h"
+#include "led_sched.h"
 #include "log_sink.h"
 #include "manifold.h"
 #include "net/eth.h"
@@ -63,6 +65,10 @@ static void print_help(void) {
            "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
            "  led boot white|rainbow       power-up sweep style (next boot)\n"
+           "  led dim <0-255>              brightness while dimmed (night window or idle)\n"
+           "  led night <HH:MM> <HH:MM>|off  dim between these local times\n"
+           "  led idle <minutes>|off       dim after this long without a port event\n"
+           "  tz <+HH:MM|-HH:MM>           local time = UTC + this (LED schedule)\n"
            "  faults [clear]               persistent fault log\n"
            "  export                       every setting as JSON (no passwords; POST it to import)\n"
            "  stack                        per-core stack high-water marks\n"
@@ -133,8 +139,23 @@ static void print_info(void) {
     printf("mqtt: %s:%u (%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
-    printf("leds: brightness %u, boot %s\n", g_settings.led_brightness,
-           g_settings.led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white");
+    char night[16], tz[8];
+    night_format(night, sizeof(night), g_settings.led_night_start, g_settings.led_night_end);
+    printf("leds: brightness %u, boot %s, dim %u; night %s; idle %s", g_settings.led_brightness,
+           g_settings.led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white", g_settings.led_dim,
+           night[0] ? night : "off", g_settings.led_idle_min ? "after " : "off");
+    if (g_settings.led_idle_min) printf("%u min", g_settings.led_idle_min);
+    printf("; now %s\n", led_mode_name(led_sched_current()));
+    int off = g_settings.tz_offset_min;
+    snprintf(tz, sizeof(tz), "%c%02d:%02d", off < 0 ? '-' : '+', (off < 0 ? -off : off) / 60,
+             (off < 0 ? -off : off) % 60);
+    if (net_epoch()) {
+        char when[24];
+        civil_format(when, sizeof(when), net_epoch(), g_settings.tz_offset_min);
+        printf("time: %s local (UTC%s)\n", when, tz);
+    } else {
+        printf("time: not synced yet (UTC%s)\n", tz);
+    }
     if (improv_available()) {
         uint32_t left = improv_window_left_s(to_ms_since_boot(get_absolute_time()));
         printf("ble: improv %s", improv_state_str());
@@ -416,9 +437,52 @@ static void run_line(char *l) {
             printf(ipc_cmd_push(&c) ? "fan manual ('save' to persist the mode)\n"
                                     : "queue full\n");
         }
+    } else if (!strcmp(cmd, "tz")) {
+        const char *v = strtok_r(NULL, " \t", &save);
+        uint16_t hm;
+        if (!v || (v[0] != '+' && v[0] != '-') || !hhmm_parse(v + 1, &hm) || hm > 14 * 60) {
+            printf("usage: tz <+HH:MM|-HH:MM> (e.g. -04:00)\n");
+            return;
+        }
+        g_settings.tz_offset_min = (int16_t)(v[0] == '-' ? -(int)hm : (int)hm);
+        printf("tz: UTC%s ('save' to persist)\n", v);
     } else if (!strcmp(cmd, "led")) {
         const char *b = strtok_r(NULL, " \t", &save);
-        if (!b) { printf("usage: led <0-255> | led boot white|rainbow\n"); return; }
+        if (!b) { printf("usage: led <0-255> | led boot white|rainbow | led dim|night|idle ...\n"); return; }
+        if (!strcmp(b, "dim")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (!v || v[0] < '0' || v[0] > '9' || atoi(v) > 255) { printf("usage: led dim <0-255>\n"); return; }
+            g_settings.led_dim = (uint8_t)atoi(v);
+            printf("led dim %u ('save' to persist)\n", g_settings.led_dim);
+            return;
+        }
+        if (!strcmp(b, "night")) {
+            const char *a = strtok_r(NULL, " \t", &save);
+            const char *e = strtok_r(NULL, " \t", &save);
+            uint16_t s, en;
+            if (a && !strcmp(a, "off")) {
+                g_settings.led_night_start = g_settings.led_night_end = 0;
+                printf("led night off ('save' to persist)\n");
+                return;
+            }
+            if (!a || !e || !hhmm_parse(a, &s) || !hhmm_parse(e, &en) || s == en) {
+                printf("usage: led night <HH:MM> <HH:MM>|off (local time, may wrap midnight)\n");
+                return;
+            }
+            g_settings.led_night_start = s;
+            g_settings.led_night_end = en;
+            printf("led night %s-%s ('save' to persist)\n", a, e);
+            return;
+        }
+        if (!strcmp(b, "idle")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            int min = v && !strcmp(v, "off") ? 0 : v && v[0] >= '0' && v[0] <= '9' ? atoi(v) : -1;
+            if (min < 0 || min > 1440) { printf("usage: led idle <1-1440>|off (minutes)\n"); return; }
+            g_settings.led_idle_min = (uint16_t)min;
+            if (min) printf("led idle: dim after %d min without a port event ('save' to persist)\n", min);
+            else printf("led idle off ('save' to persist)\n");
+            return;
+        }
         if (!strcmp(b, "boot")) {
             const char *s = strtok_r(NULL, " \t", &save);
             if (s && !strcmp(s, "white")) g_settings.led_boot = LED_BOOT_WHITE;
