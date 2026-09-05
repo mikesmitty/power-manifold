@@ -10,7 +10,11 @@
 
 #define MEM_LIBC_MALLOC             0
 #define MEM_ALIGNMENT               4
-#define MEM_SIZE                    16384
+// Heap for every tcp_write (the CYW43 netif needs single-pbuf frames, so
+// lwIP copies all output). Sized so one slow peer cannot starve the rest:
+// a stalled MQTT link holds at most a send buffer's worth (below), and the
+// web server still has room for its bodies.
+#define MEM_SIZE                    32768
 #define MEMP_NUM_TCP_SEG            32
 #define MEMP_NUM_ARP_QUEUE          10
 #define MEMP_NUM_TCP_PCB            12
@@ -29,9 +33,21 @@
 #define DHCP_DOES_ARP_CHECK         0
 #define LWIP_DHCP_DOES_ACD_CHECK    0
 
-#define TCP_MSS                     1460
+// Below the Ethernet maximum on purpose. The MQTT broker runs in a Talos
+// cluster where Cilium encrypts node-to-node traffic with WireGuard (60
+// bytes of overhead, plus 50 more if Cilium tunnels with VXLAN), so the pod
+// path's MTU is about 1390; nothing on the way in clamps the MSS or returns
+// a fragmentation-needed ICMP, and lwIP has no path-MTU discovery anyway.
+// Measured on the bench: 1400-byte packets (MSS 1360, one coalesced
+// telemetry burst) vanished while 1240-byte ones (MSS 1200) got through —
+// a stalled-but-alive connection that held the heap and starved everything
+// else. 1200 clears every common encapsulation and costs the LAN under a
+// percent of throughput.
+#define TCP_MSS                     1200
 #define TCP_WND                     (8 * TCP_MSS)
-#define TCP_SND_BUF                 (8 * TCP_MSS)
+// Per-connection unacknowledged data. Four segments is plenty on a LAN and
+// caps how much heap a connection whose peer stops acknowledging can hold.
+#define TCP_SND_BUF                 (4 * TCP_MSS)
 #define TCP_SND_QUEUELEN            ((4 * (TCP_SND_BUF) + (TCP_MSS - 1)) / (TCP_MSS))
 #define LWIP_TCP_KEEPALIVE          1
 

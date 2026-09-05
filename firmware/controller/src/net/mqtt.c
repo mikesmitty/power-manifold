@@ -27,6 +27,7 @@
 #define KEEP_ALIVE_S     30
 #define BACKOFF_MS       (5 * 1000)
 #define TELEMETRY_MS     1000
+#define STALL_CYCLES     10 // telemetry cycles with every publish refused before reconnecting
 
 // discovery entity table: per-port sensors + switch + buttons + priority,
 // current-limit and boot-policy controls + event entity; chassis sensors +
@@ -56,6 +57,7 @@ static bool disc_inflight;   // a QoS 1 config awaiting its PUBACK
 static uint32_t pub_dropped; // publishes lwIP refused (output buffer / request slots)
 static char     pub_dropped_topic[64];
 static err_t    pub_dropped_err;
+static uint8_t  stalled_cycles; // telemetry cycles in a row with every publish refused
 
 static char uid[9];         // short unique board id
 static char base[48];       // pwrman/<device_name>
@@ -812,7 +814,21 @@ static void publish_telemetry(void) {
     if (pub_dropped) {
         printf("mqtt: %lu publish(es) refused by lwIP (last %s, err %d)\n",
                (unsigned long)pub_dropped, pub_dropped_topic, (int)pub_dropped_err);
+        // A link that acknowledges too slowly keeps the client "connected"
+        // (lwIP's watchdog only wants some traffic back) while its output
+        // ring and request slots stay full and nothing gets out. Once
+        // nothing at all has left for a while, drop the connection: the
+        // stuck send buffer goes with it and the reconnect starts clean.
+        stalled_cycles = pub_dropped >= 1 + NUM_PORTS ? stalled_cycles + 1 : 0;
         pub_dropped = 0;
+        if (stalled_cycles >= STALL_CYCLES) {
+            printf("mqtt: nothing published for %us, reconnecting\n", STALL_CYCLES);
+            stalled_cycles = 0;
+            mqtt_disconnect(client);
+            state = ST_BACKOFF;
+        }
+    } else {
+        stalled_cycles = 0;
     }
 }
 
