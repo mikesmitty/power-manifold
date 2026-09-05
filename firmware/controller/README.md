@@ -251,10 +251,11 @@ state.
   carries its `name`, `limit_ma` and `boot`); `GET` / `POST /api/v1/settings` with
   any subset of `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass",
   "token","budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
-  "led_brightness","led_boot","port_names","port_limits_ma","port_boot"}` (the last
-  three are arrays of six; saved to flash at once; budget, fan, LEDs, names
-  and limits apply live, `POST /api/v1/reboot` applies the name and
-  broker);
+  "led_brightness","led_boot","port_names","port_limits_ma","port_boot",
+  "ip_mode","ip","netmask","gateway","dns"}` (the three `port_*` keys are
+  arrays of six; saved to flash at once; budget, fan, LEDs, names, limits
+  and DNS apply live, `POST /api/v1/reboot` applies the name, broker and
+  addressing);
   `GET /metrics` is a Prometheus text-exposition endpoint (chassis gauges,
   a `pwrman_info` line with firmware, slot and boot reason, and every port
   metric labelled `port` and `name`), never gated;
@@ -318,6 +319,16 @@ state.
   which also proves the chain order. `led 0` blanks the chain but a faulted
   port keeps blinking at a floor level; brightness is also a Home Assistant
   number and a field in the web *Settings* panel.
+- **Addressing**: DHCP on every link by default. `ip static <addr>
+  <netmask> <gateway>` (or the page's *Addressing* block, or the
+  `ip_mode`/`ip`/`netmask`/`gateway` settings keys) gives the box a fixed
+  address: it goes on the wired link when a W6100 is fitted and on WiFi
+  otherwise — never both, so WiFi standing by behind a cable stays on
+  DHCP. `dns <addr>` sets the resolver in either mode and always wins
+  (DHCP rewrites the servers on every renewal, so the firmware puts the
+  configured one back); with none set, static mode resolves through the
+  gateway. Addressing applies at the next boot, DNS at once; `info` shows
+  the mode, netmask, gateway and resolver in use.
 - **Wired Ethernet**: the W6100 runs in MACRAW mode, so it is just another
   lwIP netif and everything above it (DHCP, mDNS, MQTT, HTTP, OTA pull) is
   the same code as over WiFi. Its MAC is locally administered, derived from

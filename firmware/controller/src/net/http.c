@@ -1,5 +1,6 @@
 #include "http.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -119,6 +120,14 @@ static const char INDEX_HTML[] =
     "<label>MQTT port<input name='mport' type='number' min='1' max='65535'></label>"
     "<label>MQTT user<input name='muser' maxlength='32'></label>"
     "<label>MQTT password<input name='mpass' type='password' maxlength='64'></label>"
+    "<label>Addressing (wired link if a W6100 is fitted, else WiFi; applies at reboot)"
+    "<select name='ipmode'><option value='dhcp'>DHCP</option>"
+    "<option value='static'>static</option></select></label>"
+    "<div class='g'><label>IP address<input name='ip' placeholder='10.0.0.20'></label>"
+    "<label>Netmask<input name='mask' placeholder='255.255.255.0'></label>"
+    "<label>Gateway<input name='gw' placeholder='10.0.0.1'></label></div>"
+    "<label>DNS server (blank = from DHCP, or the gateway when static; applies at once)"
+    "<input name='dns' placeholder='10.0.0.1'></label>"
     "<label>Chassis budget (W)<input name='bud' type='number' min='" STR(BUDGET_MIN_W) "'"
     " max='" STR(BUDGET_MAX_W) "' required></label>"
     "<label>Fan<select name='fmode'><option value='auto'>auto</option>"
@@ -202,7 +211,8 @@ static const char INDEX_HTML[] =
     "PB=[...document.querySelectorAll('select[name^=pb]')],"
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
-    "led:'led_brightness',lboot:'led_boot'},"
+    "led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',"
+    "gw:'gateway',dns:'dns'},"
     "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1},"
     "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
     "async function cfgLoad(){let r;"
@@ -229,7 +239,7 @@ static const char INDEX_HTML[] =
     "if(!r||!r.ok){M.textContent='Not saved: '+(d.error||'no response');return;}"
     "if(b.token)sessionStorage.tok=b.token;F.mpass.value=F.atok.value='';"
     "await cfgLoad();M.textContent=d.reboot_required?"
-    "'Saved. Reboot to apply the name and broker.':'Saved and applied.';};"
+    "'Saved. Reboot to apply the name, broker and addressing.':'Saved and applied.';};"
     "document.getElementById('rb').onclick=async()=>{"
     "try{await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}"
     "M.textContent='Rebooting; this page reloads in a few seconds.';"
@@ -605,7 +615,7 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
              "{\"name\":\"%s\",\"mqtt_host\":\"%s\",\"mqtt_port\":%u,\"mqtt_user\":\"%s\","
              "\"mqtt_pass_set\":%s,\"token_set\":%s,\"setup\":%s,"
              "\"budget_w\":%lu,\"fan_mode\":\"%s\",\"fan_on_w\":%u,\"fan_off_w\":%u,"
-             "\"fan_on_ma\":%u,\"led_brightness\":%u,\"led_boot\":\"%s\",\"port_names\":[",
+             "\"fan_on_ma\":%u,\"led_brightness\":%u,\"led_boot\":\"%s\",",
              name, host, g_settings.mqtt_port, user,
              g_settings.mqtt_pass[0] ? "true" : "false",
              g_settings.api_token[0] ? "true" : "false", via_setup ? "true" : "false",
@@ -615,6 +625,16 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
              g_settings.led_brightness,
              g_settings.led_boot == LED_BOOT_RAINBOW ? "rainbow" : "white");
     size_t off = n < 0 ? cap : (size_t)n;
+    // addressing: four dotted quads, "" = unset (net_ip4_str is one static buffer)
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"ip_mode\":\"%s\",\"ip\":\"%s\",",
+                                           g_settings.ip_static ? "static" : "dhcp",
+                                           net_ip4_str(g_settings.ip_addr));
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"netmask\":\"%s\",",
+                                           net_ip4_str(g_settings.ip_mask));
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"gateway\":\"%s\",",
+                                           net_ip4_str(g_settings.ip_gw));
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"dns\":\"%s\",\"port_names\":[",
+                                           net_ip4_str(g_settings.ip_dns));
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         static char pn[PORT_NAME_MAX * 6 + 1];
         json_escape(pn, sizeof(pn), g_settings.port_name[i]); // stored value: "" = unset
@@ -687,6 +707,28 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         err = "mqtt_port out of range";
     else if (via_setup && !s.api_token[0])
         err = "set an API token to finish setup";
+
+    // addressing: any subset; validated as a whole once applied
+    char ipt[20];
+    int ipr = json_get_str(body, "ip_mode", ipt, sizeof(ipt));
+    if (!err && ipr != 0) {
+        if (ipr > 0 && !strcmp(ipt, "dhcp")) s.ip_static = 0;
+        else if (ipr > 0 && !strcmp(ipt, "static")) s.ip_static = 1;
+        else err = "ip_mode: dhcp or static";
+    }
+    static const struct { const char *key; size_t off; } IPF[] = {
+        {"ip", offsetof(settings_t, ip_addr)}, {"netmask", offsetof(settings_t, ip_mask)},
+        {"gateway", offsetof(settings_t, ip_gw)}, {"dns", offsetof(settings_t, ip_dns)},
+    };
+    for (size_t i = 0; !err && i < sizeof(IPF) / sizeof(IPF[0]); i++) {
+        int r2 = json_get_str(body, IPF[i].key, ipt, sizeof(ipt));
+        if (r2 == 0) continue;
+        uint32_t a = 0;
+        if (r2 < 0 || (ipt[0] && !net_ip4_parse(ipt, &a))) err = "ip/netmask/gateway/dns: dotted quad or empty";
+        else memcpy((uint8_t *)&s + IPF[i].off, &a, sizeof(a));
+    }
+    if (!err && s.ip_static && (!s.ip_addr || !s.ip_gw || !net_ip4_mask_valid(s.ip_mask)))
+        err = "static addressing needs ip, a valid netmask and gateway";
 
     // operational fields: applied to the engine below, not just persisted
     long v;
@@ -763,7 +805,10 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
                            strcmp(g_settings.mqtt_host, s.mqtt_host) != 0 ||
                            g_settings.mqtt_port != s.mqtt_port ||
                            strcmp(g_settings.mqtt_user, s.mqtt_user) != 0 ||
-                           strcmp(g_settings.mqtt_pass, s.mqtt_pass) != 0;
+                           strcmp(g_settings.mqtt_pass, s.mqtt_pass) != 0 ||
+                           g_settings.ip_static != s.ip_static ||
+                           g_settings.ip_addr != s.ip_addr || g_settings.ip_mask != s.ip_mask ||
+                           g_settings.ip_gw != s.ip_gw; // dns applies live (net_poll)
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
     bool led_changed = g_settings.led_brightness != s.led_brightness;
     bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;

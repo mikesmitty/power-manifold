@@ -43,6 +43,12 @@ typedef struct {
     // -- added in layout version 6 --
     uint8_t  port_boot[NUM_PORTS]; // PORT_BOOT_*: administrative state at power-up
     uint8_t  port_off_mask;        // bit N set: port N was last switched off (PORT_BOOT_LAST)
+    // -- added in layout version 7 --
+    uint8_t  ip_static;   // 0: DHCP (default); 1: the static address below (see net.h)
+    uint32_t ip_addr;     // IPv4 in network byte order (ip4_addr_t.addr)
+    uint32_t ip_mask;
+    uint32_t ip_gw;
+    uint32_t ip_dns;      // 0: DHCP's servers (static mode: the gateway); else always used
     uint32_t crc; // must remain last
 } settings_t;
 

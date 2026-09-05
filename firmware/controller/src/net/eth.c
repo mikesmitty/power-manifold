@@ -137,11 +137,19 @@ bool eth_init(void) {
     present = true;
 
     net_lock();
-    netif_add(&eth_netif, IP4_ADDR_ANY4, IP4_ADDR_ANY4, IP4_ADDR_ANY4, NULL, netif_init_cb,
-              netif_input);
+    if (g_settings.ip_static) {
+        // the wired link owns the static address (net.h); no DHCP client, so
+        // nothing restarts from the link hook
+        ip4_addr_t ip = {.addr = g_settings.ip_addr}, mask = {.addr = g_settings.ip_mask},
+                   gw = {.addr = g_settings.ip_gw};
+        netif_add(&eth_netif, &ip, &mask, &gw, NULL, netif_init_cb, netif_input);
+    } else {
+        netif_add(&eth_netif, IP4_ADDR_ANY4, IP4_ADDR_ANY4, IP4_ADDR_ANY4, NULL, netif_init_cb,
+                  netif_input);
+    }
     netif_set_hostname(&eth_netif, g_settings.device_name);
     netif_set_up(&eth_netif);
-    dhcp_start(&eth_netif);
+    if (!g_settings.ip_static) dhcp_start(&eth_netif);
     rx_worker.do_work = rx_work;
     async_context_add_when_pending_worker(net_async_context(), &rx_worker);
     link_worker.do_work = link_work;

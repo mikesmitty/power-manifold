@@ -41,6 +41,9 @@ static void print_help(void) {
            "  wifi <ssid> [pass]           set WiFi credentials\n"
            "  improv [on|off]              BLE provisioning window (Improv Wi-Fi)\n"
            "  mqtt <host> [port user pass] set MQTT broker (empty host disables)\n"
+           "  ip dhcp | ip static <addr> <mask> <gw>\n"
+           "                               addressing (wired link if a W6100 is fitted, else WiFi)\n"
+           "  dns <addr>|auto              resolver override (auto: DHCP's, or the gateway when static)\n"
            "  name <device-name>           hostname / topic id\n"
            "  token <t>|clear              REST API bearer token\n"
            "  budget <watts>               chassis power budget\n"
@@ -97,7 +100,13 @@ static void print_info(void) {
 #if PWRMAN_NET_ETH
     printf("eth: %s\n", eth_status_str());
 #endif
-    printf("ip: %s\n", net_up() ? net_ip_str() : "none");
+    printf("ip: %s (%s)\n", net_up() ? net_ip_str() : "none",
+           g_settings.ip_static ? "static" : "dhcp");
+    if (net_up()) printf("netmask: %s, gateway: %s\n", net_mask_str(), net_gw_str());
+    if (g_settings.ip_static)
+        printf("static: %s/%s via %s\n", net_ip4_str(g_settings.ip_addr),
+               net_ip4_str(g_settings.ip_mask), net_ip4_str(g_settings.ip_gw));
+    printf("dns: %s%s\n", net_dns_str(), g_settings.ip_dns ? " (configured)" : "");
     printf("mqtt: %s:%u (%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
@@ -184,6 +193,37 @@ static void run_line(char *l) {
         snprintf(g_settings.mqtt_user, sizeof(g_settings.mqtt_user), "%s", user ? user : "");
         snprintf(g_settings.mqtt_pass, sizeof(g_settings.mqtt_pass), "%s", pass ? pass : "");
         printf("mqtt set; 'save' then 'reboot' to apply\n");
+    } else if (!strcmp(cmd, "ip")) {
+        const char *mode = strtok_r(NULL, " \t", &save);
+        if (mode && !strcmp(mode, "dhcp")) {
+            g_settings.ip_static = 0;
+            printf("ip: dhcp; 'save' then 'reboot' to apply\n");
+            return;
+        }
+        const char *a = strtok_r(NULL, " \t", &save);
+        const char *m = strtok_r(NULL, " \t", &save);
+        const char *g = strtok_r(NULL, " \t", &save);
+        uint32_t addr, mask, gw;
+        if (!mode || strcmp(mode, "static") || !a || !m || !g || !net_ip4_parse(a, &addr) ||
+            !net_ip4_parse(m, &mask) || !net_ip4_parse(g, &gw) || !addr || !gw ||
+            !net_ip4_mask_valid(mask)) {
+            printf("usage: ip dhcp | ip static <addr> <netmask> <gateway>\n");
+            return;
+        }
+        g_settings.ip_static = 1;
+        g_settings.ip_addr = addr;
+        g_settings.ip_mask = mask;
+        g_settings.ip_gw = gw;
+        printf("ip: static %s/%s via %s; 'save' then 'reboot' to apply\n", a, m, g);
+    } else if (!strcmp(cmd, "dns")) {
+        const char *a = strtok_r(NULL, " \t", &save);
+        uint32_t addr = 0;
+        if (!a || (strcmp(a, "auto") && (!net_ip4_parse(a, &addr) || !addr))) {
+            printf("usage: dns <addr>|auto\n");
+            return;
+        }
+        g_settings.ip_dns = addr;
+        printf("dns: %s ('save' to persist; applies at once)\n", addr ? a : "auto");
     } else if (!strcmp(cmd, "name")) {
         const char *n = strtok_r(NULL, " \t", &save);
         if (!n) { printf("usage: name <device-name>\n"); return; }
