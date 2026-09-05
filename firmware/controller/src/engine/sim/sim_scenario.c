@@ -69,14 +69,26 @@ static const step_t STEPS[] = {
 #define N_STEPS (sizeof(STEPS) / sizeof(STEPS[0]))
 #define CYCLE_MS 60000u
 
-void sim_scenario_tick(uint32_t now_ms) {
-    static uint32_t cycle_start;
-    static size_t next;
-    static bool running;
+static uint32_t cycle_start;
+static size_t next;
+static bool running;
+static bool paused;
 
+void sim_scenario_set_running(bool run) {
+    paused = !run;
+    if (run) running = false; // restart from the baseline on the next tick
+}
+
+bool sim_scenario_running(void) {
+    return !paused;
+}
+
+void sim_scenario_tick(uint32_t now_ms) {
+    if (paused) return;
     if (!running) {
         running = true;
         cycle_start = now_ms;
+        next = 0;
     }
     uint32_t phase = now_ms - cycle_start;
     while (next < N_STEPS && phase >= STEPS[next].at_ms) STEPS[next++].fn();

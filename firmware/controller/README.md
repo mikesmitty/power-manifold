@@ -104,6 +104,22 @@ cmake -B build-fake -G Ninja -DFAKE_BLADES=ON
 ninja -C build-fake
 ```
 
+The console's `sim` command drives the simulated backplane by hand, so the
+fault paths — the fault log, the *Problem* sensor, events, auto-recovery,
+charge-complete — can be exercised on a bare board instead of only in the
+host tests. `sim pause` stops the demo script first (it would otherwise
+overwrite injected state within seconds; `sim run` restarts it from its
+baseline), then `sim seat|unseat <n>`, `sim attach <n> <mV> <mA>`,
+`sim detach <n>`, `sim load <n> <pct>` (measured draw as a percentage of
+the contract current — `sim load 3 1` with `charged 20000 1` shows a
+charge-complete within a minute), `sim fault <n> ocp` (INA226 trip),
+`sim fault <n> otw1|ntc1|cc|...|clear` (MPQ4242 fault bits, sticky until
+cleared), `sim probe <n> ina|mpq|ok` (the next probes find a silent chip),
+and `sim mux fail|ok` / `sim expander fail|ok` for the bus-level failures
+the engine recovers from by resetting the mux and expander. `sim` alone
+prints the list; on a real-blade build the command says so and does
+nothing.
+
 ### Host-side tests
 
 The engine core (state machine + budget arbiter) is hardware-free and runs

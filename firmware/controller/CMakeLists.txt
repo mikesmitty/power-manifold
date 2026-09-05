@@ -23,6 +23,7 @@ endif()
 if(FAKE_BLADES)
     set(DRIVER_SOURCES
         src/engine/sim/sim_blades.c
+        src/engine/sim/sim_inject.c
         src/engine/sim/sim_scenario.c
     )
 else()

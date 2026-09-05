@@ -14,6 +14,7 @@ void run_log_ring_tests(void);
 void run_port_fsm_tests(void);
 void run_priority_tests(void);
 void run_settings_json_tests(void);
+void run_sim_inject_tests(void);
 void run_update_image_tests(void);
 void run_w6100_tests(void);
 
@@ -31,6 +32,7 @@ int main(void) {
     run_port_fsm_tests();
     run_priority_tests();
     run_settings_json_tests();
+    run_sim_inject_tests();
     run_update_image_tests();
     run_w6100_tests();
     return mt_summary();

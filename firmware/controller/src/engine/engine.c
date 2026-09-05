@@ -21,6 +21,7 @@
 
 #ifdef PWRMAN_FAKE_BLADES
 #include "sim/sim_blades.h"
+#include "sim/sim_inject.h"
 #include "sim/sim_scenario.h"
 #endif
 
@@ -102,6 +103,12 @@ static void dispatch_cmd(const engine_cmd_t *cmd, uint32_t now_ms) {
         break;
     case CMD_LED_CHASSIS:
         leds_set_chassis((uint8_t)cmd->arg);
+        break;
+    case CMD_SIM:
+#ifdef PWRMAN_FAKE_BLADES
+        if (sim_inject_op(cmd->arg) == SIM_SCENARIO) sim_scenario_set_running(sim_inject_value(cmd->arg) != 0);
+        else sim_inject(cmd->port, cmd->arg);
+#endif
         break;
     default:
         if (cmd->port < NUM_PORTS) port_fsm_cmd(cmd->port, cmd);

@@ -14,6 +14,7 @@
 #include "boot_reason_hw.h"
 #include "civil_time.h"
 #include "engine/engine.h"
+#include "engine/sim/sim_inject.h"
 #include "fault_log.h"
 #include "fault_text.h"
 #include "fault_trap.h"
@@ -37,6 +38,11 @@
 
 static char line[CLI_LINE_MAX];
 static size_t line_len;
+
+#ifdef PWRMAN_FAKE_BLADES
+static bool sim_paused; // core 0's view of the demo script (the engine owns the sim)
+#endif
+static bool port_arg(const char *s, uint8_t *port);
 
 static void print_help(void) {
     printf("commands:\n"
@@ -72,6 +78,9 @@ static void print_help(void) {
            "  faults [clear]               persistent fault log\n"
            "  export                       every setting as JSON (no passwords; POST it to import)\n"
            "  stack                        per-core stack high-water marks\n"
+#ifdef PWRMAN_FAKE_BLADES
+           "  sim ...                      fault injection on the simulated blades ('sim' for help)\n"
+#endif
            "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
@@ -185,7 +194,85 @@ static void print_info(void) {
     if (update_active())
         printf("ota: receiving, %lu bytes into slot %s so far\n",
                (unsigned long)update_bytes(), update_slot_name());
+#ifdef PWRMAN_FAKE_BLADES
+    printf("simulator: demo script %s\n", sim_paused ? "paused ('sim run' resumes)" : "running");
+#endif
 }
+
+#ifdef PWRMAN_FAKE_BLADES
+static void print_sim_help(void) {
+    printf("simulated backplane (FAKE_BLADES build); demo script %s\n"
+           "  sim run | sim pause          the 60 s demo script (pause it before injecting)\n"
+           "  sim seat <n> | sim unseat <n>\n"
+           "  sim attach <n> <mV> <mA>     sink plugs in (e.g. 20000 5000 = 100 W laptop)\n"
+           "  sim detach <n>\n"
+           "  sim load <n> <pct>           measured draw as %% of the contract current\n"
+           "  sim fault <n> ocp            INA226 over-current trip (latched alert)\n"
+           "  sim fault <n> general|otw1|otw2|ntc1|ntc2|cc|short|vbatt|clear\n"
+           "                               MPQ4242 fault bit, sticky until 'clear'\n"
+           "  sim probe <n> ina|mpq|ok     the next probes fail (chip silent) or succeed\n"
+           "  sim mux fail|ok              I2C mux select fails until the engine resets it\n"
+           "  sim expander fail|ok         GPIO expander I/O fails until the engine resets it\n",
+           sim_paused ? "paused" : "running");
+}
+
+static void run_sim(char **save) {
+    const char *what = strtok_r(NULL, " \t", save);
+    if (!what) { print_sim_help(); return; }
+    engine_cmd_t c = {.op = CMD_SIM, .port = 0xFF};
+    if (!strcmp(what, "run") || !strcmp(what, "pause")) {
+        sim_paused = !strcmp(what, "pause");
+        c.arg = sim_inject_pack(SIM_SCENARIO, 0, sim_paused ? 0 : 1);
+    } else if (!strcmp(what, "mux") || !strcmp(what, "expander")) {
+        const char *v = strtok_r(NULL, " \t", save);
+        if (!v || (strcmp(v, "fail") && strcmp(v, "ok"))) { print_sim_help(); return; }
+        c.arg = sim_inject_pack(!strcmp(what, "mux") ? SIM_MUX : SIM_EXPANDER, 0, !strcmp(v, "fail"));
+    } else {
+        const char *n = strtok_r(NULL, " \t", save);
+        if (!n || !port_arg(n, &c.port)) { print_sim_help(); return; }
+        if (!strcmp(what, "seat")) c.arg = sim_inject_pack(SIM_SEAT, 0, 0);
+        else if (!strcmp(what, "unseat")) c.arg = sim_inject_pack(SIM_UNSEAT, 0, 0);
+        else if (!strcmp(what, "detach")) c.arg = sim_inject_pack(SIM_DETACH, 0, 0);
+        else if (!strcmp(what, "attach")) {
+            const char *mv = strtok_r(NULL, " \t", save);
+            const char *ma = strtok_r(NULL, " \t", save);
+            int v = mv ? atoi(mv) : 0, a = ma ? atoi(ma) : 0;
+            if (v < 3000 || v > 21000 || a < 100 || a > 5000) { printf("attach: 3000-21000 mV, 100-5000 mA\n"); return; }
+            c.arg = sim_inject_pack(SIM_ATTACH, (unsigned)v, (unsigned)a);
+        } else if (!strcmp(what, "load")) {
+            const char *p = strtok_r(NULL, " \t", save);
+            int pct = p ? atoi(p) : -1;
+            if (pct < 0 || pct > 100) { printf("load: 0-100 %%\n"); return; }
+            c.arg = sim_inject_pack(SIM_LOAD, 0, (unsigned)pct);
+        } else if (!strcmp(what, "fault")) {
+            const char *f = strtok_r(NULL, " \t", save);
+            static const struct { const char *name; unsigned bit; } BITS[] = {
+                {"general", MPQ_FAULT_GENERAL}, {"otw1", MPQ_FAULT_OTW1}, {"otw2", MPQ_FAULT_OTW2},
+                {"ntc1", MPQ_FAULT_NTC1}, {"ntc2", MPQ_FAULT_NTC2}, {"cc", MPQ_FAULT_CC},
+                {"short", MPQ_FAULT_SHORT_VBATT}, {"vbatt", MPQ_FAULT_VBATT_LOW}, {"clear", 0},
+            };
+            unsigned bit = 0xFFFF;
+            if (f && !strcmp(f, "ocp")) {
+                c.arg = sim_inject_pack(SIM_OCP, 0, 0);
+            } else {
+                for (size_t i = 0; f && i < sizeof(BITS) / sizeof(BITS[0]); i++)
+                    if (!strcmp(f, BITS[i].name)) bit = BITS[i].bit;
+                if (bit == 0xFFFF) { print_sim_help(); return; }
+                c.arg = sim_inject_pack(SIM_MPQ_FAULT, 0, bit);
+            }
+        } else if (!strcmp(what, "probe")) {
+            const char *v = strtok_r(NULL, " \t", save);
+            unsigned mode = v && !strcmp(v, "ina") ? 1 : v && !strcmp(v, "mpq") ? 2 : v && !strcmp(v, "ok") ? 0 : 9;
+            if (mode == 9) { print_sim_help(); return; }
+            c.arg = sim_inject_pack(SIM_PROBE, 0, mode);
+        } else {
+            print_sim_help();
+            return;
+        }
+    }
+    printf(ipc_cmd_push(&c) ? "ok\n" : "queue full\n");
+}
+#endif
 
 static bool port_arg(const char *s, uint8_t *port) {
     int n = atoi(s);
@@ -503,6 +590,12 @@ static void run_line(char *l) {
             printf("pulling; progress lands on this console\n");
         else
             printf("update: %s\n", e);
+    } else if (!strcmp(cmd, "sim")) {
+#ifdef PWRMAN_FAKE_BLADES
+        run_sim(&save);
+#else
+        printf("no simulator in this build (FAKE_BLADES=OFF)\n");
+#endif
     } else if (!strcmp(cmd, "stack")) {
         for (int core = 0; core < 2; core++) {
             uint32_t free = stack_probe_free_min(core);

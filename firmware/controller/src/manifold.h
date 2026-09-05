@@ -78,6 +78,7 @@ typedef enum {
     CMD_LED_IDENTIFY,    // arg = ms: flash the whole chain (Improv identify)
     CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags overlaid on the chain
     CMD_PORT_LIMIT,      // port, arg = mA: new advertised current ceiling (g_settings already holds it)
+    CMD_SIM,             // FAKE_BLADES only: fault injection, arg packed per engine/sim/sim_inject.h
 } cmd_op_t;
 
 // Per-port advertised current ceiling (settings port_limit_ma). It is the
