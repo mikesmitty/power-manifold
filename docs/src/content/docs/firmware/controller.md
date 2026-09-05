@@ -255,13 +255,15 @@ state.
   any subset of `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass",
   "token","budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
   "led_brightness","led_boot","port_names","port_limits_ma","port_boot",
-  "ip_mode","ip","netmask","gateway","dns"}` (the three `port_*` keys are
-  arrays of six; saved to flash at once; budget, fan, LEDs, names, limits
-  and DNS apply live, `POST /api/v1/reboot` applies the name, broker and
-  addressing);
+  "ip_mode","ip","netmask","gateway","dns","syslog_host","syslog_port"}`
+  (the three `port_*` keys are arrays of six; saved to flash at once;
+  budget, fan, LEDs, names, limits, DNS and syslog apply live,
+  `POST /api/v1/reboot` applies the name, broker and addressing);
   `GET /metrics` is a Prometheus text-exposition endpoint (chassis gauges,
   a `pwrman_info` line with firmware, slot and boot reason, and every port
   metric labelled `port` and `name`), never gated;
+  `GET /api/v1/log` returns the console's last 4 KB as text (Bearer once a
+  token is set, like the mutations: it names networks and hosts);
   `GET /api/v1/faults[?offset=N]` pages the fault log newest first (eight
   records a page, each with a human `text`) and `POST /api/v1/faults/clear`
   wipes it; the status JSON also carries `boot`, the reason for the last
@@ -332,6 +334,19 @@ state.
   configured one back); with none set, static mode resolves through the
   gateway. Addressing applies at the next boot, DNS at once; `info` shows
   the mode, netmask, gateway and resolver in use.
+- **Console log**: everything the firmware prints is mirrored into a 4 KB
+  ring (boot banner, link and broker events, settings saves, OTA
+  progress, HTTP retries). `GET /api/v1/log` and the page's *Console log*
+  panel show it; `syslog <host> [port]` (or `syslog_host` /
+  `syslog_port`, or the page) ships every complete line to a UDP syslog
+  receiver as RFC 5424 (`<134>`, local0.info, hostname = device name,
+  timestamps once SNTP has synced) — including the boot messages that
+  were printed before the network came up, since the ring holds them. A
+  receiver that fell too far behind gets one `log: N line(s) lost` line
+  in place of what the ring dropped. What is typed at the console is never
+  mirrored, so a `wifi` or `mqtt` line's password stays off the wire; the
+  firmware's own output never includes secrets. `info` shows the sink's
+  state (off, resolving, the address in use, or an unresolvable host).
 - **Wired Ethernet**: the W6100 runs in MACRAW mode, so it is just another
   lwIP netif and everything above it (DHCP, mDNS, MQTT, HTTP, OTA pull) is
   the same code as over WiFi. Its MAC is locally administered, derived from

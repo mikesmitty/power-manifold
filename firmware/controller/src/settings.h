@@ -49,6 +49,9 @@ typedef struct {
     uint32_t ip_mask;
     uint32_t ip_gw;
     uint32_t ip_dns;      // 0: DHCP's servers (static mode: the gateway); else always used
+    // -- added in layout version 8 --
+    char     syslog_host[64]; // "" = no remote log sink (see log_sink.h)
+    uint16_t syslog_port;     // UDP, default 514
     uint32_t crc; // must remain last
 } settings_t;
 

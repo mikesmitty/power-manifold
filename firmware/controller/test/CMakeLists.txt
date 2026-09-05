@@ -16,6 +16,7 @@ add_executable(engine_tests
     ../src/boot_reason.c
     ../src/event_kind.c
     ../src/fault_text.c
+    ../src/log_ring.c
     ../src/engine/budget.c
     ../src/engine/fan_policy.c
     ../src/engine/led_pattern.c
@@ -33,6 +34,7 @@ add_executable(engine_tests
     test_improv.c
     test_jsonlite.c
     test_leds.c
+    test_log_ring.c
     test_port_fsm.c
     test_priority.c
     test_update_image.c

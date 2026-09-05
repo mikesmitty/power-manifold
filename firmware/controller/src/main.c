@@ -10,6 +10,7 @@
 #include "fault_log.h"
 #include "flash_map.h"
 #include "ipc.h"
+#include "log_sink.h"
 #include "manifold.h"
 #include "net/http.h"
 #include "net/improv.h"
@@ -32,6 +33,7 @@ int main(void) {
     stack_probe_paint(); // before anything deepens the stack
     boot_reason_read();  // before anything else can touch the watchdog scratch
     stdio_init_all();
+    log_sink_init(); // from here on the console is mirrored for syslog / the API
     flash_map_init();
     settings_load();
     fault_log_init();
@@ -67,6 +69,7 @@ int main(void) {
         improv_poll(now_ms); // before net_poll: sees a join result before the retry
         net_poll(now_ms);
         mqtt_poll(now_ms);
+        log_sink_poll(now_ms);
 
         // chassis conditions the LED chain overlays as a comet (led_pattern.h)
         uint8_t led_flags = (uint8_t)((improv_active() ? LED_CHASSIS_BLE_OPEN : 0) |

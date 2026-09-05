@@ -19,6 +19,7 @@
 #include "flash_map.h"
 #include "health.h"
 #include "ipc.h"
+#include "log_sink.h"
 #include "manifold.h"
 #include "net/eth.h"
 #include "net/improv.h"
@@ -44,6 +45,8 @@ static void print_help(void) {
            "  ip dhcp | ip static <addr> <mask> <gw>\n"
            "                               addressing (wired link if a W6100 is fitted, else WiFi)\n"
            "  dns <addr>|auto              resolver override (auto: DHCP's, or the gateway when static)\n"
+           "  syslog <host> [port] | syslog off\n"
+           "                               mirror the console to a UDP syslog host (RFC 5424)\n"
            "  name <device-name>           hostname / topic id\n"
            "  token <t>|clear              REST API bearer token\n"
            "  budget <watts>               chassis power budget\n"
@@ -107,6 +110,10 @@ static void print_info(void) {
         printf("static: %s/%s via %s\n", net_ip4_str(g_settings.ip_addr),
                net_ip4_str(g_settings.ip_mask), net_ip4_str(g_settings.ip_gw));
     printf("dns: %s%s\n", net_dns_str(), g_settings.ip_dns ? " (configured)" : "");
+    printf("syslog: %s", log_sink_status());
+    if (g_settings.syslog_host[0])
+        printf(" (%s:%u)", g_settings.syslog_host, g_settings.syslog_port);
+    printf("\n");
     printf("mqtt: %s:%u (%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
@@ -224,6 +231,22 @@ static void run_line(char *l) {
         }
         g_settings.ip_dns = addr;
         printf("dns: %s ('save' to persist; applies at once)\n", addr ? a : "auto");
+    } else if (!strcmp(cmd, "syslog")) {
+        const char *host = strtok_r(NULL, " \t", &save);
+        const char *port = strtok_r(NULL, " \t", &save);
+        int p = port ? atoi(port) : 514;
+        if (!host || (port && (p < 1 || p > 65535)) || strlen(host) >= sizeof(g_settings.syslog_host)) {
+            printf("usage: syslog <host> [port] | syslog off\n");
+            return;
+        }
+        if (!strcmp(host, "off")) {
+            g_settings.syslog_host[0] = '\0';
+            printf("syslog off ('save' to persist)\n");
+            return;
+        }
+        snprintf(g_settings.syslog_host, sizeof(g_settings.syslog_host), "%s", host);
+        g_settings.syslog_port = (uint16_t)p;
+        printf("syslog -> %s:%d; the backlog ships once it resolves ('save' to persist)\n", host, p);
     } else if (!strcmp(cmd, "name")) {
         const char *n = strtok_r(NULL, " \t", &save);
         if (!n) { printf("usage: name <device-name>\n"); return; }
@@ -430,20 +453,30 @@ void cli_poll(void) {
     for (;;) {
         int c = getchar_timeout_us(0);
         if (c == PICO_ERROR_TIMEOUT) return;
+        // the echo of what is typed (and the prompt) stays out of the log
+        // sink: a `wifi` or `mqtt` line carries a password
         if (c == '\r' || c == '\n') {
+            log_sink_pause(true);
             printf("\n");
+            log_sink_pause(false);
             line[line_len] = '\0';
             if (line_len) run_line(line);
             line_len = 0;
+            log_sink_pause(true);
             printf("> ");
+            log_sink_pause(false);
         } else if (c == 0x7F || c == '\b') {
             if (line_len) {
                 line_len--;
+                log_sink_pause(true);
                 printf("\b \b");
+                log_sink_pause(false);
             }
         } else if (line_len < CLI_LINE_MAX - 1 && c >= 0x20 && c < 0x7F) {
             line[line_len++] = (char)c;
+            log_sink_pause(true);
             putchar(c);
+            log_sink_pause(false);
         }
     }
 }

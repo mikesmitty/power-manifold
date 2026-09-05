@@ -9,6 +9,7 @@ void run_fan_tests(void);
 void run_improv_tests(void);
 void run_jsonlite_tests(void);
 void run_led_tests(void);
+void run_log_ring_tests(void);
 void run_port_fsm_tests(void);
 void run_priority_tests(void);
 void run_update_image_tests(void);
@@ -23,6 +24,7 @@ int main(void) {
     run_improv_tests();
     run_jsonlite_tests();
     run_led_tests();
+    run_log_ring_tests();
     run_port_fsm_tests();
     run_priority_tests();
     run_update_image_tests();

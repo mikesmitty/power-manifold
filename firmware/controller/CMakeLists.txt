@@ -45,6 +45,8 @@ add_executable(controller
     src/event_kind.c
     src/fault_text.c
     src/health.c
+    src/log_ring.c
+    src/log_sink.c
     src/settings.c
     src/fault_log.c
     src/update.c

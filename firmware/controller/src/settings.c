@@ -15,7 +15,7 @@
 // the last two sectors of flash (which, on a freshly partitioned board, is
 // where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    7
+#define SETTINGS_VERSION    8
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -28,17 +28,20 @@
 #define SETTINGS_V4_PAYLOAD ALIGN4(offsetof(settings_t, port_name))
 #define SETTINGS_V5_PAYLOAD ALIGN4(offsetof(settings_t, port_boot))
 #define SETTINGS_V6_PAYLOAD ALIGN4(offsetof(settings_t, ip_static))
+#define SETTINGS_V7_PAYLOAD ALIGN4(offsetof(settings_t, syslog_host))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
 _Static_assert(SETTINGS_V4_PAYLOAD == 384, "settings v4 layout moved"); // led_boot fit in v3's padding
 _Static_assert(SETTINGS_V5_PAYLOAD == 528, "settings v5 layout moved");
 _Static_assert(SETTINGS_V6_PAYLOAD == 536, "settings v6 layout moved");
+_Static_assert(SETTINGS_V7_PAYLOAD == 552, "settings v7 layout moved");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
 #define FAN_ON_W_DEFAULT   80
 #define FAN_OFF_W_DEFAULT  60
 #define FAN_ON_MA_DEFAULT  3000
+#define SYSLOG_PORT_DEFAULT 514
 
 #define LEGACY_BASE (PICO_FLASH_SIZE_BYTES - SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
 
@@ -75,6 +78,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t version_payload_len(uint32_t version) {
     switch (version) {
     case SETTINGS_VERSION: return payload_len();
+    case 7:                return SETTINGS_V7_PAYLOAD;
     case 6:                return SETTINGS_V6_PAYLOAD;
     case 5:                return SETTINGS_V5_PAYLOAD;
     case 4:                return SETTINGS_V4_PAYLOAD;
@@ -131,6 +135,7 @@ void settings_defaults(void) {
     g_settings.fan_on_w = FAN_ON_W_DEFAULT;
     g_settings.fan_off_w = FAN_OFF_W_DEFAULT;
     g_settings.fan_on_ma = FAN_ON_MA_DEFAULT;
+    g_settings.syslog_port = SYSLOG_PORT_DEFAULT;
 }
 
 void settings_load(void) {
@@ -159,6 +164,10 @@ void settings_load(void) {
         if (g_settings.version < 7) {
             g_settings.ip_static = 0;
             g_settings.ip_addr = g_settings.ip_mask = g_settings.ip_gw = g_settings.ip_dns = 0;
+        }
+        if (g_settings.version < 8) {
+            g_settings.syslog_host[0] = '\0';
+            g_settings.syslog_port = SYSLOG_PORT_DEFAULT;
         }
         g_settings.version = SETTINGS_VERSION;
     } else {

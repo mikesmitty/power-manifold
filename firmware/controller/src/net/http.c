@@ -21,6 +21,8 @@
 #include "eth.h"
 #include "improv.h"
 #include "jsonlite.h"
+#include "log_ring.h"
+#include "log_sink.h"
 #include "mqtt.h"
 #include "net.h"
 #include "settings.h"
@@ -91,7 +93,9 @@ static const char INDEX_HTML[] =
     "background:#1a1a1a;color:#eee;border:1px solid #333;border-radius:3px;font:inherit}"
     "button{padding:.45em 1em;margin:.6em .6em 0 0;background:#1c2430;color:#eee;"
     "border:1px solid #345;border-radius:3px;cursor:pointer;font:inherit}"
-    "#msg,#flm{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
+    "#msg,#flm,#lgm{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
+    "pre{white-space:pre-wrap;word-break:break-all;font-size:.75em;background:#0d0d0d;"
+    "border:1px solid #333;padding:.6em;max-height:24em;overflow:auto;margin:.4em 0}"
     "#lock input{display:inline-block;width:14em;margin-right:.5em}"
     "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
     ".g{grid-template-columns:1fr}}"
@@ -108,6 +112,9 @@ static const char INDEX_HTML[] =
     "<table id='flt' hidden><thead><tr><th>When</th><th>Port</th><th>Event</th>"
     "<th title='draw / contract at the moment of the event'>W then</th></tr></thead>"
     "<tbody></tbody></table><button type='button' id='flc'>Clear log</button></details>"
+    // Console ring (last 4 KB of what the firmware printed); needs the token.
+    "<details id='lg'><summary>Console log</summary><div id='lgm'></div><pre id='lgp'></pre>"
+    "<button type='button' id='lgr'>Refresh</button></details>"
     // Connection-level settings. Unlocked by the API token, or by the setup
     // secret Improv passes in the redirect URL while no token exists yet.
     "<details id='cfg'><summary>Settings</summary><div id='msg'></div>"
@@ -128,6 +135,9 @@ static const char INDEX_HTML[] =
     "<label>Gateway<input name='gw' placeholder='10.0.0.1'></label></div>"
     "<label>DNS server (blank = from DHCP, or the gateway when static; applies at once)"
     "<input name='dns' placeholder='10.0.0.1'></label>"
+    "<label>Syslog host (blank = off; the console is mirrored there as RFC 5424 over UDP)"
+    "<input name='slh' maxlength='63'></label>"
+    "<label>Syslog port<input name='slp' type='number' min='1' max='65535'></label>"
     "<label>Chassis budget (W)<input name='bud' type='number' min='" STR(BUDGET_MIN_W) "'"
     " max='" STR(BUDGET_MAX_W) "' required></label>"
     "<label>Fan<select name='fmode'><option value='auto'>auto</option>"
@@ -212,8 +222,8 @@ static const char INDEX_HTML[] =
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',"
-    "gw:'gateway',dns:'dns'},"
-    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1},"
+    "gw:'gateway',dns:'dns',slh:'syslog_host',slp:'syslog_port'},"
+    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1},"
     "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
     "async function cfgLoad(){let r;"
     "try{r=await fetch('/api/v1/settings',{headers:hdr()});}"
@@ -250,6 +260,15 @@ static const char INDEX_HTML[] =
     "const U=new URL(location),S=U.searchParams.get('s');"
     "if(S){sessionStorage.tok=S;U.searchParams.delete('s');"
     "history.replaceState(null,'',U);CFG.open=true;}"
+    // Console log panel: the ring as text, bottom = newest.
+    "const LG=document.getElementById('lg'),LGP=document.getElementById('lgp'),"
+    "LGM=document.getElementById('lgm');"
+    "async function lgLoad(){let r;try{r=await fetch('/api/v1/log',{headers:hdr()});}"
+    "catch(e){LGM.textContent='No response from the device.';return;}"
+    "if(r.status==401){LGM.textContent='Unlock the Settings panel with the API token first.';"
+    "LGP.textContent='';return;}"
+    "LGP.textContent=await r.text();LGM.textContent='';LGP.scrollTop=LGP.scrollHeight;}"
+    "LG.ontoggle=()=>{if(LG.open)lgLoad();};document.getElementById('lgr').onclick=lgLoad;"
     // Fault log panel: newest page of records, human text from the firmware.
     "const FL=document.getElementById('fl'),FLM=document.getElementById('flm'),"
     "FLT=document.getElementById('flt');"
@@ -468,6 +487,15 @@ static bool metrics_busy(void) {
     return false;
 }
 
+// GET /api/v1/log: the console ring as text, same one-at-a-time rule
+static char log_buf[LOG_RING_SIZE + 1];
+
+static bool log_busy(void) {
+    for (int i = 0; i < MAX_CONNS; i++)
+        if (conns[i].pcb && conns[i].static_body == log_buf) return true;
+    return false;
+}
+
 // Prometheus label value: backslash, quote and newline are escaped
 static void prom_label(char *out, size_t cap, const char *in) {
     size_t n = 0;
@@ -606,9 +634,11 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
     static char name[sizeof(g_settings.device_name) * 6];
     static char host[sizeof(g_settings.mqtt_host) * 6];
     static char user[sizeof(g_settings.mqtt_user) * 6];
+    static char slh[sizeof(g_settings.syslog_host) * 6];
     json_escape(name, sizeof(name), g_settings.device_name);
     json_escape(host, sizeof(host), g_settings.mqtt_host);
     json_escape(user, sizeof(user), g_settings.mqtt_user);
+    json_escape(slh, sizeof(slh), g_settings.syslog_host);
     telemetry_t t; // manual fan state is the engine's, not a setting
     ipc_snapshot_read(&t);
     int n = snprintf(out, cap,
@@ -633,8 +663,11 @@ static void build_settings_json(char *out, size_t cap, bool via_setup) {
                                            net_ip4_str(g_settings.ip_mask));
     if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"gateway\":\"%s\",",
                                            net_ip4_str(g_settings.ip_gw));
-    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"dns\":\"%s\",\"port_names\":[",
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off, "\"dns\":\"%s\",",
                                            net_ip4_str(g_settings.ip_dns));
+    if (off < cap) off += (size_t)snprintf(out + off, cap - off,
+                                           "\"syslog_host\":\"%s\",\"syslog_port\":%u,\"port_names\":[",
+                                           slh, g_settings.syslog_port);
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         static char pn[PORT_NAME_MAX * 6 + 1];
         json_escape(pn, sizeof(pn), g_settings.port_name[i]); // stored value: "" = unset
@@ -703,6 +736,12 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         err = "token too long";
     else if (r > 0 && !header_safe(s.api_token))
         err = "token: no spaces or control characters";
+    else if ((r = json_get_str(body, "syslog_host", s.syslog_host, sizeof(s.syslog_host))) < 0)
+        err = "syslog_host too long";
+    else if (r > 0 && !header_safe(s.syslog_host))
+        err = "syslog_host: no spaces or control characters";
+    else if (json_get_int(body, "syslog_port", &port) && (port < 1 || port > 65535))
+        err = "syslog_port out of range";
     else if (json_get_int(body, "mqtt_port", &port) && (port < 1 || port > 65535))
         err = "mqtt_port out of range";
     else if (via_setup && !s.api_token[0])
@@ -800,6 +839,7 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         return;
     }
     if (json_get_int(body, "mqtt_port", &port)) s.mqtt_port = (uint16_t)port;
+    if (json_get_int(body, "syslog_port", &port)) s.syslog_port = (uint16_t)port;
 
     bool reboot_required = strcmp(g_settings.device_name, s.device_name) != 0 ||
                            strcmp(g_settings.mqtt_host, s.mqtt_host) != 0 ||
@@ -986,6 +1026,16 @@ static void handle_request(conn_t *c) {
         }
         respond_static(c, 200, "OK", "text/plain; version=0.0.4; charset=utf-8",
                        metrics_buf, len, true);
+    } else if (!strncmp(c->req, "GET /api/v1/log", 15)) {
+        if (!authorized(c)) {
+            respond(c, 401, "Unauthorized", "application/json",
+                    "{\"error\":\"bearer token required\"}");
+        } else if (log_busy()) {
+            respond(c, 503, "Service Unavailable", "text/plain", "log busy, retry\n");
+        } else {
+            size_t n = log_sink_snapshot(log_buf, sizeof(log_buf));
+            respond_static(c, 200, "OK", "text/plain; charset=utf-8", log_buf, n, true);
+        }
     } else if (!strncmp(c->req, "GET /api/v1/faults", 18)) {
         int offset = 0;
         const char *q = strstr(c->req, "?offset=");
