@@ -84,6 +84,11 @@ int main(void) {
         while (ipc_evt_pop(&evt)) {
             fault_log_event(&evt);
             mqtt_event(&evt);
+            // a port that switched itself off is administratively off now:
+            // the "last" boot policy records it like a switch from any surface
+            if (evt.type == EVT_CHARGE && evt.code == CHARGE_AUTO_OFF && evt.port < NUM_PORTS &&
+                settings_port_admin_note(evt.port, false))
+                settings_save_later();
         }
 
         if (http_reboot_due(now_ms)) {

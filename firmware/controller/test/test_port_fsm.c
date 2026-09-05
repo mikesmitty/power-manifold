@@ -262,6 +262,95 @@ static void test_boot_stagger(void) {
     MT_ASSERT_EQ(port_state(3), PORT_STATE_IDLE);
 }
 
+static void test_charge_complete(void) {
+    support_reset(360000);
+    g_settings.charged_mw = 1000; // 1 W floor, 1 minute hold
+    g_settings.charged_min = 1;
+    sim_set_present(0, true);
+    tick(2);
+    sim_attach(0, 20000, 3000); // 60 W laptop, drawing 80 %: 48 W
+    tick(2);
+    MT_ASSERT(!tele.port[0].charged);
+    sim_set_load_pct(0, 1); // 0.6 W: under the floor
+    tick_ms(59000);
+    MT_ASSERT(!tele.port[0].charged); // not for a minute yet
+    tick_ms(2000);
+    MT_ASSERT(tele.port[0].charged);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE); // no auto-off policy: stays powered
+    const engine_evt_t *e = evt_last(EVT_CHARGE, 0);
+    MT_ASSERT(e != NULL);
+    MT_ASSERT_EQ(e->code, CHARGE_DONE);
+    // a brief wake-up does not clear it; a sustained draw does
+    sim_set_load_pct(0, 80);
+    tick_ms(30000);
+    MT_ASSERT(tele.port[0].charged);
+    tick_ms(31000);
+    MT_ASSERT(!tele.port[0].charged);
+    e = evt_last(EVT_CHARGE, 0);
+    MT_ASSERT_EQ(e->code, CHARGE_RESUMED);
+    // detach and re-attach start over
+    sim_set_load_pct(0, 1);
+    tick_ms(61000);
+    MT_ASSERT(tele.port[0].charged);
+    sim_detach(0);
+    tick(2);
+    MT_ASSERT(!tele.port[0].charged);
+    sim_attach(0, 20000, 3000);
+    tick_ms(30000);
+    MT_ASSERT(!tele.port[0].charged); // the hold restarted at attach
+}
+
+static void test_charged_auto_off(void) {
+    support_reset(360000);
+    g_settings.charged_mw = 1000;
+    g_settings.charged_min = 1;
+    g_settings.port_auto_off = 1u << 0;
+    sim_set_present(0, true);
+    tick(2);
+    sim_attach(0, 20000, 3000);
+    sim_set_load_pct(0, 1);
+    tick(2);
+    tick_ms(61000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED);
+    MT_ASSERT(!sim_en(0));
+    MT_ASSERT_EQ(budget_port_reservation(0), 0);
+    const engine_evt_t *e = evt_last(EVT_CHARGE, 0);
+    MT_ASSERT(e != NULL);
+    MT_ASSERT_EQ(e->code, CHARGE_AUTO_OFF);
+    MT_ASSERT_EQ(e->arg, AUTO_OFF_CHARGED);
+    // switched on again, it powers up like any disabled port (the sink is
+    // still plugged in, so it lands active and the clock starts over)
+    engine_cmd_t on = {.op = CMD_PORT_ENABLE, .port = 0};
+    port_fsm_cmd(0, &on);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT(!tele.port[0].charged);
+}
+
+static void test_sleep_timer(void) {
+    support_reset(360000);
+    g_settings.charged_mw = 0; // detection off: the timer works on its own
+    g_settings.port_sleep_min[0] = 2;
+    sim_set_present(0, true);
+    tick(2);
+    sim_attach(0, 20000, 3000); // drawing 48 W throughout
+    tick(2);
+    tick_ms(119000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    tick_ms(2000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED);
+    const engine_evt_t *e = evt_last(EVT_CHARGE, 0);
+    MT_ASSERT(e != NULL);
+    MT_ASSERT_EQ(e->code, CHARGE_AUTO_OFF);
+    MT_ASSERT_EQ(e->arg, AUTO_OFF_SLEEP);
+    // an idle port has no sink to time
+    g_settings.port_sleep_min[1] = 1;
+    sim_set_present(1, true);
+    tick(2);
+    tick_ms(120000);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_IDLE);
+}
+
 static void test_unseat_powers_down(void) {
     support_reset(360000);
     sim_set_present(0, true);
@@ -292,5 +381,8 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: admin disable/enable", test_admin_disable_enable);
     mt_run("fsm: boot policy on/off/last", test_boot_policy);
     mt_run("fsm: blades seated at boot come up staggered by priority", test_boot_stagger);
+    mt_run("fsm: charge-complete from the draw, symmetric, per attach", test_charge_complete);
+    mt_run("fsm: off when charged", test_charged_auto_off);
+    mt_run("fsm: sleep timer after attach", test_sleep_timer);
     mt_run("fsm: unseat powers down", test_unseat_powers_down);
 }

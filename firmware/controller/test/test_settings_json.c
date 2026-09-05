@@ -39,11 +39,15 @@ static void fill(settings_t *s) {
     s->ip_dns = ip("10.64.0.2");
     strcpy(s->syslog_host, "logs.example");
     s->syslog_port = 5514;
+    s->charged_mw = 750;
+    s->charged_min = 20;
+    s->port_auto_off = 0x15;
     for (int i = 0; i < NUM_PORTS; i++) {
         snprintf(s->port_name[i], sizeof(s->port_name[i]), "Slot %d <b>&", i + 1);
         s->port_limit_ma[i] = 1000u + 500u * (uint32_t)i;
         s->port_boot[i] = (uint8_t)(i % 3);
         s->port_priority[i] = (uint8_t)(5 - i);
+        s->port_sleep_min[i] = (uint16_t)(i * 90);
     }
     s->port_off_mask = 0x2A; // runtime bookkeeping: not part of the JSON
 }
@@ -60,6 +64,8 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"fan_mode\":\"on\"") != NULL); // manual, and the fan is on
     MT_ASSERT(strstr(json, "\"ip\":\"10.100.55.202\"") != NULL);
     MT_ASSERT(strstr(json, "\"port_priorities\":[5,4,3,2,1,0]") != NULL);
+    MT_ASSERT(strstr(json, "\"port_auto_off\":[1,0,1,0,1,0]") != NULL);
+    MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
 
     memset(&dst, 0, sizeof(dst)); // a blank box importing the export
     settings_apply_t ap;
@@ -109,6 +115,9 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"port_boot\":[\"on\",\"maybe\"]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_priorities\":[0,300]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"syslog_port\":0}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"port_auto_off\":[2]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"fan_mode\":\"on\",\"fan_on_w\":50,\"fan_off_w\":60}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"name\":\"ok\"}", true) != NULL); // setup needs a token
     MT_ASSERT(apply_fresh("{\"name\":\"ok\",\"token\":\"t\"}", true) == NULL);

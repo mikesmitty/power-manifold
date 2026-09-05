@@ -60,7 +60,8 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_ip(out, cap, off, "gateway", s->ip_gw);
     off = put_ip(out, cap, off, "dns", s->ip_dns);
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
-    off = putf(out, cap, off, "\"syslog_port\":%u,\"port_names\":[", s->syslog_port);
+    off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,"
+               "\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min);
     for (int i = 0; i < NUM_PORTS; i++) {
         off = putf(out, cap, off, "%s\"", i ? "," : "");
         if (off < cap) off += json_escape(out + off, cap - off, s->port_name[i]);
@@ -75,6 +76,12 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = putf(out, cap, off, "],\"port_priorities\":[");
     for (int i = 0; i < NUM_PORTS; i++)
         off = putf(out, cap, off, "%s%u", i ? "," : "", s->port_priority[i]);
+    off = putf(out, cap, off, "],\"port_auto_off\":[");
+    for (int i = 0; i < NUM_PORTS; i++)
+        off = putf(out, cap, off, "%s%u", i ? "," : "", (s->port_auto_off >> i) & 1);
+    off = putf(out, cap, off, "],\"port_sleep_min\":[");
+    for (int i = 0; i < NUM_PORTS; i++)
+        off = putf(out, cap, off, "%s%u", i ? "," : "", s->port_sleep_min[i]);
     off = putf(out, cap, off, "]");
     if (o->secrets) {
         off = putf(out, cap, off, ",");
@@ -166,6 +173,14 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         if (v < 1 || v > 65535) return "syslog_port out of range";
         s->syslog_port = (uint16_t)v;
     }
+    if (json_get_int(body, "charged_mw", &v)) {
+        if (v < 0 || v > 20000) return "charged_mw: 0-20000 (0 disables)";
+        s->charged_mw = (uint16_t)v;
+    }
+    if (json_get_int(body, "charged_min", &v)) {
+        if (v < 1 || v > 255) return "charged_min: 1-255";
+        s->charged_min = (uint8_t)v;
+    }
     if (via_setup && !s->api_token[0]) return "set an API token to finish setup";
 
     // operational fields
@@ -246,6 +261,15 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         if (json_get_int_at(body, "port_priorities", (unsigned)i, &v)) {
             if (v < 0 || v > 255) return "port_priorities: 0-255 each";
             s->port_priority[i] = (uint8_t)v;
+        }
+        if (json_get_int_at(body, "port_auto_off", (unsigned)i, &v)) {
+            if (v < 0 || v > 1) return "port_auto_off: 0 or 1 each";
+            if (v) s->port_auto_off |= (uint8_t)(1u << i);
+            else s->port_auto_off &= (uint8_t)~(1u << i);
+        }
+        if (json_get_int_at(body, "port_sleep_min", (unsigned)i, &v)) {
+            if (v < 0 || v > PORT_SLEEP_MAX_MIN) return "port_sleep_min: 0-" STR(PORT_SLEEP_MAX_MIN) " each";
+            s->port_sleep_min[i] = (uint16_t)v;
         }
         r = json_get_str_at(body, "port_names", (unsigned)i, s->port_name[i], sizeof(s->port_name[i]));
         if (r < 0) return "port_names: at most " STR(PORT_NAME_MAX) " characters each";

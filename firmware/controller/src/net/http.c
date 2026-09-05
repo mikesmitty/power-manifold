@@ -42,6 +42,10 @@
 #define STR_(x) #x
 #define STR(x) STR_(x)
 
+// one per-port "off when charged" checkbox in the settings panel
+#define PORT_AUTOOFF_BOX(n) \
+    "<label><input type='checkbox' name='pa" #n "'>Port " #n "</label>"
+
 // one per-port power-up policy select in the settings panel
 #define PORT_BOOT_SELECT(n) \
     "<select name='pb" #n "' title='Port " #n "'><option value='on'>on</option>" \
@@ -100,6 +104,7 @@ static const char INDEX_HTML[] =
     "#lock input{display:inline-block;width:14em;margin-right:.5em}"
     "#bk{margin-top:1em;border-top:1px solid #333;padding-top:.4em}"
     "#bk input[type=checkbox]{display:inline;width:auto;margin-right:.4em}"
+    "#ao label{margin:0;color:#eee}#ao input{display:inline;width:auto;margin-right:.4em}"
     "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
     ".g{grid-template-columns:1fr}}"
     "</style></head><body>"
@@ -170,6 +175,20 @@ static const char INDEX_HTML[] =
     "<input name='pl4' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl5' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl6' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required></div>"
+    "<label>Charged = a sink drawing under (mW; 0 = detection off)"
+    "<input name='chmw' type='number' min='0' max='20000' step='50' required></label>"
+    "<label>&hellip;for this long (minutes)"
+    "<input name='chmin' type='number' min='1' max='255' required></label>"
+    "<label>Switch off once charged</label>"
+    "<div class='g' id='ao'>" PORT_AUTOOFF_BOX(1) PORT_AUTOOFF_BOX(2) PORT_AUTOOFF_BOX(3)
+    PORT_AUTOOFF_BOX(4) PORT_AUTOOFF_BOX(5) PORT_AUTOOFF_BOX(6) "</div>"
+    "<label>Sleep timer: switch off this many minutes after a sink attaches (0 = never)</label>"
+    "<div class='g'><input name='ps1' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
+    "<input name='ps2' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
+    "<input name='ps3' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
+    "<input name='ps4' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
+    "<input name='ps5' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
+    "<input name='ps6' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required></div>"
     "<label>Port state at power-up (last = however it was switched, from any surface)</label>"
     "<div class='g'>" PORT_BOOT_SELECT(1) PORT_BOOT_SELECT(2) PORT_BOOT_SELECT(3)
     PORT_BOOT_SELECT(4) PORT_BOOT_SELECT(5) PORT_BOOT_SELECT(6) "</div>"
@@ -204,7 +223,7 @@ static const char INDEX_HTML[] =
     "function draw(){if(!last)return;"
     "ports.innerHTML=last.ports.map((p,i)=>"
     "`<tr class='p${i==sel?' sel':''}' data-i='${i}'><td title='Port ${i+1}'>${esc(p.name)}</td>"
-    "<td class='s-${p.state}'>${p.state}</td>"
+    "<td class='s-${p.state}'>${p.state}${p.charged?' &middot; charged':''}</td>"
     "<td>${p.v.toFixed(2)}</td><td>${p.i.toFixed(2)}</td><td>${p.p.toFixed(1)}</td>"
     "<td>${p.contract_w.toFixed(0)}</td><td>${p.e.toFixed(3)}</td></tr>`+"
     "(i==sel?`<tr class='d'><td colspan='7'><div class='g'>${line('p','W',1)}"
@@ -228,11 +247,14 @@ static const char INDEX_HTML[] =
     "PN=[...document.querySelectorAll('input[name^=pn]')],"
     "PL=[...document.querySelectorAll('input[name^=pl]')],"
     "PB=[...document.querySelectorAll('select[name^=pb]')],"
+    "PA=[...document.querySelectorAll('input[name^=pa]')],"
+    "PS=[...document.querySelectorAll('input[name^=ps]')],"
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',"
-    "gw:'gateway',dns:'dns',slh:'syslog_host',slp:'syslog_port'},"
-    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1},"
+    "gw:'gateway',dns:'dns',slh:'syslog_host',slp:'syslog_port',chmw:'charged_mw',"
+    "chmin:'charged_min'},"
+    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1},"
     "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
     "async function cfgLoad(){let r;"
     "try{r=await fetch('/api/v1/settings',{headers:hdr()});}"
@@ -243,6 +265,7 @@ static const char INDEX_HTML[] =
     "const d=await r.json();LK.hidden=true;F.hidden=false;"
     "for(const k in KEYS)F[k].value=d[KEYS[k]];PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
     "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);"
+    "PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);"
     "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
     "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
     "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
@@ -250,7 +273,8 @@ static const char INDEX_HTML[] =
     "F.onsubmit=async e=>{e.preventDefault();const b={};"
     "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
     "b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);"
-    "b.port_boot=PB.map(e=>e.value);"
+    "b.port_boot=PB.map(e=>e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);"
+    "b.port_sleep_min=PS.map(e=>+e.value);"
     "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
     "let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
     "headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});"
@@ -455,13 +479,13 @@ static void build_status_json(char *out, size_t cap) {
         static char pn[PORT_NAME_MAX * 6 + 1]; // static: IRQ stack
         json_escape(pn, sizeof(pn), settings_port_name((unsigned)i));
         off += (size_t)snprintf(out + off, cap - off,
-            "%s{\"name\":\"%s\",\"state\":\"%s\",\"attached\":%s,\"pdo\":%u,\"v\":%.3f,"
-            "\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
+            "%s{\"name\":\"%s\",\"state\":\"%s\",\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
+            "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
             "\"limit_ma\":%lu,\"boot\":\"%s\",\"fault\":%u}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state),
-            p->attached ? "true" : "false", p->selected_pdo, p->bus_mv / 1000.0,
-            p->current_ma / 1000.0, p->power_mw / 1000.0, p->energy_mwh / 1e6,
-            p->contract_mw / 1000.0, g_settings.port_priority[i],
+            p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
+            p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
+            p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],
             (unsigned long)g_settings.port_limit_ma[i],
             settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits);
     }
@@ -568,7 +592,7 @@ static size_t build_metrics(char *out, size_t cap) {
         {"pwrman_port_contract_watts", "gauge"},  {"pwrman_port_priority", "gauge"},
         {"pwrman_port_attached", "gauge"},        {"pwrman_port_pdo", "gauge"},
         {"pwrman_port_fault_bits", "gauge"},      {"pwrman_port_limit_amps", "gauge"},
-        {"pwrman_port_state_info", "gauge"},
+        {"pwrman_port_charged", "gauge"},         {"pwrman_port_state_info", "gauge"},
     };
     for (size_t m = 0; m < sizeof(PM) / sizeof(PM[0]); m++) {
         M_PUT("# TYPE %s %s\n", PM[m].name, PM[m].type);
@@ -587,6 +611,7 @@ static size_t build_metrics(char *out, size_t cap) {
             case 7: M_PUT("} %u\n", p->selected_pdo); break;
             case 8: M_PUT("} %u\n", p->fault_bits); break;
             case 9: M_PUT("} %.2f\n", g_settings.port_limit_ma[i] / 1000.0); break;
+            case 10: M_PUT("} %d\n", p->charged ? 1 : 0); break;
             default: M_PUT(",state=\"%s\"} 1\n", port_state_name((port_state_t)p->state)); break;
             }
         }

@@ -38,6 +38,10 @@ typedef struct {
     uint32_t cooldown_until_ms;
     uint32_t enable_after_ms; // boot stagger: no probe before this (0 = none)
     uint32_t step_after_ms;  // next partial unthrottle step allowed at
+    uint32_t attached_at_ms; // sleep timer base
+    uint32_t side_since_ms;  // draw has been on the current side of the charged floor since
+    bool     low_side;       // ...and that side is "under the floor"
+    bool     charged;
     uint32_t contract_mw;
     uint32_t denied_mw;      // contract that budget refused; unthrottle target
     uint32_t granted_ma;     // current ceiling currently programmed
@@ -219,6 +223,53 @@ static void unthrottle(uint8_t i) {
     enter(i, PORT_STATE_ACTIVE);
 }
 
+// The port switches itself off: an admin disable the engine initiates, so
+// core 0 records it like any other (main.c) for the "last" boot policy.
+static void auto_off(uint8_t i, uint32_t why) {
+    emit(EVT_CHARGE, i, CHARGE_AUTO_OFF, why);
+    ctx[i].admin_enabled = false;
+    power_down(i, PORT_STATE_DISABLED);
+}
+
+static void attach_begin(uint8_t i, uint32_t now_ms) {
+    ctx[i].attached_at_ms = now_ms;
+    ctx[i].side_since_ms = now_ms;
+    ctx[i].low_side = false;
+    ctx[i].charged = false;
+}
+
+// Charge-complete detection and the sleep timer, every tick while a sink is
+// attached. "Charged" means the measured draw stayed under settings
+// charged_mw for charged_min; it clears symmetrically (draw back above the
+// floor for as long), so a device that drains while plugged in reads as
+// charging again. Returns false when the port switched itself off.
+static bool charge_track(uint8_t i, uint32_t now_ms) {
+    port_ctx_t *p = &ctx[i];
+    uint32_t floor = g_settings.charged_mw;
+    if (floor) {
+        bool low = p->ina.power_mw < floor;
+        if (low != p->low_side) {
+            p->low_side = low;
+            p->side_since_ms = now_ms;
+        } else if (now_ms - p->side_since_ms >= (uint32_t)g_settings.charged_min * 60000u &&
+                   low != p->charged) {
+            p->charged = low;
+            emit(EVT_CHARGE, i, low ? CHARGE_DONE : CHARGE_RESUMED,
+                 (now_ms - p->attached_at_ms) / 60000u);
+            if (low && (g_settings.port_auto_off & (1u << i))) {
+                auto_off(i, AUTO_OFF_CHARGED);
+                return false;
+            }
+        }
+    }
+    uint32_t sleep = g_settings.port_sleep_min[i];
+    if (sleep && now_ms - p->attached_at_ms >= sleep * 60000u) {
+        auto_off(i, AUTO_OFF_SLEEP);
+        return false;
+    }
+    return true;
+}
+
 // Shared telemetry + fault polling for powered states. Returns false if the
 // port just faulted or was depowered.
 static bool poll_powered(uint8_t i, bool present, uint32_t now_ms) {
@@ -307,6 +358,7 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     case PORT_STATE_IDLE:
         if (!poll_powered(i, present, now_ms)) break;
         if (p->mpq.attached) {
+            attach_begin(i, now_ms);
             enter(i, PORT_STATE_ACTIVE);
             track_contract(i);
         }
@@ -327,6 +379,7 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
             break;
         }
         track_contract(i);
+        if (!charge_track(i, now_ms)) break;
         if (p->state == PORT_STATE_THROTTLED && p->denied_mw) {
             // Freed budget flows back by priority. When everything the port
             // was refused fits, claim it and restore the full advertisement;
@@ -369,6 +422,7 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
 
     out->state = (uint8_t)p->state;
     out->attached = p->mpq.attached;
+    out->charged = p->mpq.attached && p->charged;
     out->selected_pdo = p->mpq.selected_pdo;
     out->fault_bits = p->fault_bits;
     out->bus_mv = p->ina.bus_mv;

@@ -17,6 +17,10 @@
 //   base/port/N/priority/set   command: 0-255 (0 = highest)
 //   base/port/N/limit/set      command: advertised current ceiling, mA (500-5000)
 //   base/port/N/boot/set       command: on/off/last — administrative state at power-up
+//   base/port/N/autooff/set    command: ON/OFF — switch the port off once its sink is charged
+//   base/port/N/sleep/set      command: minutes after attach to switch off (0 = never)
+//   base/charged_mw/set        command: charged = draw under this (mW, 0 = off)...
+//   base/charged_min/set       command: ...for this many minutes
 //   base/fan/set               command: auto/on/off (legacy ON/OFF accepted)
 //   base/budget/set            command: chassis budget in watts
 //   base/event                 engine events, QoS 1: {"port":N,"event":"state|fault|

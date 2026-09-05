@@ -251,13 +251,14 @@ state.
   renegotiates at once, and the INA226 emergency trip stays at 125 % of
   the blade's 5 A ceiling regardless), and each port's state at power-up
   (`on`, `off` or `last`, see below). `GET /api/v1/status` (each port
-  carries its `name`, `limit_ma` and `boot`); `GET` / `POST /api/v1/settings` with
+  carries its `name`, `limit_ma`, `boot` and `charged`); `GET` / `POST /api/v1/settings` with
   any subset of `{"name","mqtt_host","mqtt_port","mqtt_user","mqtt_pass",
   "token","budget_w","fan_mode","fan_on_w","fan_off_w","fan_on_ma",
   "led_brightness","led_boot","port_names","port_limits_ma","port_boot",
   "ip_mode","ip","netmask","gateway","dns","syslog_host","syslog_port",
-  "wifi_ssid","wifi_pass","port_priorities"}`
-  (the four `port_*` keys are arrays of six; saved to flash at once;
+  "wifi_ssid","wifi_pass","port_priorities","charged_mw","charged_min",
+  "port_auto_off","port_sleep_min"}`
+  (the six `port_*` keys are arrays of six; saved to flash at once;
   budget, fan, LEDs, names, limits, DNS and syslog apply live,
   `POST /api/v1/reboot` applies the name, WiFi, broker and addressing);
   `GET /api/v1/settings/export` is the same object with every setting,
@@ -287,21 +288,46 @@ state.
   discovery and entity ids stay put): power/voltage/current/state sensors, a since-boot
   energy sensor (`total_increasing`, energy-dashboard ready), an enable
   switch, hard-reset and re-announce-caps buttons, priority and
-  current-limit numbers, a power-up state select (on/off/last), and an
+  current-limit numbers, a power-up state select (on/off/last), a
+  *charging* binary sensor (device class `battery_charging`: a sink is
+  attached and not yet charged), an *off when charged* switch, a *sleep
+  timer* number, and an
   *events* entity fed from `.../event` — event types `inserted`, `ready`,
   `attached`, `detached`, `removed`, `enabled`, `disabled`, `contract`,
-  `throttled`, `restored`, `fault` and `probe_failed`, with the raw
-  `code` / `arg` and the fault `text` as attributes, so an automation
-  triggers on `event.<label>_events` directly instead of templating over
-  the state sensor —
+  `throttled`, `restored`, `fault`, `probe_failed`, `charged`, `charging`
+  and `auto_off`, with the raw
+  `code` / `arg` and the fault or auto-off `text` as attributes, so an
+  automation triggers on `event.<label>_events` directly instead of
+  templating over the state sensor —
   plus chassis power/headroom/energy sensors, a power-budget number, a fan
-  select (auto/on/off), an LED brightness number, a diagnostic *Last boot
+  select (auto/on/off), an LED brightness number, *Charged below* (mW) and
+  *Charged after* (min) numbers, a diagnostic *Last boot
   reason* sensor, a *Problem* binary sensor (see below), and a firmware update
   entity fed from the retained `.../update/latest` pointer. Each port's
   state sensor carries `last_fault` / `last_fault_at` attributes (the
   newest fault or probe failure, as text and epoch seconds). Remote settings
   changes (budget, fan mode, priority, current limit, power-up state, LED
   brightness) persist automatically a few seconds after the last change.
+- **Charge-complete and auto-off**: while a sink is attached the engine
+  watches its measured draw; once it has stayed under `charged_mw` (default
+  500 mW, a full phone trickles well under that) for `charged_min`
+  (default 10) the port reads *charged* — `chg` in the `status` attach
+  column, `charged` in the status JSON and telemetry, a `charged` event,
+  the Home Assistant *charging* sensor going off and the page's state
+  cell saying so. A device that starts drawing again for as long reads as
+  charging again (`charging` event), so a laptop draining while plugged
+  in is not mistaken for full; detach and re-attach start over. `charged
+  <mW> <minutes>` (or the settings keys, the page, or the two Home
+  Assistant numbers) tunes it, 0 mW switches detection off. Two per-port
+  auto-off policies build on it: *off when charged* (`port <n> autooff
+  on|off`, `port_auto_off`, the page's checkboxes, an HA switch) switches
+  the port off the moment it reads charged, and the *sleep timer* (`port
+  <n> sleep <minutes>|off`, `port_sleep_min`, the page, an HA number; up
+  to 24 h) switches it off that long after a sink attaches whatever the
+  draw — a bedside port that should never float a battery all night. Both
+  end in the ordinary disabled state (an `auto_off` event says which
+  policy fired), so the port comes back with `port <n> on`, the API, the
+  page or the HA switch, and a `last` boot policy remembers it as off.
 - **Port state at power-up**: each port has a boot policy — `on` (the
   default), `off` (stays disabled until switched on), or `last` (comes back
   however it was last switched, from the console, the API, the page or the

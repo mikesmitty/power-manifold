@@ -52,6 +52,11 @@ typedef struct {
     // -- added in layout version 8 --
     char     syslog_host[64]; // "" = no remote log sink (see log_sink.h)
     uint16_t syslog_port;     // UDP, default 514
+    // -- added in layout version 9 --
+    uint16_t charged_mw;      // charge-complete: draw under this (0 = detection off)...
+    uint8_t  charged_min;     // ...for this many minutes marks the sink charged
+    uint8_t  port_auto_off;   // bit N set: port N switches off once charged
+    uint16_t port_sleep_min[NUM_PORTS]; // switch off this long after a sink attaches (0 = never)
     uint32_t crc; // must remain last
 } settings_t;
 

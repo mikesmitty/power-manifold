@@ -32,8 +32,8 @@
 // fan + BLE provisioning button (the last chassis step retracts the
 // pre-select fan switch config)
 #define PORT_SENSOR_N    5
-#define PORT_ENTITIES    (PORT_SENSOR_N + 7)
-#define CHASSIS_ENTITIES 11
+#define PORT_ENTITIES    (PORT_SENSOR_N + 10)
+#define CHASSIS_ENTITIES 13
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -159,6 +159,31 @@ static void handle_command(const char *topic, const char *data) {
         strstr(sub, "/boot/set") != NULL && port >= 1 && port <= NUM_PORTS) {
         if (settings_port_boot_parse(data, &g_settings.port_boot[port - 1]))
             settings_save_later();
+    } else if (sscanf(sub, "/port/%u/autooff/set", &port) == 1 &&
+        strstr(sub, "/autooff/set") != NULL && port >= 1 && port <= NUM_PORTS) {
+        uint8_t bit = (uint8_t)(1u << (port - 1));
+        if (on) g_settings.port_auto_off |= bit;
+        else g_settings.port_auto_off &= (uint8_t)~bit;
+        settings_save_later();
+    } else if (sscanf(sub, "/port/%u/sleep/set", &port) == 1 &&
+        strstr(sub, "/sleep/set") != NULL && port >= 1 && port <= NUM_PORTS) {
+        int min = atoi(data); // HA sends the box value, possibly as "30.0"
+        if (data[0] >= '0' && data[0] <= '9' && min >= 0 && min <= PORT_SLEEP_MAX_MIN) {
+            g_settings.port_sleep_min[port - 1] = (uint16_t)min;
+            settings_save_later();
+        }
+    } else if (strcmp(sub, "/charged_mw/set") == 0) {
+        int mw = atoi(data);
+        if (data[0] >= '0' && data[0] <= '9' && mw >= 0 && mw <= 20000) {
+            g_settings.charged_mw = (uint16_t)mw;
+            settings_save_later();
+        }
+    } else if (strcmp(sub, "/charged_min/set") == 0) {
+        int min = atoi(data);
+        if (data[0] >= '0' && data[0] <= '9' && min >= 1 && min <= 255) {
+            g_settings.charged_min = (uint8_t)min;
+            settings_save_later();
+        }
     } else if (sscanf(sub, "/port/%u/priority/set", &port) == 1 &&
         strstr(sub, "/priority/set") != NULL && port >= 1 && port <= NUM_PORTS) {
         int prio = atoi(data);
@@ -260,6 +285,14 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/limit/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/boot/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/autooff/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/sleep/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/charged_mw/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/charged_min/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/fan/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
@@ -455,6 +488,64 @@ static void publish_port_event(unsigned port) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+// Charging (device class battery_charging): a sink is attached and not yet
+// charged. "Charged" is the engine's verdict from the draw (settings
+// charged_mw / charged_min), so this reads OFF while a full phone trickles.
+static void publish_port_charging_sensor(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_charging", port);
+    discovery_config_topic("binary_sensor", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s charging\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"stat_t\":\"~/port/%u/telemetry\",\"avail_t\":\"~/availability\","
+             "\"dev_cla\":\"battery_charging\",\"val_tpl\":\"{{ 'ON' if value_json.state in "
+             "['active', 'throttled'] and not value_json.charged else 'OFF' }}\",\"dev\":%s}",
+             base, port_label(port), uid, object, port, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
+static void publish_port_autooff_switch(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_autooff", port);
+    discovery_config_topic("switch", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s off when charged\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"cmd_t\":\"~/port/%u/autooff/set\",\"stat_t\":\"~/port/%u/telemetry\","
+             "\"val_tpl\":\"{{ 'ON' if value_json.auto_off else 'OFF' }}\","
+             "\"ic\":\"mdi:battery-check\",\"ent_cat\":\"config\","
+             "\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, port_label(port), uid, object, port, port, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
+static void publish_port_sleep_number(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_sleep", port);
+    discovery_config_topic("number", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s sleep timer\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"cmd_t\":\"~/port/%u/sleep/set\",\"stat_t\":\"~/port/%u/telemetry\","
+             "\"val_tpl\":\"{{ value_json.sleep_min }}\",\"unit_of_meas\":\"min\","
+             "\"min\":0,\"max\":%d,\"step\":5,\"mode\":\"box\",\"ic\":\"mdi:timer-outline\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, port_label(port), uid, object, port, port, PORT_SLEEP_MAX_MIN, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
+static void publish_charged_numbers(int which) {
+    const char *object = which ? "charged_min" : "charged_mw";
+    discovery_config_topic("number", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"cmd_t\":\"~/%s/set\",\"stat_t\":\"~/status\",\"val_tpl\":\"{{ value_json.%s }}\","
+             "\"unit_of_meas\":\"%s\",\"min\":%d,\"max\":%d,\"step\":%d,\"mode\":\"box\","
+             "\"ic\":\"%s\",\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, which ? "Charged after" : "Charged below", uid, object, object, object,
+             which ? "min" : "mW", which ? 1 : 0, which ? 255 : 20000, which ? 1 : 100,
+             which ? "mdi:timer-sand" : "mdi:battery-charging-low", device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_port_switch(unsigned port) {
     char object[32];
     snprintf(object, sizeof(object), "p%u_enable", port);
@@ -586,7 +677,10 @@ static void discovery_publish(int i) {
         else if (e == PORT_SENSOR_N + 3) publish_port_number(port);
         else if (e == PORT_SENSOR_N + 4) publish_port_limit_number(port);
         else if (e == PORT_SENSOR_N + 5) publish_port_boot_select(port);
-        else publish_port_event(port);
+        else if (e == PORT_SENSOR_N + 6) publish_port_event(port);
+        else if (e == PORT_SENSOR_N + 7) publish_port_charging_sensor(port);
+        else if (e == PORT_SENSOR_N + 8) publish_port_autooff_switch(port);
+        else publish_port_sleep_number(port);
         return;
     }
     switch (i - NUM_PORTS * PORT_ENTITIES) {
@@ -623,6 +717,12 @@ static void discovery_publish(int i) {
     case 9:
         publish_problem_sensor();
         break;
+    case 10:
+        publish_charged_numbers(0);
+        break;
+    case 11:
+        publish_charged_numbers(1);
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -655,14 +755,16 @@ static void publish_telemetry(void) {
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
              "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
-             "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\"}",
+             "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
+             "\"charged_mw\":%u,\"charged_min\":%u}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
              t.alert_active ? "true" : "false", (long)net_rssi(),
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
              g_settings.led_brightness, FW_VERSION, boot_text,
-             n_problems ? "ON" : "OFF", problems_json);
+             n_problems ? "ON" : "OFF", problems_json, g_settings.charged_mw,
+             g_settings.charged_min);
     publish(topic_buf, payload_buf, 0, 1);
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {
@@ -678,14 +780,17 @@ static void publish_telemetry(void) {
         snprintf(payload_buf, sizeof(payload_buf),
                  "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
                  "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,"
-                 "\"boot\":\"%s\",\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu}",
+                 "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
+                 "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu}",
                  port_state_name((port_state_t)p->state), p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
                  p->contract_mw / 1000.0, g_settings.port_priority[i],
                  (unsigned long)g_settings.port_limit_ma[i],
-                 settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, lf_text,
-                 (unsigned long)lf_at);
+                 settings_port_boot_name(g_settings.port_boot[i]),
+                 p->charged ? "true" : "false",
+                 (g_settings.port_auto_off >> i) & 1 ? "true" : "false",
+                 g_settings.port_sleep_min[i], p->fault_bits, lf_text, (unsigned long)lf_at);
         publish(topic_buf, payload_buf, 0, 0);
     }
 
@@ -714,6 +819,8 @@ void mqtt_event(const engine_evt_t *e) {
     if (e->type == EVT_FAULT || e->type == EVT_PROBE_FAIL) {
         fault_rec_t r = {.port = e->port, .type = e->type, .code = e->code, .arg = e->arg};
         fault_text(&r, text, sizeof(text)); // plain words: no escaping needed
+    } else if (e->type == EVT_CHARGE && e->code == CHARGE_AUTO_OFF) {
+        snprintf(text, sizeof(text), "%s", e->arg == AUTO_OFF_SLEEP ? "sleep timer" : "charged");
     }
     net_lock();
     snprintf(topic_buf, sizeof(topic_buf), "%s/event", base);

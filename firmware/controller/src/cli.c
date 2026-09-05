@@ -56,6 +56,9 @@ static void print_help(void) {
            "  port <1-%d> name <text>|clear   label for the web UI and Home Assistant\n"
            "  port <1-%d> limit <500-5000>    advertised current ceiling, mA (all PDOs)\n"
            "  port <1-%d> boot on|off|last    state at power-up (last = as switched)\n"
+           "  port <1-%d> autooff on|off      switch off once the sink is charged\n"
+           "  port <1-%d> sleep <min>|off     switch off this long after a sink attaches\n"
+           "  charged <mW> <minutes>       charged = draw under mW for minutes (0 mW = off)\n"
            "  fan on|off|auto [on_w off_w [on_ma]]\n"
            "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
@@ -65,7 +68,7 @@ static void print_help(void) {
            "  stack                        per-core stack high-water marks\n"
            "  update <http-url>            OTA pull into the inactive slot\n"
            "  save | defaults | reboot | bootsel\n",
-           NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
+           NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
 }
 
 static void print_status(void) {
@@ -75,7 +78,8 @@ static void print_status(void) {
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
         printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %5lu %4u %-5s %s\n", i + 1,
-               port_state_name((port_state_t)p->state), p->attached ? "yes" : "no",
+               port_state_name((port_state_t)p->state),
+               p->attached ? (p->charged ? "chg" : "yes") : "no",
                p->selected_pdo, p->bus_mv, (long)p->current_ma,
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
                (unsigned long)g_settings.port_limit_ma[i], g_settings.port_priority[i],
@@ -85,6 +89,14 @@ static void print_status(void) {
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
            (unsigned long)t.budget_mw, t.fan_on ? "on" : "off",
            t.fan_auto ? " (auto)" : "", t.alert_active ? "ACTIVE" : "clear");
+    printf("charged: under %umW for %umin", g_settings.charged_mw, g_settings.charged_min);
+    if (!g_settings.charged_mw) printf(" (detection off)");
+    for (int i = 0; i < NUM_PORTS; i++) {
+        if (!((g_settings.port_auto_off >> i) & 1) && !g_settings.port_sleep_min[i]) continue;
+        printf("; port %d:%s", i + 1, (g_settings.port_auto_off >> i) & 1 ? " off when charged" : "");
+        if (g_settings.port_sleep_min[i]) printf(" sleep %umin", g_settings.port_sleep_min[i]);
+    }
+    printf("\n");
 }
 
 static void print_info(void) {
@@ -279,7 +291,29 @@ static void run_line(char *l) {
         const char *n = strtok_r(NULL, " \t", &save);
         const char *op = strtok_r(NULL, " \t", &save);
         uint8_t port;
-        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name|limit|boot\n", NUM_PORTS); return; }
+        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name|limit|boot|autooff|sleep\n", NUM_PORTS); return; }
+        if (!strcmp(op, "autooff")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (!v || (strcmp(v, "on") && strcmp(v, "off"))) { printf("usage: port <1-%d> autooff on|off\n", NUM_PORTS); return; }
+            uint8_t bit = (uint8_t)(1u << port);
+            if (!strcmp(v, "on")) g_settings.port_auto_off |= bit;
+            else g_settings.port_auto_off &= (uint8_t)~bit;
+            printf("port %u %s once charged ('save' to persist)\n", port + 1,
+                   !strcmp(v, "on") ? "switches off" : "stays on");
+            return;
+        }
+        if (!strcmp(op, "sleep")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            int min = v && !strcmp(v, "off") ? 0 : v ? atoi(v) : -1;
+            if (min < 0 || min > PORT_SLEEP_MAX_MIN || (v && !strcmp(v, "off") ? false : !v || (v[0] < '0' || v[0] > '9'))) {
+                printf("usage: port <1-%d> sleep <1-%d>|off (minutes after a sink attaches)\n", NUM_PORTS, PORT_SLEEP_MAX_MIN);
+                return;
+            }
+            g_settings.port_sleep_min[port] = (uint16_t)min;
+            if (min) printf("port %u switches off %d min after a sink attaches ('save' to persist)\n", port + 1, min);
+            else printf("port %u sleep timer off ('save' to persist)\n", port + 1);
+            return;
+        }
         if (!strcmp(op, "boot")) {
             const char *v = strtok_r(NULL, " \t", &save);
             if (!v || !settings_port_boot_parse(v, &g_settings.port_boot[port])) {
@@ -335,6 +369,18 @@ static void run_line(char *l) {
                           settings_port_admin_note(port, c.op == CMD_PORT_ENABLE);
         if (remembered) settings_save_later(); // the "last" policy keeps it across reboots
         printf(remembered ? "ok (kept for the next boot)\n" : "ok\n");
+    } else if (!strcmp(cmd, "charged")) {
+        const char *mw = strtok_r(NULL, " \t", &save);
+        const char *min = strtok_r(NULL, " \t", &save);
+        int w = mw ? atoi(mw) : -1, m = min ? atoi(min) : (int)g_settings.charged_min;
+        if (!mw || w < 0 || w > 20000 || m < 1 || m > 255) {
+            printf("usage: charged <0-20000 mW> [1-255 minutes]\n");
+            return;
+        }
+        g_settings.charged_mw = (uint16_t)w;
+        g_settings.charged_min = (uint8_t)m;
+        if (w) printf("charged = under %dmW for %dmin ('save' to persist)\n", w, m);
+        else printf("charge detection off ('save' to persist)\n");
     } else if (!strcmp(cmd, "fan")) {
         const char *op = strtok_r(NULL, " \t", &save);
         if (!op) { printf("usage: fan on|off|auto [on_w off_w [on_ma]]\n"); return; }

@@ -27,6 +27,9 @@ const char *event_kind(const engine_evt_t *e) {
     case EVT_CONTRACT:   return "contract";
     case EVT_PROBE_FAIL: return "probe_failed";
     case EVT_THROTTLE:   return e->code == THROTTLE_RESTORED ? "restored" : "throttled";
+    case EVT_CHARGE:
+        return e->code == CHARGE_DONE ? "charged" : e->code == CHARGE_RESUMED ? "charging"
+                                                                               : "auto_off";
     default:             return "";
     }
 }

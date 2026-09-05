@@ -12,4 +12,5 @@ const char *event_kind(const engine_evt_t *e);
 // (HA rejects an event whose type is not in the entity's list).
 #define EVENT_KINDS_JSON                                                       \
     "[\"inserted\",\"ready\",\"attached\",\"detached\",\"removed\",\"enabled\"," \
-    "\"disabled\",\"contract\",\"throttled\",\"restored\",\"fault\",\"probe_failed\"]"
+    "\"disabled\",\"contract\",\"throttled\",\"restored\",\"fault\",\"probe_failed\"," \
+    "\"charged\",\"charging\",\"auto_off\"]"

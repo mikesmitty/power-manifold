@@ -42,6 +42,7 @@ const char *port_state_name(port_state_t s);
 typedef struct {
     uint8_t  state;         // port_state_t
     bool     attached;
+    bool     charged;       // attached sink's draw stayed under the charged floor (see settings)
     uint8_t  selected_pdo;  // 1-7, 0 = none
     uint8_t  fault_bits;    // MPQ_FAULT_* accumulated since last clear
     uint16_t bus_mv;        // INA226 bus voltage
@@ -118,7 +119,18 @@ typedef enum {
     EVT_PROBE_FAIL,   // code = which probe step failed
     EVT_THROTTLE,     // code = THROTTLE_*, arg = granted/restored mW
     EVT_BOOT,         // core 0 only, fault-log record: code = boot_reason_t | core << 8, arg = pc
+    EVT_CHARGE,       // code = CHARGE_*, arg: minutes since attach (DONE/RESUMED) or AUTO_OFF_*
 } evt_type_t;
+
+// EVT_CHARGE codes
+#define CHARGE_DONE     0 // draw stayed under settings charged_mw for charged_min: charged
+#define CHARGE_RESUMED  1 // ...and then stayed above it as long: charging again
+#define CHARGE_AUTO_OFF 2 // the port switched itself off; arg = AUTO_OFF_*
+#define AUTO_OFF_CHARGED 0 // port_auto_off policy, once charged
+#define AUTO_OFF_SLEEP   1 // port_sleep_min elapsed since the sink attached
+
+// Per-port sleep timer ceiling, minutes (24 h)
+#define PORT_SLEEP_MAX_MIN 1440
 
 // EVT_THROTTLE codes
 #define THROTTLE_CLAMPED  0 // advertisement reduced to fit the budget
