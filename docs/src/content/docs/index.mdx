@@ -42,12 +42,15 @@ blade is unseated.
 		before the input supply is oversubscribed.
 	</Card>
 	<Card title="Home Assistant native" icon="star">
-		MQTT discovery publishes every port, the fan, faults, and energy
-		counters. Firmware updates show up as a Home Assistant update entity.
+		MQTT discovery publishes every port with its switch, limits, charging
+		state and events, plus the fan, the budget, a problem sensor, and
+		energy counters. Firmware updates show up as a Home Assistant update
+		entity.
 	</Card>
 	<Card title="Wired or wireless" icon="information">
 		Develop on a Pico 2 W over WiFi; ship on the custom controller with a
-		W6100 wired-Ethernet controller. [Improv BLE](setup/wifi-provisioning/)
-		handles first-time provisioning either way.
+		W6100 wired-Ethernet controller, DHCP or static on either.
+		[Improv BLE](setup/wifi-provisioning/) handles first-time provisioning
+		either way.
 	</Card>
 </CardGrid>

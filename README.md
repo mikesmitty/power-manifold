@@ -32,20 +32,30 @@ serial console.
 
 - Dynamic chassis power budget (360 W by default) with per-port priorities.
   Lower-priority ports are stepped down or shed before the input supply is
-  oversubscribed, and stepped back up as headroom returns.
+  oversubscribed, and stepped back up as headroom returns. Blades seated at
+  boot power up one at a time in priority order.
+- Per-port names, current limits, and power-up policy (on, off, or as last
+  switched), settable from any surface.
+- Charge-complete detection, with an off-when-charged switch and a sleep
+  timer per port.
 - Home Assistant through MQTT discovery: per-port power, voltage, current,
-  energy, and state, enable switches, priorities, the chassis budget, fan
-  control, fault events, and a firmware update entity.
-- Web UI with live per-port sparklines and a settings panel, backed by a JSON
-  API with optional bearer-token auth.
+  energy, and state, enable switches, priorities and limits, charging and
+  event entities, the chassis budget, fan control, an aggregate problem
+  sensor, the boot reason, and a firmware update entity.
+- Web UI with live per-port sparklines, the fault log, the console log, and
+  a settings panel with export and import, backed by a JSON API with
+  optional bearer-token auth and a Prometheus `/metrics` endpoint.
 - First-time setup over Bluetooth using the Improv Wi-Fi standard, from the
   [hosted provisioner](https://mikesmitty.github.io/power-manifold/setup/wifi-provisioning/),
   the Home Assistant app, or any Improv client. A USB serial console covers
   everything else.
+- DHCP or static addressing on WiFi or wired Ethernet, a DNS override, and
+  console mirroring to a UDP syslog host.
+- Status LEDs with a night window and idle dimming.
 - A/B firmware slots with try-before-you-buy rollback. Updates arrive by HTTP
   push, URL pull from the console, or the Home Assistant update entity.
-- Persistent fault log, fan auto-policy on chassis power and port current,
-  and per-port energy counters.
+- Persistent fault log with the reason for every boot, fan auto-policy on
+  chassis power and port current, and per-port energy counters.
 
 ## Repository layout
 
@@ -70,5 +80,6 @@ older release tags.
 As of September 2026 the V2 backplane, charger module, and development
 carrier are in their first fabrication run. The firmware has been exercised
 on a Pico 2 W against simulated blades, including Wi-Fi, BLE provisioning,
-the web UI, MQTT, and OTA updates; it has not yet driven real blades on a
-live backplane.
+the web UI, MQTT, OTA updates, and fault injection, and the wired-Ethernet
+path has run on a WIZnet W6100-EVB-Pico2; it has not yet driven real blades
+on a live backplane.
