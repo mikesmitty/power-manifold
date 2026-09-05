@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.5.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.4.1...controller-firmware-v0.5.0) (2026-09-05)
+
+
+### Features
+
+* **controller:** aggregate problem indicator with a Home Assistant binary sensor ([e5ac774](https://github.com/mikesmitty/power-manifold/commit/e5ac774ccf1936ace05bb6b261f4c455a4beb1a8))
+* **controller:** board definition for the WIZnet W6100-EVB-Pico2 ([cf5ddfa](https://github.com/mikesmitty/power-manifold/commit/cf5ddfa3c7501b502af9b6fd36c0daab0193a360))
+* **controller:** charge-complete detection with off-when-charged and a sleep timer ([d8c2c71](https://github.com/mikesmitty/power-manifold/commit/d8c2c7130f3a9ae9465c48aa5f18da318c7b6f2d))
+* **controller:** console fault injection for the simulated backplane ([b4306f0](https://github.com/mikesmitty/power-manifold/commit/b4306f0cea4df3788f7ccc9a026847e34da25a65))
+* **controller:** console log ring with UDP syslog and GET /api/v1/log ([9aca382](https://github.com/mikesmitty/power-manifold/commit/9aca3822415c9b0be0ec3a6f792d99d305b37663))
+* **controller:** fault log over the API and the page, last fault per port in HA ([27e7cfc](https://github.com/mikesmitty/power-manifold/commit/27e7cfc444144a61d08aee71d0b98021a7b8a9c4))
+* **controller:** Home Assistant event entity per port from the MQTT event topic ([7ef93f0](https://github.com/mikesmitty/power-manifold/commit/7ef93f02910db513c65e0d1e250a852e86952aba))
+* **controller:** LED night window and idle dimming ([5a05566](https://github.com/mikesmitty/power-manifold/commit/5a055668ddf2777ccd5e5559545d8e5218d02963))
+* **controller:** per-port current limit on every surface, applied live ([bd96af8](https://github.com/mikesmitty/power-manifold/commit/bd96af81f75dfae222ce30fd4347550e2a846b1f))
+* **controller:** per-port names on the console, API, page and Home Assistant ([2d8aa3e](https://github.com/mikesmitty/power-manifold/commit/2d8aa3e9ed3db1a3abbf1b1d8414ed49bea4a158))
+* **controller:** per-port power-up state, on, off or last ([7b6098f](https://github.com/mikesmitty/power-manifold/commit/7b6098fe0394732a936cd79ab55f26e5df83e45e))
+* **controller:** Prometheus text exposition on GET /metrics ([eabb3c2](https://github.com/mikesmitty/power-manifold/commit/eabb3c273f4dbb956338d221999fb0b889eadd38))
+* **controller:** report why the controller booted and surface crashes ([de0f9a5](https://github.com/mikesmitty/power-manifold/commit/de0f9a582a25681f10a156139f33cb76a1b25d4d))
+* **controller:** settings export and import, host-tested round trip ([1f97a9f](https://github.com/mikesmitty/power-manifold/commit/1f97a9f0b1a7e7e058d56053e1d36175e8190c8b))
+* **controller:** stagger the blades seated at boot, by priority ([270cbf1](https://github.com/mikesmitty/power-manifold/commit/270cbf197ceb4782790fdc3e5f31a717bf5f64c9))
+* **controller:** static IPv4 addressing and a DNS override ([f29ae9a](https://github.com/mikesmitty/power-manifold/commit/f29ae9a1819d6943ae9699a9faa391f2fa2857ed))
+* **controller:** status LED scheme with chassis overlays and brightness controls ([2aa1458](https://github.com/mikesmitty/power-manifold/commit/2aa14588f2fe57afcc7388cb5f796d5513c72258))
+
+
+### Bug Fixes
+
+* **controller:** bench findings for addressing output and the syslog backlog ([f176b5c](https://github.com/mikesmitty/power-manifold/commit/f176b5c953265b4e9aac508968678aa8d963cf2d))
+* **controller:** clamp TCP MSS under the broker's Cilium/WireGuard path; a stalled MQTT link no longer starves lwIP ([c483164](https://github.com/mikesmitty/power-manifold/commit/c483164a65cb4224efa4a378851fbd7d13885127))
+* **controller:** stop lwIP refusing the tail of every MQTT burst ([b3e5c1b](https://github.com/mikesmitty/power-manifold/commit/b3e5c1b1ca05755eb13639245e52c2bf88f54c73))
+* **controller:** stream HTTP bodies a segment at a time so the page loads beside MQTT ([d271739](https://github.com/mikesmitty/power-manifold/commit/d2717397db006770c6dd12ce50471f9ed2507202))
+* **controller:** W6100 bring-up fixes from the first board ([06c3e8d](https://github.com/mikesmitty/power-manifold/commit/06c3e8daba00497343d1a958147a44e0f1689d05))
+
 ## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.4.0...controller-firmware-v0.4.1) (2026-09-03)
 
 
