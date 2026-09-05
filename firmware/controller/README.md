@@ -351,7 +351,10 @@ state.
   `syslog_port`, or the page) ships every complete line to a UDP syslog
   receiver as RFC 5424 (`<134>`, local0.info, hostname = device name,
   timestamps once SNTP has synced) — including the boot messages that
-  were printed before the network came up, since the ring holds them. A
+  were printed before the network came up, since the ring holds them
+  (the drain waits until the receiver's MAC is known, because lwIP keeps
+  a single packet per unresolved ARP entry; lines that waited in the ring
+  carry the time they were sent, not printed). A
   receiver that fell too far behind gets one `log: N line(s) lost` line
   in place of what the ring dropped. What is typed at the console is never
   mirrored, so a `wifi` or `mqtt` line's password stays off the wire; the

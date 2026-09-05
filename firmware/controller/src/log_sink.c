@@ -8,6 +8,8 @@
 #include "pico/time.h"
 
 #include "lwip/dns.h"
+#include "lwip/etharp.h"
+#include "lwip/ip4.h"
 #include "lwip/udp.h"
 
 #include "log_ring.h"
@@ -16,7 +18,8 @@
 
 #define RESOLVE_RETRY_MS (60 * 1000)      // after a failed lookup
 #define RESOLVE_TTL_MS   (10 * 60 * 1000) // re-resolve a working name this often
-#define LINES_PER_POLL   8
+#define LINES_PER_POLL   2               // gentle bursts: fewer reorders on WiFi
+#define ARP_PRIME_MS     1000
 
 static critical_section_t cs; // printf runs from the main loop and lwIP's worker alike
 static volatile bool paused;
@@ -26,6 +29,7 @@ static ip_addr_t host_ip;
 static char resolved_name[64]; // the settings host the state below is about
 static bool resolved, resolving, unresolvable;
 static uint32_t next_resolve_ms; // 0 = now
+static uint32_t next_arp_ms;
 static char status_buf[64];
 
 static void out_chars(const char *buf, int len) {
@@ -102,6 +106,24 @@ static bool ensure_address(uint32_t now_ms) {
     return resolved;
 }
 
+// lwIP keeps one packet per unresolved ARP entry and drops the rest, which
+// would cost the boot backlog its first lines on every power-up. Hold the
+// drain until the next hop's MAC is known, asking for it once a second.
+static bool next_hop_known(uint32_t now_ms) {
+    struct netif *n = ip4_route(ip_2_ip4(&host_ip));
+    if (!n) return false;
+    const ip4_addr_t *hop = ip_2_ip4(&host_ip);
+    if (!ip4_addr_net_eq(hop, netif_ip4_addr(n), netif_ip4_netmask(n))) hop = netif_ip4_gw(n);
+    struct eth_addr *mac;
+    const ip4_addr_t *ip;
+    if (etharp_find_addr(n, hop, &mac, &ip) >= 0) return true;
+    if ((int32_t)(now_ms - next_arp_ms) >= 0) {
+        etharp_request(n, hop);
+        next_arp_ms = now_ms + ARP_PRIME_MS;
+    }
+    return false;
+}
+
 static void send_line(const char *msg) {
     char dgram[LOG_LINE_MAX + 96];
     size_t n = log_syslog_format(dgram, sizeof(dgram), net_epoch(), g_settings.device_name, msg);
@@ -116,7 +138,7 @@ void log_sink_poll(uint32_t now_ms) {
     if (!g_settings.syslog_host[0] || !net_available() || !net_up()) return;
     net_lock();
     if (!pcb) pcb = udp_new();
-    if (pcb && ensure_address(now_ms)) {
+    if (pcb && ensure_address(now_ms) && next_hop_known(now_ms)) {
         char line[LOG_LINE_MAX + 1];
         for (int i = 0; i < LINES_PER_POLL; i++) {
             critical_section_enter_blocking(&cs);

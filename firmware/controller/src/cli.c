@@ -108,9 +108,11 @@ static void print_info(void) {
     printf("ip: %s (%s)\n", net_up() ? net_ip_str() : "none",
            g_settings.ip_static ? "static" : "dhcp");
     if (net_up()) printf("netmask: %s, gateway: %s\n", net_mask_str(), net_gw_str());
-    if (g_settings.ip_static)
-        printf("static: %s/%s via %s\n", net_ip4_str(g_settings.ip_addr),
-               net_ip4_str(g_settings.ip_mask), net_ip4_str(g_settings.ip_gw));
+    if (g_settings.ip_static) { // one call per printf: net_ip4_str has a single buffer
+        printf("static: %s", net_ip4_str(g_settings.ip_addr));
+        printf("/%s", net_ip4_str(g_settings.ip_mask));
+        printf(" via %s\n", net_ip4_str(g_settings.ip_gw));
+    }
     printf("dns: %s%s\n", net_dns_str(), g_settings.ip_dns ? " (configured)" : "");
     printf("syslog: %s", log_sink_status());
     if (g_settings.syslog_host[0])

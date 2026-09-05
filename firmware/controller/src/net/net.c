@@ -241,14 +241,18 @@ const char *net_ip_str(void) {
     return n ? ip4addr_ntoa(netif_ip4_addr(n)) : "0.0.0.0";
 }
 
+// own buffers: ip4addr_ntoa's single static one would make two of these in
+// one printf show the same value
 const char *net_mask_str(void) {
+    static char buf[16];
     struct netif *n = preferred_netif();
-    return n ? ip4addr_ntoa(netif_ip4_netmask(n)) : "";
+    return n ? ip4addr_ntoa_r(netif_ip4_netmask(n), buf, sizeof(buf)) : "";
 }
 
 const char *net_gw_str(void) {
+    static char buf[16];
     struct netif *n = preferred_netif();
-    return n ? ip4addr_ntoa(netif_ip4_gw(n)) : "";
+    return n ? ip4addr_ntoa_r(netif_ip4_gw(n), buf, sizeof(buf)) : "";
 }
 
 int32_t net_rssi(void) {
