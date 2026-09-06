@@ -25,8 +25,10 @@ serial console.
   firmware for the RP2350. Core 1 runs the port engine and owns the I2C bus;
   core 0 runs networking and the management surfaces. Development uses a
   Raspberry Pi Pico 2 W on the `hardware/pcie-breakout` carrier. The
-  production controller is a custom RP2350 card with a WIZnet W6100
-  wired-Ethernet controller for the same slot.
+  production controller (`hardware/controller`) is a custom RP2350 card for
+  the same slot, with a WIZnet W6100 wired-Ethernet controller and RJ45, a
+  Raspberry Pi RM2 radio for Wi-Fi and Bluetooth, and 16 MB of QSPI flash for
+  the A/B firmware slots.
 
 ## Features
 
@@ -63,6 +65,7 @@ serial console.
 | --- | --- |
 | `hardware/backplane` | Backplane KiCad project |
 | `hardware/charger-module` | Charger blade KiCad project |
+| `hardware/controller` | Management controller card KiCad project |
 | `hardware/pcie-breakout` | Pico 2 W development carrier for the management slot |
 | `hardware/libraries` | Shared KiCad symbols and footprints |
 | `hardware/CAD` | STEP exports of the boards |
@@ -78,8 +81,9 @@ older release tags.
 ## Status
 
 As of September 2026 the V2 backplane, charger module, and development
-carrier are in their first fabrication run. The firmware has been exercised
-on a Pico 2 W against simulated blades, including Wi-Fi, BLE provisioning,
-the web UI, MQTT, OTA updates, and fault injection, and the wired-Ethernet
-path has run on a WIZnet W6100-EVB-Pico2; it has not yet driven real blades
-on a live backplane.
+carrier are in their first fabrication run, and the controller card is
+through its first pass of schematic and layout but has not been fabricated.
+The firmware has been exercised on a Pico 2 W against simulated blades,
+including Wi-Fi, BLE provisioning, the web UI, MQTT, OTA updates, and fault
+injection, and the wired-Ethernet path has run on a WIZnet W6100-EVB-Pico2;
+it has not yet driven real blades on a live backplane.

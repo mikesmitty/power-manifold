@@ -15,6 +15,10 @@
         "hardware/charger-module": {
             "component": "charger-module",
             "include-component-in-tag": true
+        },
+        "hardware/controller": {
+            "component": "controller",
+            "include-component-in-tag": true
         }
     }
 }

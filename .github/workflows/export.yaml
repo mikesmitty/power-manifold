@@ -14,6 +14,7 @@ on:
           - all
           - backplane
           - charger-module
+          - controller
           - pcie-breakout
 
 name: KiCad Export
