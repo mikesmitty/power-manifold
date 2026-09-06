@@ -26,11 +26,11 @@ jobs:
           files: |
             **/*.kicad_pcb
             **/*.kicad_sch
-          matrix: true
+          json: true
 
     outputs:
       any-changed: ${{ steps.changed-files.outputs.any_changed }}
-      matrix: ${{ steps.changed-files.outputs.all_changed_files }}
+      files: ${{ steps.changed-files.outputs.all_changed_files }}
 
   update:
     if: ${{ fromJson(needs.get-changed-files.outputs.any-changed) }}
@@ -39,25 +39,29 @@ jobs:
     name: Update KiCad dates
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix: 
-        file: ${{ fromJSON(needs.get-changed-files.outputs.matrix) }}
-      fail-fast: false
-
+    # Stamp every changed file in one job and one commit. Fanning this out over
+    # a matrix raced: each job pushed to main from the same base, so the first
+    # push won and the rest were rejected as stale.
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.head_ref }}
+          ref: main
           fetch-depth: 0
 
       - name: Update KiCad file dates
+        env:
+          FILES: ${{ needs.get-changed-files.outputs.files }}
         run: |
-          TODAY=$(date +%F)
-          sed -i "s/(date \".*\"/(date \"$TODAY\"/" ${{ matrix.file }}
+          TODAY="$(date +%F)"
+          jq -r '.[]' <<< "$FILES" | while IFS= read -r file; do
+            [ -f "$file" ] || continue
+            sed -i "s/(date \".*\"/(date \"$TODAY\"/" "$file"
+          done
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v11
         with:
           default_author: github_actor
           message: "chore: update KiCad dates"
+          pull: '--rebase --autostash'

@@ -142,3 +142,4 @@ jobs:
           add: hardware/CAD/
           default_author: github_actor
           message: "chore: KiBot CAD update"
+          pull: '--rebase --autostash'
