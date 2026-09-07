@@ -12028,17 +12028,6 @@
 		)
 		(uuid "7a77aa08-68c3-43a7-86ee-8fc59c6a491d")
 	)
-	(text "If using RP2354 (internal flash), remove R10.\nR9 can be fit to use U3 as secondary memory."
-		(exclude_from_sim no)
-		(at 35.306 111.506 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "b78fe729-fa42-4912-95c5-43de5468c5a0")
-	)
 	(text "Power"
 		(exclude_from_sim no)
 		(at 156.21 36.83 0)
@@ -23309,6 +23298,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 246.38 110.49 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "8d10e078-f4b0-43d9-bd6e-785c11ec0465")
 		)
@@ -24171,6 +24171,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 365.76 212.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "55d7fcce-c087-4331-81a5-19a4d62b47c0")
 		)
@@ -24478,6 +24489,17 @@
 			)
 		)
 		(property "Height" ""
+			(at 229.87 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;0"
 			(at 229.87 162.56 0)
 			(hide yes)
 			(show_name no)
@@ -25497,6 +25519,17 @@
 		)
 		(property "Description" ""
 			(at 372.11 115.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" " C49451547"
+			(at 373.38 104.14 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26810,6 +26843,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
+			(at 91.44 144.78 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "49bab6aa-641f-48c8-b259-547f7fae2851")
 		)
@@ -27914,6 +27958,17 @@
 			)
 		)
 		(property "LCSC" "C911393"
+			(at 114.3 346.71 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
 			(at 114.3 346.71 0)
 			(hide yes)
 			(show_name no)
@@ -33923,6 +33978,17 @@
 			)
 		)
 		(property "Height" ""
+			(at 177.8 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
 			(at 177.8 48.26 0)
 			(hide yes)
 			(show_name no)
