@@ -9,6 +9,7 @@ static const led_rgb_t COL_AMBER   = {255, 120, 0};
 static const led_rgb_t COL_BLUE    = {0, 60, 255};
 static const led_rgb_t COL_GREEN   = {0, 220, 40};
 static const led_rgb_t COL_RED     = {255, 0, 0};
+static const led_rgb_t COL_MAGENTA = {255, 0, 200};
 
 // Boot sweep hues, one per slot, so the rainbow reads left to right
 static const led_rgb_t RAINBOW[NUM_PORTS] = {
@@ -61,8 +62,10 @@ static led_rgb_t port_colour(const port_telemetry_t *p, uint32_t now_ms, uint32_
     case PORT_STATE_IDLE:
         return COL_AMBER;
     case PORT_STATE_ACTIVE:
+        if (p->charged) return COL_MAGENTA; // sink finished: nothing left to deliver
         return active_colour(p);
     case PORT_STATE_THROTTLED:
+        if (p->charged) return COL_MAGENTA; // a clamp on a finished sink is moot
         *level = pulse(now_ms, 1000); // 1 Hz: delivering, but clamped
         return active_colour(p);
     case PORT_STATE_FAULT:

@@ -436,8 +436,9 @@ While a sink is attached the engine watches its measured draw; once it has
 stayed under `charged_mw` (default 500 mW, a full phone trickles well under
 that) for `charged_min` (default 10) the port reads *charged* — `chg` in
 the `status` attach column, `charged` in the status JSON and telemetry, a
-`charged` event, the Home Assistant *charging* sensor going off and the
-page's state cell saying so. A device that starts drawing again for as long
+`charged` event, the Home Assistant *charging* sensor going off, the port's
+status LED turning solid magenta and the page's state cell saying so. A
+device that starts drawing again for as long
 reads as charging again (`charging` event), so a laptop draining while
 plugged in is not mistaken for full; detach and re-attach start over.
 `charged <mW> <minutes>` (or the settings keys, the page, or the two Home
@@ -475,8 +476,10 @@ ports switched on later, are immediate as before.
 
 One WS2812 per slot behind the front-panel light pipes. Dim white empty,
 cyan blink probing, amber idle, blue (below 19 V) or green (19 V and up)
-active, the same colour pulsing at 1 Hz when throttled, red blink at 5 Hz
-on a fault, off when disabled. A short comet crosses the chain every 3 s
+active, the same colour pulsing at 1 Hz when throttled, solid magenta once
+the attached sink reads *charged* (see [Charge-complete and
+auto-off](#charge-complete-and-auto-off)), red blink at 5 Hz on a fault,
+off when disabled. A short comet crosses the chain every 3 s
 while something needs attention: blue while the BLE provisioning window is
 open, white while no link has an address. Power-up runs a sweep across the
 six pixels (`led boot white|rainbow`), which also proves the chain order.

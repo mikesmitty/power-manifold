@@ -17,7 +17,8 @@
 //              chain once every LED_COMET_PERIOD_MS, blue while the BLE
 //              provisioning window is open, white while no link has an
 //              address; port colours stay visible underneath
-//   ports      per-slot state colours (spec §6.1)
+//   ports      per-slot state colours (spec §6.1); a sink that has finished
+//              charging shows solid magenta whatever its contract state
 //
 // Master brightness 0 blanks everything except a faulted port, which keeps
 // blinking at LED_FAULT_FLOOR so a dark rack still shows a trip.

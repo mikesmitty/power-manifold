@@ -78,6 +78,25 @@ static void test_throttled_pulses_active_colour(void) {
     MT_ASSERT_EQ(px[0].g, trough);
 }
 
+static void test_charged_shows_magenta(void) {
+    reset(255);
+    set_port(0, PORT_STATE_ACTIVE, 20000);
+    set_port(1, PORT_STATE_THROTTLED, 9000);
+    set_port(2, PORT_STATE_ACTIVE, 5000);
+    tele.port[0].charged = tele.port[1].charged = true;
+    render(0);
+    MT_ASSERT(px[0].r == 255 && px[0].g == 0 && px[0].b == 200); // not the 20 V green
+    MT_ASSERT(same(px[1], px[0]));                                // and no throttle pulse
+    MT_ASSERT(px[2].b == 255 && px[2].r == 0);                    // still charging: blue
+    render(500);
+    MT_ASSERT(same(px[1], px[0])); // solid
+    reset(0); // master brightness 0 hides it like every non-fault colour
+    set_port(0, PORT_STATE_ACTIVE, 20000);
+    tele.port[0].charged = true;
+    render(0);
+    MT_ASSERT(dark(px[0]));
+}
+
 static void test_master_brightness_scales(void) {
     reset(51); // 20%
     set_port(0, PORT_STATE_IDLE, 0);
@@ -221,6 +240,7 @@ void run_led_tests(void) {
     mt_run("leds: port state colours", test_port_state_colours);
     mt_run("leds: probe blinks cyan", test_probe_blinks_cyan);
     mt_run("leds: throttled pulses the active colour", test_throttled_pulses_active_colour);
+    mt_run("leds: a charged sink shows magenta", test_charged_shows_magenta);
     mt_run("leds: master brightness scales", test_master_brightness_scales);
     mt_run("leds: brightness 0 keeps faults", test_brightness_zero_keeps_faults);
     mt_run("leds: boot sweep white", test_boot_sweep_white);
