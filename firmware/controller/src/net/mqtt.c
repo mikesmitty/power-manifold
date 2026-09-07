@@ -280,6 +280,39 @@ static void indata_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
     }
 }
 
+// Command topics, subscribed one at a time after connect. Every subscribe
+// holds one of lwIP's MQTT_REQ_MAX_IN_FLIGHT request slots until its SUBACK
+// arrives; fired all at once they took every slot, so the first telemetry
+// burst after each connect was refused (harmless, but it printed a refusal
+// line every time). Discovery waits until they are all in.
+static const char *const SUBS[] = {
+    "port/+/set",     "port/+/priority/set", "port/+/limit/set", "port/+/volt/set",
+    "port/+/boot/set", "port/+/autooff/set", "port/+/sleep/set", "charged_mw/set",
+    "charged_min/set", "fan/set",            "budget/set",       "led/set",
+    "update/latest",   "update/set",         "improv/set",
+};
+#define N_SUBS (sizeof(SUBS) / sizeof(SUBS[0]))
+static unsigned sub_idx;  // next SUBS entry to send
+static bool sub_inflight; // one awaiting its SUBACK
+
+static void sub_cb(void *arg, err_t err) {
+    (void)arg;
+    sub_inflight = false;
+    if (err != ERR_OK && sub_idx > 0) sub_idx--; // send it again
+}
+
+static void subscribe_step(void) {
+    if (sub_inflight || sub_idx >= N_SUBS) return;
+    snprintf(topic_buf, sizeof(topic_buf), "%s/%s", base, SUBS[sub_idx++]);
+    err_t err = mqtt_sub_unsub(client, topic_buf, 1, sub_cb, NULL, 1);
+    sub_inflight = err == ERR_OK;
+    if (err != ERR_OK && sub_idx > 0) sub_idx--; // retry next tick
+}
+
+static bool subscribed(void) {
+    return sub_idx >= N_SUBS && !sub_inflight;
+}
+
 // ---- connection ------------------------------------------------------------
 
 static void connection_cb(mqtt_client_t *c, void *arg,
@@ -290,36 +323,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         discovery_idx = 0;
         disc_inflight = false;
         publish(will_topic, "online", 1, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/priority/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/limit/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/volt/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/boot/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/autooff/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/sleep/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/charged_mw/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/charged_min/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/fan/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/budget/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/led/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/update/latest", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/update/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
-        snprintf(topic_buf, sizeof(topic_buf), "%s/improv/set", base);
-        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        sub_idx = 0; // command topics follow, one per SUBACK (subscribe_step)
+        sub_inflight = false;
         publish_update_state();
         printf("mqtt: connected to %s\n", g_settings.mqtt_host);
     } else {
@@ -921,7 +926,8 @@ void mqtt_poll(uint32_t now_ms) {
             backoff_until_ms = now_ms + BACKOFF_MS;
             break;
         }
-        discovery_step();
+        subscribe_step();
+        if (subscribed()) discovery_step();
         if (now_ms - last_telemetry_ms >= TELEMETRY_MS) {
             last_telemetry_ms = now_ms;
             publish_telemetry();
