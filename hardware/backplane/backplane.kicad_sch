@@ -10874,12 +10874,6 @@
 		(uuid "26aa9d22-d4d8-46d3-88ba-dfdbab6369f4")
 	)
 	(junction
-		(at 105.41 207.01)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "2ae3078f-b7f6-4690-962e-ede8bc3e390c")
-	)
-	(junction
 		(at 109.22 29.21)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -12027,6 +12021,16 @@
 	)
 	(wire
 		(pts
+			(xy 106.68 219.71) (xy 116.84 219.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2dfdd3c8-8ba1-4ae4-8107-8d53fd6b0eb0")
+	)
+	(wire
+		(pts
 			(xy 252.73 128.27) (xy 259.08 128.27)
 		)
 		(stroke
@@ -12147,16 +12151,6 @@
 	)
 	(wire
 		(pts
-			(xy 105.41 219.71) (xy 116.84 219.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "360d24a9-a1bf-443c-bf79-d321812c9196")
-	)
-	(wire
-		(pts
 			(xy 265.43 78.74) (xy 278.13 78.74)
 		)
 		(stroke
@@ -12174,16 +12168,6 @@
 			(type default)
 		)
 		(uuid "38ac269d-cf64-464b-b2e6-0066dbd8332b")
-	)
-	(wire
-		(pts
-			(xy 105.41 214.63) (xy 105.41 219.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "390d33b2-a6a0-4f4b-aab9-6dc778440d24")
 	)
 	(wire
 		(pts
@@ -12937,7 +12921,7 @@
 	)
 	(wire
 		(pts
-			(xy 101.6 207.01) (xy 105.41 207.01)
+			(xy 101.6 207.01) (xy 134.62 207.01)
 		)
 		(stroke
 			(width 0)
@@ -14564,16 +14548,6 @@
 			(type default)
 		)
 		(uuid "eb1f9881-d54d-4d35-a09c-75047dde8877")
-	)
-	(wire
-		(pts
-			(xy 105.41 207.01) (xy 134.62 207.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "eba30921-341d-4864-bc49-cb6f01779556")
 	)
 	(wire
 		(pts
@@ -21609,98 +21583,6 @@
 			(project "backplane"
 				(path "/4d913069-4b50-4112-91ac-a1bdeabaace5"
 					(reference "#PWR047")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 105.41 210.82 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "72796611-10a9-489b-b5df-9afe7c08bda3")
-		(property "Reference" "R6"
-			(at 107.95 209.5499 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10K"
-			(at 107.95 212.0899 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Local Library:R_0402_1005Metric"
-			(at 103.632 210.82 90)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 105.41 210.82 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 105.41 210.82 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "LCSC" "C25744"
-			(at 105.41 210.82 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "2"
-			(uuid "7cbf167c-8019-4ba1-bb47-17bc6bffb80f")
-		)
-		(pin "1"
-			(uuid "e31a9425-ade1-4b35-aaeb-14c8295e0e55")
-		)
-		(instances
-			(project "backplane"
-				(path "/4d913069-4b50-4112-91ac-a1bdeabaace5"
-					(reference "R6")
 					(unit 1)
 				)
 			)
