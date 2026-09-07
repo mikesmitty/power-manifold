@@ -15,7 +15,7 @@
 // the last two sectors of flash (which, on a freshly partitioned board, is
 // where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    10
+#define SETTINGS_VERSION    11
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -31,6 +31,7 @@
 #define SETTINGS_V7_PAYLOAD ALIGN4(offsetof(settings_t, syslog_host))
 #define SETTINGS_V8_PAYLOAD ALIGN4(offsetof(settings_t, charged_mw))
 #define SETTINGS_V9_PAYLOAD ALIGN4(offsetof(settings_t, led_dim))
+#define SETTINGS_V10_PAYLOAD ALIGN4(offsetof(settings_t, port_max_mv))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -40,6 +41,7 @@ _Static_assert(SETTINGS_V6_PAYLOAD == 536, "settings v6 layout moved");
 _Static_assert(SETTINGS_V7_PAYLOAD == 552, "settings v7 layout moved");
 _Static_assert(SETTINGS_V8_PAYLOAD == 620, "settings v8 layout moved");
 _Static_assert(SETTINGS_V9_PAYLOAD == 636, "settings v9 layout moved");
+_Static_assert(SETTINGS_V10_PAYLOAD == 644, "settings v10 layout moved");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
 #define FAN_ON_W_DEFAULT   80
@@ -85,6 +87,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t version_payload_len(uint32_t version) {
     switch (version) {
     case SETTINGS_VERSION: return payload_len();
+    case 10:               return SETTINGS_V10_PAYLOAD;
     case 9:                return SETTINGS_V9_PAYLOAD;
     case 8:                return SETTINGS_V8_PAYLOAD;
     case 7:                return SETTINGS_V7_PAYLOAD;
@@ -137,6 +140,7 @@ void settings_defaults(void) {
     g_settings.budget_mw = 360 * 1000; // 15A @ 24V; tune to the chassis supply
     for (int i = 0; i < NUM_PORTS; i++) {
         g_settings.port_limit_ma[i] = 5000;
+        g_settings.port_max_mv[i] = PORT_VOLT_MAX_MV;
         g_settings.port_priority[i] = i;
     }
     g_settings.led_brightness = 48;
@@ -192,6 +196,9 @@ void settings_load(void) {
             g_settings.led_night_start = g_settings.led_night_end = 0;
             g_settings.led_idle_min = 0;
             g_settings.tz_offset_min = 0;
+        }
+        if (g_settings.version < 11) {
+            for (int i = 0; i < NUM_PORTS; i++) g_settings.port_max_mv[i] = PORT_VOLT_MAX_MV;
         }
         g_settings.version = SETTINGS_VERSION;
     } else {

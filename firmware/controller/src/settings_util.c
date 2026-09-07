@@ -1,6 +1,7 @@
 #include "settings.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // The hardware-free half of settings: text helpers and bookkeeping that the
@@ -46,5 +47,20 @@ bool settings_port_boot_parse(const char *s, uint8_t *policy) {
     else if (!strcmp(s, "off")) *policy = PORT_BOOT_OFF;
     else if (!strcmp(s, "last")) *policy = PORT_BOOT_LAST;
     else return false;
+    return true;
+}
+
+bool settings_port_volt_valid(unsigned mv) {
+    return mv == 5000 || mv == 9000 || mv == 12000 || mv == 15000 || mv == PORT_VOLT_MAX_MV;
+}
+
+bool settings_port_volt_parse(const char *s, uint16_t *mv) {
+    char *end;
+    long v = strtol(s, &end, 10);
+    if (end == s || v <= 0 || v > 20) return false;
+    while (*end == ' ') end++;
+    if (*end == 'V' || *end == 'v') end++;
+    if (*end || !settings_port_volt_valid((unsigned)v * 1000u)) return false;
+    *mv = (uint16_t)(v * 1000);
     return true;
 }

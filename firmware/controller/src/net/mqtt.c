@@ -30,11 +30,11 @@
 #define STALL_CYCLES     10 // telemetry cycles with every publish refused before reconnecting
 
 // discovery entity table: per-port sensors + switch + buttons + priority,
-// current-limit and boot-policy controls + event entity; chassis sensors +
-// fan + BLE provisioning button (the last chassis step retracts the
-// pre-select fan switch config)
+// current-limit, voltage-cap and boot-policy controls + event entity +
+// charge controls; chassis sensors + fan + BLE provisioning button (the
+// last chassis step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
-#define PORT_ENTITIES    (PORT_SENSOR_N + 10)
+#define PORT_ENTITIES    (PORT_SENSOR_N + 11)
 #define CHASSIS_ENTITIES 14
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
@@ -155,6 +155,15 @@ static void handle_command(const char *topic, const char *data) {
         if (data[0] >= '0' && data[0] <= '9' && ma >= PORT_LIMIT_MIN_MA && ma <= PORT_LIMIT_MAX_MA) {
             g_settings.port_limit_ma[port - 1] = (uint32_t)ma;
             engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = (uint8_t)(port - 1), .arg = (uint32_t)ma};
+            ipc_cmd_push(&c);
+            settings_save_later();
+        }
+    } else if (sscanf(sub, "/port/%u/volt/set", &port) == 1 &&
+        strstr(sub, "/volt/set") != NULL && port >= 1 && port <= NUM_PORTS) {
+        uint16_t mv;
+        if (settings_port_volt_parse(data, &mv)) { // "9" or the select's "9 V"
+            g_settings.port_max_mv[port - 1] = mv;
+            engine_cmd_t c = {.op = CMD_PORT_VOLT, .port = (uint8_t)(port - 1), .arg = mv};
             ipc_cmd_push(&c);
             settings_save_later();
         }
@@ -286,6 +295,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/priority/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/limit/set", base);
+        mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
+        snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/volt/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/+/boot/set", base);
         mqtt_sub_unsub(client, topic_buf, 1, NULL, NULL, 1);
@@ -452,6 +463,21 @@ static void publish_port_limit_number(unsigned port) {
              "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
              base, port_label(port), uid, object, port, port, PORT_LIMIT_MIN_MA, PORT_LIMIT_MAX_MA,
              device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
+static void publish_port_volt_select(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_volt", port);
+    discovery_config_topic("select", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s voltage cap\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"cmd_t\":\"~/port/%u/volt/set\",\"stat_t\":\"~/port/%u/telemetry\","
+             "\"val_tpl\":\"{{ value_json.max_v }} V\","
+             "\"ops\":[\"5 V\",\"9 V\",\"12 V\",\"15 V\",\"20 V\"],"
+             "\"ic\":\"mdi:flash\",\"ent_cat\":\"config\","
+             "\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, port_label(port), uid, object, port, port, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
 
@@ -694,7 +720,8 @@ static void discovery_publish(int i) {
         else if (e == PORT_SENSOR_N + 6) publish_port_event(port);
         else if (e == PORT_SENSOR_N + 7) publish_port_charging_sensor(port);
         else if (e == PORT_SENSOR_N + 8) publish_port_autooff_switch(port);
-        else publish_port_sleep_number(port);
+        else if (e == PORT_SENSOR_N + 9) publish_port_sleep_number(port);
+        else publish_port_volt_select(port);
         return;
     }
     switch (i - NUM_PORTS * PORT_ENTITIES) {
@@ -796,14 +823,14 @@ static void publish_telemetry(void) {
         }
         snprintf(payload_buf, sizeof(payload_buf),
                  "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
-                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,"
+                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"max_v\":%u,"
                  "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
                  "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu}",
                  port_state_name((port_state_t)p->state), p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
                  p->contract_mw / 1000.0, g_settings.port_priority[i],
-                 (unsigned long)g_settings.port_limit_ma[i],
+                 (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
                  settings_port_boot_name(g_settings.port_boot[i]),
                  p->charged ? "true" : "false",
                  (g_settings.port_auto_off >> i) & 1 ? "true" : "false",

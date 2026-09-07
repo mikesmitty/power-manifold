@@ -50,6 +50,8 @@ static void fill(settings_t *s) {
     for (int i = 0; i < NUM_PORTS; i++) {
         snprintf(s->port_name[i], sizeof(s->port_name[i]), "Slot %d <b>&", i + 1);
         s->port_limit_ma[i] = 1000u + 500u * (uint32_t)i;
+        static const uint16_t CAPS[NUM_PORTS] = {5000, 9000, 12000, 15000, 20000, 9000};
+        s->port_max_mv[i] = CAPS[i];
         s->port_boot[i] = (uint8_t)(i % 3);
         s->port_priority[i] = (uint8_t)(5 - i);
         s->port_sleep_min[i] = (uint16_t)(i * 90);
@@ -121,6 +123,8 @@ static void test_rejects(void) {
                           "\"ip\":\"10.0.0.2\",\"gateway\":\"10.0.0.1\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_boot\":[\"on\",\"maybe\"]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_priorities\":[0,300]}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"port_max_v\":[7]}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"port_max_v\":[15,9]}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"syslog_port\":0}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);

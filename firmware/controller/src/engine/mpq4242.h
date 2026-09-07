@@ -40,7 +40,7 @@ typedef struct {
 
 bool mpq4242_probe(void);                  // DEV_ID == 0x58
 bool mpq4242_unlock(void);                 // CLK_ON=1 enables register writes
-bool mpq4242_configure(uint32_t max_ma); // GPIOs, peak CL, CC blank, dither, PDOs
+bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv); // GPIOs, peak CL, CC blank, dither, PDOs, ceilings
 bool mpq4242_read_status(mpq4242_status_t *s);
 
 // Default advertised PDO set:
@@ -52,6 +52,10 @@ bool mpq4242_read_status(mpq4242_status_t *s);
 //   PDO6: PPS 3.3V - 11.0V (phone fast-charge)
 //   PDO7: PPS 3.3V - 21.0V (laptop/high-power fast-charge)
 bool mpq4242_set_max_current_ma(uint32_t ma); // all PDOs
+// Withhold every PDO that reaches above max_mv: the fixed PDOs above it and
+// the PPS ranges whose maximum exceeds it. PORT_VOLT_MAX_MV (manifold.h)
+// advertises the whole table, the 21 V PPS range included; PDO1 always stays.
+bool mpq4242_set_max_voltage_mv(uint32_t max_mv);
 bool mpq4242_set_pdo_fixed(uint8_t pdo, uint16_t mv, uint32_t ma, bool enabled);
 bool mpq4242_set_pdo_pps(uint8_t pdo, uint16_t min_mv, uint16_t max_mv, uint32_t ma, bool enabled);
 bool mpq4242_set_pdo_enabled(uint8_t pdo, bool enabled); // PDOs 2-7

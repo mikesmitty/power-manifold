@@ -78,6 +78,7 @@ typedef enum {
     CMD_LED_IDENTIFY,    // arg = ms: flash the whole chain (Improv identify)
     CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags overlaid on the chain
     CMD_PORT_LIMIT,      // port, arg = mA: new advertised current ceiling (g_settings already holds it)
+    CMD_PORT_VOLT,       // port, arg = mV: new voltage cap (g_settings already holds it)
     CMD_SIM,             // FAKE_BLADES only: fault injection, arg packed per engine/sim/sim_inject.h
 } cmd_op_t;
 
@@ -89,6 +90,12 @@ typedef enum {
 #define PORT_HW_MAX_MA    5000
 #define PORT_LIMIT_MIN_MA 500
 #define PORT_LIMIT_MAX_MA PORT_HW_MAX_MA
+
+// Per-port voltage cap (settings port_max_mv): the highest PDO the blade
+// advertises, one of the fixed PDO voltages 5/9/12/15/20 V. Fixed PDOs
+// above it and any PPS range reaching above it are withheld, so a sink can
+// never negotiate past it. PORT_VOLT_MAX_MV means the whole table.
+#define PORT_VOLT_MAX_MV 20000
 
 // Administrative state a port takes at power-up (settings port_boot). Every
 // surface that switches a port on or off records the new state in

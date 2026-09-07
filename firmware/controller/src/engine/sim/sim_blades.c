@@ -22,6 +22,7 @@ typedef struct {
     uint16_t req_mv;       // sink's ask
     uint32_t req_ma;
     uint32_t adv_ma;       // advertised (programmed) current ceiling
+    uint16_t adv_mv;       // voltage cap: highest PDO offered
     uint16_t con_mv;       // live contract
     uint32_t con_ma;
     uint8_t  fault_bits;   // sticky MPQ faults until cleared by the script
@@ -43,6 +44,17 @@ static sim_slot_t *sel(void) {
     return &slots[selected];
 }
 
+// The sink takes its ask when the advertisement reaches it, else the highest
+// fixed PDO still offered under the cap (PDO1, 5 V, is always there).
+static uint16_t offered_mv(const sim_slot_t *s) {
+    uint32_t lim = s->adv_mv >= PORT_VOLT_MAX_MV ? 21000 : s->adv_mv; // no cap: the 21 V PPS range too
+    if (s->req_mv <= lim) return s->req_mv;
+    static const uint16_t FIXED[] = {20000, 15000, 12000, 9000};
+    for (size_t k = 0; k < sizeof(FIXED) / sizeof(FIXED[0]); k++)
+        if (FIXED[k] <= lim) return FIXED[k];
+    return 5000;
+}
+
 // Contract follows the advertisement: applied on attach and on src_cap.
 static void renegotiate(sim_slot_t *s) {
     if (!s->attached || !s->en) {
@@ -50,7 +62,7 @@ static void renegotiate(sim_slot_t *s) {
         s->con_ma = 0;
         return;
     }
-    s->con_mv = s->req_mv;
+    s->con_mv = offered_mv(s);
     s->con_ma = s->req_ma < s->adv_ma ? s->req_ma : s->adv_ma;
 }
 
@@ -68,6 +80,7 @@ void sim_reset(void) {
         slots[i].ina_ok = true;
         slots[i].mpq_ok = true;
         slots[i].load_pct = 80;
+        slots[i].adv_mv = PORT_VOLT_MAX_MV;
     }
     selected = -1;
     mux_fail = exp_fail = false;
@@ -124,6 +137,7 @@ void sim_set_load_pct(uint8_t slot, uint8_t pct) { slots[slot].load_pct = pct; }
 bool sim_en(uint8_t slot) { return slots[slot].en; }
 bool sim_fan(void) { return fan; }
 uint32_t sim_advertised_ma(uint8_t slot) { return slots[slot].adv_ma; }
+uint16_t sim_advertised_mv(uint8_t slot) { return slots[slot].adv_mv; }
 uint32_t sim_contract_mw(uint8_t slot) { return status3_mw(&slots[slot]); }
 uint32_t sim_ina_alert_ma(uint8_t slot) { return slots[slot].ina_alert_ma; }
 uint32_t sim_src_cap_count(uint8_t slot) { return slots[slot].src_caps; }
@@ -261,10 +275,11 @@ static sim_slot_t *mpq(void) {
 bool mpq4242_probe(void) { return mpq() != NULL; }
 bool mpq4242_unlock(void) { return mpq() != NULL; }
 
-bool mpq4242_configure(uint32_t max_ma) {
+bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv) {
     sim_slot_t *s = mpq();
     if (!s) return false;
     s->adv_ma = max_ma;
+    s->adv_mv = (uint16_t)max_mv;
     return true;
 }
 
@@ -287,6 +302,13 @@ bool mpq4242_set_max_current_ma(uint32_t ma) {
     sim_slot_t *s = mpq();
     if (!s) return false;
     s->adv_ma = ma; // takes effect at the next src_cap, like the real part
+    return true;
+}
+
+bool mpq4242_set_max_voltage_mv(uint32_t max_mv) {
+    sim_slot_t *s = mpq();
+    if (!s) return false;
+    s->adv_mv = (uint16_t)max_mv; // takes effect at the next src_cap, like the real part
     return true;
 }
 

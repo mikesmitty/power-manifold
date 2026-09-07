@@ -74,6 +74,16 @@ bool mpq4242_set_max_current_ma(uint32_t ma) {
     return true;
 }
 
+bool mpq4242_set_max_voltage_mv(uint32_t max_mv) {
+    // PDO2..PDO7 ceilings as configure_default_pdos() programs them
+    static const uint16_t CEILING_MV[6] = {9000, 12000, 15000, 20000, 11000, 21000};
+    uint32_t lim = max_mv >= PORT_VOLT_MAX_MV ? 21000 : max_mv;
+    uint8_t mask = 0;
+    for (int k = 0; k < 6; k++)
+        if (CEILING_MV[k] <= lim) mask |= (uint8_t)(1u << k);
+    return reg_write(REG_PDO_SET1, mask);
+}
+
 bool mpq4242_set_pdo_enabled(uint8_t pdo, bool enabled) {
     if (pdo < 2 || pdo > 7) return false; // PDO1 (5V) is always advertised
     return reg_set_bit(REG_PDO_SET1, pdo - 2, enabled);
@@ -148,7 +158,7 @@ static bool configure_default_pdos(void) {
     return reg_write(REG_PDO_SET1, 0x3F);
 }
 
-bool mpq4242_configure(uint32_t max_ma) {
+bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv) {
     if (!mpq4242_unlock()) return false;
 
     // CTL_SYS2: GPIO1 fn bits[7:5], GPIO2 fn bits[4:2]
@@ -173,8 +183,10 @@ bool mpq4242_configure(uint32_t max_ma) {
     // PWR_CTL1: frequency spread spectrum (DITHER, bit 3); OTP ships it off
     if (!reg_set_bit(REG_PWR_CTL1, 3, true)) return false;
 
-    // Override OTP PDO table with 5 Fixed (5/9/12/15/20V) + 2 PPS (11V/21V)
+    // Override OTP PDO table with 5 Fixed (5/9/12/15/20V) + 2 PPS (11V/21V),
+    // then withhold what the port's voltage cap rules out
     if (!configure_default_pdos()) return false;
+    if (!mpq4242_set_max_voltage_mv(max_mv)) return false;
 
     return mpq4242_set_max_current_ma(max_ma);
 }

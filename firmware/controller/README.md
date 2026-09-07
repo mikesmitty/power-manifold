@@ -281,8 +281,12 @@ and the label shows in the table, the console and Home Assistant), a
 current limit (500 to 5000 mA: the current field of every PDO the port
 advertises, so the wattage ceiling scales with the voltage the device
 picks; a live port renegotiates at once, and the INA226 emergency trip
-stays at 125 % of the blade's 5 A ceiling regardless), the state at
-power-up, *off when charged* and a sleep timer. *Export* downloads the
+stays at 125 % of the blade's 5 A ceiling regardless), a voltage cap (the
+highest PDO the port advertises: 5, 9, 12, 15 or 20 V, the last being the
+whole table; fixed PDOs above the cap and PPS ranges reaching past it are
+withheld, so a 5 V cap makes a legacy-safe port and 9 V keeps a phone off
+its 12 V step), the state at power-up, *off when charged* and a sleep
+timer. *Export* downloads the
 settings as JSON and *Import…* posts one back (see [Backup](#backup)). The
 panel unlocks with the API token, or with the one-shot setup secret from an
 Improv redirect while no token exists yet.
@@ -291,7 +295,7 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `problem` / `problems`, `led_mode` / `led_now` |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `problem` / `problems`, `led_mode` / `led_now` |
 | `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, and every port metric labelled `port` and `name` |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
@@ -313,10 +317,11 @@ redirect while none is stored. The settings keys are `name`, `wifi_ssid`,
 `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`,
 `tz_offset_min`, `ip_mode`, `ip`, `netmask`, `gateway`, `dns`,
 `syslog_host`, `syslog_port`, `charged_mw`, `charged_min`, and the
-six-element arrays `port_names`, `port_limits_ma`, `port_priorities`,
-`port_boot`, `port_auto_off` and `port_sleep_min`. Budget, fan, LEDs,
-names, limits, priorities, power-up policy, charge thresholds, DNS and
-syslog apply live; the name, WiFi, broker and addressing wait for
+six-element arrays `port_names`, `port_limits_ma`, `port_max_v` (5, 9,
+12, 15 or 20), `port_priorities`, `port_boot`, `port_auto_off` and
+`port_sleep_min`. Budget, fan, LEDs, names, limits, voltage caps,
+priorities, power-up policy, charge thresholds, DNS and syslog apply live;
+the name, WiFi, broker and addressing wait for
 `POST /api/v1/reboot`.
 
 ### MQTT
@@ -328,13 +333,14 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
 | `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode` |
-| `port/<n>/telemetry` | published at 1 Hz | `state`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at` |
+| `port/<n>/telemetry` | published at 1 Hz | `state`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at` |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
 | `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.uf2"}`, published by CI or by hand |
 | `port/<n>/set` | subscribed | `ON`, `OFF`, `hard_reset` or `src_cap` |
 | `port/<n>/priority/set` | subscribed | 0–255, 0 = highest |
 | `port/<n>/limit/set` | subscribed | 500–5000 mA |
+| `port/<n>/volt/set` | subscribed | voltage cap in volts: `5`, `9`, `12`, `15` or `20` (`9 V` works too) |
 | `port/<n>/boot/set` | subscribed | `on`, `off` or `last` |
 | `port/<n>/autooff/set` | subscribed | `ON` or `OFF` |
 | `port/<n>/sleep/set` | subscribed | minutes, 0 = off |
@@ -361,8 +367,9 @@ Per port:
   `last_fault` / `last_fault_at` attributes (the newest fault or probe
   failure, as text and epoch seconds);
 - an enable switch, hard-reset and re-announce-caps buttons;
-- priority and current-limit numbers, a power-up state select
-  (on/off/last), an *off when charged* switch and a *sleep timer* number;
+- priority and current-limit numbers, a *voltage cap* select (5 to 20 V),
+  a power-up state select (on/off/last), an *off when charged* switch and
+  a *sleep timer* number;
 - a *charging* binary sensor (device class `battery_charging`: a sink is
   attached and not yet charged);
 - an *events* entity fed from `.../event` — event types `inserted`,
@@ -393,7 +400,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 
 | Command | Purpose |
 | --- | --- |
-| `status` | port table (state, contract, draw, priority, `boot` policy, `chg` once charged) and chassis power |
+| `status` | port table (state, contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged) and chassis power |
 | `info` | firmware, slot and boot reason, links and addressing, broker, syslog sink, LED schedule and local time, problems, simulator state |
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
@@ -408,6 +415,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `port <n> priority <0-255>` | 0 = highest; sheds from the bottom |
 | `port <n> name <text>\|clear` | label for the web UI and Home Assistant |
 | `port <n> limit <500-5000>` | advertised current ceiling in mA, every PDO |
+| `port <n> volt 5\|9\|12\|15\|20` | voltage cap: the highest PDO advertised (20 = the whole table) |
 | `port <n> boot on\|off\|last` | state at power-up |
 | `port <n> autooff on\|off` | switch off once the sink is charged |
 | `port <n> sleep <min>\|off` | switch off this long after a sink attaches |

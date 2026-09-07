@@ -33,7 +33,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         3072 // browser headers + a full settings export posted back
-#define STATUS_JSON_MAX 2304 // six ports with escaped labels + the problem text, worst case
+#define STATUS_JSON_MAX 2432 // six ports with escaped labels + the problem text, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -51,6 +51,12 @@
 #define PORT_BOOT_SELECT(n) \
     "<select name='pb" #n "' title='Port " #n "'><option value='on'>on</option>" \
     "<option value='off'>off</option><option value='last'>last</option></select>"
+
+// one per-port voltage cap select in the settings panel
+#define PORT_VOLT_SELECT(n) \
+    "<select name='pv" #n "' title='Port " #n "'><option value='5'>5 V</option>" \
+    "<option value='9'>9 V</option><option value='12'>12 V</option>" \
+    "<option value='15'>15 V</option><option value='20'>20 V</option></select>"
 
 typedef struct {
     struct tcp_pcb *pcb;
@@ -184,6 +190,10 @@ static const char INDEX_HTML[] =
     "<input name='pl4' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl5' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl6' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required></div>"
+    "<label>Voltage cap: the highest PDO each port advertises (20 V = the whole table; a live port"
+    " renegotiates at once)</label>"
+    "<div class='g'>" PORT_VOLT_SELECT(1) PORT_VOLT_SELECT(2) PORT_VOLT_SELECT(3)
+    PORT_VOLT_SELECT(4) PORT_VOLT_SELECT(5) PORT_VOLT_SELECT(6) "</div>"
     "<label>Charged = a sink drawing under (mW; 0 = detection off)"
     "<input name='chmw' type='number' min='0' max='20000' step='50' required></label>"
     "<label>&hellip;for this long (minutes)"
@@ -256,6 +266,7 @@ static const char INDEX_HTML[] =
     "PN=[...document.querySelectorAll('input[name^=pn]')],"
     "PL=[...document.querySelectorAll('input[name^=pl]')],"
     "PB=[...document.querySelectorAll('select[name^=pb]')],"
+    "PV=[...document.querySelectorAll('select[name^=pv]')],"
     "PA=[...document.querySelectorAll('input[name^=pa]')],"
     "PS=[...document.querySelectorAll('input[name^=ps]')],"
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
@@ -274,6 +285,7 @@ static const char INDEX_HTML[] =
     "const d=await r.json();LK.hidden=true;F.hidden=false;"
     "for(const k in KEYS)F[k].value=d[KEYS[k]];PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
     "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);"
+    "PV.forEach((e,i)=>e.value=d.port_max_v[i]);"
     "PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);"
     "const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';"
     "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
@@ -283,7 +295,8 @@ static const char INDEX_HTML[] =
     "F.onsubmit=async e=>{e.preventDefault();const b={};"
     "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
     "b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);"
-    "b.port_boot=PB.map(e=>e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);"
+    "b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);"
+    "b.port_auto_off=PA.map(e=>e.checked?1:0);"
     "b.port_sleep_min=PS.map(e=>+e.value);"
     "b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';"
     "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
@@ -493,12 +506,12 @@ static void build_status_json(char *out, size_t cap) {
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
             "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
-            "\"limit_ma\":%lu,\"boot\":\"%s\",\"fault\":%u}",
+            "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state),
             p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
             p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
             p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],
-            (unsigned long)g_settings.port_limit_ma[i],
+            (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
             settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
@@ -604,7 +617,8 @@ static size_t build_metrics(char *out, size_t cap) {
         {"pwrman_port_contract_watts", "gauge"},  {"pwrman_port_priority", "gauge"},
         {"pwrman_port_attached", "gauge"},        {"pwrman_port_pdo", "gauge"},
         {"pwrman_port_fault_bits", "gauge"},      {"pwrman_port_limit_amps", "gauge"},
-        {"pwrman_port_charged", "gauge"},         {"pwrman_port_state_info", "gauge"},
+        {"pwrman_port_max_volts", "gauge"},       {"pwrman_port_charged", "gauge"},
+        {"pwrman_port_state_info", "gauge"},
     };
     for (size_t m = 0; m < sizeof(PM) / sizeof(PM[0]); m++) {
         M_PUT("# TYPE %s %s\n", PM[m].name, PM[m].type);
@@ -623,7 +637,8 @@ static size_t build_metrics(char *out, size_t cap) {
             case 7: M_PUT("} %u\n", p->selected_pdo); break;
             case 8: M_PUT("} %u\n", p->fault_bits); break;
             case 9: M_PUT("} %.2f\n", g_settings.port_limit_ma[i] / 1000.0); break;
-            case 10: M_PUT("} %d\n", p->charged ? 1 : 0); break;
+            case 10: M_PUT("} %u\n", g_settings.port_max_mv[i] / 1000); break;
+            case 11: M_PUT("} %d\n", p->charged ? 1 : 0); break;
             default: M_PUT(",state=\"%s\"} 1\n", port_state_name((port_state_t)p->state)); break;
             }
         }
@@ -729,13 +744,20 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     bool led_changed = g_settings.led_brightness != s.led_brightness;
     bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;
     uint32_t old_limit[NUM_PORTS];
+    uint16_t old_volt[NUM_PORTS];
     memcpy(old_limit, g_settings.port_limit_ma, sizeof(old_limit));
+    memcpy(old_volt, g_settings.port_max_mv, sizeof(old_volt));
     g_settings = s;
 
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
-        if (old_limit[i] == s.port_limit_ma[i]) continue;
-        engine_cmd_t cmd = {.op = CMD_PORT_LIMIT, .port = i, .arg = s.port_limit_ma[i]};
-        ipc_cmd_push(&cmd);
+        if (old_limit[i] != s.port_limit_ma[i]) {
+            engine_cmd_t cmd = {.op = CMD_PORT_LIMIT, .port = i, .arg = s.port_limit_ma[i]};
+            ipc_cmd_push(&cmd);
+        }
+        if (old_volt[i] != s.port_max_mv[i]) {
+            engine_cmd_t cmd = {.op = CMD_PORT_VOLT, .port = i, .arg = s.port_max_mv[i]};
+            ipc_cmd_push(&cmd);
+        }
     }
     if (names_changed) mqtt_names_changed();
 

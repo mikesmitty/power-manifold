@@ -75,6 +75,9 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = putf(out, cap, off, "],\"port_limits_ma\":[");
     for (int i = 0; i < NUM_PORTS; i++)
         off = putf(out, cap, off, "%s%lu", i ? "," : "", (unsigned long)s->port_limit_ma[i]);
+    off = putf(out, cap, off, "],\"port_max_v\":[");
+    for (int i = 0; i < NUM_PORTS; i++)
+        off = putf(out, cap, off, "%s%u", i ? "," : "", s->port_max_mv[i] / 1000);
     off = putf(out, cap, off, "],\"port_boot\":[");
     for (int i = 0; i < NUM_PORTS; i++)
         off = putf(out, cap, off, "%s\"%s\"", i ? "," : "", settings_port_boot_name(s->port_boot[i]));
@@ -277,6 +280,10 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
             if (v < PORT_LIMIT_MIN_MA || v > PORT_LIMIT_MAX_MA)
                 return "port_limits_ma: " STR(PORT_LIMIT_MIN_MA) "-" STR(PORT_LIMIT_MAX_MA) " mA each";
             s->port_limit_ma[i] = (uint32_t)v;
+        }
+        if (json_get_int_at(body, "port_max_v", (unsigned)i, &v)) {
+            if (v < 0 || !settings_port_volt_valid((unsigned)v * 1000u)) return "port_max_v: 5, 9, 12, 15 or 20 each";
+            s->port_max_mv[i] = (uint16_t)(v * 1000);
         }
         if (json_get_int_at(body, "port_priorities", (unsigned)i, &v)) {
             if (v < 0 || v > 255) return "port_priorities: 0-255 each";

@@ -37,6 +37,7 @@ void sim_set_load_pct(uint8_t slot, uint8_t pct);
 bool     sim_en(uint8_t slot);
 bool     sim_fan(void);
 uint32_t sim_advertised_ma(uint8_t slot); // last programmed PDO ceiling
+uint16_t sim_advertised_mv(uint8_t slot); // last programmed voltage cap
 uint32_t sim_contract_mw(uint8_t slot);   // live contract, STATUS3 rounding
 uint32_t sim_ina_alert_ma(uint8_t slot);  // programmed over-current threshold
 uint32_t sim_src_cap_count(uint8_t slot);

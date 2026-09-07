@@ -109,7 +109,7 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
                !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100)) { // emergency trip, fixed
         fail = PROBE_FAIL_INA226;
     } else if (!mpq4242_probe() ||
-               !mpq4242_configure(g_settings.port_limit_ma[i])) {
+               !mpq4242_configure(g_settings.port_limit_ma[i], g_settings.port_max_mv[i])) {
         fail = PROBE_FAIL_MPQ4242;
     } else if (!tca9539_set_en(i, true)) {
         fail = PROBE_FAIL_EN;
@@ -462,6 +462,12 @@ void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {
         if (ctx[i].mpq.attached) mpq4242_send_src_cap(); // renegotiate now
         break;
     }
+    case CMD_PORT_VOLT:
+        // same shape: stored by core 0, re-advertised now if the port is powered
+        if (!powered || !tca9548a_select(i)) break;
+        mpq4242_set_max_voltage_mv(cmd->arg);
+        if (ctx[i].mpq.attached) mpq4242_send_src_cap();
+        break;
     default:
         break;
     }

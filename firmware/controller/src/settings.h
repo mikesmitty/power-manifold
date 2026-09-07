@@ -63,6 +63,8 @@ typedef struct {
     uint16_t led_night_end;
     uint16_t led_idle_min;     // dim after this long without a port event (0 = never)
     int16_t  tz_offset_min;    // local time = UTC + this (SNTP is UTC; no tz database)
+    // -- added in layout version 11 --
+    uint16_t port_max_mv[NUM_PORTS]; // voltage cap: highest PDO advertised (PORT_VOLT_MAX_MV = all)
     uint32_t crc; // must remain last
 } settings_t;
 
@@ -87,6 +89,10 @@ bool settings_port_admin_note(unsigned port, bool on);
 // PORT_BOOT_* <-> "on" / "off" / "last"
 const char *settings_port_boot_name(uint8_t policy);
 bool settings_port_boot_parse(const char *s, uint8_t *policy);
+// Voltage cap: one of the fixed PDO voltages, 5000/9000/12000/15000/20000 mV
+bool settings_port_volt_valid(unsigned mv);
+// "9", "9V" or "9 V" (volts) -> mV; false unless it names a valid cap
+bool settings_port_volt_parse(const char *s, uint16_t *mv);
 
 // Debounced persistence for remote mutations (MQTT/REST): mark now, and the
 // main loop's settings_save_poll flushes once things go quiet for a few

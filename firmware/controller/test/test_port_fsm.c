@@ -133,6 +133,57 @@ static void test_limit_set_while_idle(void) {
     MT_ASSERT_EQ(sim_contract_mw(0), 30000); // 20 V x 1.5 A
 }
 
+static void test_volt_cap_applies_live(void) {
+    support_reset(360000);
+    sim_set_present(0, true);
+    tick(2);
+    sim_attach(0, 20000, 3000); // 60 W laptop
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].bus_mv, 20000);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000);
+
+    g_settings.port_max_mv[0] = 9000; // core 0 stores it, then commands the engine
+    engine_cmd_t c = {.op = CMD_PORT_VOLT, .port = 0, .arg = 9000};
+    port_fsm_cmd(0, &c);
+    tick(2);
+    MT_ASSERT_EQ(sim_advertised_mv(0), 9000);
+    MT_ASSERT_EQ(tele.port[0].bus_mv, 9000); // the sink renegotiated down to the cap
+    MT_ASSERT_EQ(tele.port[0].selected_pdo, 2);
+    MT_ASSERT_EQ(budget_port_reservation(0), 27000); // 9 V x 3 A
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+
+    g_settings.port_max_mv[0] = PORT_VOLT_MAX_MV;
+    c.arg = PORT_VOLT_MAX_MV;
+    port_fsm_cmd(0, &c);
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].bus_mv, 20000); // and back up
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000);
+}
+
+static void test_volt_cap_from_probe(void) {
+    support_reset(360000);
+    g_settings.port_max_mv[0] = 5000; // 5 V only
+    sim_set_present(0, true);
+    tick(2);
+    MT_ASSERT_EQ(sim_advertised_mv(0), 5000);
+    sim_attach(0, 20000, 3000); // asks for 20 V, is offered 5 V
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(tele.port[0].bus_mv, 5000);
+    MT_ASSERT_EQ(tele.port[0].selected_pdo, 1);
+    MT_ASSERT_EQ(budget_port_reservation(0), BUDGET_BASE_RESERVE_MW); // 15 W fits the base reserve
+
+    sim_detach(0);
+    tick(2);
+    g_settings.port_max_mv[0] = 12000; // an idle port re-advertises at once too
+    engine_cmd_t c = {.op = CMD_PORT_VOLT, .port = 0, .arg = 12000};
+    port_fsm_cmd(0, &c);
+    sim_attach(0, 15000, 3000); // 15 V ask lands on the 12 V PDO
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].bus_mv, 12000);
+    MT_ASSERT_EQ(tele.port[0].selected_pdo, 3);
+}
+
 static void test_detach_returns_to_idle(void) {
     support_reset(360000);
     sim_set_present(0, true);
@@ -375,6 +426,8 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: small contract reserves base", test_small_contract_reserves_base);
     mt_run("fsm: current limit applies live", test_limit_applies_live);
     mt_run("fsm: current limit set while idle", test_limit_set_while_idle);
+    mt_run("fsm: voltage cap applies live", test_volt_cap_applies_live);
+    mt_run("fsm: voltage cap from probe and while idle", test_volt_cap_from_probe);
     mt_run("fsm: detach returns to idle", test_detach_returns_to_idle);
     mt_run("fsm: OCP faults then recovers", test_ocp_faults_then_recovers);
     mt_run("fsm: MPQ fault via poll", test_mpq_fault_via_poll);

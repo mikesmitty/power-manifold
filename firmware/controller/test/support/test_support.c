@@ -52,6 +52,7 @@ void support_reset(uint32_t budget_mw) {
     g_settings.budget_mw = budget_mw;
     for (int i = 0; i < NUM_PORTS; i++) {
         g_settings.port_limit_ma[i] = 5000;
+        g_settings.port_max_mv[i] = PORT_VOLT_MAX_MV;
         g_settings.port_priority[i] = (uint8_t)i;
     }
     g_settings.fan_auto = 1; // firmware defaults (settings_defaults)
