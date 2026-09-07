@@ -11,7 +11,7 @@
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "J11"
+			(property "Reference" "J1"
 				(at 2.1941 -21.59 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -33,7 +33,7 @@
 					(justify left)
 				)
 			)
-			(property "Footprint" "Local Library:AMPHENOL_PCI_E_10018783-10210TLF"
+			(property "Footprint" "Local Library:BUS_PCIexpress_x1"
 				(at 0 -7.62 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -56,50 +56,6 @@
 				)
 			)
 			(property "Description" "PCI Express bus connector x1"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Manufacturer_Name" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Manufacturer_Part_Number" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Mouser Part Number" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Mouser Price/Stock" ""
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -355,7 +311,7 @@
 				(pin power_in line
 					(at 2.54 25.4 270)
 					(length 3.81)
-					(name "+3.3V"
+					(name "+5V"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -693,7 +649,7 @@
 					(at 2.54 25.4 270)
 					(length 3.81)
 					(hide yes)
-					(name "+3.3V"
+					(name "+5V"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1212,7 +1168,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "power:+3.3V"
+		(symbol "power:+5V"
 			(power global)
 			(pin_numbers
 				(hide yes)
@@ -1237,7 +1193,7 @@
 					)
 				)
 			)
-			(property "Value" "+3.3V"
+			(property "Value" "+5V"
 				(at 0 3.556 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -1269,7 +1225,7 @@
 					)
 				)
 			)
-			(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+			(property "Description" "Power symbol creates a global label with name \"+5V\""
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -1291,7 +1247,7 @@
 					)
 				)
 			)
-			(symbol "+3.3V_0_1"
+			(symbol "+5V_0_1"
 				(polyline
 					(pts
 						(xy -0.762 1.27) (xy 0 2.54)
@@ -1329,7 +1285,7 @@
 					)
 				)
 			)
-			(symbol "+3.3V_1_1"
+			(symbol "+5V_1_1"
 				(pin power_in line
 					(at 0 0 90)
 					(length 0)
@@ -1468,18 +1424,6 @@
 		)
 	)
 	(junction
-		(at 139.7 87.63)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "6a54e2ca-7829-4b28-acfc-2b67e34025cf")
-	)
-	(junction
-		(at 139.7 90.17)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "c3464001-9209-42ec-807a-3049f7b15f90")
-	)
-	(junction
 		(at 154.94 127)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -1514,16 +1458,6 @@
 			(type default)
 		)
 		(uuid "2b76525f-2d09-44e2-bff5-51198a64318b")
-	)
-	(wire
-		(pts
-			(xy 140.97 87.63) (xy 139.7 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2f2f52e3-a4ab-457f-8638-6a1b215c59f4")
 	)
 	(wire
 		(pts
@@ -1694,16 +1628,6 @@
 			(type default)
 		)
 		(uuid "e6165f4e-629f-49a8-80ed-0ad957a5df5a")
-	)
-	(wire
-		(pts
-			(xy 140.97 90.17) (xy 139.7 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e7ad20d6-77c3-47cd-ae76-1533d29859fa")
 	)
 	(wire
 		(pts
@@ -2119,7 +2043,7 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+3.3V")
+		(lib_id "power:+5V")
 		(at 157.48 78.74 0)
 		(unit 1)
 		(body_style 1)
@@ -2129,7 +2053,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "5cfeda0c-1773-4968-bc07-4ca54a4bf95f")
+		(uuid "48ef20cb-16cc-447b-b9a3-b37a6d8b3f9f")
 		(property "Reference" "#PWR01"
 			(at 157.48 82.55 0)
 			(hide yes)
@@ -2141,7 +2065,7 @@
 				)
 			)
 		)
-		(property "Value" "+3.3V"
+		(property "Value" "+5V"
 			(at 157.48 73.66 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2173,7 +2097,7 @@
 				)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+		(property "Description" "Power symbol creates a global label with name \"+5V\""
 			(at 157.48 78.74 0)
 			(hide yes)
 			(show_name no)
@@ -2185,7 +2109,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "1c45eb14-b91e-4236-82ae-2a411071003b")
+			(uuid "9e500f81-aae2-443f-a4d1-ec9312287a50")
 		)
 		(instances
 			(project "pcie-breakout"
@@ -2458,7 +2382,7 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+3.3V")
+		(lib_id "power:+5V")
 		(at 74.93 90.17 0)
 		(unit 1)
 		(body_style 1)
@@ -2468,7 +2392,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "ee75c4d5-b536-4c13-b30d-2b30f9e4c6c2")
+		(uuid "cfed9360-164e-410e-9cb4-b46b90a07bbd")
 		(property "Reference" "#PWR02"
 			(at 74.93 93.98 0)
 			(hide yes)
@@ -2480,7 +2404,7 @@
 				)
 			)
 		)
-		(property "Value" "+3.3V"
+		(property "Value" "+5V"
 			(at 74.93 85.09 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2512,7 +2436,7 @@
 				)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+		(property "Description" "Power symbol creates a global label with name \"+5V\""
 			(at 74.93 90.17 0)
 			(hide yes)
 			(show_name no)
@@ -2524,7 +2448,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "dc631d13-77de-4591-91e7-61342613c221")
+			(uuid "beda9f77-c408-4a39-b917-8e3f7478fc01")
 		)
 		(instances
 			(project "pcie-breakout"
