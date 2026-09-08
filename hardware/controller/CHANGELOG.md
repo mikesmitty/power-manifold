@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/mikesmitty/power-manifold/compare/controller-v0.2.0...controller-v0.3.0) (2026-09-08)
+
+
+### Features
+
+* **controller:** add UART for UPS ([8322d1b](https://github.com/mikesmitty/power-manifold/commit/8322d1b8246f4917f4810697576cec840de3af76))
+
 ## [0.2.0](https://github.com/mikesmitty/power-manifold/compare/controller-v0.1.0...controller-v0.2.0) (2026-09-08)
 
 
