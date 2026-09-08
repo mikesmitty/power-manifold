@@ -20,7 +20,7 @@ serial console.
   expander handles blade enable, presence detect, and the fan, and six
   WS2812C LEDs feed front-panel light pipes. DC input is 20–28 V through a
   Micro-Fit 3.0 connector with ideal-diode reverse protection, a 20 A fuse,
-  and a TVS clamp. A TPS5430 buck makes the single 3.3 V logic rail.
+  and a TVS clamp. An AP64352 buck makes the single 5 V logic rail.
 - **Management controller** (`firmware/controller`). Native pico-sdk
   firmware for the RP2350. Core 1 runs the port engine and owns the I2C bus;
   core 0 runs networking and the management surfaces. Development uses a

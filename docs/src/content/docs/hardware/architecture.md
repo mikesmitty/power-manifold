@@ -14,7 +14,7 @@ The consolidated V2 architecture decouples power delivery from supervisory manag
 
 > * **Digitization at the Point of Load:** A dedicated digital current/power monitor (INA226) on each blade measures shunt voltage and bus voltage directly via Kelvin connections, transmitting telemetry digitally over I2C.
 > * **Backplane Channel Isolation:** An 8-channel I2C switch (TCA9548A) on the backplane isolates capacitive trace loading and eliminates I2C address conflicts among identical MPQ4242 buck-boost controllers. Six channels serve the blades; two are spare.
-> * **Centralized Intelligence:** A single dual-core RP2350 management controller supervises all six ports, enforces dynamic chassis power budgeting, and drives the status LEDs. During development the controller is a Raspberry Pi Pico 2 W (WiFi) seated in the management slot via a breakout carrier; the production controller is a custom RP2350 board with a WIZnet W6100 wired-Ethernet controller.
+> * **Centralized Intelligence:** A single dual-core RP2350 management controller supervises all six ports, enforces dynamic chassis power budgeting, and drives the status LEDs. During development the controller is a Raspberry Pi Pico 2 W (WiFi) seated in the management slot via a breakout carrier; the production controller is the `hardware/controller` card for the same slot: an RP2350A with a WIZnet W6100 wired-Ethernet controller and a Raspberry Pi RM2 radio (§4.4).
 > * **Backplane LED Array & Light Pipes:** Moving the status LEDs to the backplane converts per-port LED data lines into a single serial daisy chain, freeing card-edge pins and eliminating phantom-power risks during blade insertion.
 
 ## 2. Component Selection (As Built)
@@ -25,12 +25,12 @@ The consolidated V2 architecture decouples power delivery from supervisory manag
 | **Power & Current Monitor** | TI INA226 | Charger Blade (x6) | 16-bit ΔΣ digital power monitor with hardware alert thresholding and built-in averaging. Shares the blade's 10 mΩ shunt via Kelvin taps. |
 | **I2C Multiplexer** | TI TCA9548A | Backplane | 8-channel bidirectional I2C switch with hardware reset (MUX_RST#). Isolates bus capacitance and allows identical I2C addresses on all blades. Channel N carries slot N+1; channels 6–7 spare. 4.7 kΩ pull-up pairs per downstream segment. |
 | **GPIO Expander** | TI TCA9539 | Backplane | 16-bit I2C GPIO expander with interrupt output and hardware reset (EXP_RST#). P00–P05 = blade EN1–6 (active high), P06 = fan switch, P10–P15 = PRES#1–6 (active low); P07/P16/P17 grounded spares. All pins through 330 Ω series networks. |
-| **Main Supervisor MCU** | Raspberry Pi RP2350 | Management slot | Dual Cortex-M33 @ 150 MHz, 520 KB SRAM, PIO state machines. Dev vehicle: Pico 2 W (adds CYW43439 WiFi/BT) on the pcie-breakout carrier. |
-| **Ethernet Controller** | WIZnet W6100 | Production controller (planned) | Hardwired dual-stack IPv4/IPv6 TCP/IP + 10/100 MAC/PHY over SPI. Wired successor to the Pico 2 W's WiFi; SPI0 GP16–19 + RSTn GP20 + INTn GP21, matching WIZnet's EVB-Pico2 boards so firmware carries over unchanged. |
-| **Radio Module** | Raspberry Pi RM2 (optional) | Production controller (planned) | CYW43439 — the same silicon as the Pico 2 W — so the WiFi stack and a future BLE provisioning path carry over to the custom board. |
-| **Port Status Indicator** | WS2812C-2020-V6 | Backplane (x6) | Addressable RGB LEDs in a single serial chain (220 Ω series into the first pixel), paired with front-panel rigid light pipes. The V6 variant runs from the 3.3 V rail — the backplane has no 5 V rail. |
+| **Main Supervisor MCU** | Raspberry Pi RP2350 | Management slot | Dual Cortex-M33 @ 150 MHz, 520 KB SRAM, PIO state machines. Dev vehicle: Pico 2 W (adds CYW43439 WiFi/BT) on the pcie-breakout carrier; production: RP2350A on the controller card (§4.4). |
+| **Ethernet Controller** | WIZnet W6100-L | Controller card (§4.4) | Hardwired dual-stack IPv4/IPv6 TCP/IP + 10/100 MAC/PHY over SPI, into a MagJack whose link and activity LEDs it drives directly. SPI0 GP16–19 + RSTn GP20 + INTn GP21, matching WIZnet's EVB-Pico2 boards so firmware carries over unchanged. |
+| **Radio Module** | Raspberry Pi RM2 | Controller card (§4.4) | CYW43439 — the same silicon as the Pico 2 W, on the same GPIOs (GP23 WL_ON/BT_ON, GP24 data, GP25 CS, GP29 clock) — so the WiFi stack and Improv BLE provisioning carry over unchanged. |
+| **Port Status Indicator** | WS2812C-2020-V6 | Backplane (x6) | Addressable RGB LEDs in a single serial chain (220 Ω series into the first pixel), paired with front-panel rigid light pipes. Powered from the backplane's 5 V rail; DIN comes from the controller's 3.3 V GPIO through the series resistor. |
 | **Backplane Power Path** | LM74700 + IRFS7530, 20 A fuse, SMCJ33A | Backplane | Ideal-diode reverse-polarity protection at the DC input (Micro-Fit 3.0 2x3 connector), fused at 20 A, TVS-clamped (§8.4). |
-| **Logic Rail** | TI TPS5430 | Backplane | VIN → 3.3 V buck feeding the backplane ICs, the LED chain, and the management slot's 3.3 V fingers. |
+| **Logic Rail** | Diodes AP64352 | Backplane | VIN → 5 V buck (5.6 µH, 2 × 22 µF out) feeding the mux and expander, every pull-up, the LED chain, and the 5 V fingers of all seven slots. The blades run their INA226 from it and the controller card regulates its own 3.3 V from it; there is no 3.3 V rail on the backplane. |
 | **Fan Switch** | AO3400A | Backplane | Low-side MOSFET driven from expander P06 (100 kΩ gate pull-down, SS34 flyback across the fan connector). |
 
 ## 3. PCIe x1 Card-Edge Interconnect Pinout (Charger Blades 1–6)
@@ -51,10 +51,10 @@ The standard 36-pin PCIe x1 card-edge form factor provides high current capacity
 | **A10** | **PGND** | **GND** | **B10** | Power-to-signal ground transition boundary. (B10 carries LED_DATA at the management slot only.) |
 | **A11** | **GND** *(Shield Guard)* | **GND** *(Shield Guard)* | **B11** | High-isolation guard pins flanking the mechanical key notch. |
 | **--- MECHANICAL KEY / POLARIZING NOTCH ---** |  |  |  |  |
-| **A12** | **3V3** | **3V3** | **B12** | Regulated 3.3V logic supply for INA226 and MPQ4242 logic bias, sourced by the backplane's TPS5430 buck (I2C/ALERT# pull-ups are on the backplane, not the blade). |
+| **A12** | **5V** | **5V** | **B12** | Regulated 5 V logic supply from the backplane's AP64352 buck, powering the INA226 (the MPQ4242 biases its own logic from VIN). The blade carries no I2C or ALERT# pull-ups: the segment I2C pull-ups are on the backplane, the ALERT# pull-up on the controller. |
 | **A13** | **GND** | **GND** | **B13** | Dedicated quiet logic ground reference plane. |
-| **A14** | **SCL** | **SDA** | **B14** | Dedicated I2C Clock (A14) and Data (B14) from the TCA9548A mux channel. SDA/SCL pull-ups to 3V3 reside on the backplane (one 4.7 kΩ pair per downstream segment); blades carry no I2C pull-ups. |
-| **A15** | **GND** *(Shield Guard)* | **ALERT#** | **B15** | Active-low open-drain fault/interrupt line from INA226 & MPQ4242, wire-OR'd across all blades into GLOBAL_ALERT#; shielded by A15. Pull-up resides on the backplane; blades carry none. |
+| **A14** | **SCL** | **SDA** | **B14** | Dedicated I2C Clock (A14) and Data (B14) from the TCA9548A mux channel. SDA/SCL pull-ups to the 5 V rail reside on the backplane (one 4.7 kΩ pair per downstream segment); blades carry no I2C pull-ups. |
+| **A15** | **GND** *(Shield Guard)* | **ALERT#** | **B15** | Active-low open-drain fault/interrupt line from INA226 & MPQ4242, wire-OR'd across all blades into GLOBAL_ALERT#; shielded by A15. Neither the blades nor the backplane pull it up; the controller does. |
 | **A16** | **GND** | **EN** | **B16** | Hardware enable/shutdown signal (B16) driven by the backplane GPIO expander; 100 kΩ pull-down on the blade holds it off. |
 | **A17** | **GND** *(Shield Guard)* | **PRSNT2#** *(Short Pin)* | **B17** | Presence sense loop return (B17). Shorter pin length ensures PRSNT# asserts only at full seating. |
 | **A18** | **GND** *(End Guard)* | **GND** *(End Guard)* | **B18** | Outer edge ESD guard and termination reference. |
@@ -78,15 +78,15 @@ The management socket reuses the blade connector and pin geography: power half b
 | :---: | :---- | :---- | :---: | :---- |
 | **A1** | **GND** | **GND** | **B1** | No presence circuit on the management slot (see §8.5). |
 | **A2–A7** | **VIN** | **PGND** | **B2–B7** | Main DC bus (24V nominal, 20V–28V operating) available to the management card for its own regulation if desired; the dev carrier leaves it unused. |
-| **A8–A9** | **PGND** | **PGND / EXP_RST#** | **B8–B9** | B9 = TCA9539 hardware reset line. |
+| **A8–A9** | **PGND** | **PGND / EXP_RST#** | **B8–B9** | B9 = TCA9539 hardware reset line, 10 kΩ to the 5 V rail on the backplane; the controller pulls it low open-drain. |
 | **A10** | **PGND** | **LED_DATA** | **B10** | Single-wire WS2812C chain data into the backplane (220 Ω series). |
 | **A11** | **GND** *(Shield Guard)* | **GND** *(Shield Guard)* | **B11** | Notch guard ground shield. |
 | **--- MECHANICAL KEY / POLARIZING NOTCH ---** |  |  |  |  |
-| **A12** | **3V3** | **3V3** | **B12** | Backplane-sourced 3.3 V (TPS5430): the management card needs no logic regulator of its own. |
+| **A12** | **5V** | **5V** | **B12** | Backplane-sourced 5 V (AP64352). The controller card makes its own 3.3 V from it (§4.4); the dev carrier leaves it unused. |
 | **A13** | **GND** | **GND** | **B13** | Quiet digital ground plane reference. |
 | **A14** | **SCL** | **SDA** | **B14** | Upstream I2C master bus to the TCA9548A mux and TCA9539 expander. |
-| **A15** | **EXP_INT#** | **GLOBAL_ALERT#** | **B15** | Expander interrupt (blade insertion/removal) and the wire-OR'd blade ALERT# line. |
-| **A16** | **GND** | **MUX_RST#** | **B16** | TCA9548A hardware reset — clears a hung downstream I2C segment without power cycling. |
+| **A15** | **EXP_INT#** | **GLOBAL_ALERT#** | **B15** | Expander interrupt (blade insertion/removal) and the wire-OR'd blade ALERT# line. Both open-drain with no backplane pull-up (the EXP_INT# pull-up was removed 2026-09-07); the controller pulls them up to its 3.3 V. |
+| **A16** | **GND** | **MUX_RST#** | **B16** | TCA9548A hardware reset — clears a hung downstream I2C segment without power cycling. 10 kΩ to the 5 V rail on the backplane; the controller pulls it low open-drain. |
 | **A17** | **GND** | **GND** | **B17** | Grounded (no presence loop). |
 | **A18** | **GND** *(End Guard)* | **GND** *(End Guard)* | **B18** | Outer edge ESD ground guard. |
 
@@ -99,7 +99,7 @@ Cross-insertion note: the sockets are mechanically identical. A charger blade se
 | Header Pin | Signal | Pico 2 W GPIO |
 | :---: | :---- | :---- |
 | 1 | VIN | — (unused) |
-| 2 | 3V3 | — (logic reference; Pico is USB-powered during dev) |
+| 2 | 5V | — (unused; the Pico is USB-powered during dev) |
 | 3 | GND | GND |
 | 4 | SCL | GP5 (I2C0) |
 | 5 | SDA | GP4 (I2C0) |
@@ -109,11 +109,11 @@ Cross-insertion note: the sockets are mechanically identical. A charger blade se
 | 9 | LED_DATA | GP2 (PIO) |
 | 10 | GLOBAL_ALERT# | GP3 |
 
-GP16–21 stay reserved for the wired-Ethernet path (W6100 per the EVB-Pico2 mapping), so the same firmware image spans the dev carrier and the production board.
+GP16–21 stay reserved for the wired-Ethernet path (W6100 per the EVB-Pico2 mapping), so the same firmware image spans the dev carrier and the controller card.
 
-### 4.4. Production Controller (Planned)
+### 4.4. Controller Card: hardware/controller
 
-A custom RP2350 management card for the same slot: W6100 wired Ethernet (RJ45 MagJack flush with the faceplate), USB-C maintenance/console port, and optionally a Raspberry Pi RM2 radio module for WiFi plus BLE-based initial provisioning (the same CYW43439 as the Pico 2 W, so the Improv BLE provisioning already running on the dev carrier carries over unchanged). Same GPIO map as §4.3.
+`hardware/controller` is the production management card for the same slot, through its first pass of schematic and layout and not yet fabricated. It carries an RP2350A (QFN-60, 12 MHz crystal) with the flash described below; a WIZnet W6100-L on SPI0 (GP16–19, RSTn GP20, INTn GP21 — the EVB-Pico2 map the firmware already uses) with its own 25 MHz crystal and a Hanrun HR913550A MagJack whose link and activity LEDs the W6100 drives directly; and a Raspberry Pi RM2 radio module on the Pico 2 W's CYW43439 pin map (GP23 WL_ON/BT_ON, GP24 data, GP25 CS, GP29 clock), so WiFi, Bluetooth and the Improv BLE provisioning already running on the dev carrier carry over unchanged. An AP7361C LDO makes the card's 3.3 V from the 5 V rail, which the slot fingers feed in the chassis and the USB header feeds on the bench. SWD is on a 3-pin JST-SH header; BOOTSEL and RUN are push buttons. The backplane signals land on GP1 (EXP_RST#) and GP8 (MUX_RST#) through 2N7002 open-drain drivers working against the backplane's 10 kΩ pull-ups, GP2 (LED_DATA), GP4/GP5 (SDA/SCL, 4.7 kΩ to 3.3 V on the card), GP6 (EXP_INT#, internal pull-up only) and GP7 (ALERT#, 4.7 kΩ to 3.3 V). ALERT# and both resets sit on different pins than the dev carrier's §4.3 map, and the FET drivers invert the resets (GPIO high asserts reset), so the firmware needs a board header for the card. A front-panel button is on GP22, and a 120 kΩ / 10 kΩ divider brings VIN to GP28/ADC2 for bus-voltage measurement. GPIO 3, 9–15, 26 and 27 are free. Because the mux and expander run from the backplane's 5 V, the card drives the two reset lines through N-channel FETs (the backplane's 10 kΩ pull-ups set the high level, and the RP2350's boot-time pull-down leaves the FETs off, so a controller reboot never resets the expander) and pulls EXP_INT# and GLOBAL_ALERT# up to 3.3 V itself.
 
 **Flash (decided 2026-08-30): RP2350A + external W25Q128 (16 MB) on the primary QSPI chip-select.** The RP2354's 2 MB in-package flash was rejected: under A/B OTA it leaves ~960 KB per image slot, and the CYW43439 WiFi blob alone is 220 KB of the current 448 KB build — BLE and web-UI assets would crowd the ceiling, permanently, since in-package flash can't be upsized. A hybrid (RP2354 + second chip on QMI CS1) was also rejected: the RP2354 shares its QSPI pads with the stacked die, so a second chip puts the bus on the board anyway, while the SDK has no CS1 flash driver and the app slots stay capped at 2 MB. Because RP2350A and RP2354A share the QFN-60 footprint, the layout keeps a lean assembly variant open — populate RP2354A and DNP the external flash (never both: same chip-select). QMI CS1 (GPIO0 on this package) stays free for possible PSRAM.
 
@@ -230,7 +230,7 @@ Measurement integrity is preserved by architecture rather than plane splits: the
 
 * **L2 — solid, unbroken ground plane.** No slots, no splits. It serves simultaneously as power return, logic reference, and the thermal spreader that carries MPQ4242 heat to the card-edge fingers (§5). Every ground via from every zone lands on it.
 * **L1 power spine ("PGND" zone):** VIN entry pour from fingers A2–A7/B2–B7 → input bulk and ceramic capacitors → MPQ4242 power pins and inductor → output capacitors → current-sense shunt → USB-C receptacle. Both hot loops (input-capacitor and output-capacitor) are minimum-area and strictly local.
-* **L1 logic strip ("GND" zone):** Runs from the logic-half fingers (3V3, SCL/SDA, ALERT#, EN) forward past the MPQ4242 digital pins to the INA226 at the port. All logic routing stays over this strip; no logic trace passes under the inductor or switch-node copper.
+* **L1 logic strip ("GND" zone):** Runs from the logic-half fingers (5V, SCL/SDA, ALERT#, EN) forward past the MPQ4242 digital pins to the INA226 at the port. All logic routing stays over this strip; no logic trace passes under the inductor or switch-node copper.
 * **MPQ4242 analog corner:** A small quiet pour for the ICOMP compensation network, ISENS+/− filtering, and SEL components, joined to the plane at/under the IC exactly as the MPS reference layout shows. This is the only single-point-tie structure in the system.
 * **Kelvin sense routing:** Shunt sense lines run as a tight differential pair over solid ground, laterally clear of the inductor and switch node.
 
@@ -259,7 +259,7 @@ The chassis and circuit ground form one deliberately multipoint-bonded ground sy
 The system is **not hot-pluggable**: installed USB-C cables preclude removing the front plate while in service, so blades are only inserted or removed with the chassis de-energized. The presence circuit is therefore a population and seating check, not a hot-swap mechanism — it needs no precharge path, no extra finger stagger beyond the standard PCIe scheme, and no extraction-race firmware.
 
 * **Finger heights:** Standard PCIe CEM two-length geometry. All power, ground, and signal fingers are full height; only A1 and B17 are short (CEM short-pin height per the connector drawing). Because the loop closes last, PRSNT# asserts only at *full* seating — a half-inserted blade reads absent and is never enabled.
-* **Presence loop (A1 → B17):** The blade connects A1 to B17 with a plain trace — no components, no power dependency. The backplane grounds A1 at every charger slot. The loop closes only when both ends of the connector are seated, so an angled or partial insertion cannot false-positive. B17 has a 10 kΩ pull-up to 3V3 and enters a TCA9539 input through a 330 Ω series resistor; the expander INT output provides EXP_INT#.
+* **Presence loop (A1 → B17):** The blade connects A1 to B17 with a plain trace — no components, no power dependency. The backplane grounds A1 at every charger slot. The loop closes only when both ends of the connector are seated, so an angled or partial insertion cannot false-positive. B17 has a 10 kΩ pull-up to the 5 V rail and enters a TCA9539 input through a 330 Ω series resistor; the expander INT output provides EXP_INT#.
 * **Management slot:** No presence circuit — A1 and B17 are simply grounded (§4.2). The management card is installed as part of commissioning, with the chassis de-energized like everything else; the firmware, not the backplane, is the thing that notices whether a controller is present.
 * **Firmware use:** Presence is enumerated at boot and re-read every 100 ms plus on EXP_INT# — empty slots are never probed and their EN lines never assert. As cheap defense-in-depth (not a hot-plug feature), any runtime PRSNT# deassertion — a seating or vibration fault — immediately drives that slot's EN low.
 * **Edge guards:** A18/B18 remain full-height sacrificial grounds at the outer end, discharging handling static before signal fingers seat during bench assembly; A11/B11 guard the key notch. A16 is committed to GND (no floating RESERVED finger adjacent to EN), and B1 joins the main power return — mirroring A18/B18, both ends of the connector row terminate in solid ground.

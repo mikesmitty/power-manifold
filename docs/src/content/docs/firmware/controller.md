@@ -7,11 +7,12 @@ Native pico-sdk firmware for the V2 management controller, supervising up to
 six MPQ4242 charger blades through the backplane TCA9548A I2C mux and TCA9539
 GPIO expander.
 
-Development target: a Raspberry Pi Pico 2 W (RP2350) on the backplane
-management socket. Production target: a custom RP2350 board with a WIZnet
-W6100 wired-Ethernet controller, possibly plus a Raspberry Pi RM2 radio
-module (same CYW43439 as the Pico 2 W, so the WiFi/Bluetooth stack carries
-over).
+Development target: a Raspberry Pi Pico 2 W (RP2350) on the
+`hardware/pcie-breakout` carrier in the backplane's management socket.
+Production target: the `hardware/controller` card for the same socket, an
+RP2350A with a WIZnet W6100 wired-Ethernet controller and a Raspberry Pi RM2
+radio module (the same CYW43439 as the Pico 2 W, so the WiFi and Bluetooth
+stack carries over).
 
 The [documentation site](https://mikesmitty.github.io/power-manifold/)
 carries this guide alongside the hardware architecture and a hosted Wi-Fi
