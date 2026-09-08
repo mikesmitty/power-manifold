@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/mikesmitty/power-manifold/compare/controller-v0.1.0...controller-v0.2.0) (2026-09-08)
+
+
+### Features
+
+* **controller:** add RPi RM2 and wire up remaining pins ([f91aabf](https://github.com/mikesmitty/power-manifold/commit/f91aabf46ac3b96c72c955c79bae42f6274bae56))
+
+
+### Bug Fixes
+
+* **controller:** add missing ground vias ([467a598](https://github.com/mikesmitty/power-manifold/commit/467a59896cae026958a4a95c28bb2ad033dbb9a4))
+* **controller:** move rj45 jack inset 1mm ([f91aabf](https://github.com/mikesmitty/power-manifold/commit/f91aabf46ac3b96c72c955c79bae42f6274bae56))
+
 ## 0.1.0 (2026-09-06)
 
 
