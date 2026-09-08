@@ -16,6 +16,7 @@ void run_priority_tests(void);
 void run_settings_json_tests(void);
 void run_sim_inject_tests(void);
 void run_update_image_tests(void);
+void run_ups_tests(void);
 void run_w6100_tests(void);
 
 int main(void) {
@@ -34,6 +35,7 @@ int main(void) {
     run_settings_json_tests();
     run_sim_inject_tests();
     run_update_image_tests();
+    run_ups_tests();
     run_w6100_tests();
     return mt_summary();
 }

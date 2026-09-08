@@ -31,6 +31,8 @@ add_executable(engine_tests
     ../src/net/improv_proto.c
     ../src/net/jsonlite.c
     ../src/net/w6100.c
+    ../src/ups/lad_proto.c
+    ../src/ups/ups.c
     ../src/update_image.c
     support/test_support.c
     test_boot.c
@@ -47,6 +49,7 @@ add_executable(engine_tests
     test_settings_json.c
     test_sim_inject.c
     test_update_image.c
+    test_ups.c
     test_w6100.c
     test_main.c
 )
@@ -55,6 +58,7 @@ target_include_directories(engine_tests PRIVATE
     ../src
     ../src/engine
     ../src/net
+    ../src/ups
     support
 )
 

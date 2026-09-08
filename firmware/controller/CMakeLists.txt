@@ -69,6 +69,9 @@ add_executable(controller
     src/net/http.c
     src/net/jsonlite.c
     src/net/ota_pull.c
+    src/ups/lad_proto.c
+    src/ups/ups.c
+    src/ups/lad_hw_pico.c
     ${DRIVER_SOURCES}
 )
 

@@ -23,6 +23,8 @@
 #include "net.h"
 #include "ota_pull.h"
 #include "settings.h"
+#include "ups/lad_proto.h"
+#include "ups/ups.h"
 
 #define KEEP_ALIVE_S     30
 #define BACKOFF_MS       (5 * 1000)
@@ -31,11 +33,12 @@
 
 // discovery entity table: per-port sensors + switch + buttons + priority,
 // current-limit, voltage-cap and boot-policy controls + event entity +
-// charge controls; chassis sensors + fan + BLE provisioning button (the
+// charge controls; chassis sensors + fan + BLE provisioning button + the
+// UPS entities (published while a supply answers, retracted otherwise; the
 // last chassis step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 11)
-#define CHASSIS_ENTITIES 14
+#define CHASSIS_ENTITIES 20
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -700,6 +703,23 @@ static void publish_fan_select(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+// UPS entities exist only while a supply answers on the UPS header; without
+// one the config is retracted so a board that never had a UPS shows none.
+static void publish_ups_entity(const char *component, const char *object, const char *name,
+                               const char *extra, const char *tpl) {
+    discovery_config_topic(component, object);
+    if (!ups_present()) {
+        publish(topic_buf, "", 1, 1);
+        return;
+    }
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\",%s"
+             "\"val_tpl\":\"%s\",\"dev\":%s}",
+             base, name, uid, object, extra, tpl, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 // one config per poll tick: paces the burst well inside the output ring buffer
 static void discovery_publish(int i);
 
@@ -772,6 +792,33 @@ static void discovery_publish(int i) {
     case 12:
         publish_led_mode_sensor();
         break;
+    case 13:
+        publish_ups_entity("binary_sensor", "ups_ac", "UPS AC input", "\"dev_cla\":\"plug\",",
+                           "{{ value_json.ups_ac }}");
+        break;
+    case 14:
+        publish_ups_entity("binary_sensor", "ups_on_battery", "UPS on battery",
+                           "\"ic\":\"mdi:battery-arrow-down\",", "{{ value_json.ups_on_battery }}");
+        break;
+    case 15:
+        publish_ups_entity("binary_sensor", "ups_charging", "UPS charging",
+                           "\"dev_cla\":\"battery_charging\",", "{{ value_json.ups_charging }}");
+        break;
+    case 16:
+        publish_ups_entity("sensor", "ups_batt_v", "UPS battery voltage",
+                           "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
+                           "{{ value_json.ups_batt_v }}");
+        break;
+    case 17:
+        publish_ups_entity("sensor", "ups_mains_v", "UPS mains voltage",
+                           "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
+                           "{{ value_json.ups_mains_v }}");
+        break;
+    case 18:
+        publish_ups_entity("sensor", "ups_load_a", "UPS load current",
+                           "\"dev_cla\":\"current\",\"unit_of_meas\":\"A\"," MEASUREMENT,
+                           "{{ value_json.ups_load_a }}");
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -799,13 +846,16 @@ static void publish_telemetry(void) {
     static char problems_json[256]; // labels are user text
     unsigned n_problems = health_problems(&t, problems, sizeof(problems));
     json_escape(problems_json, sizeof(problems_json), problems);
+    const ups_state_t *u = ups_state(); // zeros while absent: the entities are retracted then
     snprintf(topic_buf, sizeof(topic_buf), "%s/status", base);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
              "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
              "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
-             "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\"}",
+             "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\","
+             "\"ups\":%s,\"ups_ac\":\"%s\",\"ups_on_battery\":\"%s\",\"ups_charging\":\"%s\","
+             "\"ups_batt_v\":%.2f,\"ups_mains_v\":%.1f,\"ups_load_a\":%.2f}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -813,7 +863,11 @@ static void publish_telemetry(void) {
              (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
              g_settings.led_brightness, FW_VERSION, boot_text,
              n_problems ? "ON" : "OFF", problems_json, g_settings.charged_mw,
-             g_settings.charged_min, led_mode_name(led_sched_current()));
+             g_settings.charged_min, led_mode_name(led_sched_current()),
+             u->present ? "true" : "false", (u->status_l & LAD_ST_AC_OK) ? "ON" : "OFF",
+             (u->status_l & LAD_ST_ON_BATTERY) ? "ON" : "OFF",
+             (u->status_l & LAD_ST_CHARGING) ? "ON" : "OFF", u->batt_cv / 100.0,
+             u->mains_dv / 10.0, u->load_ca / 100.0);
     publish(topic_buf, payload_buf, 0, 1);
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {

@@ -54,6 +54,7 @@ The hardware watchdog is fed only while both cores make progress.
 | GP6 | EXP_INT# | TCA9539 interrupt |
 | GP7 | MUX_RST# | TCA9548A reset |
 | GP8 | EXP_RST# | TCA9539 reset |
+| GP12/GP13 | UPS_TX/UPS_RX | UART0, 9600 8N1, to a Mean Well LAD-xxxU UPS supply (the controller card's UPS header) |
 | GP16–GP19 | SPI0 MISO/CS/SCK/MOSI | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
 | GP20 | ETH_RST# | W6100 reset |
 | GP21 | ETH_INT# | W6100 interrupt, level-low while a frame waits |
@@ -272,8 +273,8 @@ shows each port's label, state (with *charged* once a sink has finished),
 contract, measured draw *and* the budget reservation held against it (an
 idle powered port draws 0 W but still reserves its 15 W base), priority and
 power-up policy; the chassis line below it carries total, reservation,
-budget, fan, link and a note when the LEDs are dimmed, and any problem shows
-in red under that. Click a port row for sparklines of its last 10 minutes of
+budget, fan, link, a note when the LEDs are dimmed and the UPS supply's
+state when one answers, and any problem shows in red under that. Click a port row for sparklines of its last 10 minutes of
 W / A / V, sampled from the page's own 1 Hz poll (history lives in the tab,
 so it starts when the page opens — Home Assistant keeps the long-term
 record). Further down: the *Fault log* panel, the *Console log* panel (the
@@ -299,8 +300,8 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `problem` / `problems`, `led_mode` / `led_now` |
-| `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, and every port metric labelled `port` and `name` |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, the `pwrman_ups_*` gauges while a UPS answers, and every port metric labelled `port` and `name` |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
 | `GET /api/v1/settings` | token or setup secret | Every setting except the secrets, with `mqtt_pass_set` / `token_set` flags in their place |
@@ -336,7 +337,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | Topic | Direction | Payload |
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
-| `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode` |
+| `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a` |
 | `port/<n>/telemetry` | published at 1 Hz | `state`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at` |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
@@ -394,7 +395,12 @@ Chassis:
   attention;
 - an *Open BLE provisioning* button, and a firmware update entity fed from
   the retained `update/latest` pointer whose Install pulls the URL into the
-  inactive slot.
+  inactive slot;
+- while a UPS supply answers on the UPS header: *UPS AC input* (device
+  class `plug`), *UPS on battery* and *UPS charging* binary sensors, and
+  UPS battery voltage, mains voltage and load current sensors. They are
+  published when the supply first answers and retracted when it is absent,
+  so a chassis without one shows none.
 
 ### Console
 
@@ -405,7 +411,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | Command | Purpose |
 | --- | --- |
 | `status` | port table (state, contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged) and chassis power |
-| `info` | firmware, slot and boot reason, links and addressing, broker, syslog sink, LED schedule and local time, problems, simulator state |
+| `info` | firmware, slot and boot reason, links and addressing, UPS supply, broker, syslog sink, LED schedule and local time, problems, simulator state |
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
 | `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
@@ -429,6 +435,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `led dim <0-255>`, `led night <HH:MM> <HH:MM>\|off`, `led idle <minutes>\|off` | dimmed level, night window, idle dimming |
 | `tz <+HH:MM\|-HH:MM>` | local time offset for the night window |
 | `faults [clear]` | persistent fault log |
+| `ups [buzzer on\|off]` | UPS supply readings, status bits, per-block voltages and link counters; `buzzer off` silences its alarm until the supply restarts |
 | `export` | every setting as JSON, without passwords |
 | `update <http-url>` | OTA pull into the inactive slot |
 | `stack` | per-core stack high-water marks |
@@ -563,6 +570,31 @@ management socket: link, DHCP, mDNS and the web UI over a cable. The
 wired-beside-WiFi switchover has so far only run in the host tests, since
 the EVB has no radio.
 
+### UPS supply
+
+A Mean Well LAD-xxxU security/UPS power supply (the `U` variants have the
+serial port; the plain ones only have open-collector status pins) plugs
+into the controller card's UPS header: 3.3 V TTL UART0 on GP12/GP13
+through the card's 1 kΩ series resistors, 9600 8N1, grounds common through
+the supply's V−. The link is the LAD manual's own frame — read 0x55 / write
+0xAA, a length byte, a 16-bit address, data, CRC-8 (polynomial 0x07,
+checked against the manual's worked examples) — not Modbus. The firmware
+probes the header every 5 s until something answers, then reads the status
+word, mains voltage, load current and battery voltage every second and the
+per-block voltages and undervoltage cutoff every ten, spacing requests the
+20 ms the supply asks for and giving up on a reply after 100 ms; five
+missed replies in a row or five silent seconds mark it absent again. What
+comes back is the `ups` block in the status JSON, the `ups_*` fields and
+Home Assistant entities over MQTT, `pwrman_ups_*` on `/metrics`, the UPS
+part of the chassis line on the page, `ups` and a line in `info` on the
+console, and log lines for mains lost/restored, battery full and battery
+faults. Running on battery, or a battery fault (missing, reversed,
+under/overvoltage, unbalanced, discharge overload, a bad block), raises the
+problem indicator. `ups buzzer off` silences the supply's alarm; the
+setting lives in the supply and is lost when it restarts, as its manual
+says of every write. The driver runs against an emulated supply in the
+host tests (`test_ups.c`) and has not yet met a real LAD.
+
 ### Fan
 
 `auto` follows total chassis power with hysteresis (`fan auto [on_w off_w
@@ -583,8 +615,9 @@ boot adds a record saying why it happened.
 ### Problem indicator
 
 One aggregate "needs attention" flag — any port in `fault`, the engine
-stalled, a trial firmware image not yet committed, or the wired link down
-while WiFi carries the traffic — with a short description naming the ports
+stalled, a trial firmware image not yet committed, the wired link down
+while WiFi carries the traffic, or the UPS supply running on its battery
+or reporting a battery fault — with a short description naming the ports
 (`faults: Port 2, Desk; trial firmware uncommitted`). It is the `problem` /
 `problems` pair in the status JSON and MQTT status, a line in `info`, a red
 line on the page, and a diagnostic *Problem* binary sensor in Home

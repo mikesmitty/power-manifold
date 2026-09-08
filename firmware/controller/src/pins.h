@@ -29,6 +29,17 @@
 #define ETH_SPI         spi0
 #define ETH_SPI_HZ      (20 * 1000 * 1000)
 
+// UPS serial link: a Mean Well LAD-xxxU supply on the controller card's UPS
+// header (JST SH: TX, GND, RX), 3.3 V TTL through 1k series resistors, the
+// LAD's fixed 9600 8N1. The cable crosses: our TX lands on the LAD's UART_RX
+// (CN2 pin 13), its UART_TX (pin 14) on our RX. Free pins on the Pico 2 W
+// carrier too, so the same image probes for a supply on every board.
+#define PIN_UPS_TX      12 // UART0 TX
+#define PIN_UPS_RX      13 // UART0 RX
+#define UPS_UART        uart0
+#define UPS_UART_IRQ    UART0_IRQ
+#define UPS_BAUD        9600
+
 // I2C addresses, verified against the backplane netlist (2026-08-30):
 // TCA9548A A0=A1=A2=GND, TCA9539 A0=A1=GND. Blade parts sit behind the mux,
 // one blade per channel, so identical per-blade addresses never conflict.

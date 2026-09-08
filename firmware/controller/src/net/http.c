@@ -29,11 +29,13 @@
 #include "settings.h"
 #include "settings_json.h"
 #include "update.h"
+#include "ups/lad_proto.h"
+#include "ups/ups.h"
 
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         3072 // browser headers + a full settings export posted back
-#define STATUS_JSON_MAX 2432 // six ports with escaped labels + the problem text, worst case
+#define STATUS_JSON_MAX 2752 // six ports with escaped labels, the problem text and the UPS block, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -253,7 +255,8 @@ static const char INDEX_HTML[] =
     "`${d.name} \\u2014 ${d.total_w.toFixed(1)}W drawn, ${d.reserved_w.toFixed(0)}W"
     " reserved of ${d.budget_w.toFixed(0)}W budget"
     " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}"
-    " \\u2014 last boot ${d.boot}${d.led_mode!='normal'?' \\u2014 LEDs dimmed ('+d.led_mode+')':''}`;"
+    " \\u2014 last boot ${d.boot}${d.led_mode!='normal'?' \\u2014 LEDs dimmed ('+d.led_mode+')':''}"
+    "${d.ups&&d.ups.present?' \\u2014 UPS '+d.ups.status:''}`;"
     "document.getElementById('prob').textContent=d.problems?'\\u26a0 '+d.problems:'';"
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
     "if(H[i].length>N)H[i].shift();});"
@@ -467,6 +470,33 @@ static void respond_static(conn_t *c, int code, const char *status,
     send_more(c);
 }
 
+// "ups":{...}, — the supply's readings; just present:false without one
+static void build_ups_json(char *out, size_t cap) {
+    const ups_state_t *s = ups_state();
+    if (!s->present) {
+        snprintf(out, cap, "\"ups\":{\"present\":false},");
+        return;
+    }
+    char fault[96];
+    ups_fault_text(fault, sizeof(fault)); // fixed words, nothing to escape
+    size_t off = (size_t)snprintf(out, cap,
+        "\"ups\":{\"present\":true,\"ac\":%s,\"on_battery\":%s,\"charging\":%s,\"full\":%s,"
+        "\"fault\":\"%s\",\"mains_v\":%.1f,\"batt_v\":%.2f,\"load_a\":%.2f,\"uvp_v\":%.2f,"
+        "\"cells\":[",
+        (s->status_l & LAD_ST_AC_OK) ? "true" : "false",
+        (s->status_l & LAD_ST_ON_BATTERY) ? "true" : "false",
+        (s->status_l & LAD_ST_CHARGING) ? "true" : "false",
+        (s->status_l & LAD_ST_CHG_FULL) ? "true" : "false", fault, s->mains_dv / 10.0,
+        s->batt_cv / 100.0, s->load_ca / 100.0, s->uvp_cv / 100.0);
+    for (int i = 0; i < 4 && off < cap; i++) {
+        if (s->cell_cv[i] == 0xFFFF)
+            off += (size_t)snprintf(out + off, cap - off, "%snull", i ? "," : "");
+        else
+            off += (size_t)snprintf(out + off, cap - off, "%s%.2f", i ? "," : "", s->cell_cv[i] / 100.0);
+    }
+    if (off < cap) snprintf(out + off, cap - off, "],\"status\":\"%s\"},", ups_status_str());
+}
+
 static void build_status_json(char *out, size_t cap) {
     telemetry_t t;
     ipc_snapshot_read(&t);
@@ -481,13 +511,15 @@ static void build_status_json(char *out, size_t cap) {
 #if PWRMAN_NET_ETH
     snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
 #endif
+    static char upsf[320]; // static: IRQ stack
+    build_ups_json(upsf, sizeof(upsf));
     size_t off = (size_t)snprintf(out, cap,
         "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\","
-        "\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,\"ports\":[",
+        "\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -497,7 +529,7 @@ static void build_status_json(char *out, size_t cap) {
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
-        led_sched_level(&g_settings, led_sched_current()));
+        led_sched_level(&g_settings, led_sched_current()), upsf);
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];
@@ -609,6 +641,19 @@ static size_t build_metrics(char *out, size_t cap) {
     M_PUT("# TYPE pwrman_fan_auto gauge\npwrman_fan_auto %d\n", t.fan_auto ? 1 : 0);
     M_PUT("# TYPE pwrman_alert_active gauge\npwrman_alert_active %d\n", t.alert_active ? 1 : 0);
     M_PUT("# TYPE pwrman_fault_log_records gauge\npwrman_fault_log_records %d\n", fault_log_count());
+    const ups_state_t *u = ups_state();
+    M_PUT("# TYPE pwrman_ups_present gauge\npwrman_ups_present %d\n", u->present ? 1 : 0);
+    if (u->present) {
+        M_PUT("# TYPE pwrman_ups_ac_ok gauge\npwrman_ups_ac_ok %d\n", (u->status_l & LAD_ST_AC_OK) ? 1 : 0);
+        M_PUT("# TYPE pwrman_ups_on_battery gauge\npwrman_ups_on_battery %d\n", (u->status_l & LAD_ST_ON_BATTERY) ? 1 : 0);
+        M_PUT("# TYPE pwrman_ups_charging gauge\npwrman_ups_charging %d\n", (u->status_l & LAD_ST_CHARGING) ? 1 : 0);
+        M_PUT("# TYPE pwrman_ups_battery_full gauge\npwrman_ups_battery_full %d\n", (u->status_l & LAD_ST_CHG_FULL) ? 1 : 0);
+        M_PUT("# TYPE pwrman_ups_fault gauge\npwrman_ups_fault %d\n", ups_fault() ? 1 : 0);
+        M_PUT("# TYPE pwrman_ups_mains_volts gauge\npwrman_ups_mains_volts %.1f\n", u->mains_dv / 10.0);
+        M_PUT("# TYPE pwrman_ups_battery_volts gauge\npwrman_ups_battery_volts %.2f\n", u->batt_cv / 100.0);
+        M_PUT("# TYPE pwrman_ups_load_amps gauge\npwrman_ups_load_amps %.2f\n", u->load_ca / 100.0);
+        M_PUT("# TYPE pwrman_ups_status_flags gauge\npwrman_ups_status_flags %u\n", u->status_l);
+    }
 
     // per port: one line per metric per port, ports labelled by number and name
     static const struct { const char *name, *type; } PM[] = {

@@ -20,6 +20,7 @@
 #include "settings.h"
 #include "stack_probe.h"
 #include "update.h"
+#include "ups/ups.h"
 
 #define WATCHDOG_TIMEOUT_MS 5000
 
@@ -47,6 +48,7 @@ int main(void) {
     cli_init();
     net_init();
     http_init();
+    ups_init(); // probes the UPS header; harmless with nothing plugged in
 
     char boot_text[80];
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
@@ -64,6 +66,7 @@ int main(void) {
     uint8_t led_flags_sent = 0; // engine's view starts with no chassis overlay
     uint8_t led_level_sent = g_settings.led_brightness; // what the engine applied at init
     uint8_t led_base_seen = g_settings.led_brightness;
+    bool ups_seen = false; // Home Assistant learns about the UPS when it shows up
 
     for (;;) {
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
@@ -73,6 +76,11 @@ int main(void) {
         net_poll(now_ms);
         mqtt_poll(now_ms);
         log_sink_poll(now_ms);
+        ups_poll(now_ms);
+        if (ups_present() != ups_seen) {
+            ups_seen = ups_present();
+            mqtt_names_changed(); // re-run discovery: the UPS entities come and go with it
+        }
 
         // chassis conditions the LED chain overlays as a comet (led_pattern.h)
         uint8_t led_flags = (uint8_t)((improv_active() ? LED_CHASSIS_BLE_OPEN : 0) |
