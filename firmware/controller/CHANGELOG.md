@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.6.0...controller-firmware-v0.7.0) (2026-09-08)
+
+
+### Features
+
+* **controller:** Mean Well LAD UPS supply on the card's UPS header ([e934818](https://github.com/mikesmitty/power-manifold/commit/e934818837a817bb97dffdeba75236bea9e9e89c))
+
 ## [0.6.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.5.0...controller-firmware-v0.6.0) (2026-09-08)
 
 
