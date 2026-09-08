@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.13.1...charger-module-v0.14.0) (2026-09-08)
+
+
+### Features
+
+* **charger-module:** extend usb-c port past edge ([e271353](https://github.com/mikesmitty/power-manifold/commit/e271353d425fca21fc921e32f29cc6cd073b6d25))
+
 ## [0.13.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.13.0...charger-module-v0.13.1) (2026-09-02)
 
 
