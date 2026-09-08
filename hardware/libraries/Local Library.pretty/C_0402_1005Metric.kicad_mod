@@ -9,7 +9,7 @@
 		(at 0 -1.16 0)
 		(layer "F.SilkS")
 		(hide yes)
-		(uuid "3c072b3a-bcdf-4f74-9739-bbc7ac2b980d")
+		(uuid "0b8e74ea-54b6-4a5e-8049-bb5f604352a8")
 		(effects
 			(font
 				(size 1 1)
@@ -17,11 +17,11 @@
 			)
 		)
 	)
-	(property "Value" "100nF"
+	(property "Value" "470pF"
 		(at 0 1.16 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "08044ea8-102b-49c1-83e3-ceae1f4d9199")
+		(uuid "ee1ca6ca-2790-4616-9433-b47c735e5ae3")
 		(effects
 			(font
 				(size 1 1)
@@ -33,7 +33,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "6e72aaa5-508b-447b-85ce-571be7554bd6")
+		(uuid "98dce60b-be5d-4c8f-bb53-7135b1d38031")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -44,7 +44,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "5a6af779-67da-422a-b5ba-47654bfe992e")
+		(uuid "38b24379-0525-4a7e-9ffb-db275a6c2b4e")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -55,7 +55,7 @@
 		(at 0 0 0)
 		(layer "F.SilkS")
 		(hide yes)
-		(uuid "24e92a92-98e9-4c32-8452-5aad1f385120")
+		(uuid "c6bc0017-fd82-439a-9a0b-d34b4904e369")
 		(effects
 			(font
 				(size 1 1)
@@ -63,12 +63,12 @@
 			)
 		)
 	)
-	(property "LCSC" "C307331"
+	(property "LCSC" "C1537"
 		(at 0 0 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "39b272b5-fd1e-406d-9657-8542e9a63f30")
+		(uuid "bbf92645-63ff-41e8-86f6-052bd8be312a")
 		(effects
 			(font
 				(size 1 1)
@@ -81,7 +81,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "33bfc747-3d33-43b8-80f2-df24376a82af")
+		(uuid "fe1c730c-2d6c-49ef-85ac-f42577f09a0e")
 		(effects
 			(font
 				(size 1 1)
@@ -94,7 +94,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "7c187ee7-4fab-4349-936a-61084b37abb2")
+		(uuid "9dd89df6-e4db-45ed-ae49-0c07c626eae1")
 		(effects
 			(font
 				(size 1 1)
@@ -107,7 +107,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "a4f2268f-7a87-45a5-ba18-54787e35366a")
+		(uuid "6f788b3d-4485-48f9-b7d9-020c5ebcde9e")
 		(effects
 			(font
 				(size 1 1)
@@ -120,7 +120,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "2c12caa7-982d-4f7e-824d-c4c2e7168005")
+		(uuid "cb497562-f42c-4f45-8782-17957a39ffdc")
 		(effects
 			(font
 				(size 1 1)
@@ -130,28 +130,28 @@
 	)
 	(property ki_fp_filters "C_*")
 	(sheetname "/")
-	(sheetfile "backplane.kicad_sch")
+	(sheetfile "charger-module.kicad_sch")
 	(attr smd)
 	(duplicate_pad_numbers_are_jumpers no)
 	(fp_line
-		(start -0.045 -0.36)
-		(end 0.045 -0.36)
+		(start -0.107836 -0.36)
+		(end 0.107836 -0.36)
 		(stroke
 			(width 0.12)
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "0bccc846-f2bf-4cc6-96f6-a576f698ab6d")
+		(uuid "69498f98-3d40-43f6-8240-71875f5286e5")
 	)
 	(fp_line
-		(start -0.045 0.36)
-		(end 0.045 0.36)
+		(start -0.107836 0.36)
+		(end 0.107836 0.36)
 		(stroke
 			(width 0.12)
 			(type solid)
 		)
 		(layer "F.SilkS")
-		(uuid "d7ce3c30-0dac-49f2-8018-51e043a4f543")
+		(uuid "552cff41-efc0-4124-b043-7424c0e6e16d")
 	)
 	(fp_rect
 		(start -0.91 -0.46)
@@ -162,7 +162,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "1a7b683c-5aa2-4a3a-b3cf-7f12c5630e10")
+		(uuid "1b440811-69a0-41cf-8bb4-76a1442ad3f0")
 	)
 	(fp_rect
 		(start -0.5 -0.25)
@@ -173,12 +173,12 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "70604023-92f9-4d7a-88ea-ca483a256389")
+		(uuid "598fe3d9-e332-41e1-9b23-b377f7e74cfb")
 	)
 	(fp_text user "${REFERENCE}"
 		(at 0 0 0)
 		(layer "F.Fab")
-		(uuid "c79a89a6-0694-4e63-8388-7119855634cb")
+		(uuid "1ae813e0-8a91-4fd3-a203-70a4cca8b652")
 		(effects
 			(font
 				(size 0.25 0.25)
@@ -191,14 +191,14 @@
 		(size 0.56 0.62)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.25)
-		(uuid "64a19e93-7702-4a22-a956-55c717c360dc")
+		(uuid "f7d4b612-f47f-4725-a6ce-b82c12e34bba")
 	)
 	(pad "2" smd roundrect
 		(at 0.48 0)
 		(size 0.56 0.62)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.25)
-		(uuid "4ebb7a36-fc6e-4cec-b947-e74930c717ad")
+		(uuid "99bb8838-45d7-4a45-b40d-d846fa546528")
 	)
 	(embedded_fonts no)
 	(model "${KICAD10_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0402_1005Metric.step"
