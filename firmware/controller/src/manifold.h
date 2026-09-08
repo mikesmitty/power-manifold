@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define FW_VERSION      "0.5.0" // x-release-please-version
+#define FW_VERSION      "0.6.0" // x-release-please-version
 #define NUM_PORTS       6
 
 // Accepted chassis budget range, every surface (CLI/MQTT/REST). The floor is

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.5.0...controller-firmware-v0.6.0) (2026-09-08)
+
+
+### Features
+
+* **controller:** charged sinks show solid magenta on the status LEDs ([7c44edb](https://github.com/mikesmitty/power-manifold/commit/7c44edb925ade4094516016d5ed96a17c8c9e107))
+* **controller:** per-port voltage cap on the advertised PDO set ([f990bee](https://github.com/mikesmitty/power-manifold/commit/f990beef028354a75e2606992d394a8912ded923))
+
+
+### Bug Fixes
+
+* **controller:** enable the internal pull-up on EXP_INT# ([68f72e2](https://github.com/mikesmitty/power-manifold/commit/68f72e248bbe3ac9985378dc1e125118503c1dd3))
+* **controller:** subscribe to MQTT command topics one per SUBACK ([a734ab7](https://github.com/mikesmitty/power-manifold/commit/a734ab735f21c4aacc47ab9b74d2720c307b8b15))
+
 ## [0.5.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.4.1...controller-firmware-v0.5.0) (2026-09-05)
 
 
