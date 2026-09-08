@@ -126,12 +126,15 @@ void engine_main(void) {
     i2c_init(I2C_BUS, I2C_BAUD);
     gpio_set_function(PIN_I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C_SCL, GPIO_FUNC_I2C);
-    // pull-ups live on the backplane; no on-chip pulls
+    // SDA/SCL and ALERT# have external pull-ups on the controller card
 
     gpio_init(PIN_ALERT_N);
     gpio_set_dir(PIN_ALERT_N, GPIO_IN);
+    // EXP_INT# is open-drain from the TCA9539 with no pull-up anywhere else;
+    // without this the pad default (pull-down) reads it as permanently asserted.
     gpio_init(PIN_EXP_INT_N);
     gpio_set_dir(PIN_EXP_INT_N, GPIO_IN);
+    gpio_pull_up(PIN_EXP_INT_N);
 #else
     sim_reset();
 #endif
