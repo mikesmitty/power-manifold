@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.10.0...backplane-v0.10.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **backplane:** remove 5v pullup on EXP_INT ([5a44444](https://github.com/mikesmitty/power-manifold/commit/5a44444243984a25755e71d38fa7919e5a70cd08))
+
 ## [0.10.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.9.0...backplane-v0.10.0) (2026-09-02)
 
 
