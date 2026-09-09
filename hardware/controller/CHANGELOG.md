@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/mikesmitty/power-manifold/compare/controller-v0.3.0...controller-v0.3.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* update silkscreen layouts ([2757ea4](https://github.com/mikesmitty/power-manifold/commit/2757ea4baf1f9aa8df29a75b820561f585450467))
+
 ## [0.3.0](https://github.com/mikesmitty/power-manifold/compare/controller-v0.2.0...controller-v0.3.0) (2026-09-08)
 
 
