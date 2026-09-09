@@ -18,8 +18,8 @@ serial console.
 - **Backplane** (`hardware/backplane`). Six blade slots and a management
   slot. A TCA9548A I2C mux gives every blade its own bus segment, a TCA9539
   expander handles blade enable, presence detect, and the fan, and six
-  WS2812C LEDs feed front-panel light pipes. DC input is 20–28 V through a
-  Micro-Fit 3.0 connector with ideal-diode reverse protection, a 20 A fuse,
+  WS2812C LEDs feed front-panel light pipes. DC input is 20–28 V through an
+  XT60 connector with ideal-diode reverse protection, a 40 A blade fuse,
   and a TVS clamp. An AP64352 buck makes the single 5 V logic rail.
 - **Management controller** (`firmware/controller`). Native pico-sdk
   firmware for the RP2350. Core 1 runs the port engine and owns the I2C bus;
