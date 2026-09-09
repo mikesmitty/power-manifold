@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.0...charger-module-v0.14.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* update silkscreen layouts ([2757ea4](https://github.com/mikesmitty/power-manifold/commit/2757ea4baf1f9aa8df29a75b820561f585450467))
+
 ## [0.14.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.13.1...charger-module-v0.14.0) (2026-09-08)
 
 
