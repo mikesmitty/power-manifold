@@ -1423,7 +1423,7 @@
         "uuid": "ab392f3e-5179-4380-b283-87f14bada4d4"
       }
     ],
-    "used_designators": "L1-3,X1,Q1-2,U1-6,FB1-4,C1-49,SW1-3,Y1-2,#PWR1-77,D1-2,F1,TP1,J1-6,R1-43",
+    "used_designators": "L1-3,X1,Q1-2,U1-6,FB1-4,C1-49,SW1-3,#PWR1-77,D1-2,Y1-2,F1,TP1,J1-6,R1-43",
     "variants": []
   },
   "sheets": [
