@@ -102,13 +102,6 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Cache 3D models data
-        id: models-cache
-        uses: set-soft/cache@main
-        with:
-          path: ~/cache_3d
-          key: cache_3d
-
       - name: Get output directories
         id: get-paths
         run: |
@@ -123,6 +116,19 @@ jobs:
           # Get the parent project directory
           PROJECT_DIR="$(dirname "${KICAD_DIR}")"
           echo "project-dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+
+      # Keyed per module on the board file, since the footprints on the board
+      # decide which 3D models get downloaded. A board edit misses the exact key
+      # and falls back to that module's last cache, so KiBot only fetches what
+      # actually changed.
+      - name: Cache 3D models
+        id: models-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/cache_3d
+          key: cache-3d-${{ steps.get-paths.outputs.module-name }}-${{ hashFiles(matrix.files) }}
+          restore-keys: |
+            cache-3d-${{ steps.get-paths.outputs.module-name }}-
 
       - name: Run KiBot
         uses: INTI-CMNB/KiBot@v2_k10
