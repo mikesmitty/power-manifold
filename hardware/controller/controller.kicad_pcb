@@ -14146,6 +14146,19 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "20e4f6bc-22b3-4b61-bc11-db2706469cf3")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "SOT?23*")
 		(path "/633d2c83-cce8-4bd1-a0d2-5290392eb0d7")
 		(sheetname "/")
@@ -18580,6 +18593,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "1db2766c-335d-4038-bb87-90d9d5cdc9f4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "92eff574-16ee-4a20-bf7b-a8114a9b524a")
 			(effects
 				(font
 					(size 1 1)
@@ -30055,25 +30081,25 @@
 	)
 	(gr_line
 		(start 63.05 52.75)
-		(end 63.05 35)
+		(end 63.050184 35)
 		(stroke
 			(width 0.05)
-			(type solid)
+			(type default)
 		)
 		(locked yes)
 		(layer "Edge.Cuts")
-		(uuid "ec3b762f-905d-41d0-b0e6-661691757eaf")
+		(uuid "6b0a0a85-67d5-4ba2-9f64-f4660eae16c8")
 	)
 	(gr_line
 		(start 63.05 73.05)
-		(end 63.05 75)
+		(end 63.050184 75)
 		(stroke
 			(width 0.05)
-			(type solid)
+			(type default)
 		)
 		(locked yes)
 		(layer "Edge.Cuts")
-		(uuid "d38cd1fd-eaea-4bad-b315-f837a0c66e11")
+		(uuid "2e2c6d0b-d8c6-451d-8729-2207f4cca187")
 	)
 	(gr_line
 		(start 63.050184 35)

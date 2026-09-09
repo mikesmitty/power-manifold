@@ -3,7 +3,7 @@
         "hspace": "4mm",
         "vspace": "2mm",
         "rows": "4",
-        "cols": "2"
+        "cols": "1"
     },
     "source": {
         "tolerance": "10mm"
