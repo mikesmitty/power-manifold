@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.10.1...backplane-v0.10.2) (2026-09-09)
+
+
+### Bug Fixes
+
+* update silkscreen layouts ([2757ea4](https://github.com/mikesmitty/power-manifold/commit/2757ea4baf1f9aa8df29a75b820561f585450467))
+
 ## [0.10.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.10.0...backplane-v0.10.1) (2026-09-08)
 
 
