@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('KiCad electronic assembly'),'2;1');
-FILE_NAME('pcie-breakout.step','2026-09-09T01:09:31',('Pcbnew'),('Kicad'
+FILE_NAME('pcie-breakout.step','2026-09-09T01:12:20',('Pcbnew'),('Kicad'
     ),'Open CASCADE STEP processor 7.8','KiCad to STEP converter',
   'Unknown');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));
@@ -8376,7 +8376,7 @@ SHAPE_REPRESENTATION_RELATIONSHIP() );
 #8118 = PRODUCT_DEFINITION_SHAPE('','',#8119);
 #8119 = PRODUCT_DEFINITION('design','',#8120,#8123);
 #8120 = PRODUCT_DEFINITION_FORMATION('','',#8121);
-#8121 = PRODUCT('kibot_rp5v5k11_silkscreen','kibot_rp5v5k11_silkscreen',
+#8121 = PRODUCT('kibot_1xwv2r1r_silkscreen','kibot_1xwv2r1r_silkscreen',
   '',(#8122));
 #8122 = PRODUCT_CONTEXT('',#2,'mechanical');
 #8123 = PRODUCT_DEFINITION_CONTEXT('part definition',#2,'design');
@@ -16051,7 +16051,7 @@ SHAPE_REPRESENTATION_RELATIONSHIP() );
 #15705 = PRODUCT_DEFINITION_SHAPE('','',#15706);
 #15706 = PRODUCT_DEFINITION('design','',#15707,#15710);
 #15707 = PRODUCT_DEFINITION_FORMATION('','',#15708);
-#15708 = PRODUCT('kibot_rp5v5k11_PCB','kibot_rp5v5k11_PCB','',(#15709));
+#15708 = PRODUCT('kibot_1xwv2r1r_PCB','kibot_1xwv2r1r_PCB','',(#15709));
 #15709 = PRODUCT_CONTEXT('',#2,'mechanical');
 #15710 = PRODUCT_DEFINITION_CONTEXT('part definition',#2,'design');
 #15711 = ADVANCED_BREP_SHAPE_REPRESENTATION('',(#11,#15712),#16584);
