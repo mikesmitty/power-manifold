@@ -4,6 +4,7 @@ on:
       - main
     paths:
       - '**.kicad_pcb'
+      - '**/cad.kibot.yaml'
   workflow_dispatch:
     inputs:
       module:
@@ -30,32 +31,56 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Get changed PCB files
+      - name: Get changed files
         id: changed-files
         if: github.event_name == 'push'
         uses: tj-actions/changed-files@v47
         with:
           files: |
-            **/*.kicad_pcb
+            hardware/*/*.kicad_pcb
+            hardware/*/cad.kibot.yaml
           matrix: true
 
-      - name: Get requested PCB files
-        id: requested-files
-        if: github.event_name == 'workflow_dispatch'
+      - name: Resolve boards to export
+        id: boards
         env:
+          EVENT_NAME: ${{ github.event_name }}
           MODULE: ${{ inputs.module }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          if [ "$MODULE" = "all" ]; then
-            PATTERN="hardware/*/*.kicad_pcb"
+          set -euo pipefail
+
+          # Collect the module directories to rebuild, either from the dispatch
+          # input or from whatever the push touched (a board or its CAD config).
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$MODULE" = "all" ]; then
+              DIRS="$(git ls-files 'hardware/*/*.kicad_pcb' | xargs -r -n1 dirname)"
+            else
+              DIRS="hardware/${MODULE}"
+            fi
           else
-            PATTERN="hardware/${MODULE}/*.kicad_pcb"
+            DIRS="$(printf '%s' "$CHANGED_FILES" | jq -r '.[]' | xargs -r -n1 dirname)"
           fi
-          FILES="$(git ls-files "$PATTERN" | jq --raw-input --slurp --compact-output 'split("\n") | map(select(length > 0))')"
+
+          # Every directory maps back to its board file, deduplicated
+          FILES="$(
+            printf '%s\n' $DIRS | sort -u | while read -r dir; do
+              if [ -n "$dir" ]; then
+                git ls-files "$dir/*.kicad_pcb"
+              fi
+            done | sort -u | jq --raw-input --slurp --compact-output 'split("\n") | map(select(length > 0))'
+          )"
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
 
+          if [ "$FILES" = "[]" ]; then
+            echo "any-changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "any-changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
     outputs:
-      any-changed: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed-files.outputs.any_changed }}
-      matrix: ${{ github.event_name == 'workflow_dispatch' && steps.requested-files.outputs.files || steps.changed-files.outputs.all_changed_files }}
+      any-changed: ${{ steps.boards.outputs.any-changed }}
+      matrix: ${{ steps.boards.outputs.files }}
 
   export-cad:
     if: ${{ fromJson(needs.get-changed-files.outputs.any-changed) }}
@@ -128,7 +153,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - uses: actions/download-artifact@v8

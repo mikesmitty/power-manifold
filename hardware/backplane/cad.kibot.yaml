@@ -8,6 +8,8 @@ global:
 outputs:
   - name: "step_file_export"
     comment: "Exports the PCB in STEP format"
-    type: step
+    type: export_3d
     options:
+      format: step
       origin: "drill"
+      include_silkscreen: true
