@@ -118,17 +118,20 @@ static void test_low_with_hysteresis(void) {
 static void test_high_with_hysteresis(void) {
     start(true, counts(24000));
     run_ms(1100);
-    emu_raw = counts(29500);
+    emu_raw = counts(32800); // inside the rating, not yet a problem
+    run_ms(1100);
+    MT_ASSERT(!vin_high());
+    emu_raw = counts(33500);
     run_ms(1100);
     MT_ASSERT(vin_high());
     MT_ASSERT(!vin_low());
-    emu_raw = counts(28800);
+    emu_raw = counts(32800); // under the threshold, inside the hysteresis band
     run_ms(1100);
     MT_ASSERT(vin_high());
-    emu_raw = counts(28300);
+    emu_raw = counts(32300);
     run_ms(1100);
     MT_ASSERT(!vin_high());
-    MT_ASSERT(vin_mv() >= 28285 && vin_mv() <= 28315);
+    MT_ASSERT(vin_mv() >= 32285 && vin_mv() <= 32315);
     MT_ASSERT(strstr(vin_status_str(), "HIGH") == NULL);
 }
 
