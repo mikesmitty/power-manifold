@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.10.2...backplane-v0.11.0) (2026-09-10)
+
+
+### Features
+
+* **backplane:** swap fan FET for higher voltage spec ([ed3f83b](https://github.com/mikesmitty/power-manifold/commit/ed3f83bf35ef006545e53160c853ba208feb56ac))
+
+
+### Bug Fixes
+
+* **backplane:** switch fan FET back to AO3400A ([0a3e0f9](https://github.com/mikesmitty/power-manifold/commit/0a3e0f97658cedaef296ba246184778ebf28c2c0))
+* **backplane:** switch fan from VIN to 5V supply ([f37608f](https://github.com/mikesmitty/power-manifold/commit/f37608f774654e2fa32a1abe61cc817d77a9530f))
+* **backplane:** switch TVS diode to bidirectional ([ed3f83b](https://github.com/mikesmitty/power-manifold/commit/ed3f83bf35ef006545e53160c853ba208feb56ac))
+
 ## [0.10.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.10.1...backplane-v0.10.2) (2026-09-09)
 
 
