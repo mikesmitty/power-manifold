@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.11.0...backplane-v0.11.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **backplane:** make socket 1 spacing consistent ([f2fc974](https://github.com/mikesmitty/power-manifold/commit/f2fc97481a2639310f8525ef6d5f6a066db28c13))
+
 ## [0.11.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.10.2...backplane-v0.11.0) (2026-09-10)
 
 
