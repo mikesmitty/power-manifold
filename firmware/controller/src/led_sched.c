@@ -6,10 +6,17 @@
 #include "civil_time.h"
 
 static uint32_t last_activity_ms; // boot counts as activity
+static uint32_t wake_until_ms;    // 0 = no wake in force
 static led_mode_t current;
 
 void led_sched_activity(uint32_t now_ms) {
     last_activity_ms = now_ms;
+}
+
+void led_sched_wake(uint32_t now_ms) {
+    last_activity_ms = now_ms;
+    wake_until_ms = now_ms + LED_WAKE_MS;
+    if (!wake_until_ms) wake_until_ms = 1;
 }
 
 bool led_sched_in_window(uint16_t start, uint16_t end, uint16_t minute) {
@@ -20,8 +27,11 @@ bool led_sched_in_window(uint16_t start, uint16_t end, uint16_t minute) {
 
 led_mode_t led_sched_update(const settings_t *s, uint32_t epoch, uint32_t now_ms) {
     led_mode_t m = LED_MODE_NORMAL;
-    if (epoch && led_sched_in_window(s->led_night_start, s->led_night_end,
-                                     civil_local_minute(epoch, s->tz_offset_min)))
+    if (wake_until_ms && (int32_t)(now_ms - wake_until_ms) >= 0) wake_until_ms = 0;
+    if (wake_until_ms)
+        m = LED_MODE_NORMAL; // a tap outranks the schedule for a while
+    else if (epoch && led_sched_in_window(s->led_night_start, s->led_night_end,
+                                          civil_local_minute(epoch, s->tz_offset_min)))
         m = LED_MODE_NIGHT;
     else if (s->led_idle_min && now_ms - last_activity_ms >= (uint32_t)s->led_idle_min * 60000u)
         m = LED_MODE_IDLE;

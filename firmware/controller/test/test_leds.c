@@ -51,6 +51,30 @@ static void test_port_state_colours(void) {
     MT_ASSERT_EQ(px[1].r, 255); // solid colours unaffected
 }
 
+static void test_hold_fill(void) {
+    reset(255);
+    set_port(0, PORT_STATE_ACTIVE, 20000);
+    set_port(5, PORT_STATE_FAULT, 0);
+    view.hold = 128; // a hair over half way: three pixels, the fourth just starting
+    render(0);
+    MT_ASSERT(px[0].b == 255 && px[0].r == 0); // blue, full
+    MT_ASSERT(px[2].b == 255);
+    MT_ASSERT(px[3].b > 0 && px[3].b < 16);
+    MT_ASSERT(dark(px[4]));
+    MT_ASSERT(dark(px[5])); // the fault does not show through
+    view.hold = 255;
+    render(100);
+    for (int i = 0; i < NUM_PORTS; i++) MT_ASSERT(px[i].r == 255 && px[i].g == 0 && px[i].b == 0);
+    view.hold = 0;
+    render(0);
+    MT_ASSERT(px[0].g == 220); // ports back
+    // shown on a blanked chain, at the identify floor
+    view.brightness = 0;
+    view.hold = 254;
+    render(0);
+    MT_ASSERT_EQ(px[0].b, 255 * LED_IDENTIFY_FLOOR / 255);
+}
+
 static void test_probe_blinks_cyan(void) {
     reset(255);
     set_port(0, PORT_STATE_PROBE, 0);
@@ -227,6 +251,30 @@ static void test_identify_overrides_everything(void) {
     MT_ASSERT(px[0].r == 255 && px[0].g == 120);
 }
 
+static void test_ack_flash(void) {
+    reset(255);
+    all_idle();
+    view.identify_pending = true; // the ack sits above identify...
+    view.identify_until_ms = 5000;
+    view.ack_pending = true;
+    view.ack_until_ms = 200;
+    render(0);
+    for (int i = 0; i < NUM_PORTS; i++) MT_ASSERT(px[i].r == 255 && px[i].g == 255 && px[i].b == 255);
+    render(200); // ...and is over in a moment
+    MT_ASSERT(!view.ack_pending);
+    MT_ASSERT(dark(px[0]) || px[0].b == 255); // identify again
+    view.hold = 100; // ...but under the hold fill
+    view.ack_pending = true;
+    view.ack_until_ms = 1000;
+    render(300);
+    MT_ASSERT(px[0].b == 255 && px[0].r == 0);
+    view.hold = 0;
+    // visible on a blanked chain
+    view.brightness = 0;
+    render(400);
+    MT_ASSERT_EQ(px[3].r, LED_IDENTIFY_FLOOR);
+}
+
 static void test_identify_visible_when_dimmed_to_zero(void) {
     reset(0);
     all_idle();
@@ -238,6 +286,7 @@ static void test_identify_visible_when_dimmed_to_zero(void) {
 
 void run_led_tests(void) {
     mt_run("leds: port state colours", test_port_state_colours);
+    mt_run("leds: button hold fills the chain", test_hold_fill);
     mt_run("leds: probe blinks cyan", test_probe_blinks_cyan);
     mt_run("leds: throttled pulses the active colour", test_throttled_pulses_active_colour);
     mt_run("leds: a charged sink shows magenta", test_charged_shows_magenta);
@@ -251,4 +300,5 @@ void run_led_tests(void) {
     mt_run("leds: comet hidden at brightness 0", test_comet_hidden_at_zero_brightness);
     mt_run("leds: identify overrides everything", test_identify_overrides_everything);
     mt_run("leds: identify visible at brightness 0", test_identify_visible_when_dimmed_to_zero);
+    mt_run("leds: acknowledge flash", test_ack_flash);
 }

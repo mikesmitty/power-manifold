@@ -10,6 +10,10 @@
 // it; leds.c owns the PIO and just pushes what this renders.
 //
 // Layers, highest priority first:
+//   hold       the front-panel button held past its long-press point: the
+//              chain fills in blue toward the factory reset, all red as it
+//              fires (button.h); above everything, the user is at the box
+//   ack        a short press registered: the whole chain white for a moment
 //   identify   Improv "which box is this": blue halves alternating at 2 Hz
 //   boot       one-shot sweep 1..6 at power-up (white or rainbow) — doubles
 //              as a chain-order check on a fresh chassis
@@ -33,6 +37,9 @@ typedef struct {
     uint32_t boot_start_ms;
     bool     identify_pending;  // identify pattern until identify_until_ms
     uint32_t identify_until_ms;
+    uint8_t  hold;              // button hold progress (button_hold_progress), 0 = none
+    bool     ack_pending;       // white flash until ack_until_ms
+    uint32_t ack_until_ms;
 } led_view_t;
 
 #define LED_BOOT_STEP_MS     150                          // per pixel

@@ -75,6 +75,8 @@ add_executable(controller
     src/ups/lad_hw_pico.c
     src/vin.c
     src/vin_hw_pico.c
+    src/button.c
+    src/button_hw_pico.c
     ${DRIVER_SOURCES}
 )
 

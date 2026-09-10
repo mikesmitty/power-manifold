@@ -5,6 +5,7 @@
 #include "pico/stdlib.h"
 
 #include "boot_reason_hw.h"
+#include "button.h"
 #include "cli.h"
 #include "engine/engine.h"
 #include "fault_log.h"
@@ -33,6 +34,21 @@
 #define UPDATE_HEALTH_MS   (10 * 1000)
 #define UPDATE_DEADLINE_MS (10 * 60 * 1000)
 
+// The button held to the end: back to factory settings. The chain is all
+// red by now (CMD_LED_HOLD 255 went out first); give it and the console
+// line a moment, then wipe and restart. Never returns.
+static void factory_reset(void) {
+    printf("button: factory reset — restoring defaults and rebooting\n");
+    sleep_ms(300);
+    settings_defaults();
+    if (!settings_save()) printf("settings: save failed\n");
+    fault_log_clear();
+    sleep_ms(20);
+    boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);
+    watchdog_reboot(0, 0, 0);
+    for (;;) tight_loop_contents();
+}
+
 int main(void) {
     stack_probe_paint(); // before anything deepens the stack
     boot_reason_read();  // before anything else can touch the watchdog scratch
@@ -52,6 +68,7 @@ int main(void) {
     http_init();
     ups_init(); // probes the UPS header; harmless with nothing plugged in
     vin_init(); // the bus-voltage divider, where the board has one
+    button_init(); // the front-panel button (GP22)
 
     char boot_text[80];
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
@@ -70,6 +87,7 @@ int main(void) {
     uint8_t led_level_sent = g_settings.led_brightness; // what the engine applied at init
     uint8_t led_base_seen = g_settings.led_brightness;
     bool ups_seen = false; // Home Assistant learns about the UPS when it shows up
+    uint8_t hold_sent = 0; // button hold progress the chain is showing
 
     for (;;) {
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
@@ -105,6 +123,41 @@ int main(void) {
                 led_level_sent = led_level;
                 led_base_seen = g_settings.led_brightness;
             }
+        }
+
+        // front-panel button: a short press wakes a dimmed chain (and is
+        // answered with a flash), a long press opens the BLE provisioning
+        // window, holding it until the chain has filled and turned red
+        // restores factory settings (button.h)
+        switch (button_poll(now_ms)) {
+        case BUTTON_SHORT: {
+            printf("button: wake\n");
+            led_sched_wake(now_ms); // the schedule block above pushes the level next pass
+            engine_cmd_t c = {.op = CMD_LED_ACK, .arg = 200};
+            ipc_cmd_push(&c);
+            break;
+        }
+        case BUTTON_LONG:
+            printf(improv_open(IMPROV_WINDOW_MS, "button")
+                       ? "button: BLE provisioning window open\n"
+                       : "button: BLE unavailable on this build\n");
+            break;
+        case BUTTON_VERY_LONG: {
+            engine_cmd_t c = {.op = CMD_LED_HOLD, .arg = 255};
+            ipc_cmd_push(&c);
+            factory_reset();
+            break;
+        }
+        default:
+            break;
+        }
+        // the fill on the chain follows the hold in coarse steps; 0 and 255
+        // (nothing / the reset firing) always go out exactly
+        uint8_t hold = button_hold_progress();
+        if (hold && hold != 255) hold = (uint8_t)((hold & ~7u) | 1u);
+        if (hold != hold_sent) {
+            engine_cmd_t c = {.op = CMD_LED_HOLD, .arg = hold};
+            if (ipc_cmd_push(&c)) hold_sent = hold;
         }
 
         // engine events: log faults durably first, then publish (best-effort)

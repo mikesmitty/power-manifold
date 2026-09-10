@@ -15,7 +15,12 @@
 
 typedef enum { LED_MODE_NORMAL, LED_MODE_NIGHT, LED_MODE_IDLE } led_mode_t;
 
+// A front-panel tap brings full brightness back for this long, night
+// window or not; then the schedule has its say again.
+#define LED_WAKE_MS (30 * 1000)
+
 void       led_sched_activity(uint32_t now_ms); // a port event: idle timer restarts
+void       led_sched_wake(uint32_t now_ms);     // someone is at the box: normal for LED_WAKE_MS
 led_mode_t led_sched_update(const settings_t *s, uint32_t epoch, uint32_t now_ms);
 led_mode_t led_sched_current(void);             // the last update's verdict
 uint8_t    led_sched_level(const settings_t *s, led_mode_t mode);

@@ -14,6 +14,7 @@ add_compile_options(-Wall -Wextra -g)
 
 add_executable(engine_tests
     ../src/boot_reason.c
+    ../src/button.c
     ../src/civil_time.c
     ../src/event_kind.c
     ../src/fault_text.c
@@ -38,6 +39,7 @@ add_executable(engine_tests
     support/test_support.c
     test_boot.c
     test_budget.c
+    test_button.c
     test_events.c
     test_fan.c
     test_improv.c

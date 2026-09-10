@@ -23,7 +23,7 @@
 #define PIN_EXP_INT_N   6  // TCA9539 INT#: blade presence change (internal pull-up)
 #define PIN_ALERT_N     7  // GLOBAL_ALERT#; 4.7k to 3.3 V on the card (R43)
 #define PIN_MUX_RST_N   8  // TCA9548A reset, via Q2 (2N7002, 100k gate pull-down)
-#define PIN_BUTTON      22 // front-panel button SW3 to GND (1k series, 100 nF); not used yet
+#define PIN_BUTTON      22 // front-panel button SW3 to GND (1k series, 100 nF), see button.h
 #define PIN_VIN_SENSE   28 // ADC2: VIN through 120k / 10k (R13/R14), see vin.h
 #define VIN_ADC_INPUT   2
 // The reset lines are driven through N-channel FETs against the backplane's
@@ -41,6 +41,7 @@
 #define PIN_EXP_INT_N   6  // TCA9539 INT#: blade presence change
 #define PIN_MUX_RST_N   7  // TCA9548A hardware reset
 #define PIN_EXP_RST_N   8  // TCA9539 hardware reset
+#define PIN_BUTTON      22 // no button on the carrier; a wire from GP22 to GND acts as one (button.h)
 // The carrier drives the reset lines directly: LOW asserts. While the Pico
 // itself is in reset, its pad pull-down against the backplane's 10k pull-up
 // should still leave the line above the expander's input-high threshold

@@ -48,6 +48,15 @@ void leds_set_chassis(uint8_t flags) {
     view.chassis = flags;
 }
 
+void leds_set_hold(uint8_t progress) {
+    view.hold = progress;
+}
+
+void leds_ack(uint32_t until_ms) {
+    view.ack_until_ms = until_ms;
+    view.ack_pending = true;
+}
+
 static void put_pixel(led_rgb_t c) {
     uint32_t grb = ((uint32_t)c.g << 16) | ((uint32_t)c.r << 8) | c.b;
     pio_sm_put_blocking(pio, sm, grb << 8u);

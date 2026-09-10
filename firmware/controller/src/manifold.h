@@ -81,6 +81,8 @@ typedef enum {
     CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags overlaid on the chain
     CMD_PORT_LIMIT,      // port, arg = mA: new advertised current ceiling (g_settings already holds it)
     CMD_PORT_VOLT,       // port, arg = mV: new voltage cap (g_settings already holds it)
+    CMD_LED_HOLD,        // arg = 0-255: front-button hold progress shown on the chain (led_pattern.h)
+    CMD_LED_ACK,         // arg = ms: brief white flash of the whole chain (a button press registered)
     CMD_SIM,             // FAKE_BLADES only: fault injection, arg packed per engine/sim/sim_inject.h
 } cmd_op_t;
 

@@ -93,9 +93,39 @@ static void test_modes(void) {
     MT_ASSERT(!strcmp(led_mode_name(LED_MODE_IDLE), "idle"));
 }
 
+static void test_wake(void) {
+    settings_t s;
+    memset(&s, 0, sizeof(s));
+    s.led_brightness = 48;
+    s.led_dim = 4;
+    s.tz_offset_min = -240;
+    s.led_night_start = 1320; // 22:00-07:00
+    s.led_night_end = 420;
+    s.led_idle_min = 30;
+    uint32_t night = EPOCH_2026_09_04_21_40Z + 4 * 3600 + 30 * 60; // 22:10 local
+    uint32_t now = 1000;
+    led_sched_activity(now);
+    MT_ASSERT_EQ(led_sched_update(&s, night, now), LED_MODE_NIGHT);
+    // a tap outranks the night window for LED_WAKE_MS, then it is back
+    led_sched_wake(now);
+    MT_ASSERT_EQ(led_sched_update(&s, night, now), LED_MODE_NORMAL);
+    MT_ASSERT_EQ(led_sched_update(&s, night, now + LED_WAKE_MS - 1), LED_MODE_NORMAL);
+    MT_ASSERT_EQ(led_sched_update(&s, night, now + LED_WAKE_MS), LED_MODE_NIGHT);
+    // and over idle dimming, where it also restarts the idle clock
+    now += 40 * 60000u;
+    MT_ASSERT_EQ(led_sched_update(&s, 0, now), LED_MODE_IDLE);
+    led_sched_wake(now);
+    MT_ASSERT_EQ(led_sched_update(&s, 0, now), LED_MODE_NORMAL);
+    now += LED_WAKE_MS;
+    MT_ASSERT_EQ(led_sched_update(&s, 0, now), LED_MODE_NORMAL); // not idle again for 30 min
+    now += 30 * 60000u;
+    MT_ASSERT_EQ(led_sched_update(&s, 0, now), LED_MODE_IDLE);
+}
+
 void run_led_sched_tests(void) {
     mt_run("led schedule: night window, wrapping midnight", test_window);
     mt_run("led schedule: local time from UTC + offset", test_local_time);
     mt_run("led schedule: HH:MM and HH:MM-HH:MM text", test_hhmm);
     mt_run("led schedule: night, idle, activity, no clock", test_modes);
+    mt_run("led schedule: a tap wakes it from night and idle", test_wake);
 }

@@ -12,6 +12,7 @@
 #endif
 
 #include "boot_reason_hw.h"
+#include "button.h"
 #include "civil_time.h"
 #include "engine/engine.h"
 #include "engine/sim/sim_inject.h"
@@ -82,6 +83,7 @@ static void print_help(void) {
            "  faults [clear]               persistent fault log\n"
            "  ups [buzzer on|off]          UPS supply readings; silence its buzzer (until it restarts)\n"
            "  vin [cal <volts>|cal reset]  DC bus voltage; trim it to a meter reading (then 'save')\n"
+           "  button [short|long]          front-panel button state; act as if pressed\n"
            "  export                       every setting as JSON (no passwords; POST it to import)\n"
            "  stack                        per-core stack high-water marks\n"
 #ifdef PWRMAN_FAKE_BLADES
@@ -372,6 +374,18 @@ static void run_line(char *l) {
             printf("cal %u.%03u: %s; 'save' to keep\n", c / 1000, c % 1000, vin_status_str());
         } else {
             printf("usage: vin [cal <volts>|cal reset]\n");
+        }
+    } else if (!strcmp(cmd, "button")) {
+        const char *what = strtok_r(NULL, " \t", &save);
+        if (!what) {
+            printf("button: %s%s\n", button_fitted() ? "input on GP22, " : "no input on this board, ",
+                   button_held() ? "held" : "released");
+        } else if (!strcmp(what, "short")) {
+            button_inject(BUTTON_SHORT); // wake the chain, from the main loop
+        } else if (!strcmp(what, "long")) {
+            button_inject(BUTTON_LONG); // open the BLE window
+        } else {
+            printf("usage: button [short|long]\n");
         }
     } else if (!strcmp(cmd, "wifi")) {
         const char *ssid = strtok_r(NULL, " \t", &save);

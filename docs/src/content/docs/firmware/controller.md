@@ -63,7 +63,7 @@ W6100-EVB-Pico2 in the same socket) and the production controller card
 | SPI0 MISO/CS/SCK/MOSI | GP16–GP19 | GP16–GP19 | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
 | ETH_RST# | GP20 | GP20 | W6100 reset |
 | ETH_INT# | GP21 | GP21 | W6100 interrupt, level-low while a frame waits |
-| BUTTON | — | GP22 | front-panel button (not used yet) |
+| BUTTON | GP22 (a wire to GND) | GP22 | front-panel button, see [Front-panel button](#front-panel-button) |
 | VIN_SENSE | — | GP28 / ADC2 | DC bus voltage through 120 kΩ / 10 kΩ, see [Bus voltage](#bus-voltage) |
 | RM2 radio | — | GP23/24/25/29 | the Pico 2 W's own CYW43 wiring, so the WiFi and BLE code carries over unchanged |
 
@@ -476,6 +476,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `faults [clear]` | persistent fault log |
 | `ups [buzzer on\|off]` | UPS supply readings, status bits, per-block voltages and link counters; `buzzer off` silences its alarm until the supply restarts |
 | `vin [cal <volts>\|cal reset]` | DC bus voltage with the raw count and gain trim; `cal 24.13` trims the reading to a meter's (then `save`) |
+| `button [short\|long]` | front-panel button input and state; `short` (wake the chain) / `long` (open BLE) act as if it had been pressed |
 | `export` | every setting as JSON, without passwords |
 | `update <http-url>` | OTA pull into the inactive slot |
 | `stack` | per-core stack high-water marks |
@@ -579,13 +580,19 @@ off when disabled. A short comet crosses the chain every 3 s
 while something needs attention: blue while the BLE provisioning window is
 open, white while no link has an address. Power-up runs a sweep across the
 six pixels (`led boot white|rainbow`), which also proves the chain order.
+A short press of the front-panel button flashes the whole chain white for
+a moment and wakes it to full brightness for 30 s; while the button is
+held past its long-press point the chain fills in blue toward the factory
+reset and turns all red as it fires (see [Front-panel
+button](#front-panel-button)). Both show even on a blanked or dimmed chain.
 `led 0` blanks the chain but a faulted port keeps blinking at a floor
 level; brightness is also a Home Assistant number and a field in the web
 *Settings* panel. Two schedules drop the chain to a dimmed level (`led dim
 <0-255>`, default 4, just visible in a dark room): a night window in local
 time (`led night 22:00 07:00`, may wrap midnight; `led night off`) and idle
 dimming (`led idle 30`: no port event — plug, unplug, fault — for that
-long; any event brings full brightness back). Local time is SNTP's UTC plus
+long; any event brings full brightness back, and a tap of the front-panel
+button brings it back for 30 s from either schedule). Local time is SNTP's UTC plus
 `tz <+HH:MM|-HH:MM>` (there is no timezone database, so adjust it at DST
 changes); until the clock has synced the night window is ignored and idle
 dimming still works. `info` shows the schedule, the current mode and the
@@ -695,6 +702,34 @@ raises the problem indicator and logs a line; nothing derates the budget
 from it yet. The Pico 2 W carrier has no path from VIN to an ADC pin, so
 there the monitor reports *not fitted* and every surface leaves it out.
 
+### Front-panel button
+
+The controller card's button (SW3, on GP22 through 1 kΩ with 100 nF
+across the input, against the pad's pull-up) is read from the main loop
+and debounced over 30 ms. Three gestures:
+
+- **short press** (released within 3 s): *wake* — a chain dimmed by the
+  night window or idle dimming, or blanked with `led 0`, comes up to full
+  brightness for 30 s so the port status can be read, and the whole chain
+  flashes white for a moment to say the press registered;
+- **long press** (held past 3 s, then released): open the BLE
+  provisioning window for 10 minutes, as `improv on` and the Home
+  Assistant button do;
+- **hold to the end** (10 s without release): factory reset — settings
+  back to defaults and saved, the fault log cleared, and a reboot. From
+  3 s on the chain fills up in blue, one pixel per 1.2 s or so, as a
+  warning: letting go while it is filling is still the long press; when
+  all six are lit it turns red and the reset fires without waiting for
+  the release.
+
+Each gesture logs a `button:` line. `button` on the console shows whether
+the board has the input and whether it is held; `button short` and
+`button long` run the first two handlers without a button, so they can be
+tried on the bench. The identify pattern (blue halves at 2 Hz) stays what
+it was: Improv's way of pointing out the box being provisioned. The Pico 2 W carrier has no button, but GP22 is free
+there and a wire from it to ground behaves as one. Not yet tried on a real
+button: the card is unfabricated.
+
 ### Fan
 
 `auto` follows total chassis power with hysteresis (`fan auto [on_w off_w
@@ -738,5 +773,3 @@ not update, hence the sentinel).
 ## Not yet implemented
 
 - Front-panel display (planned as another consumer of the telemetry snapshot)
-- Front-panel button semantics; the development carrier has no button, so
-  this waits for the production controller board

@@ -92,6 +92,39 @@ static void render_ports(const led_view_t *v, const telemetry_t *t, uint32_t now
     }
 }
 
+// The button held past its long-press point: pixels fill left to right in
+// blue as the hold approaches the factory reset (release meanwhile opens
+// the BLE window, hence blue), the whole chain red as it fires. Shown even
+// on a dimmed chain: whoever is holding the button is looking at it.
+static bool render_hold(const led_view_t *v, led_rgb_t out[NUM_PORTS]) {
+    if (!v->hold) return false;
+    uint32_t bright = v->brightness < LED_IDENTIFY_FLOOR ? LED_IDENTIFY_FLOOR : v->brightness;
+    if (v->hold == 255) {
+        for (int i = 0; i < NUM_PORTS; i++) out[i] = scale(COL_RED, bright, 255);
+        return true;
+    }
+    uint32_t span = (uint32_t)v->hold * NUM_PORTS; // 0..254*6, 255 per pixel
+    for (int i = 0; i < NUM_PORTS; i++) {
+        uint32_t start = (uint32_t)i * 255;
+        uint32_t part = span <= start ? 0 : span - start > 255 ? 255 : span - start;
+        out[i] = scale(scale(COL_BLUE, part, 255), bright, 255);
+    }
+    return true;
+}
+
+// A short press registered: every pixel white, briefly, at least at the
+// identify floor so a dark chain answers too.
+static bool render_ack(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]) {
+    if (!v->ack_pending) return false;
+    if ((int32_t)(now_ms - v->ack_until_ms) >= 0) {
+        v->ack_pending = false;
+        return false;
+    }
+    uint32_t bright = v->brightness < LED_IDENTIFY_FLOOR ? LED_IDENTIFY_FLOOR : v->brightness;
+    for (int i = 0; i < NUM_PORTS; i++) out[i] = scale(COL_WHITE, bright, 255);
+    return true;
+}
+
 static bool render_identify(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]) {
     if (!v->identify_pending) return false;
     if ((int32_t)(now_ms - v->identify_until_ms) >= 0) {
@@ -142,6 +175,8 @@ static void overlay_comet(const led_view_t *v, uint32_t now_ms, led_rgb_t out[NU
 
 void led_pattern_render(led_view_t *v, const telemetry_t *t, uint32_t now_ms,
                         led_rgb_t out[NUM_PORTS]) {
+    if (render_hold(v, out)) return;
+    if (render_ack(v, now_ms, out)) return;
     if (render_identify(v, now_ms, out)) return;
     if (render_boot(v, now_ms, out)) return;
     render_ports(v, t, now_ms, out);
