@@ -7,8 +7,8 @@ static bool     fan_on;
 static bool     auto_mode;
 static uint32_t hold_until_ms;
 
-void fan_policy_init(bool auto_mode_) {
-    fan_on = false; // expander init drives every output low
+void fan_policy_init(bool auto_mode_, bool fan_is_on) {
+    fan_on = fan_is_on; // low after a cold expander init; whatever it was on a warm start
     auto_mode = auto_mode_;
     hold_until_ms = 0;
 }

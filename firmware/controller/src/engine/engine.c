@@ -36,6 +36,8 @@ static volatile bool exp_irq;
 
 static bool present[NUM_PORTS];
 static uint8_t exp_fail_streak;
+static bool warm_start;   // see engine_main
+static uint8_t adopted;   // ports kept powered through the start
 
 volatile uint8_t engine_stage;
 volatile uint32_t engine_stage_us;
@@ -147,7 +149,18 @@ void engine_main(void) {
     STAGE(ENGINE_STAGE_BUS_INIT);
 
     tca9548a_init();
-    tca9539_init(); // outputs low FIRST, then direction (spec §6.4)
+    // A reboot with the backplane's 5 V up (firmware update, watchdog, a
+    // console reboot) leaves the expander programmed and every EN where it
+    // was — the reset lines are never asserted by a controller reset. Adopt
+    // that state (warm start) rather than resetting it, so a reboot never
+    // cuts port power; port_fsm_boot_inventory then takes the powered blades
+    // under supervision without touching EN. Only an expander holding its
+    // power-on state (cold start) is reset and configured from scratch,
+    // outputs low FIRST, then direction (spec §6.4). While the controller
+    // was down nothing arbitrated the budget or reacted to faults beyond
+    // the blades' own limits; warm_probe reads what latched meanwhile.
+    warm_start = tca9539_attach();
+    if (!warm_start) tca9539_init();
     STAGE(ENGINE_STAGE_MUX_EXP);
     leds_init();
     leds_set_brightness(g_settings.led_brightness);
@@ -157,7 +170,7 @@ void engine_main(void) {
 
     budget_init(g_settings.budget_mw);
     port_fsm_init();
-    fan_policy_init(g_settings.fan_auto != 0);
+    fan_policy_init(g_settings.fan_auto != 0, (tca9539_outputs() >> TCA9539_FAN_BIT) & 1u);
     STAGE(ENGINE_STAGE_FSM);
 
 #ifndef PWRMAN_FAKE_BLADES
@@ -171,8 +184,10 @@ void engine_main(void) {
     sim_scenario_tick(to_ms_since_boot(get_absolute_time())); // seat the demo blades first
 #endif
     refresh_presence();
-    // blades already seated come up one at a time, in priority order
-    port_fsm_boot_inventory(present, to_ms_since_boot(get_absolute_time()));
+    // blades found powered stay so; the rest come up one at a time, in
+    // priority order
+    uint8_t powered = warm_start ? (uint8_t)(tca9539_outputs() & 0x3F) : 0; // EN1..EN6 = P00..P05
+    adopted = port_fsm_boot_inventory(present, powered, to_ms_since_boot(get_absolute_time()));
     STAGE(ENGINE_STAGE_PRESENCE);
 
     uint32_t tick = 0;
@@ -219,6 +234,8 @@ void engine_main(void) {
         t.fan_on = fan_policy_on();
         t.fan_auto = fan_policy_auto();
         t.alert_active = alert_line_active();
+        t.warm_start = warm_start;
+        t.adopted = adopted;
 
         ipc_snapshot_publish(&t);
         leds_render(&t, now_ms);

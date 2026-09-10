@@ -61,6 +61,8 @@ typedef struct {
     bool     fan_on;
     bool     fan_auto;      // fan under the engine's auto policy
     bool     alert_active;  // GLOBAL_ALERT# currently asserted
+    bool     warm_start;    // the expander was found programmed: no reset, ENs kept
+    uint8_t  adopted;       // bit N: port N was powered through the start (warm only)
 } telemetry_t;
 
 // Commands, core 0 -> core 1. The engine is the sole owner of the I2C bus and

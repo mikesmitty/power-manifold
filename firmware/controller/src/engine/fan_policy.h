@@ -20,7 +20,7 @@
 
 #define FAN_MIN_HOLD_MS (30 * 1000)
 
-void fan_policy_init(bool auto_mode);
+void fan_policy_init(bool auto_mode, bool fan_is_on); // fan_is_on: the expander bit found at start
 void fan_policy_set_manual(bool on); // drops out of auto
 void fan_policy_set_auto(void);      // policy acts on the next tick
 void fan_policy_tick(const telemetry_t *t, uint32_t now_ms);

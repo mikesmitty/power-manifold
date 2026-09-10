@@ -179,13 +179,16 @@ static void print_info(void) {
     } else {
         printf("ble: unavailable\n");
     }
-    if (ipc_engine_alive())
-        printf("engine: running\n");
-    else
-        printf("engine: STALLED (reached init stage %u of %u at %lu us)\n", engine_stage,
-               ENGINE_STAGE_LOOP, (unsigned long)engine_stage_us);
     telemetry_t t;
     ipc_snapshot_read(&t);
+    if (ipc_engine_alive()) {
+        char start[64];
+        health_start_text(&t, start, sizeof(start));
+        printf("engine: running; %s\n", start);
+    } else {
+        printf("engine: STALLED (reached init stage %u of %u at %lu us)\n", engine_stage,
+               ENGINE_STAGE_LOOP, (unsigned long)engine_stage_us);
+    }
     char problems[192];
     health_problems(&t, problems, sizeof(problems));
     printf("problems: %s\n", problems[0] ? problems : "none");

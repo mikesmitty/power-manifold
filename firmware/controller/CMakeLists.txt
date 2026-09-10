@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.13)
 
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
 
-# project board headers (e.g. wiznet_w6100_evb_pico2) alongside the SDK's
+# project board headers alongside the SDK's: wiznet_w6100_evb_pico2 and the
+# production card, pwrman_controller_card (see boards/)
 list(APPEND PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/boards)
 include(pico_sdk_import.cmake)
 
@@ -167,8 +168,14 @@ pico_add_extra_outputs(controller)
 
 # Partition table image (A/B app slots + data partition; flashed once per
 # board, see README). The JSON is board-specific; firmware finds partitions
-# by ID at runtime, so the app binary itself is layout-agnostic.
-set(PARTITION_TABLE_JSON "${CMAKE_CURRENT_LIST_DIR}/partitions/pico2w-4mb.json"
+# by ID at runtime, so the app binary itself is layout-agnostic. The
+# controller card carries 16 MB; everything else here is a 4 MB Pico 2 W.
+if(PICO_BOARD STREQUAL "pwrman_controller_card")
+    set(_partition_default "${CMAKE_CURRENT_LIST_DIR}/partitions/prod-16mb.json")
+else()
+    set(_partition_default "${CMAKE_CURRENT_LIST_DIR}/partitions/pico2w-4mb.json")
+endif()
+set(PARTITION_TABLE_JSON "${_partition_default}"
     CACHE FILEPATH "Partition layout compiled into partition_table.uf2")
 pico_init_picotool()
 if(picotool_FOUND)

@@ -32,15 +32,24 @@ static bool read_reg16(uint8_t reg, uint16_t *val) {
     return true;
 }
 
-bool tca9539_init(void) {
-    gpio_init(PIN_EXP_RST_N);
-    gpio_put(PIN_EXP_RST_N, 1);
-    gpio_set_dir(PIN_EXP_RST_N, GPIO_OUT);
+#define CONFIG_VALUE ((uint16_t)TCA9539_CONFIG_P0 | ((uint16_t)TCA9539_CONFIG_P1 << 8))
 
-    gpio_put(PIN_EXP_RST_N, 0);
+// EXP_RST# as a driven output in its released state. RST_ASSERTED_LEVEL
+// (pins.h) covers the card's FET driver against the carrier's direct drive;
+// the level is set before the pin turns into an output so it never glitches
+// through the asserted state.
+static void reset_line_setup(void) {
+    gpio_init(PIN_EXP_RST_N);
+    gpio_put(PIN_EXP_RST_N, !RST_ASSERTED_LEVEL);
+    gpio_set_dir(PIN_EXP_RST_N, GPIO_OUT);
+}
+
+bool tca9539_init(void) {
+    reset_line_setup();
+    gpio_put(PIN_EXP_RST_N, RST_ASSERTED_LEVEL);
     sleep_us(1);
-    gpio_put(PIN_EXP_RST_N, 1);
-    sleep_us(1);
+    gpio_put(PIN_EXP_RST_N, !RST_ASSERTED_LEVEL);
+    sleep_us(10); // the card's line rises through the backplane's 10k
 
     // ORDER IS CRITICAL (spec §6.4): the Output Port registers power up as
     // 0xFF while every pin is an input. Writing outputs to 0x0000 BEFORE the
@@ -48,9 +57,23 @@ bool tca9539_init(void) {
     // driven-high — reversing this enables every blade at once.
     output_cache = 0x0000;
     if (!write_reg16(REG_OUTPUT0, output_cache)) return false;
-    uint16_t config = (uint16_t)TCA9539_CONFIG_P0 | ((uint16_t)TCA9539_CONFIG_P1 << 8);
-    if (!write_reg16(REG_CONFIG0, config)) return false;
+    if (!write_reg16(REG_CONFIG0, CONFIG_VALUE)) return false;
     return true;
+}
+
+bool tca9539_attach(void) {
+    reset_line_setup();
+    // Our configuration word is the signature: the power-on state is 0xFFFF
+    // (all inputs), and nothing else programs this part.
+    uint16_t config, outputs;
+    if (!read_reg16(REG_CONFIG0, &config) || config != CONFIG_VALUE) return false;
+    if (!read_reg16(REG_OUTPUT0, &outputs)) return false;
+    output_cache = outputs;
+    return true;
+}
+
+uint16_t tca9539_outputs(void) {
+    return output_cache;
 }
 
 static bool set_output_bit(uint8_t bit, bool on) {

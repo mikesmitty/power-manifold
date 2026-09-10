@@ -9,6 +9,7 @@
 #include "engine/engine.h"
 #include "fault_log.h"
 #include "flash_map.h"
+#include "health.h"
 #include "ipc.h"
 #include "led_sched.h"
 #include "log_sink.h"
@@ -142,6 +143,11 @@ int main(void) {
             if (!boot_logged) {
                 boot_logged = true;
                 fault_log_boot(boot_reason_last());
+                telemetry_t t;
+                char start[64];
+                ipc_snapshot_read(&t); // the heartbeat follows the first snapshot
+                health_start_text(&t, start, sizeof(start));
+                printf("engine: %s\n", start);
             }
 
             if (settings_migration_pending()) {

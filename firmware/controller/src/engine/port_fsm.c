@@ -17,6 +17,12 @@
 // Long enough for one sink's inrush and its first PD negotiation to settle
 // before the next blade's EN rises; six blades take 1.25 s in all.
 #define BOOT_STAGGER_MS 250
+// Adoption pace at a warm start (port_fsm_boot_inventory): a powered blade
+// has nothing to inrush, but adopting them one at a time in priority order,
+// each far enough apart to reach ACTIVE and claim its contract before the
+// next one holds a base reserve, lets the budget settle the way a cold boot
+// would — the best port wins when the budget cannot hold everything.
+#define WARM_STAGGER_MS 50
 
 // Partial unthrottle: a throttled port takes freed budget in steps of at
 // least this much (avoids renegotiation churn over crumbs), no more than one
@@ -33,6 +39,7 @@
 typedef struct {
     port_state_t state;
     bool     admin_enabled;
+    bool     warm;           // adopted at a warm start: EN is already on, probe without touching it
     uint8_t  probe_attempts;
     uint8_t  fault_bits;     // latched for diagnostics until next probe
     uint32_t cooldown_until_ms;
@@ -97,11 +104,66 @@ static void start_probe(uint8_t i) {
     ctx[i].enable_after_ms = 0; // the boot slot is spent; later seatings are immediate
     ctx[i].denied_mw = 0; // stale asks must not inflate a new throttle epoch
     ctx[i].step_after_ms = 0;
-    enter(i, PORT_STATE_PROBE);
+    enter(i, PORT_STATE_PROBE); // ctx.warm stands until the probe concludes
+}
+
+static void probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
+    if (++ctx[i].probe_attempts < PROBE_MAX_ATTEMPTS) return;
+    emit(EVT_PROBE_FAIL, i, fail, ctx[i].probe_attempts);
+    ctx[i].warm = false;
+    fault(i, now_ms, 0, fail);
+}
+
+// A blade found powered at a warm start: bring it under supervision without
+// touching EN. A fault latched while nobody was watching counts as a fault
+// now (the usual path: EN off, cooldown, re-probe). The blade's
+// configuration is checked against the settings and rewritten — and
+// re-advertised to an attached sink — only when it differs, so a live
+// contract normally rides through untouched. A blade that will not answer
+// cannot be supervised: after PROBE_MAX_ATTEMPTS it is switched off like any
+// failed probe.
+static void warm_probe(uint8_t i, uint32_t now_ms) {
+    uint16_t fail = 0;
+    bool ina_trip = false, matches = false;
+    mpq4242_status_t st = {0};
+    if (!tca9548a_select(i)) {
+        fail = PROBE_FAIL_MUX;
+    } else if (!ina226_probe() || !ina226_alert_tripped(&ina_trip)) { // the read clears the latch
+        fail = PROBE_FAIL_INA226;
+    } else if (!mpq4242_probe() || !mpq4242_read_status(&st)) {
+        fail = PROBE_FAIL_MPQ4242;
+    } else if (ina_trip || st.fault_bits) {
+        ctx[i].warm = false;
+        fault(i, now_ms, st.fault_bits, ina_trip);
+        return;
+    } else if (!ina226_configure() || // idempotent: the same values it already holds
+               !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100)) {
+        fail = PROBE_FAIL_INA226;
+    } else if (!mpq4242_config_matches(g_settings.port_limit_ma[i], g_settings.port_max_mv[i],
+                                       &matches)) {
+        fail = PROBE_FAIL_MPQ4242;
+    } else if (!matches &&
+               (!mpq4242_configure(g_settings.port_limit_ma[i], g_settings.port_max_mv[i]) ||
+                (st.attached && !mpq4242_send_src_cap()))) {
+        fail = PROBE_FAIL_MPQ4242;
+    }
+
+    if (fail) {
+        probe_failed(i, now_ms, fail);
+        return;
+    }
+    ctx[i].warm = false;
+    ctx[i].granted_ma = g_settings.port_limit_ma[i];
+    budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
+    enter(i, PORT_STATE_IDLE); // an attached sink moves it on to ACTIVE next tick
 }
 
 // One probe attempt per tick keeps the loop cadence flat.
 static void do_probe(uint8_t i, uint32_t now_ms) {
+    if (ctx[i].warm) {
+        warm_probe(i, now_ms);
+        return;
+    }
     uint16_t fail = 0;
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
@@ -121,11 +183,7 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
         enter(i, PORT_STATE_IDLE);
         return;
     }
-
-    if (++ctx[i].probe_attempts >= PROBE_MAX_ATTEMPTS) {
-        emit(EVT_PROBE_FAIL, i, fail, ctx[i].probe_attempts);
-        fault(i, now_ms, 0, fail);
-    }
+    probe_failed(i, now_ms, fail);
 }
 
 static uint8_t prio(uint8_t i) {
@@ -322,19 +380,40 @@ void port_fsm_init(void) {
     }
 }
 
-void port_fsm_boot_inventory(const bool *present, uint32_t now_ms) {
+uint8_t port_fsm_boot_inventory(const bool *present, uint8_t powered, uint32_t now_ms) {
+    uint8_t adopted = 0;
+    // Blades found powered (warm start) keep their EN where the policy
+    // allows: adopted, they go through warm_probe instead of a power-up.
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
         ctx[i].enable_after_ms = 0;
+        ctx[i].warm = false;
+        if (!(powered & (1u << i))) continue;
+        if (!present[i]) {
+            tca9539_set_en(i, false); // EN on with no blade seated behind it: stale
+        } else if (!ctx[i].admin_enabled) {
+            power_down(i, PORT_STATE_DISABLED); // boot policy says off
+        } else {
+            ctx[i].warm = true;
+            adopted |= (uint8_t)(1u << i);
+        }
+    }
+    // Adopted blades first, WARM_STAGGER_MS apart; then the rest come up one
+    // at a time, BOOT_STAGGER_MS apart. Both queues rank by priority, slot
+    // order among equals.
+    unsigned n_warm = 0;
+    for (uint8_t i = 0; i < NUM_PORTS; i++) n_warm += ctx[i].warm ? 1 : 0;
+    for (uint8_t i = 0; i < NUM_PORTS; i++) {
         if (!present[i] || !ctx[i].admin_enabled) continue;
-        // rank among the seated, enabled blades: better priority first,
-        // slot order among equals
         unsigned rank = 0;
         for (uint8_t j = 0; j < NUM_PORTS; j++) {
-            if (j == i || !present[j] || !ctx[j].admin_enabled) continue;
+            if (j == i || !present[j] || !ctx[j].admin_enabled || ctx[j].warm != ctx[i].warm) continue;
             if (prio(j) < prio(i) || (prio(j) == prio(i) && j < i)) rank++;
         }
-        ctx[i].enable_after_ms = now_ms + rank * BOOT_STAGGER_MS;
+        ctx[i].enable_after_ms = ctx[i].warm
+            ? now_ms + rank * WARM_STAGGER_MS
+            : now_ms + n_warm * WARM_STAGGER_MS + rank * BOOT_STAGGER_MS;
     }
+    return adopted;
 }
 
 void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,

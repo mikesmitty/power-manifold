@@ -41,6 +41,10 @@ typedef struct {
 bool mpq4242_probe(void);                  // DEV_ID == 0x58
 bool mpq4242_unlock(void);                 // CLK_ON=1 enables register writes
 bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv); // GPIOs, peak CL, CC blank, dither, PDOs, ceilings
+// Read-only check of everything configure() would write: *matches is true
+// when the part already holds exactly that. For a blade adopted at a warm
+// start, so a live contract is only re-advertised when something changed.
+bool mpq4242_config_matches(uint32_t max_ma, uint32_t max_mv, bool *matches);
 bool mpq4242_read_status(mpq4242_status_t *s);
 
 // Default advertised PDO set:

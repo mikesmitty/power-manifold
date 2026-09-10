@@ -63,3 +63,20 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
     }
     return count;
 }
+
+unsigned health_start_text(const telemetry_t *t, char *buf, size_t cap) {
+    if (!t->warm_start) return (unsigned)snprintf(buf, cap, "cold start (expander reset)");
+    if (!t->adopted) return (unsigned)snprintf(buf, cap, "warm start, no port was powered");
+    unsigned n = (unsigned)snprintf(buf, cap, "warm start, port");
+    unsigned count = 0, total = 0;
+    for (unsigned i = 0; i < NUM_PORTS; i++) total += (t->adopted >> i) & 1u;
+    if (total > 1 && n < cap) n += (unsigned)snprintf(buf + n, cap - n, "s");
+    for (unsigned i = 0; i < NUM_PORTS && n < cap; i++) {
+        if (!((t->adopted >> i) & 1u)) continue;
+        const char *sep = count == 0 ? " " : count + 1 == total ? " and " : ", ";
+        n += (unsigned)snprintf(buf + n, cap - n, "%s%u", sep, i + 1);
+        count++;
+    }
+    if (n < cap) n += (unsigned)snprintf(buf + n, cap - n, " kept powered");
+    return n < cap ? n : (unsigned)(cap ? cap - 1 : 0);
+}

@@ -47,7 +47,7 @@
         {
             "name": "data",
             "id": "0x5057524d00000010",
-            "size": "1016K",
+            "size": "1012K",
             "families": ["data"],
             "permissions": {
                 "secure": "rw",

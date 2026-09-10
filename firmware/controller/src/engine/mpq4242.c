@@ -23,11 +23,16 @@
 
 #define I2C_TIMEOUT_US  (2 * 1000)
 
-static bool reg_write(uint8_t reg, uint8_t val) {
-    uint8_t buf[2] = {reg, val};
-    return i2c_write_timeout_us(I2C_BUS, ADDR_MPQ4242, buf, 2, false,
-                                I2C_TIMEOUT_US) == 2;
-}
+// Verify mode (mpq4242_config_matches): reg_write records what it would
+// have written, per register, instead of writing; afterwards the last value
+// recorded for each register is compared with the part. The configure
+// sequence itself is thus the check — read-modify-write fields and
+// registers it writes twice included — with no second copy of the register
+// map to keep in step.
+#define VERIFY_REGS 32
+static bool verify_mode;
+static struct { uint8_t reg, val; } verify_shadow[VERIFY_REGS];
+static unsigned verify_n;
 
 static bool reg_read(uint8_t reg, uint8_t *val) {
     if (i2c_write_timeout_us(I2C_BUS, ADDR_MPQ4242, &reg, 1, true,
@@ -35,6 +40,24 @@ static bool reg_read(uint8_t reg, uint8_t *val) {
         return false;
     return i2c_read_timeout_us(I2C_BUS, ADDR_MPQ4242, val, 1, false,
                                I2C_TIMEOUT_US) == 1;
+}
+
+static bool reg_write(uint8_t reg, uint8_t val) {
+    if (verify_mode) {
+        for (unsigned i = 0; i < verify_n; i++) {
+            if (verify_shadow[i].reg != reg) continue;
+            verify_shadow[i].val = val;
+            return true;
+        }
+        if (verify_n == VERIFY_REGS) return false; // configure_regs outgrew the shadow
+        verify_shadow[verify_n].reg = reg;
+        verify_shadow[verify_n].val = val;
+        verify_n++;
+        return true;
+    }
+    uint8_t buf[2] = {reg, val};
+    return i2c_write_timeout_us(I2C_BUS, ADDR_MPQ4242, buf, 2, false,
+                                I2C_TIMEOUT_US) == 2;
 }
 
 static bool reg_set_bit(uint8_t reg, uint8_t bit, bool on) {
@@ -158,9 +181,8 @@ static bool configure_default_pdos(void) {
     return reg_write(REG_PDO_SET1, 0x3F);
 }
 
-bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv) {
-    if (!mpq4242_unlock()) return false;
-
+// Everything after the unlock; also the verify-mode walk.
+static bool configure_regs(uint32_t max_ma, uint32_t max_mv) {
     // CTL_SYS2: GPIO1 fn bits[7:5], GPIO2 fn bits[4:2]
     uint8_t ctl_sys2;
     if (!reg_read(REG_CTL_SYS2, &ctl_sys2)) return false;
@@ -189,6 +211,26 @@ bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv) {
     if (!mpq4242_set_max_voltage_mv(max_mv)) return false;
 
     return mpq4242_set_max_current_ma(max_ma);
+}
+
+bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv) {
+    if (!mpq4242_unlock()) return false;
+    return configure_regs(max_ma, max_mv);
+}
+
+bool mpq4242_config_matches(uint32_t max_ma, uint32_t max_mv, bool *matches) {
+    verify_mode = true;
+    verify_n = 0;
+    bool ok = configure_regs(max_ma, max_mv); // the unlock (CLK_ON) is not part of the check
+    verify_mode = false;
+    if (!ok) return false;
+    *matches = true;
+    for (unsigned i = 0; i < verify_n; i++) {
+        uint8_t cur;
+        if (!reg_read(verify_shadow[i].reg, &cur)) return false;
+        if (cur != verify_shadow[i].val) *matches = false;
+    }
+    return true;
 }
 
 bool mpq4242_read_status(mpq4242_status_t *s) {

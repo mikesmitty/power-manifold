@@ -43,3 +43,4 @@ uint32_t sim_ina_alert_ma(uint8_t slot);  // programmed over-current threshold
 uint32_t sim_src_cap_count(uint8_t slot);
 uint32_t sim_hard_reset_count(uint8_t slot);
 uint32_t sim_mux_reset_count(void);
+uint32_t sim_en_change_count(uint8_t slot); // times EN actually switched

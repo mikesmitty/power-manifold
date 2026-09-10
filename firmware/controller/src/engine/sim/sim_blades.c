@@ -31,6 +31,7 @@ typedef struct {
     uint8_t  load_pct;     // measured draw as % of contract current
     uint32_t src_caps;
     uint32_t hard_resets;
+    uint32_t en_changes;   // every time EN actually moved
 } sim_slot_t;
 
 static sim_slot_t slots[NUM_PORTS];
@@ -38,6 +39,7 @@ static int8_t selected = -1;
 static bool mux_fail, exp_fail;
 static bool fan;
 static uint32_t mux_resets;
+static bool exp_programmed; // tca9539_init ran since the last power cycle
 
 static sim_slot_t *sel(void) {
     if (selected < 0 || selected >= NUM_PORTS) return NULL; // spare channel
@@ -66,6 +68,12 @@ static void renegotiate(sim_slot_t *s) {
     s->con_ma = s->req_ma < s->adv_ma ? s->req_ma : s->adv_ma;
 }
 
+static void set_en(sim_slot_t *s, bool on) {
+    if (s->en != on) s->en_changes++;
+    s->en = on;
+    renegotiate(s);
+}
+
 static uint32_t status3_mw(const sim_slot_t *s) {
     uint32_t mw = ((uint32_t)s->con_mv * s->con_ma) / 1000;
     mw = (mw / 500) * 500;               // STATUS3 LSB is 0.5 W
@@ -86,14 +94,12 @@ void sim_reset(void) {
     mux_fail = exp_fail = false;
     fan = false;
     mux_resets = 0;
+    exp_programmed = false;
 }
 
 void sim_set_present(uint8_t slot, bool present) {
     slots[slot].present = present;
-    if (!present) {
-        slots[slot].en = false;
-        renegotiate(&slots[slot]);
-    }
+    if (!present) set_en(&slots[slot], false);
 }
 
 void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma) {
@@ -143,6 +149,7 @@ uint32_t sim_ina_alert_ma(uint8_t slot) { return slots[slot].ina_alert_ma; }
 uint32_t sim_src_cap_count(uint8_t slot) { return slots[slot].src_caps; }
 uint32_t sim_hard_reset_count(uint8_t slot) { return slots[slot].hard_resets; }
 uint32_t sim_mux_reset_count(void) { return mux_resets; }
+uint32_t sim_en_change_count(uint8_t slot) { return slots[slot].en_changes; }
 
 // ---- tca9548a --------------------------------------------------------------
 
@@ -178,18 +185,29 @@ void tca9548a_hw_reset(void) {
 bool tca9539_init(void) {
     if (exp_fail) return false;
     // mirrors the real init: outputs all low first — every EN drops
-    for (int i = 0; i < NUM_PORTS; i++) {
-        slots[i].en = false;
-        renegotiate(&slots[i]);
-    }
+    for (int i = 0; i < NUM_PORTS; i++) set_en(&slots[i], false);
     fan = false;
+    exp_programmed = true;
     return true;
+}
+
+bool tca9539_attach(void) {
+    // programmed since the last power cycle (sim_reset): the outputs stand
+    if (exp_fail) return false;
+    return exp_programmed;
+}
+
+uint16_t tca9539_outputs(void) {
+    uint16_t word = 0;
+    for (int i = 0; i < NUM_PORTS; i++)
+        if (slots[i].en) word |= 1u << TCA9539_EN_BIT(i);
+    if (fan) word |= 1u << TCA9539_FAN_BIT;
+    return word;
 }
 
 bool tca9539_set_en(uint8_t port, bool on) {
     if (exp_fail || port >= NUM_PORTS) return false;
-    slots[port].en = on;
-    renegotiate(&slots[port]);
+    set_en(&slots[port], on);
     return true;
 }
 
@@ -201,10 +219,7 @@ bool tca9539_set_fan(bool on) {
 
 bool tca9539_all_en_off(void) {
     if (exp_fail) return false;
-    for (int i = 0; i < NUM_PORTS; i++) {
-        slots[i].en = false;
-        renegotiate(&slots[i]);
-    }
+    for (int i = 0; i < NUM_PORTS; i++) set_en(&slots[i], false);
     return true;
 }
 
@@ -280,6 +295,13 @@ bool mpq4242_configure(uint32_t max_ma, uint32_t max_mv) {
     if (!s) return false;
     s->adv_ma = max_ma;
     s->adv_mv = (uint16_t)max_mv;
+    return true;
+}
+
+bool mpq4242_config_matches(uint32_t max_ma, uint32_t max_mv, bool *matches) {
+    const sim_slot_t *s = mpq();
+    if (!s) return false;
+    *matches = s->adv_ma == max_ma && s->adv_mv == (uint16_t)max_mv;
     return true;
 }
 

@@ -285,7 +285,7 @@ static void test_boot_stagger(void) {
     port_fsm_init();
     bool present[NUM_PORTS] = {true, true, false, true, true, true}; // slot 3 empty
     for (uint8_t i = 0; i < NUM_PORTS; i++) sim_set_present(i, present[i]);
-    port_fsm_boot_inventory(present, now_ms);
+    port_fsm_boot_inventory(present, 0, now_ms); // cold: nothing powered
     // queue by priority among the seated, enabled blades: 2, 5, 6, then 1;
     // the boot-disabled port 4 holds no slot
     tick(2);

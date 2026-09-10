@@ -518,7 +518,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
-        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\","
+        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
         "\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
@@ -528,6 +528,7 @@ static void build_status_json(char *out, size_t cap) {
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
+        t.warm_start ? "true" : "false",
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
         led_sched_level(&g_settings, led_sched_current()), upsf);
 

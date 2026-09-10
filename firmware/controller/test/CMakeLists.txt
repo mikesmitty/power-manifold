@@ -51,6 +51,7 @@ add_executable(engine_tests
     test_update_image.c
     test_ups.c
     test_w6100.c
+    test_warm.c
     test_main.c
 )
 

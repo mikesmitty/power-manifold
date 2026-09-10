@@ -46,18 +46,34 @@ The hardware watchdog is fed only while both cores make progress.
 
 ## GPIO map
 
-| GPIO | Signal | Notes |
-| --- | --- | --- |
-| GP2 | LED_DATA | WS2812C chain, PIO |
-| GP3 | GLOBAL_ALERT# | wire-OR of blade ALERT# lines; open-drain, pulled up on the controller card (or by a resistor wired on the pcie-breakout), pad pull-down cleared at init |
-| GP4/GP5 | SDA/SCL | I2C0; 4.7 kΩ pull-ups on the controller card (or wired on the pcie-breakout), none on the backplane's upstream side; pad pull-down cleared at init |
-| GP6 | EXP_INT# | TCA9539 interrupt; open-drain, internal pull-up only |
-| GP7 | MUX_RST# | TCA9548A reset |
-| GP8 | EXP_RST# | TCA9539 reset |
-| GP12/GP13 | UPS_TX/UPS_RX | UART0, 9600 8N1, to a Mean Well LAD-xxxU UPS supply (the controller card's UPS header) |
-| GP16–GP19 | SPI0 MISO/CS/SCK/MOSI | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
-| GP20 | ETH_RST# | W6100 reset |
-| GP21 | ETH_INT# | W6100 interrupt, level-low while a frame waits |
+Two boards run this firmware, and `src/pins.h` carries a map for each: the
+Pico 2 W on the pcie-breakout (the default `pico2_w` build, also the
+W6100-EVB-Pico2 in the same socket) and the production controller card
+(`PICO_BOARD=pwrman_controller_card`, see [Boards](#boards)).
+
+| Signal | Pico 2 W carrier | Controller card | Notes |
+| --- | --- | --- | --- |
+| LED_DATA | GP2 | GP2 | WS2812C chain, PIO |
+| GLOBAL_ALERT# | GP3 | GP7 | wire-OR of blade ALERT# lines; open-drain, 4.7 kΩ to 3.3 V on the card (a resistor wired on the pcie-breakout), pad pull-down cleared at init |
+| SDA/SCL | GP4/GP5 | GP4/GP5 | I2C0; 4.7 kΩ pull-ups on the card (or wired on the pcie-breakout), none on the backplane's upstream side; pad pull-down cleared at init |
+| EXP_INT# | GP6 | GP6 | TCA9539 interrupt; open-drain, internal pull-up only |
+| MUX_RST# | GP7 | GP8 | TCA9548A reset |
+| EXP_RST# | GP8 | GP1 | TCA9539 reset |
+| UPS_TX/UPS_RX | GP12/GP13 | GP12/GP13 | UART0, 9600 8N1, to a Mean Well LAD-xxxU UPS supply (the card's UPS header) |
+| SPI0 MISO/CS/SCK/MOSI | GP16–GP19 | GP16–GP19 | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
+| ETH_RST# | GP20 | GP20 | W6100 reset |
+| ETH_INT# | GP21 | GP21 | W6100 interrupt, level-low while a frame waits |
+| BUTTON | — | GP22 | front-panel button (not used yet) |
+| VIN_SENSE | — | GP28 / ADC2 | bus voltage through 120 kΩ / 10 kΩ (not used yet) |
+| RM2 radio | — | GP23/24/25/29 | the Pico 2 W's own CYW43 wiring, so the WiFi and BLE code carries over unchanged |
+
+The two reset lines differ in more than pin number. The carrier drives
+them push-pull, active low. The card drives 2N7002 gates against the
+backplane's 10 kΩ pull-ups, so there the GPIO goes *high* to assert a
+reset — `RST_ASSERTED_LEVEL` in `pins.h`, and the drivers only ever write
+that. Either way a controller reset leaves both lines released (the
+RP2350's boot-time pull-down keeps the card's FETs off), which is what
+makes a [warm start](#warm-start) possible.
 
 ## Building
 
@@ -75,20 +91,39 @@ ninja -C build
 Flash `build/controller.uf2` over BOOTSEL, or `picotool load -f
 build/controller.uf2`.
 
+### Boards
+
+| `PICO_BOARD` | Board | Flash | Partition layout |
+| --- | --- | --- | --- |
+| `pico2_w` (default) | Pico 2 W on the pcie-breakout | 4 MB | `pico2w-4mb.json` |
+| `wiznet_w6100_evb_pico2` | WIZnet W6100-EVB-Pico2 in the same socket, no radio | 2 MB | none (runs unpartitioned) |
+| `pwrman_controller_card` | the production controller card, `hardware/controller` | 16 MB | `prod-16mb.json` |
+
+The pico-sdk knows the Pico 2 W; `boards/` carries the other two. The EVB's
+header mostly exists to declare its 2 MB flash so the settings and
+fault-log sectors land inside the chip. The card's header declares its
+16 MB W25Q128, the RM2 radio on the Pico 2 W's CYW43 pins, and defines
+`PWRMAN_CONTROLLER_CARD`, which switches `src/pins.h` to the card's
+[GPIO map](#gpio-map) and the inverted reset drivers; the build picks the
+16 MB partition layout for it. Pins were checked against the card's KiCad
+netlist; the card itself has not been fabricated yet.
+
+```sh
+cmake -B build-card -G Ninja -DPICO_BOARD=pwrman_controller_card
+ninja -C build-card
+```
+
 ### Network options
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `NET_WIFI` | ON | CYW43 WiFi + Improv BLE provisioning; needs a CYW43 board (`pico2_w`) |
+| `NET_WIFI` | ON | CYW43 WiFi + Improv BLE provisioning; needs a CYW43 board (`pico2_w`, the card) |
 | `NET_ETH` | ON | W6100 wired Ethernet on SPI0 GP16–21, probed once at boot |
 
 Both on is the production shape (RM2 radio + W6100). A Pico 2 W with nothing
 on GP16–21 logs `eth: no W6100 answering` at boot and runs WiFi-only. For a
-board with no radio, such as a WIZnet W6100-EVB-Pico2 in the same socket,
-build a wired-only image (no cyw43 or BTstack blobs, about 230 KB). The
-pico-sdk has no board file for that EVB, so `boards/` carries one; it mostly
-exists to declare the EVB's 2 MB flash so the settings and fault-log sectors
-land inside the chip:
+board with no radio, such as the W6100-EVB-Pico2, build a wired-only image
+(no cyw43 or BTstack blobs, about 230 KB):
 
 ```sh
 cmake -B build-eth -G Ninja -DPICO_BOARD=wiznet_w6100_evb_pico2 -DNET_WIFI=OFF
@@ -160,9 +195,11 @@ board; the build compiles the selected one (`PARTITION_TABLE_JSON`, default
 | `0x302000` | 1016K | `data` — settings ping-pong pair in the first two sectors |
 
 The firmware never hardcodes these offsets: it looks partitions up **by ID**
-through the bootrom at boot, so the same binary runs on any layout (the
-16 MB production map in `prod-16mb.json` just makes everything bigger and
-adds an `assets` partition). Boards with no partition table at all still
+through the bootrom at boot, so the same binary runs on any layout. The
+16 MB map for the controller card (`prod-16mb.json`, the default for that
+board) makes the image slots 4 MB each, adds a 7 MB `assets` partition, and
+leaves the top 4 KB sector unpartitioned, which picotool insists on for the
+RP2350-E10 erratum workaround. Boards with no partition table at all still
 work — settings fall back to the legacy top-of-flash sectors and `info`
 reports `slot raw`.
 
@@ -300,7 +337,7 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
 | `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, the `pwrman_ups_*` gauges while a UPS answers, and every port metric labelled `port` and `name` |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
@@ -486,7 +523,47 @@ The blades found seated at boot are enabled one at a time, 250 ms apart, in
 priority order (slot order among equals; boot-disabled ports hold no slot),
 so six sinks do not inrush and negotiate on the DC input at once and the
 highest-priority port claims the budget first. Blades seated later, and
-ports switched on later, are immediate as before.
+ports switched on later, are immediate as before. Blades that are already
+powered when the firmware starts (a [warm start](#warm-start)) have nothing
+to inrush and are adopted ahead of the queue.
+
+### Warm start
+
+A controller reboot — a firmware update, a `reboot` from the console or the
+page, a watchdog or a HardFault — does not cut port power. The expander
+that drives the blade EN lines is powered from the backplane, not the
+controller, and neither board asserts its reset when the controller itself
+resets, so it keeps its registers and every powered blade stays powered
+while the firmware is away. At start the engine reads the expander before
+touching it: if it still holds the configuration this firmware wrote, that
+is a *warm start* and its output register is adopted as it stands; only an
+expander in its power-on state (a *cold start*, after a power cut) is
+reset and configured from scratch, outputs low first.
+
+Every blade found powered is then taken back under supervision without
+touching EN, in priority order, 50 ms apart: the mux channel is selected,
+the INA226 and MPQ4242 identified, any fault latched while nobody was
+watching (an over-current trip, an MPQ4242 fault flag) is treated as a
+fault now — the usual path, EN off, cooldown, re-probe — and the MPQ4242's
+configuration is compared, read-only, with the settings and rewritten
+(and re-advertised to an attached sink) only when it differs, so a live
+contract normally rides through untouched. The port then reports `active`
+with its contract reserved in the budget as if nothing had happened. A
+blade that does not answer cannot be supervised and is switched off like
+any failed probe; a port whose boot policy is `off` (or `last` with the
+port last switched off) is switched off at once; an EN left on with no
+blade seated behind it is dropped. The fan is adopted the same way, and
+the policy then decides whether it stays on.
+
+What a warm start cannot do is make up for the time the controller was
+down: there is no budget arbitration and no firmware fault response while
+it is away — only the blades' own current and thermal limits — and the
+charge-complete hold and sleep timers restart at the reboot. The console
+logs `engine: warm start, ports 1 and 3 kept powered` (or `cold start`),
+`info` repeats it, and the status JSON carries `warm_start`. The
+Pico 2 W carrier and the controller card both behave this way; it is
+exercised against the simulator in the host tests and still to be
+confirmed on a live backplane.
 
 ### Status LEDs
 

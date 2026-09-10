@@ -93,3 +93,23 @@ jobs:
             firmware/controller/build/controller.uf2
             firmware/controller/build/controller.elf
             firmware/controller/build/partition_table.uf2
+
+      # The production controller card: its own board header (16 MB flash,
+      # the card's GPIO map) and partition layout. Built so a change that
+      # breaks it is caught here, not at bring-up.
+      - name: Configure (controller card)
+        run: >
+          cmake -S firmware/controller -B firmware/controller/build-card -G Ninja
+          -DPICO_BOARD=pwrman_controller_card -DPICO_SDK_PATH="$HOME/pico-sdk"
+
+      - name: Build (controller card)
+        run: ninja -C firmware/controller/build-card
+
+      - name: Store card firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-card-firmware
+          path: |
+            firmware/controller/build-card/controller.uf2
+            firmware/controller/build-card/controller.elf
+            firmware/controller/build-card/partition_table.uf2

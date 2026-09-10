@@ -12,3 +12,7 @@
 // description ("faults: Port 2, Desk; trial firmware uncommitted", empty
 // when healthy) and returns the number of problems found.
 unsigned health_problems(const telemetry_t *t, char *buf, size_t cap);
+
+// How the engine started, for the log and `info`: "cold start (expander
+// reset)", or "warm start, ports 1 and 3 kept powered". Returns the length.
+unsigned health_start_text(const telemetry_t *t, char *buf, size_t cap);

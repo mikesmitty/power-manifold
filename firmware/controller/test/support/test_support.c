@@ -60,9 +60,10 @@ void support_reset(uint32_t budget_mw) {
     g_settings.fan_off_w = 60;
     g_settings.fan_on_ma = 3000;
     sim_reset();
+    tca9539_init(); // cold start, as engine_main does: the sim expander is programmed from here
     budget_init(budget_mw);
     port_fsm_init();
-    fan_policy_init(g_settings.fan_auto != 0);
+    fan_policy_init(g_settings.fan_auto != 0, false);
     evt_clear();
     now_ms = 0;
     memset(&tele, 0, sizeof(tele));
