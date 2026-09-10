@@ -8,6 +8,7 @@
 #include "led_sched.h"
 #include "net/jsonlite.h"
 #include "manifold.h"
+#include "vin.h"
 
 #define STR_(x) #x
 #define STR(x) STR_(x)
@@ -66,7 +67,8 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_ip(out, cap, off, "dns", s->ip_dns);
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
     off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,"
-               "\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min);
+               "\"vin_cal\":%u,\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min,
+               s->vin_cal);
     for (int i = 0; i < NUM_PORTS; i++) {
         off = putf(out, cap, off, "%s\"", i ? "," : "");
         if (off < cap) off += json_escape(out + off, cap - off, s->port_name[i]);
@@ -188,6 +190,10 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
     if (json_get_int(body, "charged_min", &v)) {
         if (v < 1 || v > 255) return "charged_min: 1-255";
         s->charged_min = (uint8_t)v;
+    }
+    if (json_get_int(body, "vin_cal", &v)) {
+        if (v < VIN_CAL_MIN || v > VIN_CAL_MAX) return "vin_cal: " STR(VIN_CAL_MIN) "-" STR(VIN_CAL_MAX) " (permille)";
+        s->vin_cal = (uint16_t)v;
     }
     if (via_setup && !s->api_token[0]) return "set an API token to finish setup";
 

@@ -64,7 +64,7 @@ W6100-EVB-Pico2 in the same socket) and the production controller card
 | ETH_RST# | GP20 | GP20 | W6100 reset |
 | ETH_INT# | GP21 | GP21 | W6100 interrupt, level-low while a frame waits |
 | BUTTON | — | GP22 | front-panel button (not used yet) |
-| VIN_SENSE | — | GP28 / ADC2 | bus voltage through 120 kΩ / 10 kΩ (not used yet) |
+| VIN_SENSE | — | GP28 / ADC2 | DC bus voltage through 120 kΩ / 10 kΩ, see [Bus voltage](#bus-voltage) |
 | RM2 radio | — | GP23/24/25/29 | the Pico 2 W's own CYW43 wiring, so the WiFi and BLE code carries over unchanged |
 
 The two reset lines differ in more than pin number. The carrier drives
@@ -337,8 +337,8 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
-| `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, the `pwrman_ups_*` gauges while a UPS answers, and every port metric labelled `port` and `name` |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, `pwrman_bus_volts` / `pwrman_bus_voltage_ok` on the controller card, the `pwrman_ups_*` gauges while a UPS answers, and every port metric labelled `port` and `name` |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
 | `GET /api/v1/settings` | token or setup secret | Every setting except the secrets, with `mqtt_pass_set` / `token_set` flags in their place |
@@ -358,8 +358,8 @@ redirect while none is stored. The settings keys are `name`, `wifi_ssid`,
 `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`,
 `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`,
 `tz_offset_min`, `ip_mode`, `ip`, `netmask`, `gateway`, `dns`,
-`syslog_host`, `syslog_port`, `charged_mw`, `charged_min`, and the
-six-element arrays `port_names`, `port_limits_ma`, `port_max_v` (5, 9,
+`syslog_host`, `syslog_port`, `charged_mw`, `charged_min`, `vin_cal`, and
+the six-element arrays `port_names`, `port_limits_ma`, `port_max_v` (5, 9,
 12, 15 or 20), `port_priorities`, `port_boot`, `port_auto_off` and
 `port_sleep_min`. Budget, fan, LEDs, names, limits, voltage caps,
 priorities, power-up policy, charge thresholds, DNS and syslog apply live;
@@ -374,7 +374,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | Topic | Direction | Payload |
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
-| `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a` |
+| `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`, and the bus voltage `vin` (fitted), `vin_v` |
 | `port/<n>/telemetry` | published at 1 Hz | `state`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at` |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
@@ -433,6 +433,8 @@ Chassis:
 - an *Open BLE provisioning* button, and a firmware update entity fed from
   the retained `update/latest` pointer whose Install pulls the URL into the
   inactive slot;
+- on the controller card, a *Bus voltage* sensor (the DC input, from the
+  card's divider; retracted on a board without one);
 - while a UPS supply answers on the UPS header: *UPS AC input* (device
   class `plug`), *UPS on battery* and *UPS charging* binary sensors, and
   UPS battery voltage, mains voltage and load current sensors. They are
@@ -448,7 +450,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | Command | Purpose |
 | --- | --- |
 | `status` | port table (state, contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged) and chassis power |
-| `info` | firmware, slot and boot reason, links and addressing, UPS supply, broker, syslog sink, LED schedule and local time, problems, simulator state |
+| `info` | firmware, slot and boot reason, links and addressing, UPS supply, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
 | `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
@@ -473,6 +475,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `tz <+HH:MM\|-HH:MM>` | local time offset for the night window |
 | `faults [clear]` | persistent fault log |
 | `ups [buzzer on\|off]` | UPS supply readings, status bits, per-block voltages and link counters; `buzzer off` silences its alarm until the supply restarts |
+| `vin [cal <volts>\|cal reset]` | DC bus voltage with the raw count and gain trim; `cal 24.13` trims the reading to a meter's (then `save`) |
 | `export` | every setting as JSON, without passwords |
 | `update <http-url>` | OTA pull into the inactive slot |
 | `stack` | per-core stack high-water marks |
@@ -671,6 +674,26 @@ problem indicator. `ups buzzer off` silences the supply's alarm; the
 setting lives in the supply and is lost when it restarts, as its manual
 says of every write. The driver runs against an emulated supply in the
 host tests (`test_ups.c`) and has not yet met a real LAD.
+
+### Bus voltage
+
+The controller card watches the DC input: a 120 kΩ / 10 kΩ divider (100 nF
+across the bottom leg) brings VIN to GP28/ADC2, so 3.3 V full scale is
+42.9 V and the bus's 33 V clamp can never take the pin past the rail. Core 0
+takes eight conversions every 100 ms and reports a one-second average,
+about 10 mV a count. The ADC's reference is the card's 3.3 V rail and the
+divider is 1 % parts, so the reading can be a couple of percent off; put a
+meter on the bus and `vin cal 24.13` (then `save`) stores the gain trim
+that makes them agree, in the `vin_cal` setting (permille, 900 to 1100;
+`vin cal reset` clears it). The reading is `vin_v` in the status JSON and
+the MQTT status, a *Bus voltage* sensor in Home Assistant,
+`pwrman_bus_volts` on `/metrics`, part of the chassis line on the page,
+`vin` and a line in `info` and `status` on the console. The chassis is
+specified for 20 to 28 V and the backplane's 5 V rail drops out near 18 V,
+so a bus under 19 V or over 29 V (half a volt of hysteresis either way)
+raises the problem indicator and logs a line; nothing derates the budget
+from it yet. The Pico 2 W carrier has no path from VIN to an ADC pin, so
+there the monitor reports *not fitted* and every surface leaves it out.
 
 ### Fan
 

@@ -35,6 +35,7 @@
 #include "update.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
+#include "vin.h"
 
 #define CLI_LINE_MAX 160
 
@@ -80,6 +81,7 @@ static void print_help(void) {
            "  tz <+HH:MM|-HH:MM>           local time = UTC + this (LED schedule)\n"
            "  faults [clear]               persistent fault log\n"
            "  ups [buzzer on|off]          UPS supply readings; silence its buzzer (until it restarts)\n"
+           "  vin [cal <volts>|cal reset]  DC bus voltage; trim it to a meter reading (then 'save')\n"
            "  export                       every setting as JSON (no passwords; POST it to import)\n"
            "  stack                        per-core stack high-water marks\n"
 #ifdef PWRMAN_FAKE_BLADES
@@ -105,10 +107,12 @@ static void print_status(void) {
                g_settings.port_priority[i],
                settings_port_boot_name(g_settings.port_boot[i]), settings_port_name(i));
     }
-    printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s\n",
+    printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
            (unsigned long)t.budget_mw, t.fan_on ? "on" : "off",
            t.fan_auto ? " (auto)" : "", t.alert_active ? "ACTIVE" : "clear");
+    if (vin_fitted()) printf(" bus %s", vin_status_str());
+    printf("\n");
     printf("charged: under %umW for %umin", g_settings.charged_mw, g_settings.charged_min);
     if (!g_settings.charged_mw) printf(" (detection off)");
     for (int i = 0; i < NUM_PORTS; i++) {
@@ -138,6 +142,9 @@ static void print_info(void) {
     printf("eth: %s\n", eth_status_str());
 #endif
     printf("ups: %s\n", ups_status_str());
+    printf("bus: %s", vin_status_str());
+    if (vin_fitted()) printf(" (cal %u.%03u)", g_settings.vin_cal / 1000, g_settings.vin_cal % 1000);
+    printf("\n");
     printf("ip: %s (%s)\n", net_up() ? net_ip_str() : "none",
            g_settings.ip_static ? "static" : "dhcp");
     if (net_up()) printf("netmask: %s, gateway: %s\n", net_mask_str(), net_gw_str());
@@ -344,6 +351,27 @@ static void run_line(char *l) {
             else printf(ups_set_buzzer(!strcmp(v, "on")) ? "ok\n" : "busy, try again\n");
         } else {
             printf("usage: ups [buzzer on|off]\n");
+        }
+    } else if (!strcmp(cmd, "vin")) {
+        const char *what = strtok_r(NULL, " \t", &save);
+        const char *v = strtok_r(NULL, " \t", &save);
+        if (!what) {
+            printf("bus: %s", vin_status_str());
+            if (vin_fitted()) printf(" (raw %lu, cal %u.%03u)", (unsigned long)vin_raw(),
+                                     g_settings.vin_cal / 1000, g_settings.vin_cal % 1000);
+            printf("\n");
+        } else if (!vin_fitted()) {
+            printf("no bus-voltage divider on this board\n");
+        } else if (!strcmp(what, "cal") && v && !strcmp(v, "reset")) {
+            g_settings.vin_cal = VIN_CAL_DEFAULT;
+            printf("cal 1.000: %s; 'save' to keep\n", vin_status_str());
+        } else if (!strcmp(what, "cal") && v && atof(v) > 0) {
+            uint16_t c = vin_cal_for((uint32_t)(atof(v) * 1000.0 + 0.5));
+            if (!c) { printf("no reading yet\n"); return; }
+            g_settings.vin_cal = c;
+            printf("cal %u.%03u: %s; 'save' to keep\n", c / 1000, c % 1000, vin_status_str());
+        } else {
+            printf("usage: vin [cal <volts>|cal reset]\n");
         }
     } else if (!strcmp(cmd, "wifi")) {
         const char *ssid = strtok_r(NULL, " \t", &save);

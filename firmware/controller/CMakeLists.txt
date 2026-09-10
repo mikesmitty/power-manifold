@@ -73,6 +73,8 @@ add_executable(controller
     src/ups/lad_proto.c
     src/ups/ups.c
     src/ups/lad_hw_pico.c
+    src/vin.c
+    src/vin_hw_pico.c
     ${DRIVER_SOURCES}
 )
 
@@ -141,6 +143,7 @@ target_link_libraries(controller
     hardware_pio
     hardware_flash
     hardware_watchdog
+    hardware_adc
     pico_lwip_mqtt
     pico_lwip_mdns
     pico_lwip_sntp

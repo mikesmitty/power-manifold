@@ -24,7 +24,7 @@
 #define PIN_ALERT_N     7  // GLOBAL_ALERT#; 4.7k to 3.3 V on the card (R43)
 #define PIN_MUX_RST_N   8  // TCA9548A reset, via Q2 (2N7002, 100k gate pull-down)
 #define PIN_BUTTON      22 // front-panel button SW3 to GND (1k series, 100 nF); not used yet
-#define PIN_VIN_SENSE   28 // ADC2: VIN through 120k / 10k; not used yet
+#define PIN_VIN_SENSE   28 // ADC2: VIN through 120k / 10k (R13/R14), see vin.h
 #define VIN_ADC_INPUT   2
 // The reset lines are driven through N-channel FETs against the backplane's
 // 10k pull-ups to 5 V: the GPIO drives a gate, so HIGH asserts the reset,

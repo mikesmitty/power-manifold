@@ -25,6 +25,7 @@
 #include "settings.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
+#include "vin.h"
 
 #define KEEP_ALIVE_S     30
 #define BACKOFF_MS       (5 * 1000)
@@ -38,7 +39,7 @@
 // last chassis step retracts the pre-select fan switch config)
 #define PORT_SENSOR_N    5
 #define PORT_ENTITIES    (PORT_SENSOR_N + 11)
-#define CHASSIS_ENTITIES 20
+#define CHASSIS_ENTITIES 21
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -705,10 +706,12 @@ static void publish_fan_select(void) {
 
 // UPS entities exist only while a supply answers on the UPS header; without
 // one the config is retracted so a board that never had a UPS shows none.
-static void publish_ups_entity(const char *component, const char *object, const char *name,
-                               const char *extra, const char *tpl) {
+// An entity for hardware that may not be there (the UPS supply, the bus
+// voltage divider): published while it is, retracted otherwise.
+static void publish_optional_entity(bool present, const char *component, const char *object,
+                                    const char *name, const char *extra, const char *tpl) {
     discovery_config_topic(component, object);
-    if (!ups_present()) {
+    if (!present) {
         publish(topic_buf, "", 1, 1);
         return;
     }
@@ -793,31 +796,36 @@ static void discovery_publish(int i) {
         publish_led_mode_sensor();
         break;
     case 13:
-        publish_ups_entity("binary_sensor", "ups_ac", "UPS AC input", "\"dev_cla\":\"plug\",",
+        publish_optional_entity(ups_present(), "binary_sensor", "ups_ac", "UPS AC input", "\"dev_cla\":\"plug\",",
                            "{{ value_json.ups_ac }}");
         break;
     case 14:
-        publish_ups_entity("binary_sensor", "ups_on_battery", "UPS on battery",
+        publish_optional_entity(ups_present(), "binary_sensor", "ups_on_battery", "UPS on battery",
                            "\"ic\":\"mdi:battery-arrow-down\",", "{{ value_json.ups_on_battery }}");
         break;
     case 15:
-        publish_ups_entity("binary_sensor", "ups_charging", "UPS charging",
+        publish_optional_entity(ups_present(), "binary_sensor", "ups_charging", "UPS charging",
                            "\"dev_cla\":\"battery_charging\",", "{{ value_json.ups_charging }}");
         break;
     case 16:
-        publish_ups_entity("sensor", "ups_batt_v", "UPS battery voltage",
+        publish_optional_entity(ups_present(), "sensor", "ups_batt_v", "UPS battery voltage",
                            "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
                            "{{ value_json.ups_batt_v }}");
         break;
     case 17:
-        publish_ups_entity("sensor", "ups_mains_v", "UPS mains voltage",
+        publish_optional_entity(ups_present(), "sensor", "ups_mains_v", "UPS mains voltage",
                            "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
                            "{{ value_json.ups_mains_v }}");
         break;
     case 18:
-        publish_ups_entity("sensor", "ups_load_a", "UPS load current",
+        publish_optional_entity(ups_present(), "sensor", "ups_load_a", "UPS load current",
                            "\"dev_cla\":\"current\",\"unit_of_meas\":\"A\"," MEASUREMENT,
                            "{{ value_json.ups_load_a }}");
+        break;
+    case 19:
+        publish_optional_entity(vin_fitted(), "sensor", "bus_v", "Bus voltage",
+                           "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
+                           "{{ value_json.vin_v }}");
         break;
     default:
         // retire the fan switch this select replaced from older firmware
@@ -855,7 +863,8 @@ static void publish_telemetry(void) {
              "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
              "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\","
              "\"ups\":%s,\"ups_ac\":\"%s\",\"ups_on_battery\":\"%s\",\"ups_charging\":\"%s\","
-             "\"ups_batt_v\":%.2f,\"ups_mains_v\":%.1f,\"ups_load_a\":%.2f}",
+             "\"ups_batt_v\":%.2f,\"ups_mains_v\":%.1f,\"ups_load_a\":%.2f,"
+             "\"vin\":%s,\"vin_v\":%.2f}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -867,7 +876,8 @@ static void publish_telemetry(void) {
              u->present ? "true" : "false", (u->status_l & LAD_ST_AC_OK) ? "ON" : "OFF",
              (u->status_l & LAD_ST_ON_BATTERY) ? "ON" : "OFF",
              (u->status_l & LAD_ST_CHARGING) ? "ON" : "OFF", u->batt_cv / 100.0,
-             u->mains_dv / 10.0, u->load_ca / 100.0);
+             u->mains_dv / 10.0, u->load_ca / 100.0, vin_fitted() ? "true" : "false",
+             vin_mv() / 1000.0);
     publish(topic_buf, payload_buf, 0, 1);
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {

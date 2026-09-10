@@ -9,6 +9,7 @@
 #include "net/net.h"
 #include "settings.h"
 #include "ups/ups.h"
+#include "vin.h"
 
 static size_t put(char *buf, size_t cap, size_t n, const char *s) {
     size_t len = strlen(s);
@@ -59,6 +60,12 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
         n = put(buf, cap, n, count ? "; " : "");
         n = put(buf, cap, n, "UPS battery: ");
         n = put(buf, cap, n, text);
+        count++;
+    }
+    if (vin_low() || vin_high()) {
+        n = put(buf, cap, n, count ? "; " : "");
+        n = put(buf, cap, n, vin_low() ? "bus voltage low, " : "bus voltage high, ");
+        n = put(buf, cap, n, vin_status_str());
         count++;
     }
     return count;

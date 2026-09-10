@@ -65,6 +65,8 @@ typedef struct {
     int16_t  tz_offset_min;    // local time = UTC + this (SNTP is UTC; no tz database)
     // -- added in layout version 11 --
     uint16_t port_max_mv[NUM_PORTS]; // voltage cap: highest PDO advertised (PORT_VOLT_MAX_MV = all)
+    // -- added in layout version 12 --
+    uint16_t vin_cal;         // bus-voltage gain trim, permille (see vin.h)
     uint32_t crc; // must remain last
 } settings_t;
 

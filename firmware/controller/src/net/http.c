@@ -31,11 +31,12 @@
 #include "update.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
+#include "vin.h"
 
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         3072 // browser headers + a full settings export posted back
-#define STATUS_JSON_MAX 2752 // six ports with escaped labels, the problem text and the UPS block, worst case
+#define STATUS_JSON_MAX 2784 // six ports with escaped labels, the problem text, the UPS block and the bus voltage, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -256,6 +257,7 @@ static const char INDEX_HTML[] =
     " reserved of ${d.budget_w.toFixed(0)}W budget"
     " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}"
     " \\u2014 last boot ${d.boot}${d.led_mode!='normal'?' \\u2014 LEDs dimmed ('+d.led_mode+')':''}"
+    "${d.vin_v!=null?' \\u2014 bus '+d.vin_v.toFixed(2)+' V':''}"
     "${d.ups&&d.ups.present?' \\u2014 UPS '+d.ups.status:''}`;"
     "document.getElementById('prob').textContent=d.problems?'\\u26a0 '+d.problems:'';"
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
@@ -513,13 +515,16 @@ static void build_status_json(char *out, size_t cap) {
 #endif
     static char upsf[320]; // static: IRQ stack
     build_ups_json(upsf, sizeof(upsf));
+    char vinf[16]; // a number, or null on a board without the divider
+    if (vin_fitted()) snprintf(vinf, sizeof(vinf), "%.2f", vin_mv() / 1000.0);
+    else snprintf(vinf, sizeof(vinf), "null");
     size_t off = (size_t)snprintf(out, cap,
         "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
-        "\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,%s\"ports\":[",
+        "\"vin_v\":%s,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -528,7 +533,7 @@ static void build_status_json(char *out, size_t cap) {
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
-        t.warm_start ? "true" : "false",
+        t.warm_start ? "true" : "false", vinf,
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
         led_sched_level(&g_settings, led_sched_current()), upsf);
 
@@ -642,6 +647,11 @@ static size_t build_metrics(char *out, size_t cap) {
     M_PUT("# TYPE pwrman_fan_auto gauge\npwrman_fan_auto %d\n", t.fan_auto ? 1 : 0);
     M_PUT("# TYPE pwrman_alert_active gauge\npwrman_alert_active %d\n", t.alert_active ? 1 : 0);
     M_PUT("# TYPE pwrman_fault_log_records gauge\npwrman_fault_log_records %d\n", fault_log_count());
+    if (vin_fitted()) {
+        M_PUT("# TYPE pwrman_bus_volts gauge\npwrman_bus_volts %.2f\n", vin_mv() / 1000.0);
+        M_PUT("# TYPE pwrman_bus_voltage_ok gauge\npwrman_bus_voltage_ok %d\n",
+              (vin_low() || vin_high()) ? 0 : 1);
+    }
     const ups_state_t *u = ups_state();
     M_PUT("# TYPE pwrman_ups_present gauge\npwrman_ups_present %d\n", u->present ? 1 : 0);
     if (u->present) {

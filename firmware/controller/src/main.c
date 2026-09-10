@@ -22,6 +22,7 @@
 #include "stack_probe.h"
 #include "update.h"
 #include "ups/ups.h"
+#include "vin.h"
 
 #define WATCHDOG_TIMEOUT_MS 5000
 
@@ -50,6 +51,7 @@ int main(void) {
     net_init();
     http_init();
     ups_init(); // probes the UPS header; harmless with nothing plugged in
+    vin_init(); // the bus-voltage divider, where the board has one
 
     char boot_text[80];
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
@@ -78,6 +80,7 @@ int main(void) {
         mqtt_poll(now_ms);
         log_sink_poll(now_ms);
         ups_poll(now_ms);
+        vin_poll(now_ms);
         if (ups_present() != ups_seen) {
             ups_seen = ups_present();
             mqtt_names_changed(); // re-run discovery: the UPS entities come and go with it
