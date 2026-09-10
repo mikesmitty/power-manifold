@@ -126,10 +126,16 @@ void engine_main(void) {
     i2c_init(I2C_BUS, I2C_BAUD);
     gpio_set_function(PIN_I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C_SCL, GPIO_FUNC_I2C);
-    // SDA/SCL and ALERT# have external pull-ups on the controller card
-
     gpio_init(PIN_ALERT_N);
     gpio_set_dir(PIN_ALERT_N, GPIO_IN);
+    // SDA/SCL and ALERT# have 4.7k external pull-ups on the controller card
+    // (or wired on the pcie-breakout for a Pico 2 W). Every RP2350 pad boots
+    // with its pull-down enabled and gpio_set_function/gpio_init leave it so;
+    // that pull-down would sit across the external pull-up, eating noise
+    // margin on every high level. Clear it.
+    gpio_disable_pulls(PIN_I2C_SDA);
+    gpio_disable_pulls(PIN_I2C_SCL);
+    gpio_disable_pulls(PIN_ALERT_N);
     // EXP_INT# is open-drain from the TCA9539 with no pull-up anywhere else;
     // without this the pad default (pull-down) reads it as permanently asserted.
     gpio_init(PIN_EXP_INT_N);

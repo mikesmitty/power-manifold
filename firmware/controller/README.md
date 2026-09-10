@@ -46,9 +46,9 @@ The hardware watchdog is fed only while both cores make progress.
 | GPIO | Signal | Notes |
 | --- | --- | --- |
 | GP2 | LED_DATA | WS2812C chain, PIO |
-| GP3 | GLOBAL_ALERT# | wire-OR of blade ALERT# lines |
-| GP4/GP5 | SDA/SCL | I2C0, pull-ups on backplane |
-| GP6 | EXP_INT# | TCA9539 interrupt |
+| GP3 | GLOBAL_ALERT# | wire-OR of blade ALERT# lines; open-drain, pulled up on the controller card (or by a resistor wired on the pcie-breakout), pad pull-down cleared at init |
+| GP4/GP5 | SDA/SCL | I2C0; 4.7 kΩ pull-ups on the controller card (or wired on the pcie-breakout), none on the backplane's upstream side; pad pull-down cleared at init |
+| GP6 | EXP_INT# | TCA9539 interrupt; open-drain, internal pull-up only |
 | GP7 | MUX_RST# | TCA9548A reset |
 | GP8 | EXP_RST# | TCA9539 reset |
 | GP12/GP13 | UPS_TX/UPS_RX | UART0, 9600 8N1, to a Mean Well LAD-xxxU UPS supply (the controller card's UPS header) |
