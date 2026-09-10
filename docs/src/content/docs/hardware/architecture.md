@@ -59,6 +59,21 @@ The standard 36-pin PCIe x1 card-edge form factor provides high current capacity
 | **A17** | **GND** *(Shield Guard)* | **PRSNT2#** *(Short Pin)* | **B17** | Presence sense loop return (B17). Shorter pin length ensures PRSNT# asserts only at full seating. |
 | **A18** | **GND** *(End Guard)* | **GND** *(End Guard)* | **B18** | Outer edge ESD guard and termination reference. |
 
+### 3.1. Slot Numbering (Verified Against the Netlist, 2026-09-09)
+
+Ports are numbered 1–6 by the backplane silkscreen, and every per-slot resource follows that number in step: the firmware's port index *n*−1 selects TCA9548A channel *n*−1, drives EN from expander pin P0(*n*−1), reads PRSNT# on P1(*n*−1) and renders WS2812 pixel *n*−1. The sockets were re-annotated so the refs no longer run in slot order, hence the table.
+
+| Slot | Socket | I²C segment | Mux channel (pins) | EN | PRSNT# | Pixel | Position |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---- |
+| 1 | J3 | SCL1/SDA1 | 0 (SC0/SD0) | P00 | P10 | D4 (first in the chain) | leftmost, next to the management socket J1 |
+| 2 | J5 | SCL2/SDA2 | 1 | P01 | P11 | D5 | |
+| 3 | J7 | SCL3/SDA3 | 2 | P02 | P12 | D6 | |
+| 4 | J4 | SCL4/SDA4 | 3 | P03 | P13 | D7 | |
+| 5 | J6 | SCL5/SDA5 | 4 | P04 | P14 | D8 | |
+| 6 | J8 | SCL6/SDA6 | 5 | P05 | P15 | D9 (last) | rightmost, at the fuse and XT60 end |
+
+EN and PRSNT# reach the expander through 330 Ω arrays (RN5/RN6 and RN7/RN8) whose elements are pinned 1–8, 2–7, 3–6, 4–5; the fan sits on P06 through RN6's third element. The backplane sits in the chassis the way the layout draws it, seen from the front: the management socket at the left, the six charger sockets 17.75 mm apart to its right, the power input at the far right. Facing the faceplate, port 1 is therefore on the left and port 6 on the right, and each slot's pixel sits 5.7 mm to the blade's component side and just past its lower edge, so its light pipe reaches the faceplate below and to the right of the port. The power-up sweep runs left to right.
+
 ## 4. Management Interconnect Architecture
 
 ### 4.1. The Decision: Management Slot vs. Detached Controller
@@ -121,7 +136,7 @@ GP16–21 stay reserved for the wired-Ethernet path (W6100 per the EVB-Pico2 map
 
 The mechanical design supports modular serviceability, high-current thermal conduction, and low-noise network integration:
 
-> * **Front-Panel Light Pipes:** Rigid optical light pipes (3.0mm diameter) channel light from the six backplane WS2812C LEDs directly to the front faceplate above each USB-C port, maintaining slot status visibility even when a blade is unseated.
+> * **Front-Panel Light Pipes:** Rigid optical light pipes (3.0mm diameter) channel light from the six backplane WS2812C LEDs directly to the front faceplate, below and to the right of each USB-C port, maintaining slot status visibility even when a blade is unseated.
 > * **Management Slot Front-Panel Alignment:** The management card's connectors (RJ45 MagJack and maintenance USB-C on the production board) align flush with the front faceplate alongside ports 1–6.
 > * **Ethernet Grounding & ESD:** The RJ45 shield bonds to the chassis through its EMI spring fingers; magnetics center taps terminate Bob-Smith style into the chassis-bonded ground region (§8.3 — the earlier capacitive CHGND barrier was deleted in favor of deliberate multipoint bonding).
 > * **Thermal Distribution:** Each blade uses 1oz outer and inner copper planes with arrays of thermal vias under the MPQ4242 exposed pad to transfer heat into the card-edge ground planes (PGND Pins A8-A10, B2-B9).
