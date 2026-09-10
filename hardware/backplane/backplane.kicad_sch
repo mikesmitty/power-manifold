@@ -19819,7 +19819,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "SMCJ33A"
+		(property "Value" "SMCJ33CA"
 			(at 100.33 35.5599 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19863,7 +19863,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C42371548"
+		(property "LCSC" "C310048"
 			(at 102.87 34.29 90)
 			(hide yes)
 			(show_name no)
@@ -21924,7 +21924,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "AO3400A"
+		(property "Value" "IRLML0060TRPbF"
 			(at 200.66 46.9899 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21948,7 +21948,7 @@
 				(justify left)
 			)
 		)
-		(property "Datasheet" "http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf"
+		(property "Datasheet" "https://www.infineon.com/assets/row/public/documents/24/49/infineon-irlml0060-datasheet-en.pdf"
 			(at 199.39 49.53 0)
 			(hide yes)
 			(show_name no)
@@ -21960,7 +21960,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "30V Vds, 5.7A Id, N-Channel MOSFET, SOT-23"
+		(property "Description" "60V Vds, 2.7A Id, N-Channel MOSFET, SOT-23"
 			(at 194.31 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -21971,7 +21971,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C20917"
+		(property "LCSC" "C67274"
 			(at 194.31 45.72 0)
 			(hide yes)
 			(show_name no)
