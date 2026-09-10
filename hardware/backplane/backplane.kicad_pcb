@@ -17330,7 +17330,7 @@
 				)
 			)
 		)
-		(property "Value" "IRLML0060TRPbF"
+		(property "Value" "AO3400A"
 			(at 0 2.4 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -17342,7 +17342,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://www.infineon.com/assets/row/public/documents/24/49/infineon-irlml0060-datasheet-en.pdf"
+		(property "Datasheet" "http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -17353,7 +17353,7 @@
 				)
 			)
 		)
-		(property "Description" "60V Vds, 2.7A Id, N-Channel MOSFET, SOT-23"
+		(property "Description" "30V Vds, 5.7A Id, N-Channel MOSFET, SOT-23"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -17376,7 +17376,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C67274"
+		(property "LCSC" "C20917"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "F.Fab")
