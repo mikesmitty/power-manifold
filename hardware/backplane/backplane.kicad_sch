@@ -10904,12 +10904,6 @@
 		(uuid "35c69b7f-f3aa-44fa-bbce-e74203db3a80")
 	)
 	(junction
-		(at 196.85 26.67)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "361bc752-b3de-4bf6-b203-f7a00db078be")
-	)
-	(junction
 		(at 189.23 229.87)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -11184,6 +11178,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "96dee00b-1672-4480-b72c-b9bb8f34dfea")
+	)
+	(junction
+		(at 196.85 26.67)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "99701847-eab9-4b0b-b157-7d76c93e0da8")
 	)
 	(junction
 		(at 64.77 227.33)
@@ -13701,16 +13701,6 @@
 	)
 	(wire
 		(pts
-			(xy 193.04 22.86) (xy 196.85 22.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a96c06bd-bc0b-454f-8054-6a9c2c195ef4")
-	)
-	(wire
-		(pts
 			(xy 233.68 114.3) (xy 233.68 111.76)
 		)
 		(stroke
@@ -14551,7 +14541,7 @@
 	)
 	(wire
 		(pts
-			(xy 196.85 22.86) (xy 196.85 26.67)
+			(xy 196.85 24.13) (xy 196.85 26.67)
 		)
 		(stroke
 			(width 0)
@@ -15736,30 +15726,6 @@
 		(uuid "437da259-480d-4bee-85bd-2040027371b5")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 253.0709 71.12 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
-	(global_label "VIN"
-		(shape input)
-		(at 193.04 22.86 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "454a08e9-8fe4-4504-b41a-ea3e886a0cad")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 187.0309 22.86 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18078,6 +18044,84 @@
 			(project "backplane"
 				(path "/4d913069-4b50-4112-91ac-a1bdeabaace5"
 					(reference "#PWR046")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+5V")
+		(at 196.85 24.13 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "32587791-9367-4cb8-bef6-edd2dd0c2263")
+		(property "Reference" "#PWR054"
+			(at 196.85 27.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+5V"
+			(at 196.85 19.05 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 196.85 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 196.85 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+5V\""
+			(at 196.85 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "28eb90bd-ddd6-4e6a-a1ee-52ba97c9cf95")
+		)
+		(instances
+			(project "backplane"
+				(path "/4d913069-4b50-4112-91ac-a1bdeabaace5"
+					(reference "#PWR054")
 					(unit 1)
 				)
 			)
