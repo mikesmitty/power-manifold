@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.7.0...controller-firmware-v0.8.0) (2026-09-10)
+
+
+### Features
+
+* **controller-firmware:** DC bus voltage monitor on the controller card ([4b7601d](https://github.com/mikesmitty/power-manifold/commit/4b7601d357a858d0cc010e438ffd6a9b6d1f39c6))
+* **controller-firmware:** front-panel button — wake the LEDs, open BLE, hold to factory-reset ([f7e6fb9](https://github.com/mikesmitty/power-manifold/commit/f7e6fb923512d4b1533e9b33c77032227f3f844c))
+* **controller-firmware:** warm start keeps port power across a controller reboot, plus the card's board header ([9e1b223](https://github.com/mikesmitty/power-manifold/commit/9e1b22329d179107f5c9ca7f3ac1bacf3d290593))
+* **controller:** move the bus-high warning to 33 V ([1a50e51](https://github.com/mikesmitty/power-manifold/commit/1a50e519b4c322c359694846979edd4e4cb51caa))
+
+
+### Bug Fixes
+
+* **controller-firmware:** clear the pad pull-down on SDA, SCL and ALERT# ([4fd1637](https://github.com/mikesmitty/power-manifold/commit/4fd16379f95fda0e70c7b3ee0766067bf3cd8122))
+
 ## [0.7.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.6.0...controller-firmware-v0.7.0) (2026-09-08)
 
 
