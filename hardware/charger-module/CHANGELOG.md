@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.3](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.2...charger-module-v0.14.3) (2026-09-12)
+
+
+### Bug Fixes
+
+* **charger-module:** fix over-lengthening ([d5f3325](https://github.com/mikesmitty/power-manifold/commit/d5f3325428ca8c6325a3c02bf032edbc2404a800))
+
 ## [0.14.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.1...charger-module-v0.14.2) (2026-09-12)
 
 
