@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/mikesmitty/power-manifold/compare/controller-v0.3.1...controller-v0.3.2) (2026-09-12)
+
+
+### Bug Fixes
+
+* **controller:** re-orient wifi module for full keepout clearance ([07e0c20](https://github.com/mikesmitty/power-manifold/commit/07e0c200439555a06026be085c58174e0bc0ce52))
+
 ## [0.3.1](https://github.com/mikesmitty/power-manifold/compare/controller-v0.3.0...controller-v0.3.1) (2026-09-09)
 
 
