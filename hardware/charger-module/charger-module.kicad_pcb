@@ -10095,8 +10095,8 @@
 		(embedded_fonts no)
 	)
 	(gr_rect
-		(start 100 27.5)
-		(end 105 32.5)
+		(start 100.1 27.6)
+		(end 105.1 32.6)
 		(stroke
 			(width 0.1)
 			(type solid)
