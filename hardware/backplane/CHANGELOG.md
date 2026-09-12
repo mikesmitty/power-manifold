@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.11.1...backplane-v0.11.2) (2026-09-12)
+
+
+### Bug Fixes
+
+* **backplane:** make room for fuse and exhaust fan ([33ba555](https://github.com/mikesmitty/power-manifold/commit/33ba5550c852f326eee1fe87ee7de4aeba415dea))
+
 ## [0.11.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.11.0...backplane-v0.11.1) (2026-09-10)
 
 
