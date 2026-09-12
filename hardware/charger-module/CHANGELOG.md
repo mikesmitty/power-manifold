@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.1...charger-module-v0.14.2) (2026-09-12)
+
+
+### Bug Fixes
+
+* **charger-module:** lengthen board to match controller rj45 ([5b43e12](https://github.com/mikesmitty/power-manifold/commit/5b43e12cfefb464ba0d03fa251210a13d11a5c21))
+
 ## [0.14.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.0...charger-module-v0.14.1) (2026-09-09)
 
 
