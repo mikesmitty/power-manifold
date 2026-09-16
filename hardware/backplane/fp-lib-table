@@ -2,4 +2,5 @@
 	(version 7)
 	(lib (name "Pi-Pico Libraries") (type "KiCad") (uri "${KIPRJMOD}/../Libraries/Pi-Pico/MCU_RaspberryPi_and_Boards.pretty") (options "") (descr ""))
 	(lib (name "Local Library") (type "KiCad") (uri "${KIPRJMOD}/../libraries/Local Library.pretty") (options "") (descr ""))
+	(lib (name "libraries") (type "KiCad") (uri "/Users/michaelsmith/git/power-manifold/hardware/libraries.pretty") (options "") (descr ""))
 )
