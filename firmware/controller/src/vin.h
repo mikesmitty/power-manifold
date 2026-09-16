@@ -17,11 +17,12 @@
 #define VIN_CAL_MIN     900
 #define VIN_CAL_MAX     1100
 
-// The bus is rated for 20-32 V (the ATO fuse's 32 V rating and the
-// SMCJ33CA's 33 V stand-off set the ceiling); the backplane's 5 V rail drops
-// out near 18 V. The flags sit a volt outside that range and come with half
-// a volt of hysteresis so a sagging supply does not flap the problem
-// indicator.
+// The bus is rated for 20-32 V (the SMCJ33CA's 33 V stand-off and the
+// LM74800's ~34 V over-voltage cut-off set the ceiling); the backplane's 5 V
+// rail drops out near 18 V. The flags sit a volt outside that range and come
+// with half a volt of hysteresis so a sagging supply does not flap the
+// problem indicator. The high flag sits under the hardware trip so the
+// controller can report the excursion before the bus is cut.
 #define VIN_LOW_MV      19000
 #define VIN_HIGH_MV     33000
 #define VIN_HYST_MV     500
