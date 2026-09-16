@@ -18223,16 +18223,6 @@
 		(dnp no)
 		(uuid "2922eff4-5873-43f9-998d-7b2fbde93433")
 		(property "Reference" "C8"
-			(at 135.89 43.18 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "1uF"
 			(at 135.89 45.72 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18242,7 +18232,17 @@
 				)
 			)
 		)
-		(property "Footprint" "Local Library:C_0805_2012Metric"
+		(property "Value" "1uF"
+			(at 135.89 48.26 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Local Library:C_0603_1608Metric"
 			(at 139.7 51.1048 0)
 			(hide yes)
 			(show_name no)
@@ -18275,19 +18275,9 @@
 				)
 			)
 		)
-		(property "LCSC" "C5370002"
+		(property "LCSC" "C5199872"
 			(at 135.89 52.07 90)
 			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Voltage" "100V"
-			(at 136.144 48.26 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
