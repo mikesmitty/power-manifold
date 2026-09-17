@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.8.0...controller-firmware-v0.9.0) (2026-09-17)
+
+
+### Features
+
+* **controller:** declare the DC input range as 20-28 V and flag the bus above 29 V ([f309804](https://github.com/mikesmitty/power-manifold/commit/f3098041c300953af951b49f87ab5ca9fa27e106))
+
 ## [0.8.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.7.0...controller-firmware-v0.8.0) (2026-09-10)
 
 
