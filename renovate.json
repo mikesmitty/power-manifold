@@ -2,5 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>mikesmitty/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "description": "The docs site is not a released package: its dependency updates are chores, never feat/fix/breaking (the shared preset marks every v0.x update as feat!)",
+      "matchFileNames": ["docs/**"],
+      "commitMessagePrefix": "chore(docs):"
+    }
   ]
 }
