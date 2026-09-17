@@ -704,8 +704,8 @@ that makes them agree, in the `vin_cal` setting (permille, 900 to 1100;
 the MQTT status, a *Bus voltage* sensor in Home Assistant,
 `pwrman_bus_volts` on `/metrics`, part of the chassis line on the page,
 `vin` and a line in `info` and `status` on the console. The hardware is
-rated for 20 to 32 V and the backplane opens the bus near 18.6 V,
-so a bus under 19 V or over 33 V (half a volt of hysteresis either way)
+rated for 20 to 28 V and the backplane opens the bus near 18.6 V,
+so a bus under 19 V or over 29 V (half a volt of hysteresis either way)
 raises the problem indicator and logs a line; nothing derates the budget
 from it yet. The Pico 2 W carrier has no path from VIN to an ADC pin, so
 there the monitor reports *not fitted* and every surface leaves it out.

@@ -18,7 +18,7 @@ serial console.
 - **Backplane** (`hardware/backplane`). Six blade slots and a management
   slot. A TCA9548A I2C mux gives every blade its own bus segment, a TCA9539
   expander handles blade enable, presence detect, and the fan, and six
-  WS2812C LEDs feed front-panel light pipes. DC input is 20–32 V through an
+  WS2812C LEDs feed front-panel light pipes. DC input is 20–28 V through an
   XT60 connector with ideal-diode reverse protection, a 40 A SMD fuse,
   a TVS clamp, and over/under-voltage cut-offs. A UL-recognised eFuse
   holds the AP64352 buck that makes the single 5 V logic rail under 15 W.
