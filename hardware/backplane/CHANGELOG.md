@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.11.2...backplane-v0.12.0) (2026-09-17)
+
+
+### Features
+
+* **backplane:** LM74800 input stage with OVP and inrush limit, SMD fuse ([0bad6f2](https://github.com/mikesmitty/power-manifold/commit/0bad6f2c4661332ed45c9490008a6f6d81c99736))
+* **backplane:** undervoltage cut-out on the LM74800 and a TPS16416 eFuse for the 5 V rail ([65a5369](https://github.com/mikesmitty/power-manifold/commit/65a5369a2d5dcad4bedddc21bcaa8e83336b4211))
+
+
+### Bug Fixes
+
+* **backplane:** C8 charge-pump capacitor to a 50 V X7R 0603 ([005b586](https://github.com/mikesmitty/power-manifold/commit/005b5869ef6fa17378ae369cb038c5b89ac1e595))
+
 ## [0.11.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.11.1...backplane-v0.11.2) (2026-09-12)
 
 
