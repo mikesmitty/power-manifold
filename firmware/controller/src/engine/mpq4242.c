@@ -76,6 +76,9 @@ bool mpq4242_unlock(void) {
     return reg_write(REG_CLK_ON, 1);
 }
 
+// PDO1..PDO7 ceilings as configure_default_pdos() programs them
+static const uint16_t PDO_CEILING_MV[7] = {5000, 9000, 12000, 15000, 20000, 11000, 21000};
+
 static bool pdo_is_pps(uint8_t pdo) {
     if (pdo < 2) return false;
     uint8_t types;
@@ -92,18 +95,18 @@ static bool set_pdo_current(uint8_t pdo, uint32_t ma, bool pps) {
 
 bool mpq4242_set_max_current_ma(uint32_t ma) {
     for (uint8_t pdo = 1; pdo <= 7; pdo++) {
-        if (!set_pdo_current(pdo, ma, pdo >= 2 && pdo_is_pps(pdo))) return false;
+        bool pps = pdo >= 2 && pdo_is_pps(pdo);
+        uint32_t lim = mpq4242_pdo_current_cap_ma(PDO_CEILING_MV[pdo - 1], ma, pps ? 50 : 20);
+        if (!set_pdo_current(pdo, lim, pps)) return false;
     }
     return true;
 }
 
 bool mpq4242_set_max_voltage_mv(uint32_t max_mv) {
-    // PDO2..PDO7 ceilings as configure_default_pdos() programs them
-    static const uint16_t CEILING_MV[6] = {9000, 12000, 15000, 20000, 11000, 21000};
     uint32_t lim = max_mv >= PORT_VOLT_MAX_MV ? 21000 : max_mv;
     uint8_t mask = 0;
     for (int k = 0; k < 6; k++)
-        if (CEILING_MV[k] <= lim) mask |= (uint8_t)(1u << k);
+        if (PDO_CEILING_MV[k + 1] <= lim) mask |= (uint8_t)(1u << k); // bit k is PDO k+2
     return reg_write(REG_PDO_SET1, mask);
 }
 
@@ -118,7 +121,7 @@ bool mpq4242_set_pdo_fixed(uint8_t pdo, uint16_t mv, uint32_t ma, bool enabled) 
     uint8_t base = REG_PDO_V2_L + 3 * (pdo - 2);
     if (!reg_write(base, (uint8_t)(mv / 100))) return false; // 0.1V LSB
     if (!reg_write(base + 1, 0)) return false;
-    if (!set_pdo_current(pdo, ma, false)) return false;
+    if (!set_pdo_current(pdo, mpq4242_pdo_current_cap_ma(mv, ma, 20), false)) return false;
     return mpq4242_set_pdo_enabled(pdo, enabled);
 }
 
@@ -128,7 +131,7 @@ bool mpq4242_set_pdo_pps(uint8_t pdo, uint16_t min_mv, uint16_t max_mv, uint32_t
     uint8_t base = REG_PDO_V2_L + 3 * (pdo - 2);
     if (!reg_write(base, (uint8_t)(min_mv / 100))) return false; // 0.1V LSB
     if (!reg_write(base + 1, (uint8_t)(max_mv / 100))) return false;
-    if (!set_pdo_current(pdo, ma, true)) return false;
+    if (!set_pdo_current(pdo, mpq4242_pdo_current_cap_ma(max_mv, ma, 50), true)) return false;
     return mpq4242_set_pdo_enabled(pdo, enabled);
 }
 

@@ -66,7 +66,7 @@ static void print_help(void) {
            "  port <1-%d> on|off|reset|srccap\n"
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  port <1-%d> name <text>|clear   label for the web UI and Home Assistant\n"
-           "  port <1-%d> limit <500-5000>    advertised current ceiling, mA (all PDOs)\n"
+           "  port <1-%d> limit <500-5000>    advertised current ceiling, mA (21 V PPS: 4750 max)\n"
            "  port <1-%d> volt 5|9|12|15|20   voltage cap, V: the highest PDO advertised\n"
            "  port <1-%d> boot on|off|last    state at power-up (last = as switched)\n"
            "  port <1-%d> autooff on|off      switch off once the sink is charged\n"

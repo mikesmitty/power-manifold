@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "manifold.h"
+
 // MPQ4242 buck-boost USB-PD controller, one per blade behind the mux (select
 // the channel first). Register map ported from the V1 CircuitPython driver.
 // The part negotiates PD autonomously; this driver constrains the advertised
@@ -55,7 +57,18 @@ bool mpq4242_read_status(mpq4242_status_t *s);
 //   PDO5: Fixed 20V
 //   PDO6: PPS 3.3V - 11.0V (phone fast-charge)
 //   PDO7: PPS 3.3V - 21.0V (laptop/high-power fast-charge)
-bool mpq4242_set_max_current_ma(uint32_t ma); // all PDOs
+bool mpq4242_set_max_current_ma(uint32_t ma); // all PDOs, each held to PORT_POWER_MAX_MW
+// No PDO promises more than PORT_POWER_MAX_MW at the top of its voltage
+// range: where ceiling x current would pass it the current field is cut
+// back, rounded down to the PDO's step. With the default table that only
+// bites on the 21 V PPS range, which advertises 4.75 A (99.75 W) where the
+// others keep the full 5 A.
+static inline uint32_t mpq4242_pdo_current_cap_ma(uint32_t ceiling_mv, uint32_t ma, uint32_t step_ma) {
+    if (!ceiling_mv || !step_ma) return ma;
+    uint32_t cap = (uint32_t)(((uint64_t)PORT_POWER_MAX_MW * 1000u) / ceiling_mv);
+    cap -= cap % step_ma;
+    return ma < cap ? ma : cap;
+}
 // Withhold every PDO that reaches above max_mv: the fixed PDOs above it and
 // the PPS ranges whose maximum exceeds it. PORT_VOLT_MAX_MV (manifold.h)
 // advertises the whole table, the 21 V PPS range included; PDO1 always stays.

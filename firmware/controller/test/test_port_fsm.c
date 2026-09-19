@@ -1,6 +1,7 @@
 #include "budget.h"
 #include "manifold.h"
 #include "microtest.h"
+#include "mpq4242.h"
 #include "port_fsm.h"
 #include "settings.h"
 #include "test_support.h"
@@ -416,6 +417,24 @@ static void test_unseat_powers_down(void) {
     MT_ASSERT_EQ(budget_port_reservation(0), 0);
 }
 
+static void test_no_pdo_promises_past_100w(void) {
+    // the cap itself: only the 21 V PPS range is cut back, and only from the top
+    MT_ASSERT_EQ(mpq4242_pdo_current_cap_ma(21000, 5000, 50), 4750);
+    MT_ASSERT_EQ(mpq4242_pdo_current_cap_ma(21000, 3000, 50), 3000);
+    MT_ASSERT_EQ(mpq4242_pdo_current_cap_ma(20000, 5000, 20), 5000);
+    MT_ASSERT_EQ(mpq4242_pdo_current_cap_ma(11000, 5000, 50), 5000);
+
+    support_reset(360000);
+    sim_set_present(0, true);
+    sim_set_present(1, true);
+    tick(4);
+    sim_attach(0, 21000, 5000); // top of the PPS range, asking for the full 5 A
+    sim_attach(1, 20000, 5000); // the fixed 20 V PDO keeps its 5 A
+    tick(4);
+    MT_ASSERT_EQ(sim_contract_mw(0), 99500); // 21 V x 4.75 A = 99.75 W, STATUS3 counts 0.5 W
+    MT_ASSERT_EQ(sim_contract_mw(1), 100000);
+}
+
 void run_port_fsm_tests(void) {
     mt_run("fsm: probe to idle", test_probe_to_idle);
     mt_run("fsm: probe failure faults then recovers",
@@ -438,4 +457,5 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: off when charged", test_charged_auto_off);
     mt_run("fsm: sleep timer after attach", test_sleep_timer);
     mt_run("fsm: unseat powers down", test_unseat_powers_down);
+    mt_run("fsm: no PDO promises past 100 W", test_no_pdo_promises_past_100w);
 }

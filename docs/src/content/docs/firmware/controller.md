@@ -333,7 +333,8 @@ thresholds, and per port a name (up to 23 characters; blank means `Port N`,
 and the label shows in the table, the console and Home Assistant), a
 current limit (500 to 5000 mA: the current field of every PDO the port
 advertises, so the wattage ceiling scales with the voltage the device
-picks; a live port renegotiates at once, and the INA226 emergency trip
+picks, except that no PDO promises more than 100 W: the 21 V PPS range
+alone stops at 4.75 A; a live port renegotiates at once, and the INA226 emergency trip
 stays at 125 % of the blade's 5 A ceiling regardless), a voltage cap (the
 highest PDO the port advertises: 5, 9, 12, 15 or 20 V, the last being the
 whole table; fixed PDOs above the cap and PPS ranges reaching past it are

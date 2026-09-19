@@ -88,12 +88,15 @@ typedef enum {
 
 // Per-port advertised current ceiling (settings port_limit_ma). It is the
 // current field of every PDO the blade advertises, so the wattage ceiling
-// scales with the voltage the sink picks. The blade's own hardware limit is
+// scales with the voltage the sink picks, up to PORT_POWER_MAX_MW: a PDO
+// whose top voltage would take that current past 100 W advertises less (the
+// 21 V PPS range stops at 4.75 A). The blade's own hardware limit is
 // PORT_HW_MAX_MA; the INA226 emergency trip sits at 125 % of that and does
 // not move with the setting (the MPQ4242 enforces its own OCP).
 #define PORT_HW_MAX_MA    5000
 #define PORT_LIMIT_MIN_MA 500
 #define PORT_LIMIT_MAX_MA PORT_HW_MAX_MA
+#define PORT_POWER_MAX_MW 100000
 
 // Per-port voltage cap (settings port_max_mv): the highest PDO the blade
 // advertises, one of the fixed PDO voltages 5/9/12/15/20 V. Fixed PDOs

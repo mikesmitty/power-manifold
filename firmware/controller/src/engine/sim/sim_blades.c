@@ -65,7 +65,10 @@ static void renegotiate(sim_slot_t *s) {
         return;
     }
     s->con_mv = offered_mv(s);
-    s->con_ma = s->req_ma < s->adv_ma ? s->req_ma : s->adv_ma;
+    // Above 20 V the contract can only be the 21 V PPS range, whose current
+    // field the driver cuts back to stay within PORT_POWER_MAX_MW
+    uint32_t adv = s->con_mv > 20000 ? mpq4242_pdo_current_cap_ma(21000, s->adv_ma, 50) : s->adv_ma;
+    s->con_ma = s->req_ma < adv ? s->req_ma : adv;
 }
 
 static void set_en(sim_slot_t *s, bool on) {

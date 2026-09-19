@@ -186,7 +186,7 @@ static const char INDEX_HTML[] =
     "<input name='pn5' maxlength='23' placeholder='Port 5'>"
     "<input name='pn6' maxlength='23' placeholder='Port 6'></div>"
     "<label>Port current limits (mA, " STR(PORT_LIMIT_MIN_MA) "-" STR(PORT_LIMIT_MAX_MA) ": the current every PDO"
-    " advertises, so the watt ceiling scales with the voltage the device picks)</label>"
+    " advertises, so the watt ceiling scales with the voltage the device picks; the 21 V PPS range stops at 4750 to stay within 100 W)</label>"
     "<div class='g'><input name='pl1' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl2' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
     "<input name='pl3' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
