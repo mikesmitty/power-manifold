@@ -21565,7 +21565,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "541eac80-0f22-4b7b-b9e8-8a2e0c348197")
 		(property "Reference" "RN3"
 			(at 68.58 242.57 90)
@@ -23593,7 +23593,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "7295fc2e-d6d7-4f5a-89f0-96e8cb0d489d")
 		(property "Reference" "RN2"
 			(at 68.58 229.87 90)
@@ -27982,7 +27982,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "b5a50662-564d-4857-a242-fa8241a0eaa0")
 		(property "Reference" "RN1"
 			(at 68.58 217.17 90)
