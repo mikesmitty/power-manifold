@@ -17,6 +17,10 @@ bool tca9539_init(void);
 // the power-on state (or does not answer); the caller then runs
 // tca9539_init.
 bool tca9539_attach(void);
+// The configuration word is still ours (a reset would leave the power-on 0xFFFF)
+bool tca9539_config_ok(void);
+// Re-apply outputs then direction after an unexpected reset, keeping every EN as it was
+bool tca9539_recover(void);
 // The output register as last written or adopted: TCA9539_EN_BIT(port) and
 // TCA9539_FAN_BIT.
 uint16_t tca9539_outputs(void);

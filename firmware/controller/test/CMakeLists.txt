@@ -69,3 +69,6 @@ target_include_directories(engine_tests PRIVATE
 
 enable_testing()
 add_test(NAME engine_tests COMMAND engine_tests)
+
+# The cold probe's EN-to-first-I2C wait is a hardware delay; the sim answers at once.
+target_compile_definitions(engine_tests PRIVATE BLADE_WAKE_MS=0)

@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "i2c_diag.h"
 
 #include <string.h>
 
@@ -84,6 +85,13 @@ static void refresh_presence(void) {
     exp_fail_streak = 0;
     for (uint8_t i = 0; i < NUM_PORTS; i++)
         present[i] = tca9539_present_from(inputs, i);
+    // An expander back at its power-on registers (a reset nobody asked for)
+    // has every EN floating: put its outputs and direction back and say so.
+    if (!tca9539_config_ok()) {
+        tca9539_recover();
+        engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT, .code = 5};
+        ipc_evt_push(&e);
+    }
 }
 
 static void dispatch_cmd(const engine_cmd_t *cmd, uint32_t now_ms) {
@@ -111,6 +119,11 @@ static void dispatch_cmd(const engine_cmd_t *cmd, uint32_t now_ms) {
         break;
     case CMD_LED_ACK:
         leds_ack(now_ms + cmd->arg);
+        break;
+    case CMD_I2C_DIAG:
+#ifndef PWRMAN_FAKE_BLADES
+        i2c_diag_run(cmd->arg);
+#endif
         break;
     case CMD_SIM:
 #ifdef PWRMAN_FAKE_BLADES
@@ -141,9 +154,19 @@ void engine_main(void) {
     // with its pull-down enabled and gpio_set_function/gpio_init leave it so;
     // that pull-down would sit across the external pull-up, eating noise
     // margin on every high level. Clear it.
+#ifdef PWRMAN_INTERNAL_PULLUPS
+    // Bench build without the three resistors: the pad pull-ups carry the
+    // upstream bus (mux control, expander) at the 100 kHz in pins.h. Once a
+    // mux channel is open that segment's 4.7k-to-5V pull-ups pass through
+    // the switch and stiffen the upstream side as well.
+    gpio_pull_up(PIN_I2C_SDA);
+    gpio_pull_up(PIN_I2C_SCL);
+    gpio_pull_up(PIN_ALERT_N);
+#else
     gpio_disable_pulls(PIN_I2C_SDA);
     gpio_disable_pulls(PIN_I2C_SCL);
     gpio_disable_pulls(PIN_ALERT_N);
+#endif
     // EXP_INT# is open-drain from the TCA9539 with no pull-up anywhere else;
     // without this the pad default (pull-down) reads it as permanently asserted.
     gpio_init(PIN_EXP_INT_N);

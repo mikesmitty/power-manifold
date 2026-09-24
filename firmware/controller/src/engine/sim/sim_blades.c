@@ -226,6 +226,9 @@ bool tca9539_all_en_off(void) {
     return true;
 }
 
+bool tca9539_config_ok(void) { return true; }
+bool tca9539_recover(void) { return true; }
+
 bool tca9539_read_inputs(uint16_t *inputs) {
     if (exp_fail) return false;
     uint16_t word = 0;

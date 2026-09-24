@@ -51,7 +51,17 @@
 #endif
 
 #define I2C_BUS         i2c0
+#ifdef PWRMAN_INTERNAL_PULLUPS
+// CARRIER_INTERNAL_PULLUPS: the RP2350 pad pull-ups (50-80k) stand in for the
+// three 4.7k resistors on the breakout. Tens of kilohms into the bus
+// capacitance is far too slow for 400 kHz; 100 kHz leaves the slow edges
+// inside the low period, and once a mux channel is open that segment's 4.7k
+// pull-ups stiffen the upstream side as well. Bench only, one or two blades
+// (ran the 2026-09-23 bring-up).
+#define I2C_BAUD        (100 * 1000)
+#else
 #define I2C_BAUD        (400 * 1000)
+#endif
 
 // Wired Ethernet: WIZnet W6100 on SPI0, the EVB-Pico2 mapping (NET_ETH)
 #define PIN_ETH_MISO    16 // SPI0 RX

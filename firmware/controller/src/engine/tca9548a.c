@@ -5,16 +5,14 @@
 #include "pico/time.h"
 
 #include "pins.h"
+#include "rst_line.h"
 
 #define I2C_TIMEOUT_US (2 * 1000)
 
 static int8_t current = -1; // cached selection; -1 = unknown/none
 
 void tca9548a_init(void) {
-    // released before it becomes an output (RST_ASSERTED_LEVEL: pins.h)
-    gpio_init(PIN_MUX_RST_N);
-    gpio_put(PIN_MUX_RST_N, !RST_ASSERTED_LEVEL);
-    gpio_set_dir(PIN_MUX_RST_N, GPIO_OUT);
+    rst_line_setup(PIN_MUX_RST_N); // released (rst_line.h)
     // A reset only clears the channel selection, so it is harmless on a warm
     // start too; the engine reselects before every transfer.
     tca9548a_hw_reset();
@@ -46,9 +44,9 @@ bool tca9548a_deselect_all(void) {
 }
 
 void tca9548a_hw_reset(void) {
-    gpio_put(PIN_MUX_RST_N, RST_ASSERTED_LEVEL);
+    rst_line_assert(PIN_MUX_RST_N);
     sleep_us(1); // t_WL min 6ns
-    gpio_put(PIN_MUX_RST_N, !RST_ASSERTED_LEVEL);
-    sleep_us(10); // the card's line rises through the backplane's 10k
+    rst_line_release(PIN_MUX_RST_N);
+    sleep_us(10); // the line rises through the backplane's 10k
     current = -1;
 }

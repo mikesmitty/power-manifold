@@ -17,7 +17,7 @@ static size_t put(char *buf, size_t cap, size_t n, const char *s) {
 size_t fault_text(const fault_rec_t *r, char *buf, size_t cap) {
     static const char *const BITS[8] = {"general", "otw1", "otw2", "ntc1",
                                         "ntc2", "cc", "short-vbatt", "vbatt-low"};
-    static const char *const PROBE[] = {"?", "mux", "ina226", "mpq4242", "enable"};
+    static const char *const PROBE[] = {"?", "mux", "ina226", "mpq4242", "enable", "expander reset"};
     if (cap == 0) return 0;
     buf[0] = '\0';
     size_t n = 0;

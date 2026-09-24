@@ -5,6 +5,7 @@
 #include "pico/time.h"
 
 #include "pins.h"
+#include "rst_line.h"
 
 #define REG_INPUT0   0x00
 #define REG_OUTPUT0  0x02
@@ -34,22 +35,22 @@ static bool read_reg16(uint8_t reg, uint16_t *val) {
 
 #define CONFIG_VALUE ((uint16_t)TCA9539_CONFIG_P0 | ((uint16_t)TCA9539_CONFIG_P1 << 8))
 
-// EXP_RST# as a driven output in its released state. RST_ASSERTED_LEVEL
-// (pins.h) covers the card's FET driver against the carrier's direct drive;
-// the level is set before the pin turns into an output so it never glitches
-// through the asserted state.
+// EXP_RST# in its released state (rst_line.h: high impedance on the carrier,
+// a driven low on the card's FET gate).
 static void reset_line_setup(void) {
-    gpio_init(PIN_EXP_RST_N);
-    gpio_put(PIN_EXP_RST_N, !RST_ASSERTED_LEVEL);
-    gpio_set_dir(PIN_EXP_RST_N, GPIO_OUT);
+    rst_line_setup(PIN_EXP_RST_N);
+}
+
+static void reset_pulse(void) {
+    rst_line_assert(PIN_EXP_RST_N);
+    sleep_us(1);
+    rst_line_release(PIN_EXP_RST_N);
+    sleep_us(10); // the line rises through the backplane's 10k
 }
 
 bool tca9539_init(void) {
     reset_line_setup();
-    gpio_put(PIN_EXP_RST_N, RST_ASSERTED_LEVEL);
-    sleep_us(1);
-    gpio_put(PIN_EXP_RST_N, !RST_ASSERTED_LEVEL);
-    sleep_us(10); // the card's line rises through the backplane's 10k
+    reset_pulse();
 
     // ORDER IS CRITICAL (spec §6.4): the Output Port registers power up as
     // 0xFF while every pin is an input. Writing outputs to 0x0000 BEFORE the
@@ -59,6 +60,19 @@ bool tca9539_init(void) {
     if (!write_reg16(REG_OUTPUT0, output_cache)) return false;
     if (!write_reg16(REG_CONFIG0, CONFIG_VALUE)) return false;
     return true;
+}
+
+bool tca9539_config_ok(void) {
+    uint16_t config;
+    return read_reg16(REG_CONFIG0, &config) && config == CONFIG_VALUE;
+}
+
+bool tca9539_recover(void) {
+    // Same safe order as init, but the previous EN/fan pattern is written
+    // before the direction so a blade that was on comes straight back on.
+    reset_pulse();
+    if (!write_reg16(REG_OUTPUT0, output_cache)) return false;
+    return write_reg16(REG_CONFIG0, CONFIG_VALUE);
 }
 
 bool tca9539_attach(void) {

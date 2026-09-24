@@ -57,8 +57,8 @@ W6100-EVB-Pico2 in the same socket) and the production controller card
 | GLOBAL_ALERT# | GP3 | GP7 | wire-OR of blade ALERT# lines; open-drain, 4.7 kΩ to 3.3 V on the card (a resistor wired on the pcie-breakout), pad pull-down cleared at init |
 | SDA/SCL | GP4/GP5 | GP4/GP5 | I2C0; 4.7 kΩ pull-ups on the card (or wired on the pcie-breakout), none on the backplane's upstream side; pad pull-down cleared at init |
 | EXP_INT# | GP6 | GP6 | TCA9539 interrupt; open-drain, internal pull-up only |
-| MUX_RST# | GP7 | GP8 | TCA9548A reset |
-| EXP_RST# | GP8 | GP1 | TCA9539 reset |
+| MUX_RST# | GP7 | GP8 | TCA9548A reset; on the carrier released = high impedance (the backplane's 10 kΩ takes it to 5 V), asserted = driven low |
+| EXP_RST# | GP8 | GP1 | TCA9539 reset, same drive as MUX_RST# |
 | UPS_TX/UPS_RX | GP12/GP13 | GP12/GP13 | UART0, 9600 8N1, to a Mean Well LAD-xxxU UPS supply (the card's UPS header) |
 | SPI0 MISO/CS/SCK/MOSI | GP16–GP19 | GP16–GP19 | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
 | ETH_RST# | GP20 | GP20 | W6100 reset |
@@ -67,13 +67,20 @@ W6100-EVB-Pico2 in the same socket) and the production controller card
 | VIN_SENSE | — | GP28 / ADC2 | DC bus voltage through 120 kΩ / 10 kΩ, see [Bus voltage](#bus-voltage) |
 | RM2 radio | — | GP23/24/25/29 | the Pico 2 W's own CYW43 wiring, so the WiFi and BLE code carries over unchanged |
 
-The two reset lines differ in more than pin number. The carrier drives
-them push-pull, active low. The card drives 2N7002 gates against the
-backplane's 10 kΩ pull-ups, so there the GPIO goes *high* to assert a
-reset — `RST_ASSERTED_LEVEL` in `pins.h`, and the drivers only ever write
-that. Either way a controller reset leaves both lines released (the
-RP2350's boot-time pull-down keeps the card's FETs off), which is what
-makes a [warm start](#warm-start) possible.
+The two reset lines differ in more than pin number. Both parts run on
+the backplane's 5 V and want 3.5 V for a high, so the carrier never
+drives a 3.3 V high onto them: released is a high-impedance input and
+the backplane's 10 kΩ pull-up holds the line at 5 V, asserted drives it
+low (`src/engine/rst_line.h`; a 3.3 V push-pull high let the expander
+fall back to its power-on registers at random on the bench). The card
+drives 2N7002 gates against the same pull-ups, so there the GPIO goes
+*high* to assert a reset — `RST_ASSERTED_LEVEL` in `pins.h`, and the
+drivers only ever write that. Either way a controller reset leaves both
+lines released (the RP2350's boot-time pull-down keeps the card's FETs
+off), which is what makes a [warm start](#warm-start) possible. Should
+the expander ever come back at its power-on registers anyway, the
+presence refresh notices the lost configuration word, rewrites outputs
+and direction with every EN as it was, and logs `probe: expander reset`.
 
 Behind the mux and the expander, port *n* (1-based wherever the firmware
 talks to a person) is mux channel *n*−1, EN on P0(*n*−1), PRSNT# on
@@ -122,6 +129,21 @@ netlist; the card itself has not been fabricated yet.
 ```sh
 cmake -B build-card -G Ninja -DPICO_BOARD=pwrman_controller_card
 ninja -C build-card
+```
+
+Bench shortcut for the Pico 2 W carrier: `-DCARRIER_INTERNAL_PULLUPS=ON`
+swaps the three 4.7 kΩ resistors the breakout needs on SDA, SCL and
+ALERT# for the RP2350's own pad pull-ups (50–80 kΩ) and slows the bus to
+100 kHz so their slow edges fit inside the clock's low period. Once a mux
+channel is open, that blade segment's 4.7 kΩ pull-ups on the backplane
+pass through the switch and stiffen the upstream bus too. It is a
+one-or-two-blade bench build: at 100 kHz six powered blades' per-tick
+reads no longer fit the 10 ms engine tick. Refused for the controller
+card, which carries the resistors.
+
+```sh
+cmake -B build-pull -G Ninja -DCARRIER_INTERNAL_PULLUPS=ON
+ninja -C build-pull
 ```
 
 ### Network options
@@ -492,6 +514,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `export` | every setting as JSON, without passwords |
 | `update <http-url>` | OTA pull into the inactive slot |
 | `stack` | per-core stack high-water marks |
+| `i2c scan <ch\|none>`, `i2c read <ch> <addr> <reg> [n]`, `i2c write <ch> <addr> <reg> <val>`, `i2c en <port> on\|off` | bench access to the backplane bus, run on the engine core: scan a mux channel (`none` = the upstream side), read or write a register, drive a blade's EN; a healthy blade segment answers `0x40 0x61 0x70 0x74` |
 | `save`, `defaults`, `reboot`, `bootsel` | settings and lifecycle |
 
 What is typed at the console is never mirrored to the log ring or a syslog

@@ -15,6 +15,12 @@ pico_sdk_init()
 option(FAKE_BLADES "Simulate the backplane and blades; runs on a bare board" OFF)
 option(NET_WIFI "CYW43 WiFi + Improv BLE provisioning (Pico 2 W, RM2)" ON)
 option(NET_ETH "WIZnet W6100 wired Ethernet on SPI0 GP16-21, probed at boot" ON)
+option(CARRIER_INTERNAL_PULLUPS
+    "Bench only: Pico 2 W on the pcie-breakout without the three 4.7k resistors; RP2350 internal pull-ups on SDA/SCL/ALERT# and a 100 kHz bus" OFF)
+
+if(CARRIER_INTERNAL_PULLUPS AND PICO_BOARD STREQUAL "pwrman_controller_card")
+    message(FATAL_ERROR "CARRIER_INTERNAL_PULLUPS is for the pcie-breakout carrier; the controller card has its own 4.7k pull-ups.")
+endif()
 
 if(NET_WIFI AND NOT PICO_CYW43_SUPPORTED)
     message(FATAL_ERROR "NET_WIFI=ON needs a CYW43 board (PICO_BOARD=pico2_w). "
@@ -33,6 +39,7 @@ else()
         src/engine/ina226.c
         src/engine/tca9548a.c
         src/engine/tca9539.c
+        src/engine/i2c_diag.c
     )
 endif()
 
@@ -82,6 +89,9 @@ add_executable(controller
 
 if(FAKE_BLADES)
     target_compile_definitions(controller PRIVATE PWRMAN_FAKE_BLADES=1)
+endif()
+if(CARRIER_INTERNAL_PULLUPS)
+    target_compile_definitions(controller PRIVATE PWRMAN_INTERNAL_PULLUPS=1)
 endif()
 
 pico_generate_pio_header(controller ${CMAKE_CURRENT_LIST_DIR}/src/engine/ws2812.pio)

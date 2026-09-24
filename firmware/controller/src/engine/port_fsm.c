@@ -12,6 +12,9 @@
 
 #define FAULT_COOLDOWN_MS 5000
 #define PROBE_MAX_ATTEMPTS 3
+#ifndef BLADE_WAKE_MS // the host tests set 0: the wait is hardware, not FSM logic
+#define BLADE_WAKE_MS 50 // EN high -> MPQ4242 LDO + digital core up before the first I2C word
+#endif
 
 // Power-up stagger between the blades found seated at boot (port_fsm.h).
 // Long enough for one sink's inrush and its first PD negotiation to settle
@@ -44,6 +47,7 @@ typedef struct {
     uint8_t  fault_bits;     // latched for diagnostics until next probe
     uint32_t cooldown_until_ms;
     uint32_t enable_after_ms; // boot stagger: no probe before this (0 = none)
+    uint32_t en_on_ms;        // cold probe: when EN went high (0 = not yet)
     uint32_t step_after_ms;  // next partial unthrottle step allowed at
     uint32_t attached_at_ms; // sleep timer base
     uint32_t side_since_ms;  // draw has been on the current side of the charged floor since
@@ -102,6 +106,7 @@ static void start_probe(uint8_t i) {
     ctx[i].probe_attempts = 0;
     ctx[i].fault_bits = 0;
     ctx[i].enable_after_ms = 0; // the boot slot is spent; later seatings are immediate
+    ctx[i].en_on_ms = 0;
     ctx[i].denied_mw = 0; // stale asks must not inflate a new throttle epoch
     ctx[i].step_after_ms = 0;
     enter(i, PORT_STATE_PROBE); // ctx.warm stands until the probe concludes
@@ -164,17 +169,36 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
         warm_probe(i, now_ms);
         return;
     }
+    // The MPQ4242's I2C interface is off while its EN pin is low (datasheet,
+    // PWR_CTL1: "when the external EN pin is low, the converter is off and the
+    // I2C shuts down"), and on the V2 blade the dark part drags the segment it
+    // shares with the INA226, so nothing on the blade answers until it is
+    // powered. Power it first, give the LDO and digital core a moment, then
+    // probe and configure. A sink attached during that window negotiates the
+    // part's OTP defaults, so the table is re-advertised once ours is written
+    // — the same path a warm start takes. A failed probe still ends with EN
+    // off (power_down via fault).
+    if (!ctx[i].en_on_ms) {
+        if (!tca9539_set_en(i, true)) {
+            probe_failed(i, now_ms, PROBE_FAIL_EN);
+            return;
+        }
+        ctx[i].en_on_ms = now_ms ? now_ms : 1;
+        if (BLADE_WAKE_MS) return;
+    }
+    if (now_ms - ctx[i].en_on_ms < BLADE_WAKE_MS) return;
+
     uint16_t fail = 0;
+    mpq4242_status_t st = {0};
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
     } else if (!ina226_probe() || !ina226_configure() ||
                !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100)) { // emergency trip, fixed
         fail = PROBE_FAIL_INA226;
-    } else if (!mpq4242_probe() ||
-               !mpq4242_configure(g_settings.port_limit_ma[i], g_settings.port_max_mv[i])) {
+    } else if (!mpq4242_probe() || !mpq4242_read_status(&st) ||
+               !mpq4242_configure(g_settings.port_limit_ma[i], g_settings.port_max_mv[i]) ||
+               (st.attached && !mpq4242_send_src_cap())) {
         fail = PROBE_FAIL_MPQ4242;
-    } else if (!tca9539_set_en(i, true)) {
-        fail = PROBE_FAIL_EN;
     }
 
     if (!fail) {

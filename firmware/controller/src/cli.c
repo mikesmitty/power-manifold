@@ -15,6 +15,7 @@
 #include "button.h"
 #include "civil_time.h"
 #include "engine/engine.h"
+#include "engine/i2c_diag.h"
 #include "engine/sim/sim_inject.h"
 #include "fault_log.h"
 #include "fault_text.h"
@@ -234,6 +235,8 @@ static void print_sim_help(void) {
            sim_paused ? "paused" : "running");
 }
 
+
+
 static void run_sim(char **save) {
     const char *what = strtok_r(NULL, " \t", save);
     if (!what) { print_sim_help(); return; }
@@ -330,6 +333,64 @@ static bool port_arg(const char *s, uint8_t *port) {
     }
     *port = (uint8_t)(n - 1);
     return true;
+}
+
+// Bench: raw backplane bus access, run on the engine core (see engine/i2c_diag.h)
+static void run_i2c_diag(char **save) {
+#ifdef PWRMAN_FAKE_BLADES
+    (void)save;
+    printf("real builds only\n");
+#else
+    const char *what = strtok_r(NULL, " \t", save);
+    const char *a1 = strtok_r(NULL, " \t", save);
+    const char *a2 = strtok_r(NULL, " \t", save);
+    const char *a3 = strtok_r(NULL, " \t", save);
+    const char *a4 = strtok_r(NULL, " \t", save);
+    uint8_t op = 0, ch = 0xF;
+    uint32_t arg = 0;
+    if (a1 && strcmp(a1, "none")) ch = (uint8_t)strtoul(a1, NULL, 0);
+    if (what && !strcmp(what, "scan")) {
+        op = I2C_DIAG_SCAN;
+    } else if (what && !strcmp(what, "read") && a2 && a3) {
+        op = I2C_DIAG_READ;
+        arg = (strtoul(a2, NULL, 0) & 0xFF) << 16 | (strtoul(a3, NULL, 0) & 0xFF) << 8 |
+              (a4 ? strtoul(a4, NULL, 0) & 0xFF : 1);
+    } else if (what && !strcmp(what, "write") && a2 && a3 && a4) {
+        op = I2C_DIAG_WRITE;
+        arg = (strtoul(a2, NULL, 0) & 0xFF) << 16 | (strtoul(a3, NULL, 0) & 0xFF) << 8 |
+              (strtoul(a4, NULL, 0) & 0xFF);
+    } else if (what && !strcmp(what, "en") && a1 && a2) {
+        op = I2C_DIAG_EN;
+        ch = (uint8_t)(strtoul(a1, NULL, 0) - 1); // 1-based port
+        arg = !strcmp(a2, "on");
+    } else {
+        printf("i2c scan <ch|none> | read <ch> <addr> <reg> [n] | write <ch> <addr> <reg> <val> | en <port> on|off\n");
+        return;
+    }
+    if (ch != 0xF && ch > 5) { printf("channel 0-5 or none\n"); return; }
+    arg |= (uint32_t)op << 28 | (uint32_t)ch << 24;
+    uint32_t s0 = g_i2c_diag_seq;
+    engine_cmd_t c = {.op = CMD_I2C_DIAG, .arg = arg};
+    if (!ipc_cmd_push(&c)) { printf("queue full\n"); return; }
+    for (int i = 0; i < 300 && g_i2c_diag_seq == s0; i++) sleep_ms(5);
+    if (g_i2c_diag_seq == s0) { printf("engine did not answer\n"); return; }
+    const i2c_diag_result_t *r = &g_i2c_diag;
+    if (op == I2C_DIAG_EN) { printf("en %s\n", r->ok ? "ok" : "expander write failed"); return; }
+    printf("mux %s: ", ch == 0xF ? "no channel" : "channel selected");
+    if (ch != 0xF) printf("%s; ", r->selected ? "ack" : "NO ACK");
+    if (op == I2C_DIAG_SCAN) {
+        int found = 0;
+        for (int a = 0x08; a < 0x78; a++)
+            if (r->found[a >> 5] & (1u << (a & 31))) { printf("0x%02x ", a); found++; }
+        printf("%s\n", found ? "" : "nothing answers");
+    } else if (op == I2C_DIAG_READ) {
+        if (!r->ok) { printf("no ack\n"); return; }
+        for (int i = 0; i < r->count; i++) printf("%02x ", r->data[i]);
+        printf("\n");
+    } else {
+        printf("%s\n", r->ok ? "written" : "no ack");
+    }
+#endif
 }
 
 static void run_line(char *l) {
@@ -694,6 +755,8 @@ static void run_line(char *l) {
             printf("pulling; progress lands on this console\n");
         else
             printf("update: %s\n", e);
+    } else if (!strcmp(cmd, "i2c")) {
+        run_i2c_diag(&save);
     } else if (!strcmp(cmd, "sim")) {
 #ifdef PWRMAN_FAKE_BLADES
         run_sim(&save);
