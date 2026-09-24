@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.3...charger-module-v0.15.0) (2026-09-24)
+
+
+### Features
+
+* **charger-module:** switch from mpq4242 to stm32 PD controller ([ad7a22c](https://github.com/mikesmitty/power-manifold/commit/ad7a22cffad270da1865c72ac63849b145bc762f))
+
 ## [0.14.3](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.2...charger-module-v0.14.3) (2026-09-12)
 
 
