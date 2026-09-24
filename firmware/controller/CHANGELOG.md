@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.9.0...controller-firmware-v0.10.0) (2026-09-24)
+
+
+### Features
+
+* **controller:** hold every PDO to 100 W, so the 21 V PPS range advertises 4.75 A ([b5da427](https://github.com/mikesmitty/power-manifold/commit/b5da427e0bd2c3ffb6749e1c158b043530f9e37a))
+
+
+### Bug Fixes
+
+* **controller:** release the reset lines to the backplane's 5 V pull-ups ([526a81f](https://github.com/mikesmitty/power-manifold/commit/526a81f77ee03e27a46303efaf813b8cbf7e74e5))
+
 ## [0.9.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.8.0...controller-firmware-v0.9.0) (2026-09-17)
 
 
