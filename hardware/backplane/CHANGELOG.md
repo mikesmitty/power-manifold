@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.12.1...backplane-v0.12.2) (2026-09-25)
+
+
+### Bug Fixes
+
+* **backplane:** bump missed revision number increment ([517cd25](https://github.com/mikesmitty/power-manifold/commit/517cd25c09dc8d87930082082cd6b7f090d8ea4f))
+
 ## [0.12.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.12.0...backplane-v0.12.1) (2026-09-25)
 
 
