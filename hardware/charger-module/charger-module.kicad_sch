@@ -1843,7 +1843,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Connector_Generic:Conn_01x03"
+		(symbol "Connector_Generic:Conn_01x01"
 			(pin_names
 				(offset 1.016)
 				(hide yes)
@@ -1854,7 +1854,7 @@
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "J"
-				(at 0 5.08 0)
+				(at 0 2.54 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -1863,8 +1863,8 @@
 					)
 				)
 			)
-			(property "Value" "Conn_01x03"
-				(at 0 -5.08 0)
+			(property "Value" "Conn_01x01"
+				(at 0 -2.54 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -1895,7 +1895,7 @@
 					)
 				)
 			)
-			(property "Description" "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -1928,27 +1928,16 @@
 					)
 				)
 			)
-			(symbol "Conn_01x03_1_1"
+			(symbol "Conn_01x01_1_1"
 				(rectangle
-					(start -1.27 3.81)
-					(end 1.27 -3.81)
+					(start -1.27 1.27)
+					(end 1.27 -1.27)
 					(stroke
 						(width 0.254)
 						(type default)
 					)
 					(fill
 						(type background)
-					)
-				)
-				(rectangle
-					(start -1.27 2.667)
-					(end 0 2.413)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
 					)
 				)
 				(rectangle
@@ -1962,19 +1951,8 @@
 						(type none)
 					)
 				)
-				(rectangle
-					(start -1.27 -2.413)
-					(end 0 -2.667)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
 				(pin passive line
-					(at -5.08 2.54 0)
+					(at -5.08 0 0)
 					(length 3.81)
 					(name "Pin_1"
 						(effects
@@ -1984,42 +1962,6 @@
 						)
 					)
 					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 0 0)
-					(length 3.81)
-					(name "Pin_2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -2.54 0)
-					(length 3.81)
-					(name "Pin_3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -8268,7 +8210,7 @@
 	)
 	(wire
 		(pts
-			(xy 63.5 154.94) (xy 63.5 152.4)
+			(xy 63.5 156.21) (xy 63.5 153.67)
 		)
 		(stroke
 			(width 0)
@@ -8408,7 +8350,7 @@
 	)
 	(wire
 		(pts
-			(xy 50.8 154.94) (xy 60.96 154.94)
+			(xy 50.8 157.48) (xy 60.96 157.48)
 		)
 		(stroke
 			(width 0)
@@ -9088,7 +9030,7 @@
 	)
 	(wire
 		(pts
-			(xy 63.5 152.4) (xy 50.8 152.4)
+			(xy 63.5 153.67) (xy 50.8 153.67)
 		)
 		(stroke
 			(width 0)
@@ -11557,7 +11499,7 @@
 		(uuid "711f401a-08a7-4bd1-a85d-a0977cf83dcc")
 	)
 	(label "USART_RX"
-		(at 60.96 154.94 180)
+		(at 60.96 157.48 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -12444,6 +12386,84 @@
 			(project "charger-module"
 				(path "/ab392f3e-5179-4380-b283-87f14bada4d4"
 					(reference "U5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector_Generic:Conn_01x01")
+		(at 45.72 153.67 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "04d1bc62-accb-4dc6-9860-45fbe793725d")
+		(property "Reference" "J5"
+			(at 41.91 153.67 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 45.72 149.86 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+			(at 45.72 153.67 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 45.72 153.67 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 45.72 153.67 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d991f8fe-8a54-4ea5-bc93-ecf267c53306")
+		)
+		(instances
+			(project "charger-module"
+				(path "/ab392f3e-5179-4380-b283-87f14bada4d4"
+					(reference "J5")
 					(unit 1)
 				)
 			)
@@ -14612,7 +14632,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Local Library:USB_C_Receptacle_XKB_U262-16XN-4BVC11"
+		(property "Footprint" "Local Library:USB-C-SMD_GT-USB-7004"
 			(at 375.92 144.78 0)
 			(hide yes)
 			(show_name no)
@@ -14645,7 +14665,7 @@
 				)
 			)
 		)
-		(property "Notes" "Footprint fits GCT USB4105-GF-A, XKB U263-163N-4BLS1735, and probably others"
+		(property "Notes" ""
 			(at 372.11 144.78 0)
 			(hide yes)
 			(show_name no)
@@ -14656,7 +14676,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C165948"
+		(property "LCSC" "C2686968"
 			(at 372.11 121.92 0)
 			(hide yes)
 			(show_name no)
@@ -15653,6 +15673,84 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector_Generic:Conn_01x01")
+		(at 45.72 157.48 0)
+		(mirror y)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "3cbdc903-6d5f-4a9a-add4-e2aff8cf0a0c")
+		(property "Reference" "J6"
+			(at 41.91 157.48 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "RX"
+			(at 45.72 153.67 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+			(at 45.72 157.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 45.72 157.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 45.72 157.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "7dfab838-9e25-4a40-8291-925ee1ee1593")
+		)
+		(instances
+			(project "charger-module"
+				(path "/ab392f3e-5179-4380-b283-87f14bada4d4"
+					(reference "J6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 273.05 170.18 0)
 		(unit 1)
@@ -16502,8 +16600,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Generic:Conn_01x03")
-		(at 45.72 152.4 0)
+		(lib_id "Connector_Generic:Conn_01x01")
+		(at 45.72 149.86 0)
 		(mirror y)
 		(unit 1)
 		(body_style 1)
@@ -16512,10 +16610,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "4b0fa704-40e5-42ec-aa54-77df7b082093")
 		(property "Reference" "J1"
-			(at 45.72 143.51 0)
+			(at 41.91 149.86 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -16524,8 +16621,9 @@
 				)
 			)
 		)
-		(property "Value" "Conn_01x03"
+		(property "Value" "TX"
 			(at 45.72 146.05 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -16534,8 +16632,8 @@
 				)
 			)
 		)
-		(property "Footprint" ""
-			(at 45.72 152.4 0)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+			(at 45.72 149.86 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16546,7 +16644,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 45.72 152.4 0)
+			(at 45.72 149.86 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16556,8 +16654,8 @@
 				)
 			)
 		)
-		(property "Description" "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 45.72 152.4 0)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 45.72 149.86 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16569,12 +16667,6 @@
 		)
 		(pin "1"
 			(uuid "ef84d911-846e-44b2-a67b-406060dd8edf")
-		)
-		(pin "2"
-			(uuid "616c0a1d-5e8a-41a4-9f6c-297e0fa4760f")
-		)
-		(pin "3"
-			(uuid "31ab542a-5002-42d4-9ab7-90600a5ec2ce")
 		)
 		(instances
 			(project "charger-module"
@@ -22246,7 +22338,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 63.5 154.94 0)
+		(at 63.5 156.21 0)
 		(mirror y)
 		(unit 1)
 		(body_style 1)
@@ -22258,7 +22350,7 @@
 		(fields_autoplaced yes)
 		(uuid "93d5fc96-3adb-4147-98b9-3f7e510b36a5")
 		(property "Reference" "#PWR06"
-			(at 63.5 161.29 0)
+			(at 63.5 162.56 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22269,7 +22361,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 63.5 160.02 0)
+			(at 63.5 161.29 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -22279,7 +22371,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 63.5 154.94 0)
+			(at 63.5 156.21 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22290,7 +22382,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 63.5 154.94 0)
+			(at 63.5 156.21 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -22301,7 +22393,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 63.5 154.94 0)
+			(at 63.5 156.21 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
