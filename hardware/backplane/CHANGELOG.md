@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.12.0...backplane-v0.12.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **backplane:** remove 5v pullups on i2c ([b5e0382](https://github.com/mikesmitty/power-manifold/commit/b5e038201fd798465a89022eed0f46cb09af6cac))
+
 ## [0.12.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.11.2...backplane-v0.12.0) (2026-09-17)
 
 
