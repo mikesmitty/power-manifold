@@ -6,7 +6,9 @@
         "firmware/controller": {
             "component": "controller-firmware",
             "include-component-in-tag": true,
-            "extra-files": ["src/manifold.h"]
+            "extra-files": [
+                "src/manifold.h"
+            ]
         },
         "hardware/backplane": {
             "component": "backplane",
@@ -18,6 +20,16 @@
         },
         "hardware/controller": {
             "component": "controller",
+            "include-component-in-tag": true,
+            "initial-version": "0.1.0"
+        },
+        "hardware/backplane-backer": {
+            "component": "backplane-backer",
+            "include-component-in-tag": true,
+            "initial-version": "0.1.0"
+        },
+        "hardware/status-strip": {
+            "component": "status-strip",
             "include-component-in-tag": true,
             "initial-version": "0.1.0"
         }

@@ -14,9 +14,11 @@ on:
         options:
           - all
           - backplane
+          - backplane-backer
           - charger-module
           - controller
           - pcie-breakout
+          - status-strip
 
 name: KiCad Export
 

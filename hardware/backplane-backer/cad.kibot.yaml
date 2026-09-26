@@ -1,0 +1,15 @@
+# KiBot STEP file export
+kibot:
+  version: 1
+
+global:
+  output: "%f.%x"
+
+outputs:
+  - name: "step_file_export"
+    comment: "Exports the PCB in STEP format"
+    type: export_3d
+    options:
+      format: step
+      origin: "drill"
+      include_silkscreen: true
