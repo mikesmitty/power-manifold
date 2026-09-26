@@ -5,6 +5,12 @@ on:
 
 name: Release Please
 
+# Serialize runs: an overlapping run commits stale manifest contents on top of
+# the newer HEAD (see the duplicate backplane 0.13.0 PRs #158/#160).
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
