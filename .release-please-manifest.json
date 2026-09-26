@@ -4,5 +4,5 @@
     "hardware/controller": "0.3.2",
     "firmware/controller": "0.10.0",
     "hardware/backplane-backer": "0.0.0",
-    "hardware/status-strip": "0.0.0"
+    "hardware/status-strip": "0.1.0"
 }
