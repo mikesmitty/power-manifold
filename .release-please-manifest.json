@@ -3,6 +3,6 @@
     "hardware/charger-module": "0.16.0",
     "hardware/controller": "0.4.0",
     "firmware/controller": "0.10.0",
-    "hardware/backplane-backer": "0.1.0",
+    "hardware/backplane-backer": "0.1.1",
     "hardware/status-strip": "0.2.0"
 }
