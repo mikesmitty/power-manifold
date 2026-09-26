@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/controller-v0.3.2...controller-v0.4.0) (2026-09-26)
+
+
+### Features
+
+* **controller:** re-layout to fit longer charger blades ([c750879](https://github.com/mikesmitty/power-manifold/commit/c7508795adc26e2c469c41ee794997e5989928f0))
+
 ## [0.3.2](https://github.com/mikesmitty/power-manifold/compare/controller-v0.3.1...controller-v0.3.2) (2026-09-12)
 
 
