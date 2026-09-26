@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.16.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.15.0...charger-module-v0.16.0) (2026-09-26)
+
+
+### Features
+
+* **charger-module:** add USART pads ([a1ce7eb](https://github.com/mikesmitty/power-manifold/commit/a1ce7eb872427e6b7bd9cee8fc1d15fcaca3738f))
+* **charger-module:** switch to extended usb-c socket ([a1ce7eb](https://github.com/mikesmitty/power-manifold/commit/a1ce7eb872427e6b7bd9cee8fc1d15fcaca3738f))
+
 ## [0.15.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.14.3...charger-module-v0.15.0) (2026-09-24)
 
 
