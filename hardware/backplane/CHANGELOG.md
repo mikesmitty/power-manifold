@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.13.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.12.2...backplane-v0.13.0) (2026-09-26)
+
+
+### Features
+
+* **backplane:** switch LED cable to 5 pin reversible ([d062fa5](https://github.com/mikesmitty/power-manifold/commit/d062fa519d5f54b865c6fa7d350be0a71f356956))
+
+
+### Bug Fixes
+
+* **backplane:** remove unused pullup resistor networks ([fb68454](https://github.com/mikesmitty/power-manifold/commit/fb68454d7504ecdd46783dee343dc2421e47a26a))
+
 ## [0.12.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.12.1...backplane-v0.12.2) (2026-09-25)
 
 
