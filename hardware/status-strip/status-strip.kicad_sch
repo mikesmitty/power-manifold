@@ -7,7 +7,7 @@
 	(title_block
 		(title "Status Strip")
 		(date "2026-09-26")
-		(rev "v0.1.0")
+		(rev "v0.2.0")
 	)
 	(lib_symbols
 		(symbol "Connector_Generic:Conn_01x06"
