@@ -68,6 +68,7 @@ serial console.
 | `hardware/backplane-backer` | Insulating FR4 backer plate between the backplane and the rear wall |
 | `hardware/charger-module` | Charger blade KiCad project |
 | `hardware/controller` | Management controller card KiCad project |
+| `hardware/left-side-plate` | Left chassis side plate, fabbed as a bare PCB |
 | `hardware/pcie-breakout` | Pico 2 W development carrier for the management slot |
 | `hardware/status-strip` | Front-panel status LED strip (six pixels, one per port) |
 | `hardware/libraries` | Shared KiCad symbols and footprints |

@@ -17,6 +17,7 @@ on:
           - backplane-backer
           - charger-module
           - controller
+          - left-side-plate
           - pcie-breakout
           - status-strip
 

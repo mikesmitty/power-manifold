@@ -32,6 +32,11 @@
             "component": "status-strip",
             "include-component-in-tag": true,
             "initial-version": "0.1.0"
+        },
+        "hardware/left-side-plate": {
+            "component": "left-side-plate",
+            "include-component-in-tag": true,
+            "initial-version": "0.1.0"
         }
     }
 }
