@@ -5,5 +5,5 @@
     "firmware/controller": "0.10.0",
     "hardware/backplane-backer": "0.1.1",
     "hardware/status-strip": "0.2.0",
-    "hardware/left-side-plate": "0.0.0"
+    "hardware/left-side-plate": "0.1.0"
 }
