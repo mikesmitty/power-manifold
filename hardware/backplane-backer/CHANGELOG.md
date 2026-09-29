@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/mikesmitty/power-manifold/compare/backplane-backer-v0.1.1...backplane-backer-v0.1.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* **backplane-backer:** shrink hole sizes ([385322c](https://github.com/mikesmitty/power-manifold/commit/385322c3abf75b8f666234886f1a72df2e8ec531))
+
 ## [0.1.1](https://github.com/mikesmitty/power-manifold/compare/backplane-backer-v0.1.0...backplane-backer-v0.1.1) (2026-09-26)
 
 
