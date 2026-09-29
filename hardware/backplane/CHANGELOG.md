@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.13.0...backplane-v0.13.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **backplane:** update assembly fields for JLCPCB ([69026bc](https://github.com/mikesmitty/power-manifold/commit/69026bc56567cbd5a01380b7fa7d0023461dadbf))
+
 ## [0.13.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.12.2...backplane-v0.13.0) (2026-09-26)
 
 
