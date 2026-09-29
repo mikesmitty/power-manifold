@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/mikesmitty/power-manifold/compare/backplane-backer-v0.1.2...backplane-backer-v0.1.3) (2026-09-29)
+
+
+### Bug Fixes
+
+* **backplane-backer:** grow hole sizes slightly for tolerance ([5b6fc3c](https://github.com/mikesmitty/power-manifold/commit/5b6fc3c94b758087b505e638e204a772534f242a))
+
 ## [0.1.2](https://github.com/mikesmitty/power-manifold/compare/backplane-backer-v0.1.1...backplane-backer-v0.1.2) (2026-09-29)
 
 
