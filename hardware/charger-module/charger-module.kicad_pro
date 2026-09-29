@@ -317,7 +317,7 @@
       "internal_id": "",
       "mfg": "",
       "mpn": "",
-      "sch_revision": "v0.15.0"
+      "sch_revision": "v0.16.0"
     },
     "layer_pairs": [],
     "layer_presets": [],
@@ -1069,7 +1069,7 @@
         "uuid": "ab392f3e-5179-4380-b283-87f14bada4d4"
       }
     ],
-    "used_designators": "#FLG1-3,J1-6,#PWR1-54,D1-3,Q1-4,FB1,C1-39,U1-7,F1,TH1-2,TP1,R1-28,L1-3",
+    "used_designators": "#FLG1-3,J1-6,#PWR1-54,D1-3,Q1-4,FB1,C1-39,U1-7,TH1-2,F1,TP1,R1-28,L1-3",
     "variants": []
   },
   "sheets": [

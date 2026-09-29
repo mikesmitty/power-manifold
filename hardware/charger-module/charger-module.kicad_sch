@@ -12398,10 +12398,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
+		(in_pos_files no)
+		(dnp yes)
 		(uuid "04d1bc62-accb-4dc6-9860-45fbe793725d")
 		(property "Reference" "J5"
 			(at 41.91 153.67 0)
@@ -14498,6 +14498,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 133.35 102.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "4"
 			(uuid "6dcd914d-f1e1-402d-8aa9-fcca22198545")
 		)
@@ -15679,10 +15690,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
+		(in_pos_files no)
+		(dnp yes)
 		(uuid "3cbdc903-6d5f-4a9a-add4-e2aff8cf0a0c")
 		(property "Reference" "J6"
 			(at 41.91 157.48 0)
@@ -16606,10 +16617,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
+		(in_pos_files no)
+		(dnp yes)
 		(uuid "4b0fa704-40e5-42ec-aa54-77df7b082093")
 		(property "Reference" "J1"
 			(at 41.91 149.86 0)
@@ -17316,6 +17327,17 @@
 			)
 		)
 		(property "Height" ""
+			(at 316.23 85.09 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
 			(at 316.23 85.09 90)
 			(hide yes)
 			(show_name no)
@@ -20711,7 +20733,7 @@
 				)
 			)
 		)
-		(property "Description_1" ""
+		(property "JLCPCB_CORRECTION" "0;0;270"
 			(at 193.04 104.14 90)
 			(hide yes)
 			(show_name no)
@@ -20850,6 +20872,17 @@
 			)
 		)
 		(property "Height" ""
+			(at 337.82 85.09 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
 			(at 337.82 85.09 90)
 			(hide yes)
 			(show_name no)
@@ -24007,6 +24040,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
+			(at 384.81 199.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "6"
 			(uuid "bd9b0ba9-c110-4a5d-bd91-cef5a7f40ce2")
 		)
@@ -26390,6 +26434,17 @@
 			)
 		)
 		(property "Height" ""
+			(at 227.33 104.14 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;270"
 			(at 227.33 104.14 90)
 			(hide yes)
 			(show_name no)
