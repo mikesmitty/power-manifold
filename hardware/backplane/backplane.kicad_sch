@@ -19194,7 +19194,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2941042"
+		(property "LCSC" "C3215600"
 			(at 109.22 54.61 0)
 			(hide yes)
 			(show_name no)
@@ -19205,7 +19205,7 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" "0;0;270"
+		(property "JLCPCB_CORRECTION" "0;0;0"
 			(at 109.22 54.61 0)
 			(hide yes)
 			(show_name no)
@@ -20411,7 +20411,7 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" ""
+		(property "JLCPCB_CORRECTION" "-0.95;0;270"
 			(at 91.44 38.1 90)
 			(hide yes)
 			(show_name no)
@@ -20955,7 +20955,7 @@
 				)
 			)
 		)
-		(property "LCSC Part" "C22433503"
+		(property "LCSC" "C22433503"
 			(at 222.25 13.97 0)
 			(hide yes)
 			(show_name no)
@@ -21092,9 +21092,9 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
-		(in_pos_files no)
+		(in_pos_files yes)
 		(dnp no)
 		(uuid "65ef2275-080c-4267-929c-b5787444a639")
 		(property "Reference" "F1"
@@ -21951,7 +21951,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C305803"
+		(property "LCSC" "C234181"
 			(at 299.72 33.02 0)
 			(hide yes)
 			(show_name no)
@@ -29579,6 +29579,17 @@
 				)
 			)
 		)
+		(property "Alternative" "SCT2432STER"
+			(at 90.17 106.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "3"
 			(uuid "43c92c34-6b0e-4aaf-926a-889fa509de7d")
 		)
@@ -30712,7 +30723,7 @@
 				)
 			)
 		)
-		(property "JLCPCB_CORRECTION" ""
+		(property "JLCPCB_CORRECTION" "-0.95;0;270"
 			(at 143.51 38.1 90)
 			(hide yes)
 			(show_name no)
