@@ -10,7 +10,7 @@
 	(title_block
 		(title "Left Side Plate")
 		(date "2026-09-27")
-		(rev "v0.0.0")
+		(rev "v0.1.0")
 	)
 	(layers
 		(0 "F.Cu" signal)
