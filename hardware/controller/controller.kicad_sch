@@ -4898,17 +4898,6 @@
 					)
 				)
 			)
-			(property "manufacturer_pn" "GRM155R60J475ME47D"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
 			(property "packaging" "180mm paper taping"
 				(at 0 0 0)
 				(show_name no)
@@ -4921,17 +4910,6 @@
 				)
 			)
 			(property "packaging_qty" "10000"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "lcsc_pn" "C82453"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -21183,10 +21161,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
+		(in_pos_files no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "1e0d8b89-1d62-4d05-a8ab-316bd63038ac")
 		(property "Reference" "J1"
@@ -23379,6 +23357,17 @@
 			)
 		)
 		(property "Mouser Price/Stock" ""
+			(at 349.25 165.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
 			(at 349.25 165.1 0)
 			(hide yes)
 			(show_name no)
@@ -26500,7 +26489,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Local Library:C_0805_Wide"
+		(property "Footprint" "Local Library:C_0402_Wide"
 			(at 266.7 110.49 0)
 			(hide yes)
 			(show_name no)
@@ -26589,17 +26578,6 @@
 			)
 		)
 		(property "manufacturer" "Murata"
-			(at 266.7 110.49 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "manufacturer_pn" "GRM155R60J475ME47D"
 			(at 266.7 110.49 0)
 			(hide yes)
 			(show_name no)
@@ -30676,6 +30654,17 @@
 				)
 			)
 		)
+		(property "JLCPCB_CORRECTION" "0;0;180"
+			(at 389.89 165.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "3"
 			(uuid "cb3e830d-fa4a-46ad-b423-e46ca2634afc")
 		)
@@ -32056,7 +32045,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Local Library:C_0805_Wide"
+		(property "Footprint" "Local Library:C_0402_Wide"
 			(at 255.27 110.49 0)
 			(hide yes)
 			(show_name no)
@@ -32145,17 +32134,6 @@
 			)
 		)
 		(property "manufacturer" "Murata"
-			(at 255.27 110.49 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "manufacturer_pn" "GRM155R60J475ME47D"
 			(at 255.27 110.49 0)
 			(hide yes)
 			(show_name no)
@@ -39418,17 +39396,6 @@
 			)
 		)
 		(property "manufacturer" "Murata"
-			(at 293.37 133.35 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "manufacturer_pn" "GRM155R60J475ME47D"
 			(at 293.37 133.35 0)
 			(hide yes)
 			(show_name no)
