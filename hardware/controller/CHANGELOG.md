@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/controller-v0.4.0...controller-v0.4.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **controller:** correct C6/C7 footprint name and assembly fields ([9ff1706](https://github.com/mikesmitty/power-manifold/commit/9ff17060bfbf730d4540d77c692c6cebb2b9cdef))
+
 ## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/controller-v0.3.2...controller-v0.4.0) (2026-09-26)
 
 
