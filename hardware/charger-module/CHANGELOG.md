@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.16.0...charger-module-v0.16.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **charger-module:** update assembly fields for JLCPCB ([258ec4d](https://github.com/mikesmitty/power-manifold/commit/258ec4dc3267305d98c43d29882a78f6b22ba8a4))
+
 ## [0.16.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.15.0...charger-module-v0.16.0) (2026-09-26)
 
 
