@@ -36,7 +36,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         3072 // browser headers + a full settings export posted back
-#define STATUS_JSON_MAX 2832 // six ports with escaped labels and generation, the problem text, the UPS block and the bus voltage, worst case
+#define STATUS_JSON_MAX 3096 // six ports with escaped labels, generation and thermometers, the problem text, the UPS block and the bus voltage, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -541,16 +541,21 @@ static void build_status_json(char *out, size_t cap) {
         const port_telemetry_t *p = &t.port[i];
         static char pn[PORT_NAME_MAX * 6 + 1]; // static: IRQ stack
         json_escape(pn, sizeof(pn), settings_port_name((unsigned)i));
+        char tc[8], tp[8], tm[8];
+        port_temp_text(tc, sizeof(tc), p->temp_conv_dc, "null");
+        port_temp_text(tp, sizeof(tp), p->temp_plug_dc, "null");
+        port_temp_text(tm, sizeof(tm), p->temp_mcu_dc, "null");
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"gen\":%u,\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
             "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
-            "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u}",
+            "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u,"
+            "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state), p->gen,
             p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
             p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
             p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],
             (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
-            settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits);
+            settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, tc, tp, tm);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
@@ -586,10 +591,11 @@ static void build_faults_json(char *out, size_t cap, int offset) {
 }
 
 // ---- Prometheus text exposition (GET /metrics) --------------------------
-// Too big for a conn's resp[] (six ports of labelled gauges), so it is built
-// in one shared buffer and streamed with the copy flag; a second scrape while
-// one is still being queued gets a 503 rather than a torn buffer.
-#define METRICS_MAX 8192
+// Too big for a conn's resp[] (six ports of labelled gauges and thermometers,
+// ~10 KB with long port names), so it is built in one shared buffer and
+// streamed with the copy flag; a second scrape while one is still being
+// queued gets a 503 rather than a torn buffer.
+#define METRICS_MAX 12288
 static char metrics_buf[METRICS_MAX];
 
 static bool metrics_busy(void) {
@@ -697,6 +703,20 @@ static size_t build_metrics(char *out, size_t cap) {
             case 11: M_PUT("} %d\n", p->charged ? 1 : 0); break;
             default: M_PUT(",state=\"%s\"} 1\n", port_state_name((port_state_t)p->state)); break;
             }
+        }
+    }
+    // a gen-3 blade's thermometers: one series per sensor, absent without a reading
+    M_PUT("# TYPE pwrman_port_temperature_celsius gauge\n");
+    for (int i = 0; i < NUM_PORTS; i++) {
+        const port_telemetry_t *p = &t.port[i];
+        const struct { const char *sensor; int16_t dc; } TS[] = {
+            {"converter", p->temp_conv_dc}, {"plug", p->temp_plug_dc}, {"mcu", p->temp_mcu_dc},
+        };
+        prom_label(lbl, sizeof(lbl), settings_port_name((unsigned)i));
+        for (size_t k = 0; k < sizeof(TS) / sizeof(TS[0]); k++) {
+            if (TS[k].dc == PORT_TEMP_NONE) continue;
+            M_PUT("pwrman_port_temperature_celsius{port=\"%d\",name=\"%s\",sensor=\"%s\"} %.1f\n",
+                  i + 1, lbl, TS[k].sensor, TS[k].dc / 10.0);
         }
     }
     return off < cap ? off : 0;

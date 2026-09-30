@@ -73,8 +73,26 @@ static void test_injected_probe_and_chassis_failures(void) {
     tick(2);
 }
 
+// SIM_TEMP pins a gen-3 blade's thermometers the way the console does,
+// whole degrees in, tenths out; 0xFFFF hands them back to the model.
+static void test_injected_thermometers(void) {
+    support_reset(360000);
+    sim_inject(3, sim_inject_pack(SIM_GEN, 0, 3));
+    sim_inject(3, sim_inject_pack(SIM_SEAT, 0, 0));
+    tick(3);
+    MT_ASSERT_EQ(tele.port[3].temp_plug_dc, 250);
+    sim_inject(3, sim_inject_pack(SIM_TEMP, 95 * 10, 68 * 10));
+    tick(1);
+    MT_ASSERT_EQ(tele.port[3].temp_conv_dc, 950);
+    MT_ASSERT_EQ(tele.port[3].temp_plug_dc, 680);
+    sim_inject(3, sim_inject_pack(SIM_TEMP, 0, 0xFFFF));
+    tick(1);
+    MT_ASSERT_EQ(tele.port[3].temp_conv_dc, 250);
+}
+
 void run_sim_inject_tests(void) {
     mt_run("sim inject: packed arguments", test_packing);
     mt_run("sim inject: seat, attach, trip, recover, clear, detach", test_injected_fault_round_trip);
     mt_run("sim inject: probe failure and bus failure", test_injected_probe_and_chassis_failures);
+    mt_run("sim inject: thermometers", test_injected_thermometers);
 }

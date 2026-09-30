@@ -38,6 +38,13 @@ typedef struct {
     uint16_t bus_mv;
     int32_t  current_ma;
     uint32_t power_mw;
+    // Temperatures, 0.1 degC, valid once a gen-3 blade has been polled (a
+    // gen-2 blade has no thermometer the controller can read). PORT_TEMP_NONE
+    // is what the blade itself reports for an open or shorted NTC.
+    bool     has_temps;
+    int16_t  temp_conv_dc; // converter
+    int16_t  temp_plug_dc; // receptacle
+    int16_t  temp_mcu_dc;
 } blade_status_t;
 
 // Which generation answers on the selected channel.

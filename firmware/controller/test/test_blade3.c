@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "blade.h"
 #include "blade_regs.h"
 #include "budget.h"
@@ -374,6 +376,57 @@ static void test_a_pulled_blade_forgets_its_generation(void) {
     MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250);
 }
 
+// The blade's thermometers ride along in telemetry while the port is
+// powered: modelled from the load by the sim, pinned by the script, an open
+// NTC passed through as "none"; a gen-2 blade and a port that is off have
+// no reading.
+static void test_thermometers_reach_telemetry(void) {
+    support_reset(360000);
+    seat3(0);
+    sim_set_present(1, true); // gen 2
+    tick(3); // probe lands in IDLE, the first poll follows
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 250); // idle: room temperature
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, 250);
+    MT_ASSERT_EQ(tele.port[0].temp_mcu_dc, 300);
+    MT_ASSERT_EQ(tele.port[1].temp_conv_dc, PORT_TEMP_NONE);
+    MT_ASSERT_EQ(tele.port[1].temp_plug_dc, PORT_TEMP_NONE);
+    MT_ASSERT_EQ(tele.port[1].temp_mcu_dc, PORT_TEMP_NONE);
+
+    sim_attach(0, 20000, 5000); // 100 W, drawn at 80 %: 80 W, 4 A
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 450);
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, 450);
+
+    sim_set_temps(0, 985, PORT_TEMP_NONE); // pinned: the receptacle NTC has fallen off
+    tick(1);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 985);
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, PORT_TEMP_NONE);
+
+    engine_cmd_t c = {.op = CMD_PORT_DISABLE, .port = 0};
+    port_fsm_cmd(0, &c);
+    tick(1);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, PORT_TEMP_NONE);
+
+    sim_model_temps(0);
+    c.op = CMD_PORT_ENABLE;
+    port_fsm_cmd(0, &c);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 450);
+
+    // the formatter every surface prints them with
+    char text[8];
+    port_temp_text(text, sizeof(text), 985, "null");
+    MT_ASSERT(!strcmp(text, "98.5"));
+    port_temp_text(text, sizeof(text), -5, "null"); // -0.5: the sign is not in the integer part
+    MT_ASSERT(!strcmp(text, "-0.5"));
+    port_temp_text(text, sizeof(text), -400, "null");
+    MT_ASSERT(!strcmp(text, "-40.0"));
+    port_temp_text(text, sizeof(text), PORT_TEMP_NONE, "null");
+    MT_ASSERT(!strcmp(text, "null"));
+}
+
 void run_blade3_tests(void) {
     mt_run("blade3: probe configures the blade", test_probe_configures_the_blade);
     mt_run("blade3: port is dark until configured", test_port_is_dark_until_configured);
@@ -390,4 +443,5 @@ void run_blade3_tests(void) {
     mt_run("blade3: limit and cap commands", test_limit_and_cap_commands);
     mt_run("blade3: mixed chassis sheds across generations", test_mixed_chassis_sheds_across_generations);
     mt_run("blade3: a pulled blade forgets its generation", test_a_pulled_blade_forgets_its_generation);
+    mt_run("blade3: thermometers reach telemetry", test_thermometers_reach_telemetry);
 }

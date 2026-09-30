@@ -34,11 +34,15 @@
 
 // discovery entity table: per-port sensors + switch + buttons + priority,
 // current-limit, voltage-cap and boot-policy controls + event entity +
-// charge controls; chassis sensors + fan + BLE provisioning button + the
-// UPS entities (published while a supply answers, retracted otherwise; the
-// last chassis step retracts the pre-select fan switch config)
+// charge controls + the thermometers a gen-3 blade carries (published while
+// the port holds one, retracted for a gen-2 blade, left as they are while
+// the slot is empty or still probing); chassis sensors + fan + BLE
+// provisioning button + the UPS entities (published while a supply answers,
+// retracted otherwise; the last chassis step retracts the pre-select fan
+// switch config)
 #define PORT_SENSOR_N    5
-#define PORT_ENTITIES    (PORT_SENSOR_N + 11)
+#define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
+#define PORT_ENTITIES    (PORT_SENSOR_N + 13)
 #define CHASSIS_ENTITIES 21
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
@@ -56,6 +60,8 @@ static ip_addr_t broker_ip;
 static uint32_t backoff_until_ms;
 static uint32_t last_telemetry_ms;
 static int discovery_idx;
+static int discovery_end;    // one past the last entity of the current run
+static uint8_t temp_disc[NUM_PORTS]; // blade generation each port's thermometer entities were last published for, 0 = not yet this connection
 static bool disc_publishing; // inside discovery_step's publish call
 static bool disc_inflight;   // a QoS 1 config awaiting its PUBACK
 static uint32_t pub_dropped; // publishes lwIP refused (output buffer / request slots)
@@ -325,6 +331,8 @@ static void connection_cb(mqtt_client_t *c, void *arg,
     if (status == MQTT_CONNECT_ACCEPTED) {
         state = ST_UP;
         discovery_idx = 0;
+        discovery_end = N_DISCOVERY;
+        memset(temp_disc, 0, sizeof(temp_disc));
         disc_inflight = false;
         publish(will_topic, "online", 1, 1);
         sub_idx = 0; // command topics follow, one per SUBACK (subscribe_step)
@@ -372,6 +380,8 @@ static void dns_cb(const char *name, const ip_addr_t *ipaddr, void *arg) {
 }
 
 // ---- Home Assistant discovery ----------------------------------------------
+
+static uint8_t port_gen[NUM_PORTS]; // each port's blade generation as of the last telemetry snapshot
 
 typedef struct {
     const char *object;   // uniq_id / config-topic suffix
@@ -429,6 +439,29 @@ static void publish_port_sensor(unsigned port, const sensor_spec_t *s) {
              base, port_label(port), s->name, uid, object, port, extras, attrs, s->template,
              device_json);
     publish(topic_buf, payload_buf, 1, 1);
+}
+
+// A gen-3 blade's thermometers. The port's generation comes from the last
+// telemetry snapshot: 3 publishes the entity, 2 retracts it, 0 (empty slot,
+// or still probing) leaves whatever the broker retains from before.
+static const sensor_spec_t PORT_TEMPS[2] = {
+    {"temp_conv", "converter temperature", "temperature", "\\u00b0C",
+     MEASUREMENT "\"sug_dsp_prc\":1,", "{{ value_json.t_conv }}"},
+    {"temp_plug", "plug temperature", "temperature", "\\u00b0C",
+     MEASUREMENT "\"sug_dsp_prc\":1,", "{{ value_json.t_plug }}"},
+};
+
+static void publish_port_temp(unsigned port, int which) {
+    uint8_t gen = port_gen[port - 1];
+    if (gen == 3) {
+        publish_port_sensor(port, &PORT_TEMPS[which]);
+    } else if (gen == 2) {
+        char object[32];
+        snprintf(object, sizeof(object), "p%u_%s", port, PORT_TEMPS[which].object);
+        discovery_config_topic("sensor", object);
+        publish(topic_buf, "", 1, 1);
+    }
+    temp_disc[port - 1] = gen;
 }
 
 static void publish_port_button(unsigned port, const char *action,
@@ -727,7 +760,7 @@ static void publish_optional_entity(bool present, const char *component, const c
 static void discovery_publish(int i);
 
 static void discovery_step(void) {
-    if (disc_inflight || discovery_idx >= N_DISCOVERY) return;
+    if (disc_inflight || discovery_idx >= discovery_end) return;
     int i = discovery_idx++;
     disc_publishing = true;
     discovery_publish(i);
@@ -749,7 +782,8 @@ static void discovery_publish(int i) {
         else if (e == PORT_SENSOR_N + 7) publish_port_charging_sensor(port);
         else if (e == PORT_SENSOR_N + 8) publish_port_autooff_switch(port);
         else if (e == PORT_SENSOR_N + 9) publish_port_sleep_number(port);
-        else publish_port_volt_select(port);
+        else if (e == PORT_SENSOR_N + 10) publish_port_volt_select(port);
+        else publish_port_temp(port, e - PORT_TEMP_FIRST);
         return;
     }
     switch (i - NUM_PORTS * PORT_ENTITIES) {
@@ -836,7 +870,22 @@ static void discovery_publish(int i) {
 }
 
 void mqtt_names_changed(void) {
-    if (state == ST_UP) discovery_idx = 0; // otherwise the next connect does it
+    if (state != ST_UP) return; // the next connect does it
+    discovery_idx = 0;
+    discovery_end = N_DISCOVERY;
+}
+
+// A port whose blade generation is known and differs from what its
+// thermometer entities were published for gets those two steps again, once
+// the current run is over.
+static void temp_discovery_check(void) {
+    if (discovery_idx < discovery_end) return;
+    for (unsigned i = 0; i < NUM_PORTS; i++) {
+        if (!port_gen[i] || port_gen[i] == temp_disc[i]) continue;
+        discovery_idx = (int)(i * PORT_ENTITIES + PORT_TEMP_FIRST);
+        discovery_end = discovery_idx + 2;
+        return;
+    }
 }
 
 // ---- telemetry & events ----------------------------------------------------
@@ -882,7 +931,12 @@ static void publish_telemetry(void) {
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
+        port_gen[i] = p->gen;
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
+        char tc[8], tp[8], tm[8];
+        port_temp_text(tc, sizeof(tc), p->temp_conv_dc, "null");
+        port_temp_text(tp, sizeof(tp), p->temp_plug_dc, "null");
+        port_temp_text(tm, sizeof(tm), p->temp_mcu_dc, "null");
         fault_rec_t lf;
         char lf_text[64] = "";
         uint32_t lf_at = 0;
@@ -894,7 +948,8 @@ static void publish_telemetry(void) {
                  "{\"state\":\"%s\",\"gen\":%u,\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
                  "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"max_v\":%u,"
                  "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
-                 "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu}",
+                 "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu,"
+                 "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s}",
                  port_state_name((port_state_t)p->state), p->gen, p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
@@ -903,9 +958,11 @@ static void publish_telemetry(void) {
                  settings_port_boot_name(g_settings.port_boot[i]),
                  p->charged ? "true" : "false",
                  (g_settings.port_auto_off >> i) & 1 ? "true" : "false",
-                 g_settings.port_sleep_min[i], p->fault_bits, lf_text, (unsigned long)lf_at);
+                 g_settings.port_sleep_min[i], p->fault_bits, lf_text, (unsigned long)lf_at,
+                 tc, tp, tm);
         publish(topic_buf, payload_buf, 0, 0);
     }
+    temp_discovery_check();
 
     if (pub_dropped) {
         printf("mqtt: %lu publish(es) refused by lwIP (last %s, err %d)\n",

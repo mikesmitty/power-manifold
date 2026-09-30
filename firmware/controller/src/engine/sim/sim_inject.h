@@ -23,6 +23,7 @@ enum {
     SIM_GEN,       // the slot's blade generation: value 2 or 3 (takes effect at the next seating)
     SIM_BLADE_FAULT, // gen 3: BLADE_FAULT_* bits latched and held as a condition: value (0 lifts the condition)
     SIM_RESTART,   // gen 3: the blade's MCU restarts
+    SIM_TEMP,      // gen 3: pin the thermometers: mv = converter degC x 10, value = receptacle degC x 10 (0xFFFF: back to the model)
 };
 
 // arg = op << 28 | (mv / 10) << 16 | value  (value doubles as mA for SIM_ATTACH)

@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define FW_VERSION      "0.10.0" // x-release-please-version
 #define NUM_PORTS       6
@@ -70,7 +72,21 @@ typedef struct {
     uint32_t power_mw;
     uint32_t contract_mw;   // budget reservation held by this port
     uint32_t energy_mwh;    // delivered since boot (not persisted)
+    // A gen-3 blade's thermometers, 0.1 degC while the port is powered and
+    // polled; PORT_TEMP_NONE otherwise, and for an NTC the blade reads as
+    // open. A gen-2 blade has none the controller can read.
+    int16_t  temp_conv_dc;  // converter
+    int16_t  temp_plug_dc;  // receptacle
+    int16_t  temp_mcu_dc;
 } port_telemetry_t;
+
+#define PORT_TEMP_NONE INT16_MIN // the value the blade uses for an open NTC as well
+
+// "37.5" (or "-0.5"), else `none` without a reading.
+static inline void port_temp_text(char *out, size_t cap, int16_t dc, const char *none) {
+    if (dc == PORT_TEMP_NONE) snprintf(out, cap, "%s", none);
+    else snprintf(out, cap, "%s%d.%d", dc < 0 ? "-" : "", abs(dc / 10), abs(dc % 10));
+}
 
 typedef struct {
     port_telemetry_t port[NUM_PORTS];

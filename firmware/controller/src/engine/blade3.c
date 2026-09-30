@@ -26,15 +26,19 @@ bool blade3_probe(void) {
 }
 
 bool blade3_read_status(blade3_status_t *s) {
-    uint8_t b[BLADE_REG_IOUT_MA + 2 - BLADE_REG_STATUS];
+    uint8_t b[BLADE_REG_TEMP_MCU + 2 - BLADE_REG_STATUS];
     if (!read_regs(BLADE_REG_STATUS, b, sizeof b)) return false;
-    s->status      = b[BLADE_REG_STATUS - BLADE_REG_STATUS];
-    s->pdo         = b[BLADE_REG_PDO - BLADE_REG_STATUS];
-    s->faults      = u16(b + BLADE_REG_FAULT - BLADE_REG_STATUS);
-    s->contract_mv = u16(b + BLADE_REG_CONTRACT_MV - BLADE_REG_STATUS);
-    s->contract_ma = u16(b + BLADE_REG_CONTRACT_MA - BLADE_REG_STATUS);
-    s->vbus_mv     = u16(b + BLADE_REG_VBUS_MV - BLADE_REG_STATUS);
-    s->iout_ma     = u16(b + BLADE_REG_IOUT_MA - BLADE_REG_STATUS);
+    s->status       = b[BLADE_REG_STATUS - BLADE_REG_STATUS];
+    s->pdo          = b[BLADE_REG_PDO - BLADE_REG_STATUS];
+    s->faults       = u16(b + BLADE_REG_FAULT - BLADE_REG_STATUS);
+    s->contract_mv  = u16(b + BLADE_REG_CONTRACT_MV - BLADE_REG_STATUS);
+    s->contract_ma  = u16(b + BLADE_REG_CONTRACT_MA - BLADE_REG_STATUS);
+    s->vbus_mv      = u16(b + BLADE_REG_VBUS_MV - BLADE_REG_STATUS);
+    s->iout_ma      = u16(b + BLADE_REG_IOUT_MA - BLADE_REG_STATUS);
+    s->vout_mv      = u16(b + BLADE_REG_VOUT_MV - BLADE_REG_STATUS);
+    s->temp_conv_dc = (int16_t)u16(b + BLADE_REG_TEMP_CONV - BLADE_REG_STATUS);
+    s->temp_plug_dc = (int16_t)u16(b + BLADE_REG_TEMP_PLUG - BLADE_REG_STATUS);
+    s->temp_mcu_dc  = (int16_t)u16(b + BLADE_REG_TEMP_MCU - BLADE_REG_STATUS);
     return true;
 }
 

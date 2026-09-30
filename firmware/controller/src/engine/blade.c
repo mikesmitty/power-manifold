@@ -46,6 +46,10 @@ static bool poll3(blade_status_t *st) {
     st->bus_mv       = s.vbus_mv;
     st->current_ma   = s.iout_ma;
     st->power_mw     = ((uint32_t)s.vbus_mv * s.iout_ma) / 1000;
+    st->has_temps    = true;
+    st->temp_conv_dc = s.temp_conv_dc;
+    st->temp_plug_dc = s.temp_plug_dc;
+    st->temp_mcu_dc  = s.temp_mcu_dc;
     return true;
 }
 

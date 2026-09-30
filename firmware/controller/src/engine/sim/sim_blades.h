@@ -37,6 +37,10 @@ void sim_set_expander_fail(bool fail); // tca9539 I/O fails until hw reset
 
 // telemetry shaping: measured draw as a percentage of the contract current
 void sim_set_load_pct(uint8_t slot, uint8_t pct);
+// gen 3: pin the converter and receptacle thermometers (0.1 degC, PORT_TEMP_NONE
+// = open NTC) instead of the load-driven model; sim_model_temps() lets it go
+void sim_set_temps(uint8_t slot, int16_t conv_dc, int16_t plug_dc);
+void sim_model_temps(uint8_t slot);
 
 // inspection hooks for tests
 bool     sim_en(uint8_t slot);

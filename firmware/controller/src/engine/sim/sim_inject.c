@@ -42,6 +42,10 @@ void sim_inject(uint8_t port, uint32_t arg) {
     case SIM_GEN:       sim_set_gen(port, (uint8_t)v); break;
     case SIM_BLADE_FAULT: sim_set_blade_fault(port, (uint16_t)v); break;
     case SIM_RESTART:   sim_blade_restart(port); break;
+    case SIM_TEMP:
+        if (v == 0xFFFF) sim_model_temps(port);
+        else sim_set_temps(port, (int16_t)sim_inject_mv(arg), (int16_t)v);
+        break;
     default: break;
     }
 }

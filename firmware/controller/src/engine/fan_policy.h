@@ -12,11 +12,12 @@
 //   - any attached port holding a contract above fan_on_ma.
 // The current rule catches what the power rule can't: blade heating is I²R
 // in the shunt, the buck-boost stage and the card-edge fingers, so it tracks
-// current, not watts — a 5V/5A contract is only 25W of chassis load. No
-// temperature sensor exists anywhere in the chassis (the MPQ4242 exposes
-// die-warning flags, not a reading), so contract current is the best
-// available proxy. Any state change starts a hold so borderline loads can't
-// flap the fan.
+// current, not watts — a 5V/5A contract is only 25W of chassis load. A gen-2
+// blade has no thermometer (the MPQ4242 exposes die-warning flags, not a
+// reading), so contract current stands in for one. A gen-3 blade does report
+// its converter and receptacle temperatures (port_telemetry_t); they are not
+// a fan input yet — the thresholds want bench data first. Any state change
+// starts a hold so borderline loads can't flap the fan.
 
 #define FAN_MIN_HOLD_MS (30 * 1000)
 

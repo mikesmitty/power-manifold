@@ -42,6 +42,9 @@ typedef struct {
     bool     ocp_latch;    // latched INA226 alert; clears on read (LEN)
     uint32_t ina_alert_ma;
     uint8_t  load_pct;     // measured draw as % of contract current
+    bool     temp_set;     // gen 3: the script pinned the thermometers (else modelled from the load)
+    int16_t  temp_conv_dc; // gen 3: pinned readings, 0.1 degC
+    int16_t  temp_plug_dc;
     uint32_t src_caps;
     uint32_t hard_resets;
     uint32_t en_changes;   // every time EN actually moved
@@ -220,6 +223,14 @@ void sim_set_blade_ok(uint8_t slot, bool ok) {
 void sim_set_mux_fail(bool fail) { mux_fail = fail; }
 void sim_set_expander_fail(bool fail) { exp_fail = fail; }
 void sim_set_load_pct(uint8_t slot, uint8_t pct) { slots[slot].load_pct = pct; }
+
+void sim_set_temps(uint8_t slot, int16_t conv_dc, int16_t plug_dc) {
+    slots[slot].temp_set = true;
+    slots[slot].temp_conv_dc = conv_dc;
+    slots[slot].temp_plug_dc = plug_dc;
+}
+
+void sim_model_temps(uint8_t slot) { slots[slot].temp_set = false; }
 
 bool sim_en(uint8_t slot) { return slots[slot].en; }
 bool sim_fan(void) { return fan; }
@@ -478,6 +489,14 @@ bool blade3_read_status(blade3_status_t *st) {
         st->vbus_mv = s->con_mv ? s->con_mv : 5000; // vSafe5V before an explicit contract
         st->iout_ma = (uint16_t)((s->con_ma * s->load_pct) / 100);
     }
+    st->vout_mv = up ? (s->con_mv ? s->con_mv : 5000) : 0;
+    // Thermometers: room temperature plus warming with the load (100 W puts
+    // the converter at 50 degC, 5 A the receptacle at 50 degC), unless the
+    // script pinned them.
+    uint32_t p_mw = ((uint32_t)st->vbus_mv * st->iout_ma) / 1000;
+    st->temp_conv_dc = s->temp_set ? s->temp_conv_dc : (int16_t)(250 + p_mw / 400);
+    st->temp_plug_dc = s->temp_set ? s->temp_plug_dc : (int16_t)(250 + st->iout_ma / 20);
+    st->temp_mcu_dc = (int16_t)(300 + p_mw / 2000);
     return true;
 }
 

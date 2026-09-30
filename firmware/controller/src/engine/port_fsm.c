@@ -523,6 +523,9 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     out->current_ma = p->st.current_ma;
     out->power_mw = p->st.power_mw;
     out->contract_mw = budget_port_reservation(i);
+    out->temp_conv_dc = p->st.has_temps ? p->st.temp_conv_dc : PORT_TEMP_NONE;
+    out->temp_plug_dc = p->st.has_temps ? p->st.temp_plug_dc : PORT_TEMP_NONE;
+    out->temp_mcu_dc = p->st.has_temps ? p->st.temp_mcu_dc : PORT_TEMP_NONE;
 }
 
 void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {

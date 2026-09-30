@@ -21,6 +21,10 @@ typedef struct {
     uint16_t contract_ma; // the operating current the sink asked for
     uint16_t vbus_mv;
     uint16_t iout_ma;
+    uint16_t vout_mv;     // converter output ahead of the VBUS switch
+    int16_t  temp_conv_dc; // 0.1 degC; INT16_MIN = no reading (NTC open or shorted)
+    int16_t  temp_plug_dc;
+    int16_t  temp_mcu_dc;
 } blade3_status_t;
 
 typedef struct {
@@ -30,7 +34,7 @@ typedef struct {
 } blade3_config_t;
 
 bool blade3_probe(void); // WHO_AM_I
-bool blade3_read_status(blade3_status_t *s); // BLADE_REG_STATUS .. IOUT_MA in one read
+bool blade3_read_status(blade3_status_t *s); // BLADE_REG_STATUS .. TEMP_MCU in one read
 bool blade3_read_config(blade3_config_t *c);
 // Limits first, then CONTROL, so the port never arms on limits it has not
 // been given yet.

@@ -1,6 +1,8 @@
 ---
 title: Controller firmware
 description: "Native pico-sdk firmware for the V2 management controller: building, flashing, updates, first-time setup, and management surfaces."
+sidebar:
+  order: 1
 ---
 
 Native pico-sdk firmware for the V2 management controller, supervising up to
@@ -202,8 +204,10 @@ trip: the INA226 on a gen-2 blade, the VBUS switch on a gen-3 one),
 cleared), `sim fault <n> ovp|conv-ocp|plug-hot|pd|...|clear` (a gen-3
 blade's faults, held as a condition that re-latches until cleared),
 `sim restart <n>` (a gen-3 blade's MCU restarts and loses its
-configuration), `sim probe <n> ina|mpq|blade|ok` (the next probes find a
-silent chip), and `sim mux fail|ok` / `sim expander fail|ok` for the
+configuration), `sim temp <n> <conv> <plug>` / `sim temp <n> auto` (pin a
+gen-3 blade's thermometers in °C, or hand them back to the model that
+warms them with the load), `sim probe <n> ina|mpq|blade|ok` (the next
+probes find a silent chip), and `sim mux fail|ok` / `sim expander fail|ok` for the
 bus-level failures
 the engine recovers from by resetting the mux and expander. `sim` alone
 prints the list; on a real-blade build the command says so and does
@@ -382,8 +386,8 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)); chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
-| `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, `pwrman_bus_volts` / `pwrman_bus_voltage_ok` on the controller card, the `pwrman_ups_*` gauges while a UPS answers, and every port metric labelled `port` and `name` |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)), `t_conv` / `t_plug` / `t_mcu` (a gen-3 blade's thermometers in °C, `null` without a reading); chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, `pwrman_bus_volts` / `pwrman_bus_voltage_ok` on the controller card, the `pwrman_ups_*` gauges while a UPS answers, every port metric labelled `port` and `name`, and `pwrman_port_temperature_celsius` with a `sensor` label (`converter`, `plug`, `mcu`) for each reading a gen-3 blade gives |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
 | `GET /api/v1/settings` | token or setup secret | Every setting except the secrets, with `mqtt_pass_set` / `token_set` flags in their place |
@@ -420,7 +424,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
 | `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`, and the bus voltage `vin` (fitted), `vin_v` |
-| `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at` |
+| `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading) |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
 | `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.uf2"}`, published by CI or by hand |
@@ -459,6 +463,10 @@ Per port:
   a *sleep timer* number;
 - a *charging* binary sensor (device class `battery_charging`: a sink is
   attached and not yet charged);
+- on a port holding a gen-3 blade, *converter temperature* and *plug
+  temperature* sensors (the entities appear once the blade has been
+  probed, are retracted when a gen-2 blade takes the slot, and read
+  *unknown* while the port is off);
 - an *events* entity fed from `.../event` — event types `inserted`,
   `ready`, `attached`, `detached`, `removed`, `enabled`, `disabled`,
   `contract`, `throttled`, `restored`, `fault`, `probe_failed`, `charged`,
@@ -494,7 +502,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 
 | Command | Purpose |
 | --- | --- |
-| `status` | port table (state, contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged) and chassis power |
+| `status` | port table (state, contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged, a gen-3 blade's `conv` and `plug` temperatures) and chassis power |
 | `info` | firmware, slot and boot reason, links and addressing, UPS supply, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
@@ -555,8 +563,10 @@ budget arbiter sheds and restores across generations by priority alone.
   answers with EN low, and its port stays dark until it has been given a
   current ceiling and a voltage cap and told to advertise — the probe does
   both. It re-advertises by itself whenever its limits change, meters VBUS
-  and the port current itself, and carries its own over-current,
-  over-voltage and thermal protection. A fault takes the port down on the
+  and the port current itself, reports its converter, receptacle and MCU
+  temperatures (the status table, the JSON, `/metrics` and two Home
+  Assistant sensors per port carry them), and carries its own
+  over-current, over-voltage and thermal protection. A fault takes the port down on the
   blade and stays latched, ALERT# low with it, until the controller has
   recorded it: the engine drops EN, clears the latch and re-probes after
   the cooldown, and a fault whose cause persists (a hot receptacle) comes
@@ -828,7 +838,8 @@ button: the card is unfabricated.
 port holds a contract over `on_ma` (default 3000 mA, so the everyday
 5 V/3 A contract never trips it; 0 disables) — a 5 V/5 A contract is only
 25 W of chassis load but heats the blade as I²R. In auto the fan stays on
-until both rules are clear; `on`/`off` are manual overrides.
+until both rules are clear; `on`/`off` are manual overrides. A gen-3
+blade's temperature readings are not a fan input yet.
 
 ### Fault log
 

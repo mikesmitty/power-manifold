@@ -99,10 +99,13 @@ static void print_help(void) {
 static void print_status(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
-    printf("port state      gen attach pdo    mV     mA     mW  contract limit cap prio boot  name\n");
+    printf("port state      gen attach pdo    mV     mA     mW  contract limit cap prio boot  conv  plug  name\n");
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
-        printf("%4d %-10s %3s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %s\n", i + 1,
+        char conv[8], plug[8]; // a gen-3 blade's thermometers, degC
+        port_temp_text(conv, sizeof(conv), p->temp_conv_dc, "-");
+        port_temp_text(plug, sizeof(plug), p->temp_plug_dc, "-");
+        printf("%4d %-10s %3s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %5s %5s  %s\n", i + 1,
                port_state_name((port_state_t)p->state),
                p->gen == 3 ? "3" : p->gen == 2 ? "2" : "-",
                p->attached ? (p->charged ? "chg" : "yes") : "no",
@@ -110,7 +113,7 @@ static void print_status(void) {
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
                (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
                g_settings.port_priority[i],
-               settings_port_boot_name(g_settings.port_boot[i]), settings_port_name(i));
+               settings_port_boot_name(g_settings.port_boot[i]), conv, plug, settings_port_name(i));
     }
     printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
@@ -235,6 +238,8 @@ static void print_sim_help(void) {
            "  sim fault <n> ovp|vconn|cc-ovp|port-otp|conv-scp|conv-ocp|conv-ovp|conv-hot|plug-hot|bus|vbus|pd|clear\n"
            "                               gen 3: blade fault, held as a condition until 'clear'\n"
            "  sim restart <n>              gen 3: the blade's MCU restarts (configuration gone)\n"
+           "  sim temp <n> <conv> <plug>   gen 3: pin the converter and receptacle thermometers (degC)\n"
+           "  sim temp <n> auto            ...back to the load-driven model\n"
            "  sim probe <n> ina|mpq|blade|ok  the next probes fail (chip silent) or succeed\n"
            "  sim mux fail|ok              I2C mux select fails until the engine resets it\n"
            "  sim expander fail|ok         GPIO expander I/O fails until the engine resets it\n",
@@ -261,6 +266,16 @@ static void run_sim(char **save) {
         else if (!strcmp(what, "unseat")) c.arg = sim_inject_pack(SIM_UNSEAT, 0, 0);
         else if (!strcmp(what, "detach")) c.arg = sim_inject_pack(SIM_DETACH, 0, 0);
         else if (!strcmp(what, "restart")) c.arg = sim_inject_pack(SIM_RESTART, 0, 0);
+        else if (!strcmp(what, "temp")) {
+            const char *conv = strtok_r(NULL, " \t", save);
+            const char *plug = strtok_r(NULL, " \t", save);
+            if (conv && !strcmp(conv, "auto")) c.arg = sim_inject_pack(SIM_TEMP, 0, 0xFFFF);
+            else {
+                int tc = conv ? atoi(conv) : -1, tp = plug ? atoi(plug) : -1;
+                if (tc < 0 || tc > 150 || tp < 0 || tp > 150) { printf("temp: 0-150 degC each\n"); return; }
+                c.arg = sim_inject_pack(SIM_TEMP, (unsigned)tc * 10, (unsigned)tp * 10);
+            }
+        }
         else if (!strcmp(what, "gen")) {
             const char *g = strtok_r(NULL, " \t", save);
             int gen = g ? atoi(g) : 0;
