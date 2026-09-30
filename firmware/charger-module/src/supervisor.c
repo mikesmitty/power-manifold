@@ -1,0 +1,207 @@
+#include "supervisor.h"
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "blade.h"
+#include "blade_regs.h"
+#include "console.h"
+#include "hw.h"
+#include "meter.h"
+#include "port.h"
+#include "power.h"
+#include "regmap.h"
+#include "sense.h"
+#include "stack.h"
+
+#define SAMPLE_MS          10
+#define REPORT_MS          1000
+// EN high to the first word on the private bus. The TPS55288 datasheet gives
+// no figure; this is the allowance the controller makes for the gen-2 blade.
+#define CONVERTER_WAKE_MS  50
+
+static regmap_live_t live;
+static regmap_config_t cfg;
+static bool en, conv_pending, line_up;
+static uint32_t en_ms, sample_ms, report_ms;
+
+static void raise(uint16_t faults) {
+    hw_backplane_lock();
+    regmap_raise(faults);
+    hw_backplane_unlock();
+}
+
+static uint16_t faults_now(void) {
+    hw_backplane_lock();
+    uint16_t faults = regmap_faults();
+    hw_backplane_unlock();
+    return faults;
+}
+
+static uint16_t fault_of(power_result_t r) {
+    switch (r) {
+    case POWER_OK:      return 0;
+    case POWER_TRIPPED: return BLADE_FAULT_OVP;
+    case POWER_TIMEOUT: return BLADE_FAULT_VBUS;
+    default:            return BLADE_FAULT_BUS;
+    }
+}
+
+static void line_raise(void) {
+    uint16_t f = fault_of(power_port_up());
+    line_up = !f;
+    if (f) {
+        power_port_down();
+        raise(f);
+    }
+}
+
+static void follow_en(uint32_t now) {
+    if (hw_en() != en) {
+        en = !en;
+        en_ms = now;
+        conv_pending = en; // shutdown cost the converter its registers
+        if (!en) power_converter_lost();
+        console_str(en ? "EN high\n" : "EN low\n");
+    }
+    if (conv_pending && now - en_ms >= CONVERTER_WAKE_MS) {
+        conv_pending = false;
+        raise(fault_of(power_converter_up()));
+    }
+}
+
+static void take_controller_input(void) {
+    regmap_config_t c;
+    hw_backplane_lock();
+    bool changed = regmap_config(&c);
+    uint8_t cmd = regmap_command();
+    hw_backplane_unlock();
+
+    if (changed) {
+        cfg = c;
+        console_str("config: port ");
+        console_str(cfg.port_en ? "on, " : "off, ");
+        console_dec(cfg.max_ma);
+        console_str(" mA, ");
+        console_dec(cfg.max_mv);
+        console_str(" mV\n");
+        if (port_set_limits(cfg.max_ma, cfg.max_mv)) stack_send_capabilities();
+    }
+    switch (cmd) {
+    case BLADE_CMD_SRC_CAP:
+        stack_send_capabilities();
+        break;
+    case BLADE_CMD_HARD_RESET:
+        stack_hard_reset();
+        break;
+    case BLADE_CMD_CLEAR_FAULTS: // the register file has cleared the latch
+        if (!line_up) line_raise();
+        break;
+    default:
+        break;
+    }
+}
+
+static uint16_t temperature_faults(void) {
+    uint16_t f = 0;
+    if (live.temp_conv_dc == SENSE_TEMP_OPEN_DC || live.temp_conv_dc > TEMP_LIMIT_CONV_DC)
+        f |= BLADE_FAULT_OT_CONV;
+    if (live.temp_plug_dc == SENSE_TEMP_OPEN_DC || live.temp_plug_dc > TEMP_LIMIT_PLUG_DC)
+        f |= BLADE_FAULT_OT_PLUG;
+    return f;
+}
+
+static void sample(void) {
+    live.vbus_mv = (uint16_t)meter_vbus_mv();
+    live.vout_mv = (uint16_t)meter_vout_mv();
+    live.iout_ma = (uint16_t)meter_iout_ma();
+    live.temp_conv_dc = meter_temp_conv_dc();
+    live.temp_plug_dc = meter_temp_plug_dc();
+    live.temp_mcu_dc = meter_temp_mcu_dc();
+    live.status = (uint8_t)((en ? BLADE_ST_EN : 0) | (power_vbus_is_on() ? BLADE_ST_VBUS_ON : 0));
+    port_report(&live);
+
+    hw_backplane_lock();
+    regmap_publish(&live);
+    hw_backplane_unlock();
+}
+
+static void report(void) {
+    console_str("en=");
+    console_dec(en);
+    console_str(" armed=");
+    console_dec(stack_port_armed());
+    console_str(" st=");
+    console_hex(live.status, 2);
+    console_str(" vdda=");
+    console_dec((int32_t)meter_vdda_mv());
+    console_str(" vout=");
+    console_dec(live.vout_mv);
+    console_str(" vbus=");
+    console_dec(live.vbus_mv);
+    console_str(" iout=");
+    console_dec(live.iout_ma);
+    console_str(" contract=");
+    console_dec(live.contract_mv);
+    console_str("/");
+    console_dec(live.contract_ma);
+    console_str(" conv=");
+    console_tenths(live.temp_conv_dc);
+    console_str(" plug=");
+    console_tenths(live.temp_plug_dc);
+    console_str(" fault=");
+    console_hex(faults_now(), 4);
+    console_str("\n");
+}
+
+void supervisor_init(void) {
+    en = false;
+    conv_pending = false;
+    sample_ms = report_ms = hw_ms();
+    sample();
+    line_raise();
+}
+
+void supervisor_run(void) {
+    hw_watchdog_feed();
+    uint32_t now = hw_ms();
+
+    follow_en(now);
+    take_controller_input();
+
+    if (now - sample_ms >= SAMPLE_MS) {
+        sample_ms = now;
+        sample();
+        raise(temperature_faults());
+    }
+    raise(power_poll_faults());
+
+    bool alerting = (faults_now() & BLADE_FAULT_ALERTING) != 0;
+    bool allowed = line_up && !alerting && en && power_converter_ready() && cfg.port_en &&
+                   cfg.max_ma != 0;
+    if (alerting && line_up) {
+        stack_port_disarm();
+        power_port_down();
+        line_up = false;
+    } else if (allowed != stack_port_armed()) {
+        if (allowed) stack_port_arm();
+        else stack_port_disarm();
+    }
+
+    hw_alert(alerting);
+    // heartbeat: a short flash every second, a fast blink on a fault
+    hw_led(alerting ? (now % 200) < 100 : (now % 1000) < 50);
+
+    if (now - report_ms >= REPORT_MS) {
+        report_ms = now;
+        report();
+    }
+}
+
+void supervisor_power_failed(void) {
+    raise(BLADE_FAULT_VBUS);
+}
+
+void supervisor_stack_failed(void) {
+    raise(BLADE_FAULT_PD);
+}
