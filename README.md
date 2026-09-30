@@ -10,11 +10,16 @@ serial console.
 
 ## How it works
 
-- **Charger blades** (`hardware/charger-module`). Each blade is an MPS
-  MPQ4242 four-switch buck-boost USB-PD source with a TI INA226 power monitor
-  on the blade's shunt. Blades negotiate PD on their own; the controller
-  constrains which PDOs they advertise. The blade is a PCIe x1 card edge, so
-  it slots in and out of the backplane without tools.
+- **Charger blades** (`hardware/charger-module`). Two generations fit the
+  same slot, and the controller tells them apart when a blade is seated.
+  The gen-2 blade is an MPS MPQ4242 four-switch buck-boost USB-PD source
+  with a TI INA226 power monitor on the blade's shunt. The gen-3 blade
+  (`firmware/charger-module`) runs the port on an STM32G071 with ST's
+  USB-PD stack, a TI TPS55288 buck-boost and an ST TCPP02-M18 port
+  protector, with an independent over-voltage cut-off on VBUS. Blades
+  negotiate PD on their own; the controller constrains which PDOs they
+  advertise. The blade is a PCIe x1 card edge, so it slots in and out of
+  the backplane without tools.
 - **Backplane** (`hardware/backplane`). Six blade slots and a management
   slot. A TCA9548A I2C mux gives every blade its own bus segment, a TCA9539
   expander handles blade enable, presence detect, and the fan, and six
