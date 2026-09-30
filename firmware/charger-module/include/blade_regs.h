@@ -23,8 +23,10 @@
 #define BLADE_I2C_ADDR        0x3A
 
 #define BLADE_WHO_AM_I        0xB3
-// DRAFT until the controller driver lands: 0 means the map may still change
-#define BLADE_PROTO_VERSION   0
+// The map below, as both the blade firmware and the controller's driver
+// (firmware/controller/src/engine/blade3.c) speak it. Bumped when a change
+// would mislead an older controller.
+#define BLADE_PROTO_VERSION   1
 
 // identity, read-only
 #define BLADE_REG_WHO_AM_I    0x00

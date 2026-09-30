@@ -153,8 +153,9 @@ disclaimer in what accompanies it.
 ## Backplane register map
 
 The blade is an I2C slave at **0x3A** on its slot's mux channel. `blade_regs.h`
-is the reference; this is its summary. The map is a draft (`PROTO` reads 0)
-until the controller's driver is written against it.
+is the reference; this is its summary. The controller's driver
+(`firmware/controller/src/engine/blade3.c`) includes that header as-is, and
+`PROTO` reads 1: the version both sides speak.
 
 A write's first byte sets the register pointer; reads and further writes
 advance it. Multi-byte values are little-endian. A read sees one snapshot,
