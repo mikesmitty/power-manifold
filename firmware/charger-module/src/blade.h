@@ -12,9 +12,9 @@
 // cable without an e-marker may carry, with the fixed-contract margin
 #define CABLE_LIMIT_AT_ATTACH_MA 3300u
 
-// Temperature limits, tenths of a degree. Past either one the port is
-// switched off and the fault latched. A sensor that reads open or shorted
-// counts as past its limit: a port that cannot see its temperature does not
-// run.
+// Temperature limits, tenths of a degree. A reading past either one for
+// 50 ms switches the port off and latches the fault. A sensor that reads
+// open or shorted counts as past its limit: a port that cannot see its
+// temperature does not run.
 #define TEMP_LIMIT_CONV_DC  1000 // board copper at the converter
 #define TEMP_LIMIT_PLUG_DC  700  // receptacle shell

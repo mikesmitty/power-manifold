@@ -16,6 +16,10 @@
 
 #define SAMPLE_MS          10
 #define REPORT_MS          1000
+// A temperature reading past its limit has to hold for this many samples
+// before it counts. Noise cannot keep it there, a glitch from the switching
+// stage might, and a latched fault costs a trip to the controller to clear.
+#define TEMP_TRIP_SAMPLES  5
 // EN high to the first word on the private bus. The TPS55288 datasheet gives
 // no figure; this is the allowance the controller makes for the gen-2 blade.
 #define CONVERTER_WAKE_MS  50
@@ -24,6 +28,7 @@ static regmap_live_t live;
 static regmap_config_t cfg;
 static bool en, conv_pending, line_up;
 static uint32_t en_ms, sample_ms, report_ms;
+static uint8_t hot_conv, hot_plug; // consecutive samples past the limit
 
 static void raise(uint16_t faults) {
     hw_backplane_lock();
@@ -102,12 +107,18 @@ static void take_controller_input(void) {
     }
 }
 
+static uint8_t hot_for(uint8_t samples, int16_t t_dc, int16_t limit_dc) {
+    bool past = t_dc == SENSE_TEMP_OPEN_DC || t_dc > limit_dc;
+    if (!past) return 0;
+    return samples < TEMP_TRIP_SAMPLES ? (uint8_t)(samples + 1) : samples;
+}
+
 static uint16_t temperature_faults(void) {
+    hot_conv = hot_for(hot_conv, live.temp_conv_dc, TEMP_LIMIT_CONV_DC);
+    hot_plug = hot_for(hot_plug, live.temp_plug_dc, TEMP_LIMIT_PLUG_DC);
     uint16_t f = 0;
-    if (live.temp_conv_dc == SENSE_TEMP_OPEN_DC || live.temp_conv_dc > TEMP_LIMIT_CONV_DC)
-        f |= BLADE_FAULT_OT_CONV;
-    if (live.temp_plug_dc == SENSE_TEMP_OPEN_DC || live.temp_plug_dc > TEMP_LIMIT_PLUG_DC)
-        f |= BLADE_FAULT_OT_PLUG;
+    if (hot_conv >= TEMP_TRIP_SAMPLES) f |= BLADE_FAULT_OT_CONV;
+    if (hot_plug >= TEMP_TRIP_SAMPLES) f |= BLADE_FAULT_OT_PLUG;
     return f;
 }
 
@@ -157,6 +168,7 @@ static void report(void) {
 void supervisor_init(void) {
     en = false;
     conv_pending = false;
+    hot_conv = hot_plug = 0;
     sample_ms = report_ms = hw_ms();
     sample();
     line_raise();

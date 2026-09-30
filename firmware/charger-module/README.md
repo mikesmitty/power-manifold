@@ -73,7 +73,7 @@ Any of these latches a fault, takes the port down and pulls ALERT#:
 | `OVP` | TCPP_EN went low against the drive, however briefly |
 | `OCP_VBUS`, `OCP_VCONN`, `OVP_CC`, `OTP_PORT` | TCPP02 flags |
 | `CONV_SCP`, `CONV_OVP` | TPS55288 status |
-| `OT_CONV`, `OT_PLUG` | an NTC past its limit (100 °C / 70 °C), or reading open or shorted |
+| `OT_CONV`, `OT_PLUG` | an NTC past its limit (100 °C / 70 °C) for 50 ms, or reading open or shorted |
 | `BUS` | TPS55288 or TCPP02 not answering |
 | `VBUS` | VBUS did not reach vSafe5V or vSafe0V in time |
 | `PD` | the stack did not start |

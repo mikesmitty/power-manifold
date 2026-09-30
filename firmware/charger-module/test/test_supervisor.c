@@ -223,7 +223,7 @@ static void a_fault_that_persists_comes_back(void) {
     ctl_configure(3000, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     fake_board_set_temps_dc(250, TEMP_LIMIT_PLUG_DC + 1);
-    run_ms(20);
+    run_ms(60);
     MT_ASSERT(!stack_port_armed());
     MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_ALERTING, BLADE_FAULT_OT_PLUG);
 
@@ -236,6 +236,39 @@ static void a_fault_that_persists_comes_back(void) {
     ctl_command(BLADE_CMD_CLEAR_FAULTS);
     run_ms(20);
     MT_ASSERT(stack_port_armed());
+}
+
+static void a_hot_reading_has_to_hold(void) {
+    boot();
+    en_high();
+    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    run_ms(200);
+
+    // Three samples past the limit, then back: a glitch, not a fault
+    fake_board_set_temps_dc(TEMP_LIMIT_CONV_DC + 1, 250);
+    run_ms(30);
+    fake_board_set_temps_dc(250, 250);
+    run_ms(100);
+    MT_ASSERT(stack_port_armed());
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_ALERTING, 0);
+
+    // A break in the run starts the count over
+    fake_board_set_temps_dc(TEMP_LIMIT_CONV_DC + 1, 250);
+    run_ms(30);
+    fake_board_set_temps_dc(250, 250);
+    run_ms(10);
+    fake_board_set_temps_dc(TEMP_LIMIT_CONV_DC + 1, 250);
+    run_ms(30);
+    fake_board_set_temps_dc(250, 250);
+    run_ms(100);
+    MT_ASSERT(stack_port_armed());
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_ALERTING, 0);
+
+    // Held past the limit, it trips
+    fake_board_set_temps_dc(TEMP_LIMIT_CONV_DC + 1, 250);
+    run_ms(60);
+    MT_ASSERT(!stack_port_armed());
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_ALERTING, BLADE_FAULT_OT_CONV);
 }
 
 static void a_blind_sensor_is_a_fault(void) {
@@ -318,6 +351,7 @@ void run_supervisor_tests(void) {
     mt_run("supervisor: commands reach the stack", commands_reach_the_stack);
     mt_run("supervisor: an over-voltage trip takes the port down", over_voltage_trip_takes_the_port_down);
     mt_run("supervisor: a fault that persists comes back", a_fault_that_persists_comes_back);
+    mt_run("supervisor: a hot reading has to hold", a_hot_reading_has_to_hold);
     mt_run("supervisor: a blind sensor is a fault", a_blind_sensor_is_a_fault);
     mt_run("supervisor: a missing part is a fault", a_missing_part_is_a_fault);
     mt_run("supervisor: stack failures are faults", stack_failures_are_faults);
