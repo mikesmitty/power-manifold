@@ -247,15 +247,15 @@ bool mpq4242_read_status(mpq4242_status_t *s) {
     s->contract_mw = (uint32_t)s3 * 500;
 
     uint8_t f = 0;
-    if ((s1 >> 6) & 1u) f |= MPQ_FAULT_NTC2;
-    if ((s1 >> 4) & 1u) f |= MPQ_FAULT_SHORT_VBATT;
-    if ((s1 >> 3) & 1u) f |= MPQ_FAULT_GENERAL;
-    if ((s1 >> 1) & 1u) f |= MPQ_FAULT_CC;
-    if (s1 & 1u)        f |= MPQ_FAULT_NTC1;
-    if ((s2 >> 7) & 1u) f |= MPQ_FAULT_VBATT_LOW;
-    if ((s2 >> 6) & 1u) f |= MPQ_FAULT_VBATT_LOW;
-    if ((s2 >> 5) & 1u) f |= MPQ_FAULT_OTW1;
-    if ((s2 >> 4) & 1u) f |= MPQ_FAULT_OTW2;
+    if ((s1 >> 6) & 1u) f |= PORT_FAULT_NTC2;
+    if ((s1 >> 4) & 1u) f |= PORT_FAULT_SHORT_VBATT;
+    if ((s1 >> 3) & 1u) f |= PORT_FAULT_GENERAL;
+    if ((s1 >> 1) & 1u) f |= PORT_FAULT_CC;
+    if (s1 & 1u)        f |= PORT_FAULT_NTC1;
+    if ((s2 >> 7) & 1u) f |= PORT_FAULT_VBATT_LOW;
+    if ((s2 >> 6) & 1u) f |= PORT_FAULT_VBATT_LOW;
+    if ((s2 >> 5) & 1u) f |= PORT_FAULT_OTW1;
+    if ((s2 >> 4) & 1u) f |= PORT_FAULT_OTW2;
     s->fault_bits = f;
     return true;
 }

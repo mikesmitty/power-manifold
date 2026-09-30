@@ -36,7 +36,7 @@
 typedef struct {
     bool     attached;      // STATUS1[7]
     uint8_t  selected_pdo;  // STATUS2[3:1], 0 = none
-    uint8_t  fault_bits;    // MPQ_FAULT_* (manifold.h), from STATUS1+STATUS2
+    uint8_t  fault_bits;    // PORT_FAULT_* bits 0-7 (manifold.h), from STATUS1+STATUS2
     uint32_t contract_mw;   // STATUS3 * 0.5W
 } mpq4242_status_t;
 
