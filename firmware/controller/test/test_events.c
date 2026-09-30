@@ -26,7 +26,7 @@ static void test_state_changes(void) {
 }
 
 static void test_other_events(void) {
-    MT_ASSERT(!strcmp(kind(EVT_FAULT, MPQ_FAULT_OTW1, 0), "fault"));
+    MT_ASSERT(!strcmp(kind(EVT_FAULT, PORT_FAULT_OTW1, 0), "fault"));
     MT_ASSERT(!strcmp(kind(EVT_CONTRACT, 5, 60000), "contract"));
     MT_ASSERT(!strcmp(kind(EVT_PROBE_FAIL, 3, 3), "probe_failed"));
     MT_ASSERT(!strcmp(kind(EVT_THROTTLE, THROTTLE_CLAMPED, 45000), "throttled"));

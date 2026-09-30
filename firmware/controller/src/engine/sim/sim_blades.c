@@ -2,22 +2,35 @@
 
 #include <string.h>
 
+#include "blade3.h"
 #include "ina226.h"
 #include "mpq4242.h"
 #include "pins.h"
 #include "tca9539.h"
 #include "tca9548a.h"
 
-// One simulated blade per mux channel. The MPQ4242 model negotiates the way
-// the real part does from the engine's point of view: the sink's request is
-// granted up to the advertised current ceiling, and a contract only moves
-// when the advertisement is re-sent (send_src_cap) or the sink re-attaches.
+// One simulated blade per mux channel, of either generation. The gen-2
+// MPQ4242 model negotiates the way the real part does from the engine's
+// point of view: the sink's request is granted up to the advertised current
+// ceiling, and a contract only moves when the advertisement is re-sent
+// (send_src_cap) or the sink re-attaches. The gen-3 model is the blade
+// firmware's register file: the port is dark until the controller has
+// configured it, it re-advertises by itself when its limits change, and a
+// fault takes the port down and stays latched until BLADE_CMD_CLEAR_FAULTS.
 
 typedef struct {
     bool     present;
+    uint8_t  gen;          // 2 or 3
     bool     en;
-    bool     ina_ok;       // probe responds
+    bool     ina_ok;       // gen 2: probe responds
     bool     mpq_ok;
+    bool     blade_ok;     // gen 3: the register file answers
+    bool     configured;   // gen 3: written since the blade's last start
+    bool     port_en;      // gen 3: BLADE_CTL_PORT_EN
+    uint16_t cond;         // gen 3: fault conditions the script holds present (re-latch on clear)
+    uint16_t faults;       // gen 3: BLADE_FAULT_* latched
+    uint32_t clears;       // gen 3: BLADE_CMD_CLEAR_FAULTS received
+    uint32_t cfg_writes;   // gen 3: configuration transfers received
     bool     attached;     // sink plugged into the port
     uint16_t req_mv;       // sink's ask
     uint32_t req_ma;
@@ -57,9 +70,18 @@ static uint16_t offered_mv(const sim_slot_t *s) {
     return 5000;
 }
 
-// Contract follows the advertisement: applied on attach and on src_cap.
+// A gen-3 port runs only when the blade has EN, a configuration with a
+// current ceiling, and nothing alerting latched.
+static bool armed3(const sim_slot_t *s) {
+    return s->en && s->configured && s->port_en && s->adv_ma != 0 &&
+           (s->faults & BLADE_FAULT_ALERTING) == 0;
+}
+
+// Contract follows the advertisement: applied on attach and on src_cap (a
+// gen-3 blade re-advertises on its own whenever its table changes).
 static void renegotiate(sim_slot_t *s) {
-    if (!s->attached || !s->en) {
+    bool up = s->gen == 3 ? armed3(s) : s->en;
+    if (!s->attached || !up) {
         s->con_mv = 0;
         s->con_ma = 0;
         return;
@@ -83,15 +105,41 @@ static uint32_t status3_mw(const sim_slot_t *s) {
     return mw > 127500 ? 127500 : mw;    // 8-bit register ceiling
 }
 
+static uint32_t contract_mw(const sim_slot_t *s) {
+    if (s->gen == 3) return ((uint32_t)s->con_mv * s->con_ma) / 1000; // exact: two 16-bit registers
+    return status3_mw(s);
+}
+
+static uint8_t pdo_of(const sim_slot_t *s) {
+    if (!s->attached || s->con_mv == 0) return 0;
+    if (s->con_mv <= 5000) return 1;
+    if (s->con_mv <= 9000) return 2;
+    if (s->con_mv <= 12000) return 3;
+    if (s->con_mv <= 15000) return 4;
+    if (s->con_mv <= 20000) return 5;
+    return 7; // the 21 V PPS range
+}
+
+// A gen-3 blade latches a fault, drops its port and holds ALERT# until the
+// controller clears it; a condition the script keeps present latches again
+// at once.
+static void latch3(sim_slot_t *s, uint16_t bits) {
+    s->faults |= bits;
+    renegotiate(s);
+}
+
 // ---- script-facing controls ------------------------------------------------
 
 void sim_reset(void) {
     memset(slots, 0, sizeof(slots));
     for (int i = 0; i < NUM_PORTS; i++) {
+        slots[i].gen = 2;
         slots[i].ina_ok = true;
         slots[i].mpq_ok = true;
+        slots[i].blade_ok = true;
         slots[i].load_pct = 80;
         slots[i].adv_mv = PORT_VOLT_MAX_MV;
+        slots[i].faults = BLADE_FAULT_RESET; // a gen-3 blade starts with its restart latched
     }
     selected = -1;
     mux_fail = exp_fail = false;
@@ -103,6 +151,22 @@ void sim_reset(void) {
 void sim_set_present(uint8_t slot, bool present) {
     slots[slot].present = present;
     if (!present) set_en(&slots[slot], false);
+}
+
+void sim_set_gen(uint8_t slot, uint8_t gen) {
+    slots[slot].gen = gen == 3 ? 3 : 2;
+}
+
+// The blade's MCU restarts: configuration gone, port off, restart latched;
+// the slot's EN is the backplane's and stays.
+void sim_blade_restart(uint8_t slot) {
+    sim_slot_t *s = &slots[slot];
+    s->configured = false;
+    s->port_en = false;
+    s->adv_ma = 0;
+    s->adv_mv = 0;
+    s->faults = BLADE_FAULT_RESET;
+    renegotiate(s);
 }
 
 void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma) {
@@ -122,14 +186,24 @@ void sim_set_mpq_fault(uint8_t slot, uint8_t fault_bits) {
     slots[slot].fault_bits = fault_bits;
 }
 
+void sim_set_blade_fault(uint8_t slot, uint16_t fault_bits) {
+    slots[slot].cond = fault_bits;
+    latch3(&slots[slot], fault_bits);
+}
+
 void sim_trip_ocp(uint8_t slot) {
-    slots[slot].ocp_latch = true;
+    if (slots[slot].gen == 3) latch3(&slots[slot], BLADE_FAULT_OCP_VBUS);
+    else slots[slot].ocp_latch = true;
 }
 
 bool sim_alert_asserted(void) {
     for (int i = 0; i < NUM_PORTS; i++) {
         const sim_slot_t *s = &slots[i];
-        if (s->present && s->en && (s->ocp_latch || s->fault_bits)) return true;
+        if (!s->present) continue;
+        // a gen-3 blade's MCU runs from the slot's 5 V: its ALERT# does not need EN
+        if (s->gen == 3 ? (s->faults & BLADE_FAULT_ALERTING) != 0
+                        : s->en && (s->ocp_latch || s->fault_bits))
+            return true;
     }
     return false;
 }
@@ -137,6 +211,10 @@ bool sim_alert_asserted(void) {
 void sim_set_probe_ok(uint8_t slot, bool ina_ok, bool mpq_ok) {
     slots[slot].ina_ok = ina_ok;
     slots[slot].mpq_ok = mpq_ok;
+}
+
+void sim_set_blade_ok(uint8_t slot, bool ok) {
+    slots[slot].blade_ok = ok;
 }
 
 void sim_set_mux_fail(bool fail) { mux_fail = fail; }
@@ -147,7 +225,11 @@ bool sim_en(uint8_t slot) { return slots[slot].en; }
 bool sim_fan(void) { return fan; }
 uint32_t sim_advertised_ma(uint8_t slot) { return slots[slot].adv_ma; }
 uint16_t sim_advertised_mv(uint8_t slot) { return slots[slot].adv_mv; }
-uint32_t sim_contract_mw(uint8_t slot) { return status3_mw(&slots[slot]); }
+uint32_t sim_contract_mw(uint8_t slot) { return contract_mw(&slots[slot]); }
+bool     sim_blade_port_en(uint8_t slot) { return slots[slot].port_en; }
+uint16_t sim_blade_faults(uint8_t slot) { return slots[slot].faults; }
+uint32_t sim_blade_clear_count(uint8_t slot) { return slots[slot].clears; }
+uint32_t sim_blade_config_writes(uint8_t slot) { return slots[slot].cfg_writes; }
 uint32_t sim_ina_alert_ma(uint8_t slot) { return slots[slot].ina_alert_ma; }
 uint32_t sim_src_cap_count(uint8_t slot) { return slots[slot].src_caps; }
 uint32_t sim_hard_reset_count(uint8_t slot) { return slots[slot].hard_resets; }
@@ -242,19 +324,17 @@ bool tca9539_read_inputs(uint16_t *inputs) {
 
 // ---- ina226 ----------------------------------------------------------------
 
-bool ina226_probe(void) {
+static const sim_slot_t *ina(void) {
     const sim_slot_t *s = sel();
-    return s && s->present && s->ina_ok;
+    return (s && s->present && s->gen == 2 && s->ina_ok) ? s : NULL;
 }
 
-bool ina226_configure(void) {
-    const sim_slot_t *s = sel();
-    return s && s->present && s->ina_ok;
-}
+bool ina226_probe(void) { return ina() != NULL; }
+bool ina226_configure(void) { return ina() != NULL; }
 
 bool ina226_read(ina226_reading_t *r) {
-    const sim_slot_t *s = sel();
-    if (!s || !s->present || !s->ina_ok) return false;
+    const sim_slot_t *s = ina();
+    if (!s) return false;
     if (!s->en) {
         r->bus_mv = 0;
         r->current_ma = 0;
@@ -272,15 +352,15 @@ bool ina226_read(ina226_reading_t *r) {
 }
 
 bool ina226_set_alert_ma(uint32_t ma) {
-    sim_slot_t *s = sel();
-    if (!s || !s->present || !s->ina_ok) return false;
+    sim_slot_t *s = (sim_slot_t *)ina();
+    if (!s) return false;
     s->ina_alert_ma = ma;
     return true;
 }
 
 bool ina226_alert_tripped(bool *tripped) {
-    sim_slot_t *s = sel();
-    if (!s || !s->present || !s->ina_ok) return false;
+    sim_slot_t *s = (sim_slot_t *)ina();
+    if (!s) return false;
     *tripped = s->ocp_latch;
     s->ocp_latch = false; // reading Mask/Enable clears the latch
     return true;
@@ -290,7 +370,7 @@ bool ina226_alert_tripped(bool *tripped) {
 
 static sim_slot_t *mpq(void) {
     sim_slot_t *s = sel();
-    return (s && s->present && s->mpq_ok) ? s : NULL;
+    return (s && s->present && s->gen == 2 && s->mpq_ok) ? s : NULL;
 }
 
 bool mpq4242_probe(void) { return mpq() != NULL; }
@@ -317,12 +397,8 @@ bool mpq4242_read_status(mpq4242_status_t *st) {
     st->attached = s->attached;
     st->fault_bits = s->fault_bits;
     st->contract_mw = status3_mw(s);
-    if (!s->attached || s->con_mv == 0) st->selected_pdo = 0;
-    else if (s->con_mv <= 5000) st->selected_pdo = 1;
-    else if (s->con_mv <= 9000) st->selected_pdo = 2;
-    else if (s->con_mv <= 12000) st->selected_pdo = 3;
-    else if (s->con_mv <= 15000) st->selected_pdo = 4;
-    else st->selected_pdo = 5;
+    st->selected_pdo = pdo_of(s);
+    if (st->selected_pdo == 7) st->selected_pdo = 5; // STATUS2 reports the 21 V range as PDO5 here
     return true;
 }
 
@@ -367,5 +443,83 @@ bool mpq4242_send_hard_reset(void) {
     sim_slot_t *s = mpq();
     if (!s) return false;
     s->hard_resets++;
+    return true;
+}
+
+// ---- gen-3 blade -----------------------------------------------------------
+
+static sim_slot_t *blade3(void) {
+    sim_slot_t *s = sel();
+    return (s && s->present && s->gen == 3 && s->blade_ok) ? s : NULL;
+}
+
+bool blade3_probe(void) { return blade3() != NULL; }
+
+bool blade3_read_status(blade3_status_t *st) {
+    const sim_slot_t *s = blade3();
+    if (!s) return false;
+    bool up = armed3(s);
+    bool contract = up && s->attached && s->con_mv != 0;
+    st->status = (uint8_t)((s->attached ? BLADE_ST_ATTACHED : 0) |
+                           (contract ? BLADE_ST_CONTRACT : 0) |
+                           (contract && s->con_mv > 5000 && pdo_of(s) == 7 ? BLADE_ST_PPS : 0) |
+                           (up && s->attached ? BLADE_ST_VBUS_ON : 0) |
+                           (s->configured ? BLADE_ST_CONFIGURED : 0) |
+                           (s->faults ? BLADE_ST_FAULT : 0) |
+                           (s->en ? BLADE_ST_EN : 0));
+    st->pdo = contract ? pdo_of(s) : 0;
+    st->faults = s->faults;
+    st->contract_mv = contract ? s->con_mv : 0;
+    st->contract_ma = contract ? (uint16_t)s->con_ma : 0;
+    if (!up || !s->attached) {
+        st->vbus_mv = 0;
+        st->iout_ma = 0;
+    } else {
+        st->vbus_mv = s->con_mv ? s->con_mv : 5000; // vSafe5V before an explicit contract
+        st->iout_ma = (uint16_t)((s->con_ma * s->load_pct) / 100);
+    }
+    return true;
+}
+
+bool blade3_read_config(blade3_config_t *c) {
+    const sim_slot_t *s = blade3();
+    if (!s) return false;
+    c->port_en = s->port_en;
+    c->max_ma = (uint16_t)s->adv_ma;
+    c->max_mv = s->adv_mv;
+    return true;
+}
+
+bool blade3_write_config(const blade3_config_t *c) {
+    sim_slot_t *s = blade3();
+    if (!s) return false;
+    s->port_en = c->port_en;
+    s->adv_ma = c->max_ma > BLADE_MAX_MA_LIMIT ? BLADE_MAX_MA_LIMIT : c->max_ma; // stored clamped
+    s->adv_mv = c->max_mv;
+    s->configured = true;
+    s->cfg_writes++;
+    renegotiate(s); // the blade re-advertises whenever its table changes
+    return true;
+}
+
+bool blade3_command(uint8_t cmd) {
+    sim_slot_t *s = blade3();
+    if (!s) return false;
+    switch (cmd) {
+    case BLADE_CMD_SRC_CAP:
+        s->src_caps++;
+        renegotiate(s);
+        break;
+    case BLADE_CMD_HARD_RESET:
+        s->hard_resets++;
+        break;
+    case BLADE_CMD_CLEAR_FAULTS:
+        s->clears++;
+        s->faults = s->cond; // a condition still present latches straight back
+        renegotiate(s);
+        break;
+    default:
+        break;
+    }
     return true;
 }

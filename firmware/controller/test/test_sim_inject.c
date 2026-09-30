@@ -10,9 +10,9 @@ static void test_packing(void) {
     MT_ASSERT_EQ(sim_inject_op(a), SIM_ATTACH);
     MT_ASSERT_EQ(sim_inject_mv(a), 20000);
     MT_ASSERT_EQ(sim_inject_value(a), 5000);
-    a = sim_inject_pack(SIM_MPQ_FAULT, 0, MPQ_FAULT_OTW1 | MPQ_FAULT_CC);
+    a = sim_inject_pack(SIM_MPQ_FAULT, 0, PORT_FAULT_OTW1 | PORT_FAULT_CC);
     MT_ASSERT_EQ(sim_inject_op(a), SIM_MPQ_FAULT);
-    MT_ASSERT_EQ(sim_inject_value(a), MPQ_FAULT_OTW1 | MPQ_FAULT_CC);
+    MT_ASSERT_EQ(sim_inject_value(a), PORT_FAULT_OTW1 | PORT_FAULT_CC);
     MT_ASSERT_EQ(sim_inject_mv(a), 0);
 }
 
@@ -38,7 +38,7 @@ static void test_injected_fault_round_trip(void) {
     tick_ms(5100);
     tick(2);
     MT_ASSERT_EQ(port_state(2), PORT_STATE_ACTIVE); // sink still attached: recovered
-    sim_inject(2, sim_inject_pack(SIM_MPQ_FAULT, 0, MPQ_FAULT_NTC1));
+    sim_inject(2, sim_inject_pack(SIM_MPQ_FAULT, 0, PORT_FAULT_NTC1));
     tick(1);
     MT_ASSERT_EQ(port_state(2), PORT_STATE_FAULT);
     sim_inject(2, sim_inject_pack(SIM_MPQ_FAULT, 0, 0)); // clear

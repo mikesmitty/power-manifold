@@ -15,11 +15,14 @@ enum {
     SIM_DETACH,    // sink unplugs
     SIM_LOAD,      // measured draw as % of the contract current: value
     SIM_OCP,       // INA226 over-current trip (latched alert)
-    SIM_MPQ_FAULT, // MPQ4242 fault bits, sticky until cleared: value (0 clears)
-    SIM_PROBE,     // next probes: value 0 = succeed, 1 = INA226 silent, 2 = MPQ4242 silent
+    SIM_MPQ_FAULT, // gen 2: MPQ4242 fault bits, sticky until cleared: value (0 clears)
+    SIM_PROBE,     // next probes: value 0 = succeed, 1 = INA226 silent, 2 = MPQ4242 silent, 3 = gen-3 register file silent
     SIM_MUX,       // value 1: tca9548a_select fails until the engine resets it
     SIM_EXPANDER,  // value 1: tca9539 I/O fails until the engine resets it
     SIM_SCENARIO,  // value 1: run the demo script, 0: pause it (engine.c handles this one)
+    SIM_GEN,       // the slot's blade generation: value 2 or 3 (takes effect at the next seating)
+    SIM_BLADE_FAULT, // gen 3: BLADE_FAULT_* bits latched and held as a condition: value (0 lifts the condition)
+    SIM_RESTART,   // gen 3: the blade's MCU restarts
 };
 
 // arg = op << 28 | (mv / 10) << 16 | value  (value doubles as mA for SIM_ATTACH)

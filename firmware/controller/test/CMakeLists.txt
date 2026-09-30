@@ -23,6 +23,7 @@ add_executable(engine_tests
     ../src/log_ring.c
     ../src/settings_json.c
     ../src/settings_util.c
+    ../src/engine/blade.c
     ../src/engine/budget.c
     ../src/engine/fan_policy.c
     ../src/engine/led_pattern.c
@@ -48,6 +49,7 @@ add_executable(engine_tests
     test_leds.c
     test_log_ring.c
     test_port_fsm.c
+    test_blade3.c
     test_priority.c
     test_settings_json.c
     test_sim_inject.c
@@ -64,6 +66,7 @@ target_include_directories(engine_tests PRIVATE
     ../src/engine
     ../src/net
     ../src/ups
+    ../../charger-module/include # blade_regs.h, shared with the gen-3 blade firmware
     support
 )
 

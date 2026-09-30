@@ -14,25 +14,46 @@ static size_t put(char *buf, size_t cap, size_t n, const char *s) {
     return n + len;
 }
 
+// Names for a set of bits, joined with "+"; returns whether any was set.
+static bool put_bits(char *buf, size_t cap, size_t *n, uint32_t bits,
+                     const char *const *names, int count) {
+    bool any = false;
+    for (int b = 0; b < count; b++) {
+        if (!(bits & (1u << b))) continue;
+        if (any) *n = put(buf, cap, *n, "+");
+        *n = put(buf, cap, *n, names[b]);
+        any = true;
+    }
+    return any;
+}
+
 size_t fault_text(const fault_rec_t *r, char *buf, size_t cap) {
-    static const char *const BITS[8] = {"general", "otw1", "otw2", "ntc1",
-                                        "ntc2", "cc", "short-vbatt", "vbatt-low"};
-    static const char *const PROBE[] = {"?", "mux", "ina226", "mpq4242", "enable", "expander reset"};
+    // PORT_FAULT_* (manifold.h)
+    static const char *const BITS[16] = {
+        "general", "otw1", "otw2", "ntc1", "ntc2", "cc", "short-vbatt", "vbatt-low",
+        "ocp", "ovp", "vconn", "port-hot", "converter", "converter-hot", "plug-hot", "blade"};
+    // BLADE_FAULT_* (blade_regs.h): the detail a gen-3 record carries
+    static const char *const BLADE[13] = {
+        "ovp", "ocp", "vconn-ocp", "cc-ovp", "port-otp", "conv-scp", "conv-ocp", "conv-ovp",
+        "conv-hot", "plug-hot", "bus", "vbus", "pd"};
+    static const char *const PROBE[] = {"?", "mux", "ina226", "mpq4242", "enable", "expander reset",
+                                        "blade", "no answer"};
     if (cap == 0) return 0;
     buf[0] = '\0';
     size_t n = 0;
 
     switch (r->type) {
     case EVT_FAULT: {
-        bool any = false;
-        for (int b = 0; b < 8; b++) {
-            if (!(r->code & (1u << b))) continue;
-            if (any) n = put(buf, cap, n, "+");
-            n = put(buf, cap, n, BITS[b]);
-            any = true;
+        bool any;
+        if (PORT_FAULT_ARG_IS_GEN3(r->arg)) {
+            // the blade's own word says more than the folded bits
+            any = put_bits(buf, cap, &n, r->arg & 0xFFFF, BLADE, 13);
+        } else {
+            // a gen-2 record: the trip flag in arg predates PORT_FAULT_OCP
+            uint32_t bits = r->code | (r->arg ? PORT_FAULT_OCP : 0);
+            any = put_bits(buf, cap, &n, bits, BITS, 16);
         }
-        if (r->arg) n = put(buf, cap, n, any ? " +ocp" : "ocp");
-        else if (!any) n = put(buf, cap, n, "none");
+        if (!any) n = put(buf, cap, n, "none");
         return n;
     }
     case EVT_PROBE_FAIL:

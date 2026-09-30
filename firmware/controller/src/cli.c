@@ -24,6 +24,7 @@
 #include "health.h"
 #include "ipc.h"
 #include "led_sched.h"
+#include "blade_regs.h"
 #include "log_sink.h"
 #include "manifold.h"
 #include "net/eth.h"
@@ -98,11 +99,12 @@ static void print_help(void) {
 static void print_status(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
-    printf("port state      attach pdo    mV     mA     mW  contract limit cap prio boot  name\n");
+    printf("port state      gen attach pdo    mV     mA     mW  contract limit cap prio boot  name\n");
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
-        printf("%4d %-10s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %s\n", i + 1,
+        printf("%4d %-10s %3s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %s\n", i + 1,
                port_state_name((port_state_t)p->state),
+               p->gen == 3 ? "3" : p->gen == 2 ? "2" : "-",
                p->attached ? (p->charged ? "chg" : "yes") : "no",
                p->selected_pdo, p->bus_mv, (long)p->current_ma,
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
@@ -223,13 +225,17 @@ static void print_sim_help(void) {
     printf("simulated backplane (FAKE_BLADES build); demo script %s\n"
            "  sim run | sim pause          the 60 s demo script (pause it before injecting)\n"
            "  sim seat <n> | sim unseat <n>\n"
+           "  sim gen <n> 2|3              which blade generation the slot holds, before seating it\n"
            "  sim attach <n> <mV> <mA>     sink plugs in (e.g. 20000 5000 = 100 W laptop)\n"
            "  sim detach <n>\n"
            "  sim load <n> <pct>           measured draw as %% of the contract current\n"
-           "  sim fault <n> ocp            INA226 over-current trip (latched alert)\n"
+           "  sim fault <n> ocp            over-current trip (gen 2: INA226 alert; gen 3: the VBUS switch)\n"
            "  sim fault <n> general|otw1|otw2|ntc1|ntc2|cc|short|vbatt|clear\n"
-           "                               MPQ4242 fault bit, sticky until 'clear'\n"
-           "  sim probe <n> ina|mpq|ok     the next probes fail (chip silent) or succeed\n"
+           "                               gen 2: MPQ4242 fault bit, sticky until 'clear'\n"
+           "  sim fault <n> ovp|vconn|cc-ovp|port-otp|conv-scp|conv-ocp|conv-ovp|conv-hot|plug-hot|bus|vbus|pd|clear\n"
+           "                               gen 3: blade fault, held as a condition until 'clear'\n"
+           "  sim restart <n>              gen 3: the blade's MCU restarts (configuration gone)\n"
+           "  sim probe <n> ina|mpq|blade|ok  the next probes fail (chip silent) or succeed\n"
            "  sim mux fail|ok              I2C mux select fails until the engine resets it\n"
            "  sim expander fail|ok         GPIO expander I/O fails until the engine resets it\n",
            sim_paused ? "paused" : "running");
@@ -254,6 +260,13 @@ static void run_sim(char **save) {
         if (!strcmp(what, "seat")) c.arg = sim_inject_pack(SIM_SEAT, 0, 0);
         else if (!strcmp(what, "unseat")) c.arg = sim_inject_pack(SIM_UNSEAT, 0, 0);
         else if (!strcmp(what, "detach")) c.arg = sim_inject_pack(SIM_DETACH, 0, 0);
+        else if (!strcmp(what, "restart")) c.arg = sim_inject_pack(SIM_RESTART, 0, 0);
+        else if (!strcmp(what, "gen")) {
+            const char *g = strtok_r(NULL, " \t", save);
+            int gen = g ? atoi(g) : 0;
+            if (gen != 2 && gen != 3) { print_sim_help(); return; }
+            c.arg = sim_inject_pack(SIM_GEN, 0, (unsigned)gen);
+        }
         else if (!strcmp(what, "attach")) {
             const char *mv = strtok_r(NULL, " \t", save);
             const char *ma = strtok_r(NULL, " \t", save);
@@ -267,23 +280,44 @@ static void run_sim(char **save) {
             c.arg = sim_inject_pack(SIM_LOAD, 0, (unsigned)pct);
         } else if (!strcmp(what, "fault")) {
             const char *f = strtok_r(NULL, " \t", save);
+            // gen-2 names carry the MPQ4242's bits, gen-3 names the blade's own
             static const struct { const char *name; unsigned bit; } BITS[] = {
-                {"general", MPQ_FAULT_GENERAL}, {"otw1", MPQ_FAULT_OTW1}, {"otw2", MPQ_FAULT_OTW2},
-                {"ntc1", MPQ_FAULT_NTC1}, {"ntc2", MPQ_FAULT_NTC2}, {"cc", MPQ_FAULT_CC},
-                {"short", MPQ_FAULT_SHORT_VBATT}, {"vbatt", MPQ_FAULT_VBATT_LOW}, {"clear", 0},
+                {"general", PORT_FAULT_GENERAL}, {"otw1", PORT_FAULT_OTW1}, {"otw2", PORT_FAULT_OTW2},
+                {"ntc1", PORT_FAULT_NTC1}, {"ntc2", PORT_FAULT_NTC2}, {"cc", PORT_FAULT_CC},
+                {"short", PORT_FAULT_SHORT_VBATT}, {"vbatt", PORT_FAULT_VBATT_LOW},
             };
-            unsigned bit = 0xFFFF;
+            static const struct { const char *name; unsigned bit; } BLADE[] = {
+                {"ovp", BLADE_FAULT_OVP}, {"vconn", BLADE_FAULT_OCP_VCONN}, {"cc-ovp", BLADE_FAULT_OVP_CC},
+                {"port-otp", BLADE_FAULT_OTP_PORT}, {"conv-scp", BLADE_FAULT_CONV_SCP},
+                {"conv-ocp", BLADE_FAULT_CONV_OCP}, {"conv-ovp", BLADE_FAULT_CONV_OVP},
+                {"conv-hot", BLADE_FAULT_OT_CONV}, {"plug-hot", BLADE_FAULT_OT_PLUG},
+                {"bus", BLADE_FAULT_BUS}, {"vbus", BLADE_FAULT_VBUS}, {"pd", BLADE_FAULT_PD},
+            };
+            unsigned bit = 0xFFFF, blade_bit = 0xFFFF;
+            for (size_t i = 0; f && i < sizeof(BITS) / sizeof(BITS[0]); i++)
+                if (!strcmp(f, BITS[i].name)) bit = BITS[i].bit;
+            for (size_t i = 0; f && i < sizeof(BLADE) / sizeof(BLADE[0]); i++)
+                if (!strcmp(f, BLADE[i].name)) blade_bit = BLADE[i].bit;
             if (f && !strcmp(f, "ocp")) {
                 c.arg = sim_inject_pack(SIM_OCP, 0, 0);
-            } else {
-                for (size_t i = 0; f && i < sizeof(BITS) / sizeof(BITS[0]); i++)
-                    if (!strcmp(f, BITS[i].name)) bit = BITS[i].bit;
-                if (bit == 0xFFFF) { print_sim_help(); return; }
+            } else if (f && !strcmp(f, "clear")) {
+                // both generations' latches, whichever the slot holds
+                engine_cmd_t c2 = c;
+                c2.arg = sim_inject_pack(SIM_BLADE_FAULT, 0, 0);
+                ipc_cmd_push(&c2);
+                c.arg = sim_inject_pack(SIM_MPQ_FAULT, 0, 0);
+            } else if (bit != 0xFFFF) {
                 c.arg = sim_inject_pack(SIM_MPQ_FAULT, 0, bit);
+            } else if (blade_bit != 0xFFFF) {
+                c.arg = sim_inject_pack(SIM_BLADE_FAULT, 0, blade_bit);
+            } else {
+                print_sim_help();
+                return;
             }
         } else if (!strcmp(what, "probe")) {
             const char *v = strtok_r(NULL, " \t", save);
-            unsigned mode = v && !strcmp(v, "ina") ? 1 : v && !strcmp(v, "mpq") ? 2 : v && !strcmp(v, "ok") ? 0 : 9;
+            unsigned mode = v && !strcmp(v, "ina") ? 1 : v && !strcmp(v, "mpq") ? 2
+                          : v && !strcmp(v, "blade") ? 3 : v && !strcmp(v, "ok") ? 0 : 9;
             if (mode == 9) { print_sim_help(); return; }
             c.arg = sim_inject_pack(SIM_PROBE, 0, mode);
         } else {

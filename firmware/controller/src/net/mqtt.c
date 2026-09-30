@@ -884,18 +884,18 @@ static void publish_telemetry(void) {
         const port_telemetry_t *p = &t.port[i];
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
         fault_rec_t lf;
-        char lf_text[48] = "";
+        char lf_text[64] = "";
         uint32_t lf_at = 0;
         if (fault_log_last(i, &lf)) {
             fault_text(&lf, lf_text, sizeof(lf_text));
             lf_at = lf.epoch; // 0 until SNTP had synced at the time
         }
         snprintf(payload_buf, sizeof(payload_buf),
-                 "{\"state\":\"%s\",\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
+                 "{\"state\":\"%s\",\"gen\":%u,\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
                  "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"max_v\":%u,"
                  "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
                  "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu}",
-                 port_state_name((port_state_t)p->state), p->bus_mv / 1000.0,
+                 port_state_name((port_state_t)p->state), p->gen, p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
                  p->contract_mw / 1000.0, g_settings.port_priority[i],

@@ -36,7 +36,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         3072 // browser headers + a full settings export posted back
-#define STATUS_JSON_MAX 2784 // six ports with escaped labels, the problem text, the UPS block and the bus voltage, worst case
+#define STATUS_JSON_MAX 2832 // six ports with escaped labels and generation, the problem text, the UPS block and the bus voltage, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -542,10 +542,10 @@ static void build_status_json(char *out, size_t cap) {
         static char pn[PORT_NAME_MAX * 6 + 1]; // static: IRQ stack
         json_escape(pn, sizeof(pn), settings_port_name((unsigned)i));
         off += (size_t)snprintf(out + off, cap - off,
-            "%s{\"name\":\"%s\",\"state\":\"%s\",\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
+            "%s{\"name\":\"%s\",\"state\":\"%s\",\"gen\":%u,\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
             "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
             "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u}",
-            i ? "," : "", pn, port_state_name((port_state_t)p->state),
+            i ? "," : "", pn, port_state_name((port_state_t)p->state), p->gen,
             p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
             p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
             p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],

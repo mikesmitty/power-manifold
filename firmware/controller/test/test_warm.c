@@ -174,14 +174,14 @@ static void test_mpq_fault_bits_are_a_fault(void) {
     tick(2);
     sim_attach(0, 20000, 3000);
     tick(2);
-    sim_set_mpq_fault(0, MPQ_FAULT_OTW1);
+    sim_set_mpq_fault(0, PORT_FAULT_OTW1);
     MT_ASSERT_EQ(warm_reboot(), 0x01);
     tick(2);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
     MT_ASSERT(!sim_en(0));
     const engine_evt_t *e = evt_last(EVT_FAULT, 0);
     MT_ASSERT(e != NULL);
-    MT_ASSERT(e->code & MPQ_FAULT_OTW1);
+    MT_ASSERT(e->code & PORT_FAULT_OTW1);
 }
 
 static void test_changed_settings_reconfigure(void) {
@@ -216,14 +216,23 @@ static void test_silent_blade_switched_off(void) {
     support_reset(360000);
     sim_set_present(0, true);
     tick(2);
-    sim_set_probe_ok(0, false, true); // INA226 not answering: cannot be supervised
+    sim_set_probe_ok(0, false, true); // INA226 not answering: nothing identifies the blade
     MT_ASSERT_EQ(warm_reboot(), 0x01);
     tick(5);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
     MT_ASSERT(!sim_en(0));
     const engine_evt_t *e = evt_last(EVT_PROBE_FAIL, 0);
     MT_ASSERT(e != NULL);
-    MT_ASSERT_EQ(e->code, 2); // PROBE_FAIL_INA226
+    MT_ASSERT_EQ(e->code, 7); // PROBE_FAIL_NONE: no answer
+
+    // the INA226 answers but the MPQ4242 does not: that names the part
+    sim_set_probe_ok(0, true, false);
+    tick_ms(5100);
+    tick(5);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
+    e = evt_last(EVT_PROBE_FAIL, 0);
+    MT_ASSERT(e != NULL);
+    MT_ASSERT_EQ(e->code, 3); // PROBE_FAIL_MPQ4242
 }
 
 static void test_smaller_budget_throttles_not_cuts(void) {

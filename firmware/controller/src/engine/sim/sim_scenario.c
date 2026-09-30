@@ -7,6 +7,7 @@
 
 // A 60-second loop against the default settings (360 W budget, 5 A port
 // limit, priority = port index). Slots are 0-based; ports 1-6 to the user.
+// Ports 4 and 5 hold gen-3 blades, the rest gen-2 ones.
 //
 //   t=0   ports 1-4 and 6 seated, port 5 empty; all sinks unplugged
 //   t=4s  port 6 (lowest priority) takes a 100 W laptop     -> active
@@ -27,6 +28,8 @@ static void step_baseline(void) {
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
         sim_detach(i);
         sim_set_mpq_fault(i, 0);
+        sim_set_blade_fault(i, 0);
+        sim_set_gen(i, i == 3 || i == 4 ? 3 : 2);
         sim_set_present(i, i != 4);
     }
 }

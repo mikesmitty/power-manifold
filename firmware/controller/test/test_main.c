@@ -13,6 +13,7 @@ void run_led_sched_tests(void);
 void run_led_tests(void);
 void run_log_ring_tests(void);
 void run_port_fsm_tests(void);
+void run_blade3_tests(void);
 void run_priority_tests(void);
 void run_settings_json_tests(void);
 void run_sim_inject_tests(void);
@@ -35,6 +36,7 @@ int main(void) {
     run_led_tests();
     run_log_ring_tests();
     run_port_fsm_tests();
+    run_blade3_tests();
     run_priority_tests();
     run_settings_json_tests();
     run_sim_inject_tests();

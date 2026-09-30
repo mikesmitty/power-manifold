@@ -4,7 +4,8 @@ description: "Native pico-sdk firmware for the V2 management controller: buildin
 ---
 
 Native pico-sdk firmware for the V2 management controller, supervising up to
-six MPQ4242 charger blades through the backplane TCA9548A I2C mux and TCA9539
+six charger blades of either generation — the MPQ4242 gen-2 blade and the
+STM32G071 gen-3 blade — through the backplane TCA9548A I2C mux and TCA9539
 GPIO expander.
 
 Development target: a Raspberry Pi Pico 2 W (RP2350) on the
@@ -23,7 +24,9 @@ provisioner.
 Two cores, one rule: **only core 1 touches the backplane.**
 
 - **Core 1 — engine** (`src/engine/`): 100 Hz supervisory loop. Round-robins
-  the mux channels reading each blade's INA226 and MPQ4242, runs the per-port
+  the mux channels reading each blade (a gen-2 blade's INA226 and MPQ4242, a
+  gen-3 blade's register file — see [Blade generations](#blade-generations)),
+  runs the per-port
   state machine and the chassis power-budget arbiter, owns blade EN / presence
   / fan via the expander, services GLOBAL_ALERT# / EXP_INT#, renders the
   WS2812C status LEDs via PIO. When a new contract would exceed the chassis
@@ -171,10 +174,11 @@ answer yet.
 
 ### Fake-blade mode (no backplane needed)
 
-`-DFAKE_BLADES=ON` swaps the four I2C drivers for a simulated backplane
+`-DFAKE_BLADES=ON` swaps the five I2C drivers for a simulated backplane
 (`src/engine/sim/`) and drives it through a repeating 60-second demo script —
 attaches, budget contention with priority shedding, an over-current fault and
-recovery, blade insertion/removal. Everything above the driver seam (state
+recovery, blade insertion/removal, with gen-3 blades in ports 4 and 5 and
+gen-2 ones elsewhere. Everything above the driver seam (state
 machine, budget arbiter, MQTT/HA, web UI, CLI) is the real code, so the whole
 management plane can be exercised on a bare Pico 2 W:
 
@@ -188,13 +192,19 @@ fault paths — the fault log, the *Problem* sensor, events, auto-recovery,
 charge-complete — can be exercised on a bare board instead of only in the
 host tests. `sim pause` stops the demo script first (it would otherwise
 overwrite injected state within seconds; `sim run` restarts it from its
-baseline), then `sim seat|unseat <n>`, `sim attach <n> <mV> <mA>`,
+baseline), then `sim seat|unseat <n>`, `sim gen <n> 2|3` (which blade
+generation the slot holds, before seating it), `sim attach <n> <mV> <mA>`,
 `sim detach <n>`, `sim load <n> <pct>` (measured draw as a percentage of
 the contract current — `sim load 3 1` with `charged 20000 1` shows a
-charge-complete within a minute), `sim fault <n> ocp` (INA226 trip),
+charge-complete within a minute), `sim fault <n> ocp` (an over-current
+trip: the INA226 on a gen-2 blade, the VBUS switch on a gen-3 one),
 `sim fault <n> otw1|ntc1|cc|...|clear` (MPQ4242 fault bits, sticky until
-cleared), `sim probe <n> ina|mpq|ok` (the next probes find a silent chip),
-and `sim mux fail|ok` / `sim expander fail|ok` for the bus-level failures
+cleared), `sim fault <n> ovp|conv-ocp|plug-hot|pd|...|clear` (a gen-3
+blade's faults, held as a condition that re-latches until cleared),
+`sim restart <n>` (a gen-3 blade's MCU restarts and loses its
+configuration), `sim probe <n> ina|mpq|blade|ok` (the next probes find a
+silent chip), and `sim mux fail|ok` / `sim expander fail|ok` for the
+bus-level failures
 the engine recovers from by resetting the mux and expander. `sim` alone
 prints the list; on a real-blade build the command says so and does
 nothing.
@@ -356,7 +366,8 @@ and the label shows in the table, the console and Home Assistant), a
 current limit (500 to 5000 mA: the current field of every PDO the port
 advertises, so the wattage ceiling scales with the voltage the device
 picks, except that no PDO promises more than 100 W: the 21 V PPS range
-alone stops at 4.75 A; a live port renegotiates at once, and the INA226 emergency trip
+alone stops at 4.75 A; a live port renegotiates at once, and on a gen-2
+blade the INA226 emergency trip
 stays at 125 % of the blade's 5 A ceiling regardless), a voltage cap (the
 highest PDO the port advertises: 5, 9, 12, 15 or 20 V, the last being the
 whole table; fixed PDOs above the cap and PPS ranges reaching past it are
@@ -371,7 +382,7 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault`; chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)); chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
 | `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, `pwrman_bus_volts` / `pwrman_bus_voltage_ok` on the controller card, the `pwrman_ups_*` gauges while a UPS answers, and every port metric labelled `port` and `name` |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
@@ -409,7 +420,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
 | `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`, and the bus voltage `vin` (fitted), `vin_v` |
-| `port/<n>/telemetry` | published at 1 Hz | `state`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at` |
+| `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at` |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
 | `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.uf2"}`, published by CI or by hand |
@@ -522,6 +533,50 @@ host, so a `wifi` or `mqtt` line's password stays off the wire.
 
 ## Features
 
+### Blade generations
+
+Two charger blades fit the chassis, and a probe tells them apart by what
+answers on the slot's mux channel: a gen-3 blade's register file at 0x3A
+first, else a gen-2 blade's INA226 at 0x40. The port engine
+(`src/engine/port_fsm.c`) does not care which; `src/engine/blade.c` puts
+both behind one interface, and the status table, the JSON and the MQTT
+telemetry carry the generation as `gen`. A chassis can hold a mix, and the
+budget arbiter sheds and restores across generations by priority alone.
+
+- **Gen 2** (`hardware/charger-module` up to 0.14): an MPQ4242 negotiates
+  PD on its own and an INA226 meters the port. The controller writes the
+  part's PDO table after every power-up, asks it to re-advertise after a
+  change, and arms the INA226's alert at 125 % of the blade's 5 A ceiling
+  as an emergency trip.
+- **Gen 3** (0.15 and later): an STM32G071 runs the port with ST's USB-PD
+  stack, a TPS55288 converter and a TCPP02-M18 port protector, and speaks
+  the register map in `firmware/charger-module/include/blade_regs.h`, which
+  this firmware includes as-is. Its MCU runs from the slot's 5 V, so it
+  answers with EN low, and its port stays dark until it has been given a
+  current ceiling and a voltage cap and told to advertise — the probe does
+  both. It re-advertises by itself whenever its limits change, meters VBUS
+  and the port current itself, and carries its own over-current,
+  over-voltage and thermal protection. A fault takes the port down on the
+  blade and stays latched, ALERT# low with it, until the controller has
+  recorded it: the engine drops EN, clears the latch and re-probes after
+  the cooldown, and a fault whose cause persists (a hot receptacle) comes
+  straight back and repeats the cycle. A blade whose MCU restarts (its
+  watchdog, a brown-out on the slot's 5 V) comes back unconfigured; the
+  port notices, goes back through the probe and is configured again with
+  no EN cut and no fault recorded.
+
+The port fault bits — `fault` in the JSON and MQTT telemetry, `code` on a
+fault event — are one vocabulary for both generations: bits 0–7 are the
+MPQ4242's flags as a gen-2 blade reports them (`general`, `otw1`, `otw2`,
+`ntc1`, `ntc2`, `cc`, `short-vbatt`, `vbatt-low`), bit 8 is an over-current
+trip on either (`ocp`), and the rest are a gen-3 blade's: `ovp`, `vconn`,
+`port-hot`, `converter`, `converter-hot`, `plug-hot` and `blade` (its own
+parts or PD stack failed it). A fault event's `arg` carries the INA226 trip
+flag for a gen-2 record and the blade's raw fault word for a gen-3 one, and
+the fault text names a gen-3 fault in the blade's own words (`conv-ocp`,
+`plug-hot`, `pd`), which is what the fault log, the console and the
+`last_fault` attribute show.
+
 ### Charge-complete and auto-off
 
 While a sink is attached the engine watches its measured draw; once it has
@@ -581,9 +636,10 @@ reset and configured from scratch, outputs low first.
 
 Every blade found powered is then taken back under supervision without
 touching EN, in priority order, 50 ms apart: the mux channel is selected,
-the INA226 and MPQ4242 identified, any fault latched while nobody was
-watching (an over-current trip, an MPQ4242 fault flag) is treated as a
-fault now — the usual path, EN off, cooldown, re-probe — and the MPQ4242's
+the blade identified (its generation with it), any fault latched while
+nobody was watching (an over-current trip, an MPQ4242 fault flag, a gen-3
+blade's fault register) is treated as a
+fault now — the usual path, EN off, cooldown, re-probe — and the blade's
 configuration is compared, read-only, with the settings and rewritten
 (and re-advertised to an attached sink) only when it differs, so a live
 contract normally rides through untouched. The port then reports `active`

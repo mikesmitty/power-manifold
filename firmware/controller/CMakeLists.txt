@@ -37,6 +37,7 @@ else()
     set(DRIVER_SOURCES
         src/engine/mpq4242.c
         src/engine/ina226.c
+        src/engine/blade3.c
         src/engine/tca9548a.c
         src/engine/tca9539.c
         src/engine/i2c_diag.c
@@ -69,6 +70,7 @@ add_executable(controller
     src/engine/engine.c
     src/engine/fan_policy.c
     src/engine/port_fsm.c
+    src/engine/blade.c
     src/engine/budget.c
     src/engine/leds.c
     src/engine/led_pattern.c
@@ -135,6 +137,7 @@ endif()
 target_include_directories(controller PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src
     ${CMAKE_CURRENT_LIST_DIR}/src/engine # driver headers, for the sim seam
+    ${CMAKE_CURRENT_LIST_DIR}/../charger-module/include # blade_regs.h: the gen-3 blade's register map, shared with its firmware
     ${CMAKE_CURRENT_LIST_DIR} # lwipopts.h, btstack_config.h
 )
 

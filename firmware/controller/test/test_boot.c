@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "boot_reason.h"
+#include "blade_regs.h"
 #include "fault_text.h"
 #include "microtest.h"
 
@@ -104,15 +105,26 @@ static void test_text(void) {
 
 static void test_fault_text(void) {
     char buf[64];
-    fault_rec_t r = {.type = EVT_FAULT, .code = MPQ_FAULT_OTW1 | MPQ_FAULT_CC, .arg = 1};
+    fault_rec_t r = {.type = EVT_FAULT, .code = PORT_FAULT_OTW1 | PORT_FAULT_CC, .arg = 1};
     fault_text(&r, buf, sizeof(buf));
-    MT_ASSERT(!strcmp(buf, "otw1+cc +ocp"));
-    r = (fault_rec_t){.type = EVT_FAULT, .code = 0, .arg = 1};
+    MT_ASSERT(!strcmp(buf, "otw1+cc+ocp"));
+    r = (fault_rec_t){.type = EVT_FAULT, .code = 0, .arg = 1}; // a record from before PORT_FAULT_OCP
     fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "ocp"));
-    r = (fault_rec_t){.type = EVT_FAULT, .code = MPQ_FAULT_VBATT_LOW, .arg = 0};
+    r = (fault_rec_t){.type = EVT_FAULT, .code = PORT_FAULT_OCP, .arg = 1};
+    fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "ocp"));
+    r = (fault_rec_t){.type = EVT_FAULT, .code = PORT_FAULT_VBATT_LOW, .arg = 0};
     fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "vbatt-low"));
+    // a gen-3 record names the blade's own bits
+    r = (fault_rec_t){.type = EVT_FAULT, .code = PORT_FAULT_CONVERTER | PORT_FAULT_PLUG_HOT,
+                      .arg = PORT_FAULT_ARG_GEN3 | BLADE_FAULT_CONV_OCP | BLADE_FAULT_OT_PLUG};
+    fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "conv-ocp+plug-hot"));
+    r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = 7};
+    fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "probe: no answer"));
     r = (fault_rec_t){.type = EVT_FAULT, .code = 0, .arg = 0};
     fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "none"));

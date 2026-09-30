@@ -13,12 +13,13 @@
 #define BUDGET_MAX_W    600
 
 // Per-port supervisory state. Differs from the spec's table in one way: the
-// MPQ4242 negotiates PD contracts autonomously, so there is no in-line
-// "NEGOTIATING" state — the engine constrains the advertised PDO set ahead of
-// time and reacts to contract changes it observes via STATUS2/STATUS3.
+// blade negotiates PD contracts autonomously (the MPQ4242 on a gen-2 blade,
+// the STM32's PD stack on a gen-3 one), so there is no in-line "NEGOTIATING"
+// state — the engine constrains the advertised PDO set ahead of time and
+// reacts to the contract changes it reads back.
 typedef enum {
     PORT_STATE_ABSENT = 0,  // PRES# high: no blade in slot
-    PORT_STATE_PROBE,       // blade seated, probing/configuring INA226 + MPQ4242
+    PORT_STATE_PROBE,       // blade seated, finding out which generation it is and configuring it
     PORT_STATE_IDLE,        // powered, advertising, no sink attached
     PORT_STATE_ACTIVE,      // sink attached, contract in place
     PORT_STATE_THROTTLED,   // active with a budget-restricted PDO set
@@ -29,25 +30,44 @@ typedef enum {
 
 const char *port_state_name(port_state_t s);
 
-// MPQ4242 fault bits (mirrors the V1 register-map encoding)
-#define MPQ_FAULT_GENERAL      (1u << 0)
-#define MPQ_FAULT_OTW1         (1u << 1)
-#define MPQ_FAULT_OTW2         (1u << 2)
-#define MPQ_FAULT_NTC1         (1u << 3)
-#define MPQ_FAULT_NTC2         (1u << 4)
-#define MPQ_FAULT_CC           (1u << 5)
-#define MPQ_FAULT_SHORT_VBATT  (1u << 6)
-#define MPQ_FAULT_VBATT_LOW    (1u << 7)
+// Port fault bits, one vocabulary for both blade generations. Bits 0-7 are
+// the MPQ4242's flags as a gen-2 blade reports them (the V1 register-map
+// encoding, unchanged); the rest come from a gen-3 blade's fault register,
+// folded where the controller needs no finer distinction — the blade keeps
+// the detail, and EVT_FAULT's arg carries its raw word (PORT_FAULT_ARG_GEN3).
+#define PORT_FAULT_GENERAL      (1u << 0)  // gen 2
+#define PORT_FAULT_OTW1         (1u << 1)  // gen 2: over-temperature warning
+#define PORT_FAULT_OTW2         (1u << 2)  // gen 2
+#define PORT_FAULT_NTC1         (1u << 3)  // gen 2: thermistor
+#define PORT_FAULT_NTC2         (1u << 4)  // gen 2
+#define PORT_FAULT_CC           (1u << 5)  // CC line fault (gen 3: over-voltage on CC)
+#define PORT_FAULT_SHORT_VBATT  (1u << 6)  // gen 2: output short
+#define PORT_FAULT_VBATT_LOW    (1u << 7)  // gen 2: output under-voltage
+#define PORT_FAULT_OCP          (1u << 8)  // over-current: the INA226 trip (gen 2), the VBUS switch's latch (gen 3)
+#define PORT_FAULT_OVP          (1u << 9)  // gen 3: the over-voltage comparator opened the VBUS switch
+#define PORT_FAULT_VCONN        (1u << 10) // gen 3: VCONN over-current
+#define PORT_FAULT_PORT_HOT     (1u << 11) // gen 3: the port protector's own over-temperature
+#define PORT_FAULT_CONVERTER    (1u << 12) // gen 3: converter short / current limit / over-voltage
+#define PORT_FAULT_CONV_HOT     (1u << 13) // gen 3: converter thermistor over its limit
+#define PORT_FAULT_PLUG_HOT     (1u << 14) // gen 3: receptacle thermistor over its limit
+#define PORT_FAULT_BLADE        (1u << 15) // gen 3: the blade's own parts or PD stack failed it
+
+// EVT_FAULT arg: a gen-3 record carries the blade's raw BLADE_FAULT_* word
+// under this tag; anything else is a gen-2 record whose arg is the INA226
+// trip flag, as it always was.
+#define PORT_FAULT_ARG_GEN3     (3u << 24)
+#define PORT_FAULT_ARG_IS_GEN3(arg) (((arg) >> 24) == 3u)
 
 typedef struct {
     uint8_t  state;         // port_state_t
+    uint8_t  gen;           // blade generation (2 or 3) once probed, 0 before
     bool     attached;
     bool     charged;       // attached sink's draw stayed under the charged floor (see settings)
     uint8_t  selected_pdo;  // 1-7, 0 = none
-    uint8_t  fault_bits;    // MPQ_FAULT_* accumulated since last clear
-    uint16_t bus_mv;        // INA226 bus voltage
-    int32_t  current_ma;    // INA226 current (signed)
-    uint32_t power_mw;      // INA226 power
+    uint16_t fault_bits;    // PORT_FAULT_* accumulated since last clear
+    uint16_t bus_mv;        // VBUS at the blade's meter
+    int32_t  current_ma;    // port current (signed on a gen-2 blade's INA226)
+    uint32_t power_mw;
     uint32_t contract_mw;   // budget reservation held by this port
     uint32_t energy_mwh;    // delivered since boot (not persisted)
 } port_telemetry_t;
@@ -92,8 +112,9 @@ typedef enum {
 // scales with the voltage the sink picks, up to PORT_POWER_MAX_MW: a PDO
 // whose top voltage would take that current past 100 W advertises less (the
 // 21 V PPS range stops at 4.75 A). The blade's own hardware limit is
-// PORT_HW_MAX_MA; the INA226 emergency trip sits at 125 % of that and does
-// not move with the setting (the MPQ4242 enforces its own OCP).
+// PORT_HW_MAX_MA; on a gen-2 blade the INA226 emergency trip sits at 125 %
+// of that and does not move with the setting (the MPQ4242 enforces its own
+// OCP). A gen-3 blade holds its own limits and needs no trip from here.
 #define PORT_HW_MAX_MA    5000
 #define PORT_LIMIT_MIN_MA 500
 #define PORT_LIMIT_MAX_MA PORT_HW_MAX_MA
@@ -130,7 +151,7 @@ typedef struct {
 // Events, core 1 -> core 0 (published to MQTT / log)
 typedef enum {
     EVT_STATE_CHANGE, // code = new port_state_t, arg = old
-    EVT_FAULT,        // code = MPQ_FAULT_* bits, arg = INA226 alert flag
+    EVT_FAULT,        // code = PORT_FAULT_* bits, arg = INA226 alert flag (gen 2) or the blade's raw word (PORT_FAULT_ARG_GEN3)
     EVT_CONTRACT,     // code = selected PDO, arg = contract mW
     EVT_PROBE_FAIL,   // code = which probe step failed
     EVT_THROTTLE,     // code = THROTTLE_*, arg = granted/restored mW

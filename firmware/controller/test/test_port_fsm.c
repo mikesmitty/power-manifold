@@ -227,12 +227,12 @@ static void test_mpq_fault_via_poll(void) {
     sim_attach(0, 20000, 3000);
     tick(2);
 
-    sim_set_mpq_fault(0, MPQ_FAULT_OTW1);
+    sim_set_mpq_fault(0, PORT_FAULT_OTW1);
     tick(1);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
     const engine_evt_t *e = evt_last(EVT_FAULT, 0);
     MT_ASSERT(e != NULL);
-    MT_ASSERT(e->code & MPQ_FAULT_OTW1);
+    MT_ASSERT(e->code & PORT_FAULT_OTW1);
 
     sim_set_mpq_fault(0, 0);
     tick_ms(5100);

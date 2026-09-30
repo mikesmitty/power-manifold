@@ -2,10 +2,9 @@
 
 #include <string.h>
 
+#include "blade.h"
 #include "budget.h"
-#include "ina226.h"
 #include "ipc.h"
-#include "mpq4242.h"
 #include "settings.h"
 #include "tca9539.h"
 #include "tca9548a.h"
@@ -13,7 +12,7 @@
 #define FAULT_COOLDOWN_MS 5000
 #define PROBE_MAX_ATTEMPTS 3
 #ifndef BLADE_WAKE_MS // the host tests set 0: the wait is hardware, not FSM logic
-#define BLADE_WAKE_MS 50 // EN high -> MPQ4242 LDO + digital core up before the first I2C word
+#define BLADE_WAKE_MS 50 // EN high -> a gen-2 blade's MPQ4242 LDO + digital core up before the first I2C word
 #endif
 
 // Power-up stagger between the blades found seated at boot (port_fsm.h).
@@ -33,18 +32,13 @@
 #define UNTHROTTLE_STEP_MIN_MW     5000
 #define UNTHROTTLE_STEP_HOLDOFF_MS 1000
 
-// EVT_PROBE_FAIL codes
-#define PROBE_FAIL_MUX     1
-#define PROBE_FAIL_INA226  2
-#define PROBE_FAIL_MPQ4242 3
-#define PROBE_FAIL_EN      4
-
 typedef struct {
     port_state_t state;
+    blade_gen_t gen;         // which generation answered the probe
     bool     admin_enabled;
     bool     warm;           // adopted at a warm start: EN is already on, probe without touching it
     uint8_t  probe_attempts;
-    uint8_t  fault_bits;     // latched for diagnostics until next probe
+    uint16_t fault_bits;     // PORT_FAULT_*, latched for diagnostics until next probe
     uint32_t cooldown_until_ms;
     uint32_t enable_after_ms; // boot stagger: no probe before this (0 = none)
     uint32_t en_on_ms;        // cold probe: when EN went high (0 = not yet)
@@ -56,8 +50,7 @@ typedef struct {
     uint32_t contract_mw;
     uint32_t denied_mw;      // contract that budget refused; unthrottle target
     uint32_t granted_ma;     // current ceiling currently programmed
-    mpq4242_status_t mpq;
-    ina226_reading_t ina;
+    blade_status_t st;       // what the blade last reported
 } port_ctx_t;
 
 static port_ctx_t ctx[NUM_PORTS];
@@ -90,21 +83,25 @@ static void power_down(uint8_t i, port_state_t next) {
     tca9539_set_en(i, false);
     budget_release(i);
     ctx[i].contract_mw = 0;
-    memset(&ctx[i].mpq, 0, sizeof(ctx[i].mpq));
-    memset(&ctx[i].ina, 0, sizeof(ctx[i].ina));
+    memset(&ctx[i].st, 0, sizeof(ctx[i].st));
+    if (next == PORT_STATE_ABSENT) ctx[i].gen = BLADE_GEN_NONE;
     enter(i, next);
 }
 
-static void fault(uint8_t i, uint32_t now_ms, uint8_t fault_bits, uint32_t detail) {
+// The caller has the port's mux channel selected (or found that it could
+// not, in which case the blade is beyond reach anyway).
+static void fault(uint8_t i, uint32_t now_ms, uint16_t fault_bits, uint32_t detail) {
     ctx[i].fault_bits = fault_bits ? fault_bits : ctx[i].fault_bits;
     emit(EVT_FAULT, i, fault_bits, detail);
     power_down(i, PORT_STATE_FAULT);
+    blade_faulted(ctx[i].gen);
     ctx[i].cooldown_until_ms = now_ms + FAULT_COOLDOWN_MS;
 }
 
 static void start_probe(uint8_t i) {
     ctx[i].probe_attempts = 0;
     ctx[i].fault_bits = 0;
+    ctx[i].gen = BLADE_GEN_NONE;
     ctx[i].enable_after_ms = 0; // the boot slot is spent; later seatings are immediate
     ctx[i].en_on_ms = 0;
     ctx[i].denied_mw = 0; // stale asks must not inflate a new throttle epoch
@@ -129,28 +126,17 @@ static void probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
 // failed probe.
 static void warm_probe(uint8_t i, uint32_t now_ms) {
     uint16_t fail = 0;
-    bool ina_trip = false, matches = false;
-    mpq4242_status_t st = {0};
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
-    } else if (!ina226_probe() || !ina226_alert_tripped(&ina_trip)) { // the read clears the latch
-        fail = PROBE_FAIL_INA226;
-    } else if (!mpq4242_probe() || !mpq4242_read_status(&st)) {
-        fail = PROBE_FAIL_MPQ4242;
-    } else if (ina_trip || st.fault_bits) {
-        ctx[i].warm = false;
-        fault(i, now_ms, st.fault_bits, ina_trip);
-        return;
-    } else if (!ina226_configure() || // idempotent: the same values it already holds
-               !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100)) {
-        fail = PROBE_FAIL_INA226;
-    } else if (!mpq4242_config_matches(g_settings.port_limit_ma[i], g_settings.port_max_mv[i],
-                                       &matches)) {
-        fail = PROBE_FAIL_MPQ4242;
-    } else if (!matches &&
-               (!mpq4242_configure(g_settings.port_limit_ma[i], g_settings.port_max_mv[i]) ||
-                (st.attached && !mpq4242_send_src_cap()))) {
-        fail = PROBE_FAIL_MPQ4242;
+    } else {
+        if (ctx[i].gen == BLADE_GEN_NONE) ctx[i].gen = blade_detect();
+        fail = blade_adopt(ctx[i].gen, g_settings.port_limit_ma[i], g_settings.port_max_mv[i],
+                           &ctx[i].st);
+        if (!fail && ctx[i].st.fault_bits) {
+            ctx[i].warm = false;
+            fault(i, now_ms, ctx[i].st.fault_bits, ctx[i].st.fault_detail);
+            return;
+        }
     }
 
     if (fail) {
@@ -172,12 +158,14 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
     // The MPQ4242's I2C interface is off while its EN pin is low (datasheet,
     // PWR_CTL1: "when the external EN pin is low, the converter is off and the
     // I2C shuts down"), and on the V2 blade the dark part drags the segment it
-    // shares with the INA226, so nothing on the blade answers until it is
+    // shares with the INA226, so nothing on a gen-2 blade answers until it is
     // powered. Power it first, give the LDO and digital core a moment, then
-    // probe and configure. A sink attached during that window negotiates the
-    // part's OTP defaults, so the table is re-advertised once ours is written
-    // — the same path a warm start takes. A failed probe still ends with EN
-    // off (power_down via fault).
+    // find out what answers and configure it. A sink attached during that
+    // window negotiates the part's OTP defaults, so the table is
+    // re-advertised once ours is written — the same path a warm start takes.
+    // A gen-3 blade answers with EN low or high and keeps its port dark
+    // until configured, so the same order serves it. A failed probe still
+    // ends with EN off (power_down via fault).
     if (!ctx[i].en_on_ms) {
         if (!tca9539_set_en(i, true)) {
             probe_failed(i, now_ms, PROBE_FAIL_EN);
@@ -189,16 +177,11 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
     if (now_ms - ctx[i].en_on_ms < BLADE_WAKE_MS) return;
 
     uint16_t fail = 0;
-    mpq4242_status_t st = {0};
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
-    } else if (!ina226_probe() || !ina226_configure() ||
-               !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100)) { // emergency trip, fixed
-        fail = PROBE_FAIL_INA226;
-    } else if (!mpq4242_probe() || !mpq4242_read_status(&st) ||
-               !mpq4242_configure(g_settings.port_limit_ma[i], g_settings.port_max_mv[i]) ||
-               (st.attached && !mpq4242_send_src_cap())) {
-        fail = PROBE_FAIL_MPQ4242;
+    } else {
+        ctx[i].gen = blade_detect();
+        fail = blade_setup(ctx[i].gen, g_settings.port_limit_ma[i], g_settings.port_max_mv[i]);
     }
 
     if (!fail) {
@@ -220,12 +203,11 @@ static uint8_t prio(uint8_t i) {
 // port i's mux channel selected.
 static void apply_throttle(uint8_t i, uint32_t grant_mw, uint32_t want_mw,
                            uint16_t evt_code) {
-    uint32_t mv = ctx[i].ina.bus_mv ? ctx[i].ina.bus_mv : 5000;
+    uint32_t mv = ctx[i].st.bus_mv ? ctx[i].st.bus_mv : 5000;
     uint32_t ma = (grant_mw * 1000) / mv;
     if (ma < 500) ma = 500;
 
-    mpq4242_set_max_current_ma(ma);
-    mpq4242_send_src_cap();
+    blade_set_limits(ctx[i].gen, ma, g_settings.port_max_mv[i], true);
     ctx[i].granted_ma = ma;
     budget_force_reserve(i, grant_mw);
     ctx[i].contract_mw = grant_mw;
@@ -298,8 +280,7 @@ static bool recovery_should_yield(uint8_t i) {
 // Restore the full advertisement. The caller has already claimed the budget
 // for the recovered contract, so a rival can't take it mid-renegotiation.
 static void unthrottle(uint8_t i) {
-    mpq4242_set_max_current_ma(g_settings.port_limit_ma[i]);
-    mpq4242_send_src_cap();
+    blade_set_limits(ctx[i].gen, g_settings.port_limit_ma[i], g_settings.port_max_mv[i], true);
     ctx[i].granted_ma = g_settings.port_limit_ma[i];
     emit(EVT_THROTTLE, i, THROTTLE_RESTORED, ctx[i].contract_mw);
     enter(i, PORT_STATE_ACTIVE);
@@ -329,7 +310,7 @@ static bool charge_track(uint8_t i, uint32_t now_ms) {
     port_ctx_t *p = &ctx[i];
     uint32_t floor = g_settings.charged_mw;
     if (floor) {
-        bool low = p->ina.power_mw < floor;
+        bool low = p->st.power_mw < floor;
         if (low != p->low_side) {
             p->low_side = low;
             p->side_since_ms = now_ms;
@@ -353,7 +334,7 @@ static bool charge_track(uint8_t i, uint32_t now_ms) {
 }
 
 // Shared telemetry + fault polling for powered states. Returns false if the
-// port just faulted or was depowered.
+// port just faulted, was depowered, or went back to PROBE.
 static bool poll_powered(uint8_t i, bool present, uint32_t now_ms) {
     if (!present) {
         power_down(i, PORT_STATE_ABSENT);
@@ -361,18 +342,27 @@ static bool poll_powered(uint8_t i, bool present, uint32_t now_ms) {
     }
     if (!tca9548a_select(i)) return true; // transient; retry next tick
 
-    ina226_read(&ctx[i].ina);
-    if (!mpq4242_read_status(&ctx[i].mpq)) return true;
+    if (!blade_poll(ctx[i].gen, false, &ctx[i].st)) return true;
 
-    if (ctx[i].mpq.fault_bits) {
-        fault(i, now_ms, ctx[i].mpq.fault_bits, 0);
+    if (ctx[i].st.fault_bits) {
+        fault(i, now_ms, ctx[i].st.fault_bits, ctx[i].st.fault_detail);
+        return false;
+    }
+    // A gen-3 blade that restarted (a watchdog, a brown-out on the slot's
+    // 5 V) comes back with its port off and its configuration gone. Its
+    // contract went with it; the port goes back through the probe, which
+    // configures it again without an EN cut.
+    if (!ctx[i].st.configured) {
+        budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
+        ctx[i].contract_mw = 0;
+        start_probe(i);
         return false;
     }
     return true;
 }
 
 static void track_contract(uint8_t i) {
-    uint32_t want = ctx[i].mpq.contract_mw;
+    uint32_t want = ctx[i].st.contract_mw;
     if (want < BUDGET_BASE_RESERVE_MW) want = BUDGET_BASE_RESERVE_MW;
     if (want == ctx[i].contract_mw) return;
 
@@ -384,7 +374,7 @@ static void track_contract(uint8_t i) {
         }
     }
     ctx[i].contract_mw = want;
-    emit(EVT_CONTRACT, i, ctx[i].mpq.selected_pdo, want);
+    emit(EVT_CONTRACT, i, ctx[i].st.selected_pdo, want);
 }
 
 // Administrative state at power-up, per the port's boot policy (settings)
@@ -460,7 +450,7 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
 
     case PORT_STATE_IDLE:
         if (!poll_powered(i, present, now_ms)) break;
-        if (p->mpq.attached) {
+        if (p->st.attached) {
             attach_begin(i, now_ms);
             enter(i, PORT_STATE_ACTIVE);
             track_contract(i);
@@ -470,12 +460,12 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     case PORT_STATE_ACTIVE:
     case PORT_STATE_THROTTLED:
         if (!poll_powered(i, present, now_ms)) break;
-        if (!p->mpq.attached) {
+        if (!p->st.attached) {
             budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
             p->contract_mw = 0;
             p->denied_mw = 0;
             if (p->granted_ma != g_settings.port_limit_ma[i]) {
-                mpq4242_set_max_current_ma(g_settings.port_limit_ma[i]);
+                blade_set_limits(p->gen, g_settings.port_limit_ma[i], g_settings.port_max_mv[i], false);
                 p->granted_ma = g_settings.port_limit_ma[i];
             }
             enter(i, PORT_STATE_IDLE);
@@ -524,13 +514,14 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     }
 
     out->state = (uint8_t)p->state;
-    out->attached = p->mpq.attached;
-    out->charged = p->mpq.attached && p->charged;
-    out->selected_pdo = p->mpq.selected_pdo;
+    out->gen = (uint8_t)p->gen;
+    out->attached = p->st.attached;
+    out->charged = p->st.attached && p->charged;
+    out->selected_pdo = p->st.selected_pdo;
     out->fault_bits = p->fault_bits;
-    out->bus_mv = p->ina.bus_mv;
-    out->current_ma = p->ina.current_ma;
-    out->power_mw = p->ina.power_mw;
+    out->bus_mv = p->st.bus_mv;
+    out->current_ma = p->st.current_ma;
+    out->power_mw = p->st.power_mw;
     out->contract_mw = budget_port_reservation(i);
 }
 
@@ -548,10 +539,10 @@ void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {
         if (ctx[i].state != PORT_STATE_ABSENT) power_down(i, PORT_STATE_DISABLED);
         break;
     case CMD_PORT_HARD_RESET:
-        if (powered && tca9548a_select(i)) mpq4242_send_hard_reset();
+        if (powered && tca9548a_select(i)) blade_hard_reset(ctx[i].gen);
         break;
     case CMD_PORT_SRC_CAP:
-        if (powered && tca9548a_select(i)) mpq4242_send_src_cap();
+        if (powered && tca9548a_select(i)) blade_send_src_cap(ctx[i].gen);
         break;
     case CMD_PORT_LIMIT: {
         // core 0 stored the new setting first; a port that is not powered
@@ -560,16 +551,16 @@ void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {
         if (!powered || !tca9548a_select(i)) break;
         if (ctx[i].state == PORT_STATE_THROTTLED && ctx[i].granted_ma <= limit)
             break; // the budget clamp is tighter; recovery restores to the new limit
-        mpq4242_set_max_current_ma(limit);
+        // renegotiated now when a sink is on
+        blade_set_limits(ctx[i].gen, limit, g_settings.port_max_mv[i], ctx[i].st.attached);
         ctx[i].granted_ma = limit;
-        if (ctx[i].mpq.attached) mpq4242_send_src_cap(); // renegotiate now
         break;
     }
     case CMD_PORT_VOLT:
-        // same shape: stored by core 0, re-advertised now if the port is powered
+        // same shape: stored by core 0, re-advertised now if the port is
+        // powered; the current ceiling in force (a budget clamp included) stays
         if (!powered || !tca9548a_select(i)) break;
-        mpq4242_set_max_voltage_mv(cmd->arg);
-        if (ctx[i].mpq.attached) mpq4242_send_src_cap();
+        blade_set_limits(ctx[i].gen, ctx[i].granted_ma, cmd->arg, ctx[i].st.attached);
         break;
     default:
         break;
@@ -583,13 +574,7 @@ void port_fsm_alert_sweep(uint32_t now_ms) {
             continue;
         if (!tca9548a_select(i)) continue;
 
-        bool ina_trip = false;
-        ina226_alert_tripped(&ina_trip);
-        mpq4242_status_t st;
-        bool mpq_ok = mpq4242_read_status(&st);
-
-        if (ina_trip || (mpq_ok && st.fault_bits)) {
-            fault(i, now_ms, mpq_ok ? st.fault_bits : 0, ina_trip);
-        }
+        if (blade_poll(ctx[i].gen, true, &ctx[i].st) && ctx[i].st.fault_bits)
+            fault(i, now_ms, ctx[i].st.fault_bits, ctx[i].st.fault_detail);
     }
 }

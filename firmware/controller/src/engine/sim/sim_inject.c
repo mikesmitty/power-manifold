@@ -35,7 +35,13 @@ void sim_inject(uint8_t port, uint32_t arg) {
     case SIM_LOAD:      sim_set_load_pct(port, (uint8_t)(v > 100 ? 100 : v)); break;
     case SIM_OCP:       sim_trip_ocp(port); break;
     case SIM_MPQ_FAULT: sim_set_mpq_fault(port, (uint8_t)v); break;
-    case SIM_PROBE:     sim_set_probe_ok(port, v != 1, v != 2); break;
+    case SIM_PROBE:
+        sim_set_probe_ok(port, v != 1, v != 2);
+        sim_set_blade_ok(port, v != 3);
+        break;
+    case SIM_GEN:       sim_set_gen(port, (uint8_t)v); break;
+    case SIM_BLADE_FAULT: sim_set_blade_fault(port, (uint16_t)v); break;
+    case SIM_RESTART:   sim_blade_restart(port); break;
     default: break;
     }
 }
