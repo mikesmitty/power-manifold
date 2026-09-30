@@ -33,8 +33,11 @@ blade is unseated.
 
 <CardGrid stagger>
 	<Card title="Six 100 W USB-C ports" icon="puzzle">
-		Each blade is an MPQ4242 buck-boost USB-PD source with an INA226 monitor,
-		on a PCIe x1 card edge so blades can be swapped without tools.
+		Each blade is a USB-PD source on a PCIe x1 card edge, swapped without
+		tools: the gen-2 blade an MPQ4242 buck-boost with an INA226 monitor, the
+		gen-3 blade an STM32G071 running ST's PD stack over a TPS55288 and a
+		TCPP02 port protector, with its own thermometers and protection.
+		Either generation, or a mix, fits the same chassis.
 	</Card>
 	<Card title="Centralized control" icon="setting">
 		One dual-core RP2350 supervises all ports through an I2C mux, enforces a
