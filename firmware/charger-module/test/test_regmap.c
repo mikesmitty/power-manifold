@@ -232,6 +232,47 @@ static void commands_queue_in_order(void) {
     MT_ASSERT(!regmap_config(&c)); // a command is not configuration
 }
 
+// The two commands that reset the MCU count only with their complement
+// behind them in the same transfer.
+static void reset_commands_need_their_complement(void) {
+    regmap_init(0);
+    write8(BLADE_REG_COMMAND, BLADE_CMD_RESET); // alone
+    write8(BLADE_REG_COMMAND, BLADE_CMD_BOOT_OPT);
+    MT_ASSERT_EQ(regmap_command(), 0);
+
+    uint8_t wrong[2] = {BLADE_CMD_RESET, BLADE_CMD_RESET};
+    bus_write(BLADE_REG_COMMAND, wrong, 2);
+    MT_ASSERT_EQ(regmap_command(), 0);
+
+    write8(BLADE_REG_COMMAND, BLADE_CMD_RESET); // the complement in the next transfer is not behind it
+    write8(BLADE_REG_COMMAND, (uint8_t)~BLADE_CMD_RESET);
+    MT_ASSERT_EQ(regmap_command(), (uint8_t)~BLADE_CMD_RESET); // a command nobody knows, and no reset
+    MT_ASSERT_EQ(regmap_command(), 0);
+
+    // a limits write whose pointer lost a bit: 1285 mA's high byte lands on
+    // the command register as the boot-option command
+    uint8_t limits[5] = {0x05, 0x05, 0x20, 0x4E, 120};
+    bus_write(BLADE_REG_CONTROL, limits, sizeof limits);
+    MT_ASSERT_EQ(regmap_command(), 0);
+
+    uint8_t reset[2] = {BLADE_CMD_RESET, (uint8_t)~BLADE_CMD_RESET};
+    bus_write(BLADE_REG_COMMAND, reset, 2);
+    MT_ASSERT_EQ(regmap_command(), BLADE_CMD_RESET);
+    uint8_t opt[2] = {BLADE_CMD_BOOT_OPT, (uint8_t)~BLADE_CMD_BOOT_OPT};
+    bus_write(BLADE_REG_COMMAND, opt, 2);
+    MT_ASSERT_EQ(regmap_command(), BLADE_CMD_BOOT_OPT);
+    MT_ASSERT_EQ(regmap_command(), 0);
+
+    // the others are as they were, and the pointer moves on past a guarded pair
+    write16(BLADE_REG_MAX_MA, 3000);
+    uint8_t then[3] = {BLADE_CMD_RESET, (uint8_t)~BLADE_CMD_RESET, 0xB9};
+    bus_write(BLADE_REG_COMMAND, then, 3);
+    MT_ASSERT_EQ(regmap_command(), BLADE_CMD_RESET);
+    MT_ASSERT_EQ(read16(BLADE_REG_MAX_MA), 3001); // 0x0BB8 with its low byte rewritten
+    write8(BLADE_REG_COMMAND, BLADE_CMD_SRC_CAP);
+    MT_ASSERT_EQ(regmap_command(), BLADE_CMD_SRC_CAP);
+}
+
 void run_regmap_tests(void) {
     mt_run("regmap: identity block", identity);
     mt_run("regmap: watch register and transaction count", watch_register_and_transactions);
@@ -244,4 +285,5 @@ void run_regmap_tests(void) {
     mt_run("regmap: reads and writes past the end", past_the_end);
     mt_run("regmap: faults latch until cleared", faults_latch_until_cleared);
     mt_run("regmap: commands queue in order", commands_queue_in_order);
+    mt_run("regmap: reset commands need their complement", reset_commands_need_their_complement);
 }

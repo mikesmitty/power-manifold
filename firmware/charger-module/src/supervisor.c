@@ -88,10 +88,13 @@ static void leave_for_loader(bool program_boot_option) {
     else hw_reset_to_loader();
 }
 
-// A controller that has gone quiet for longer than it said it would (the
-// WATCH_S register) gets the blade back in the bootloader, where it can be
-// reached whatever the firmware was doing. Off until the controller sets it,
-// so a blade on the bench keeps running.
+// The way back to the bootloader for a blade the controller cannot reach
+// over I2C: it takes EN low, and once it has also been quiet for as long as
+// it said it would be (the WATCH_S register) the blade resets itself there.
+// EN is the controller's say in this. Its silence alone means nothing: a
+// controller that is restarting, updating or gone leaves EN where it was,
+// and a port that is running keeps running on the limits it last had. Off
+// until the controller sets it, so a blade on the bench is left alone.
 static bool watch_controller(uint32_t now) {
     hw_backplane_lock();
     uint32_t n = regmap_transactions();
@@ -100,8 +103,8 @@ static bool watch_controller(uint32_t now) {
         seen_count = n;
         seen_ms = now;
     }
-    if (!cfg.watch_s || now - seen_ms < (uint32_t)cfg.watch_s * 1000u) return false;
-    console_str("controller silent: ");
+    if (!cfg.watch_s || en || now - seen_ms < (uint32_t)cfg.watch_s * 1000u) return false;
+    console_str("EN low, controller silent: ");
     leave_for_loader(false);
     return true;
 }

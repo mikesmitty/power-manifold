@@ -49,7 +49,10 @@ static void ctl_configure(uint16_t max_ma, uint16_t max_mv, bool port_en) {
     ctl_write(BLADE_REG_CONTROL, &control, 1);
 }
 
-static void ctl_command(uint8_t cmd) { ctl_write(BLADE_REG_COMMAND, &cmd, 1); }
+static void ctl_command(uint8_t cmd) {
+    uint8_t b[2] = {cmd, (uint8_t)~cmd}; // the complement goes with the commands that reset the MCU
+    ctl_write(BLADE_REG_COMMAND, b, BLADE_CMD_GUARDED(cmd) ? 2 : 1);
+}
 
 static void run_ms(unsigned ms) {
     while (ms--) {
@@ -370,9 +373,10 @@ static void reset_and_boot_option_commands(void) {
     MT_ASSERT_EQ(fake_board_loader_resets(), 1);
 }
 
-// A controller that stops talking for longer than WATCH_S gets the blade
-// back in the bootloader; any transaction resets the clock, and a blade
-// that was never given a watch keeps running on its own.
+// With EN high the watch does nothing: the port runs on however long the
+// controller stays away. With EN low, a controller that has not spoken for
+// WATCH_S gets the blade back in the bootloader; any transaction resets the
+// clock, and a blade that was never given a watch is left alone.
 static void a_silent_controller_resets_the_blade(void) {
     boot();
     en_high();
@@ -387,9 +391,34 @@ static void a_silent_controller_resets_the_blade(void) {
     run_ms(1500);
     MT_ASSERT_EQ(fake_board_loader_resets(), 0);
     MT_ASSERT(stack_port_armed());
-    run_ms(600);
+    run_ms(60000); // a controller gone for a minute, EN where it left it
+    MT_ASSERT_EQ(fake_board_loader_resets(), 0);
+    MT_ASSERT(stack_port_armed());
+
+    en_low(); // the controller's doing: it is back, and cannot reach the blade
+    run_ms(100);
     MT_ASSERT_EQ(fake_board_loader_resets(), 1);
     MT_ASSERT(!stack_port_armed());
+}
+
+// EN low with the controller still talking is a port switched off, not a
+// blade to reset; the watch runs from its last word.
+static void en_low_with_a_talking_controller_is_left_alone(void) {
+    boot();
+    en_high();
+    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    uint8_t watch = 2;
+    ctl_write(BLADE_REG_WATCH_S, &watch, 1);
+    en_low();
+    for (int k = 0; k < 10; k++) {
+        run_ms(1000);
+        ctl_read8(BLADE_REG_STATUS);
+    }
+    MT_ASSERT_EQ(fake_board_loader_resets(), 0);
+    run_ms(1900);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 0);
+    run_ms(200);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 1);
 }
 
 void run_supervisor_tests(void) {
@@ -409,5 +438,6 @@ void run_supervisor_tests(void) {
     mt_run("supervisor: stack failures are faults", stack_failures_are_faults);
     mt_run("supervisor: telemetry reaches the controller", telemetry_reaches_the_controller);
     mt_run("supervisor: reset and boot-option commands", reset_and_boot_option_commands);
-    mt_run("supervisor: a silent controller resets the blade", a_silent_controller_resets_the_blade);
+    mt_run("supervisor: a silent controller resets the blade only with EN low", a_silent_controller_resets_the_blade);
+    mt_run("supervisor: EN low with a talking controller is left alone", en_low_with_a_talking_controller_is_left_alone);
 }

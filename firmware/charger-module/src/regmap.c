@@ -12,6 +12,7 @@ static bool    any_staged;
 
 static uint8_t ptr;
 static bool    want_ptr;
+static uint8_t guard; // a BLADE_CMD_GUARDED command waiting for its complement
 static bool    configured;
 static bool    config_changed;
 
@@ -72,6 +73,7 @@ void regmap_init(uint8_t reset_cause) {
     any_staged = false;
     ptr = 0;
     want_ptr = false;
+    guard = 0;
     configured = false;
     config_changed = false;
     cmd_head = cmd_n = 0;
@@ -96,6 +98,7 @@ void regmap_set_boot(uint8_t flags) {
 
 void regmap_addressed(bool read) {
     transactions++;
+    guard = 0;
     commit(); // a repeated start ends the write before it
     if (read) memcpy(snap, img, sizeof snap);
     else want_ptr = true;
@@ -107,7 +110,13 @@ void regmap_rx(uint8_t byte) {
         want_ptr = false;
         return;
     }
-    if (ptr == BLADE_REG_COMMAND) {
+    if (guard) { // the byte after a command that resets the MCU: its complement, or it never happened
+        if (byte == (uint8_t)~guard) push_command(guard);
+        guard = 0;
+    } else if (ptr == BLADE_REG_COMMAND && BLADE_CMD_GUARDED(byte)) {
+        guard = byte;
+        return; // the pointer waits with it
+    } else if (ptr == BLADE_REG_COMMAND) {
         push_command(byte);
     } else if (ptr < BLADE_REG_END && writable(ptr)) {
         stage[ptr] = byte;
@@ -125,6 +134,7 @@ uint8_t regmap_tx(void) {
 
 void regmap_stop(void) {
     commit();
+    guard = 0;
     want_ptr = false;
 }
 

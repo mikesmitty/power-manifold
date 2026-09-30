@@ -61,7 +61,7 @@
 #define BLADE_REG_COMMAND     0x41 // BLADE_CMD_*, write-only, reads 0
 #define BLADE_REG_MAX_MA      0x42 // u16, current field of every advertised PDO
 #define BLADE_REG_MAX_MV      0x44 // u16, voltage cap, see BLADE_MAX_MV_ALL
-#define BLADE_REG_WATCH_S     0x46 // u8, seconds without the controller before the blade resets itself, 0 = never (PROTO 2)
+#define BLADE_REG_WATCH_S     0x46 // u8, seconds: with EN low and no transaction for this long the blade resets into its bootloader, 0 = never (PROTO 2)
 
 #define BLADE_REG_END         0x47 // one past the last register
 
@@ -120,6 +120,12 @@
 // Program the option bytes for BLADE_BOOT_VIA_LOADER and reset (PROTO 2).
 // Once per chip; a no-op reset when they are already so.
 #define BLADE_CMD_BOOT_OPT     5
+// Those two take the port down with the MCU, and the bus carries no check:
+// one byte gone wrong (a pointer landing a limit on this register, a bit
+// in another command) must not be able to spell them. Each counts only
+// when the next byte of the same transfer is its complement; anything else
+// there, or the end of the transfer, and it never happened.
+#define BLADE_CMD_GUARDED(cmd) ((cmd) == BLADE_CMD_RESET || (cmd) == BLADE_CMD_BOOT_OPT)
 
 // Limits of the blade hardware; values written past them are stored clamped.
 #define BLADE_MAX_MA_LIMIT    5000
