@@ -188,7 +188,9 @@ answer yet.
 (`src/engine/sim/`) and drives it through a repeating 60-second demo script —
 attaches, budget contention with priority shedding, an over-current fault and
 recovery, blade insertion/removal, with gen-3 blades in ports 4 and 5 and
-gen-2 ones elsewhere. Everything above the driver seam (state
+gen-2 ones elsewhere (a fake-blade build bundles no blade firmware: its
+simulated gen-3 blades take the boot-option trip through their bootloader
+and are started on what they hold). Everything above the driver seam (state
 machine, budget arbiter, MQTT/HA, web UI, CLI) is the real code, so the whole
 management plane can be exercised on a bare Pico 2 W:
 

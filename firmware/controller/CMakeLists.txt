@@ -22,7 +22,10 @@ option(CARRIER_INTERNAL_PULLUPS
 # when one is there; an empty value builds without an image, and such a
 # controller starts blades that hold a good image but cannot program a blank one.
 set(BLADE_IMAGE "" CACHE FILEPATH "Gen-3 blade firmware image (charger-module.bin) to bundle")
-if(NOT BLADE_IMAGE AND EXISTS ${CMAKE_CURRENT_LIST_DIR}/../charger-module/build/charger-module.bin)
+if(FAKE_BLADES)
+    # the simulated blades keep two flash pages each: nothing to write an image into
+    set(BLADE_IMAGE "")
+elseif(NOT BLADE_IMAGE AND EXISTS ${CMAKE_CURRENT_LIST_DIR}/../charger-module/build/charger-module.bin)
     set(BLADE_IMAGE ${CMAKE_CURRENT_LIST_DIR}/../charger-module/build/charger-module.bin)
 endif()
 
