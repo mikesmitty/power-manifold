@@ -12,12 +12,19 @@
 //          its own; the controller writes its PDO table and reads back.
 //   gen 3: an STM32G071 running the port (blade3.h). The controller hands
 //          it limits through its register file and reads a snapshot.
+//   loader: a gen-3 blade whose MCU is in its ROM bootloader (stboot.h) —
+//          blank, told to go there, or set to boot through it — waiting to
+//          be checked, programmed and started (blade_update.h).
 
 typedef enum {
     BLADE_GEN_NONE = 0,
     BLADE_GEN_2 = 2,
     BLADE_GEN_3 = 3,
+    BLADE_GEN_LOADER = 4,
 } blade_gen_t;
+
+// What a port's telemetry calls the generation: a blade in its bootloader is a gen-3 blade
+static inline uint8_t blade_gen_number(blade_gen_t g) { return g == BLADE_GEN_LOADER ? 3 : (uint8_t)g; }
 
 // EVT_PROBE_FAIL codes (fault_text.c names them; 5 is the engine's
 // chassis-level "expander reset")
@@ -27,6 +34,7 @@ typedef enum {
 #define PROBE_FAIL_EN      4
 #define PROBE_FAIL_BLADE   6 // a gen-3 blade stopped answering or refused its configuration
 #define PROBE_FAIL_NONE    7 // nothing answered on the channel
+#define PROBE_FAIL_UPDATE  8 // a trip through the ROM bootloader failed; the arg says how (UPDATE_FAIL_*)
 
 typedef struct {
     bool     attached;
@@ -49,6 +57,18 @@ typedef struct {
 
 // Which generation answers on the selected channel.
 blade_gen_t blade_detect(void);
+
+// A gen-3 blade's identity block: firmware version, protocol, boot option.
+typedef struct {
+    uint8_t proto;
+    uint8_t major, minor, patch;
+    uint8_t boot; // BLADE_BOOT_*
+} blade_identity_t;
+bool blade_identity(blade_gen_t gen, blade_identity_t *id);
+// Send a gen-3 blade to its ROM bootloader: a reset, or first the
+// programming of its option bytes so every reset lands there (a PROTO 2
+// blade; an older one ignores the command). The port goes dark with it.
+bool blade_request_loader(blade_gen_t gen, bool boot_option);
 
 // Probe steps: 0 on success, else a PROBE_FAIL_* code.
 // A freshly powered blade: configure it from scratch.

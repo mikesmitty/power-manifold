@@ -171,6 +171,14 @@ bool json_get_int(const char *json, const char *key, long *out) {
     return true;
 }
 
+bool json_get_bool(const char *json, const char *key, bool *out) {
+    const char *p = find_value(json, key);
+    if (!p) return false;
+    if (!strncmp(p, "true", 4)) { *out = true; return true; }
+    if (!strncmp(p, "false", 5)) { *out = false; return true; }
+    return false;
+}
+
 size_t json_escape(char *out, size_t cap, const char *in) {
     static const char hex[] = "0123456789abcdef";
     size_t n = 0;

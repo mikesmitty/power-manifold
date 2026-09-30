@@ -3,11 +3,21 @@
 #include <string.h>
 
 #include "blade3.h"
+#include "blade_image.h"
 #include "ina226.h"
 #include "mpq4242.h"
 #include "pins.h"
+#include "stboot.h"
 #include "tca9539.h"
 #include "tca9548a.h"
+
+// A gen-3 blade's flash, as its ROM bootloader lets the controller read,
+// erase and write it. The host tests hold the whole part; the fake-blade
+// firmware build keeps the first page only (there is no bundled image to
+// write there, and a Pico has no room for six parts).
+#ifndef SIM_FLASH_SIZE
+#define SIM_FLASH_SIZE BLADE_IMAGE_MAX
+#endif
 
 // One simulated blade per mux channel, of either generation. The gen-2
 // MPQ4242 model negotiates the way the real part does from the engine's
@@ -45,6 +55,18 @@ typedef struct {
     bool     temp_set;     // gen 3: the script pinned the thermometers (else modelled from the load)
     int16_t  temp_conv_dc; // gen 3: pinned readings, 0.1 degC
     int16_t  temp_plug_dc;
+    // gen 3: the MCU and its ROM bootloader
+    uint8_t  watch_s;      // gen 3: BLADE_REG_WATCH_S as written
+    bool     loader;       // in the bootloader (else running whatever the flash holds)
+    bool     boot_via_loader; // option bytes: every reset lands in the bootloader
+    bool     locked_up;    // started with no image: a HardFault loop until power is cut
+    uint8_t  busy_polls;   // BUSY answers left on the flash operation in progress
+    uint8_t  crashes_left; // the firmware crashes this many more starts
+    uint32_t goes;         // Go commands accepted
+    uint32_t erases, writes; // bootloader erase commands and write commands
+    uint32_t cut_after_writes; // a power cut lands after this many more write commands (0 = none)
+    uint32_t crc_len;      // the range of the checksum command in progress
+    uint8_t  flash[SIM_FLASH_SIZE];
     uint32_t src_caps;
     uint32_t hard_resets;
     uint32_t en_changes;   // every time EN actually moved
@@ -151,25 +173,111 @@ void sim_reset(void) {
     exp_programmed = false;
 }
 
-void sim_set_present(uint8_t slot, bool present) {
-    slots[slot].present = present;
-    if (!present) set_en(&slots[slot], false);
+// ---- gen-3 flash and boot -------------------------------------------------
+
+static const blade_image_header_t *flash_header(const sim_slot_t *s) {
+    return (const blade_image_header_t *)(s->flash + BLADE_IMAGE_HEADER_OFFSET);
 }
 
-void sim_set_gen(uint8_t slot, uint8_t gen) {
-    slots[slot].gen = gen == 3 ? 3 : 2;
+static bool flash_has_image(const sim_slot_t *s) {
+    const blade_image_header_t *h = flash_header(s);
+    return h->magic == BLADE_IMAGE_MAGIC && h->length <= SIM_FLASH_SIZE;
 }
 
-// The blade's MCU restarts: configuration gone, port off, restart latched;
-// the slot's EN is the backplane's and stays.
-void sim_blade_restart(uint8_t slot) {
-    sim_slot_t *s = &slots[slot];
+static bool flash_page0_empty(const sim_slot_t *s) {
+    for (int i = 0; i < 8; i++)
+        if (s->flash[i] != 0xFF) return false;
+    return true;
+}
+
+// The MCU comes up (power-on, its own reset, a Go from the bootloader):
+// configuration gone, port off, restart latched. Where it lands depends on
+// the option bytes and whether the flash reads as empty (RM0444 2.5.4).
+static void mcu_reset(sim_slot_t *s, bool from_go) {
     s->configured = false;
     s->port_en = false;
     s->adv_ma = 0;
     s->adv_mv = 0;
     s->faults = BLADE_FAULT_RESET;
+    s->busy_polls = 0;
+    s->loader = !from_go && (s->boot_via_loader || flash_page0_empty(s));
+    s->locked_up = false;
+    if (!s->loader) {
+        if (!flash_has_image(s)) s->locked_up = true; // nothing to run: a fault loop nobody can reach
+        else if (s->crashes_left) {
+            s->crashes_left--;
+            // the watchdog restarts it: into the bootloader when the option
+            // bytes say so, else round again
+            s->loader = s->boot_via_loader;
+            if (!s->loader) s->locked_up = true; // a crash loop looks like nothing answering
+        }
+    }
     renegotiate(s);
+}
+
+// What a fresh gen-3 blade's flash holds: a good image of an old version
+static void flash_default(sim_slot_t *s) {
+    memset(s->flash, 0xFF, sizeof s->flash);
+    blade_image_header_t h = {
+        .magic = BLADE_IMAGE_MAGIC, .major = 0, .minor = 0, .patch = 1, .proto = BLADE_PROTO_VERSION,
+        .length = 2 * BLADE_IMAGE_PAGE, .reserved = 0,
+    };
+    if (h.length > sizeof s->flash) h.length = sizeof s->flash;
+    memset(s->flash, 0x11, h.length); // "code"
+    memcpy(s->flash + BLADE_IMAGE_HEADER_OFFSET, &h, sizeof h);
+}
+
+void sim_set_present(uint8_t slot, bool present) {
+    sim_slot_t *s = &slots[slot];
+    s->present = present;
+    if (!present) set_en(s, false);
+    else if (s->gen == 3) mcu_reset(s, false); // seated: the MCU powers up from the slot's 5 V
+}
+
+void sim_set_gen(uint8_t slot, uint8_t gen) {
+    slots[slot].gen = gen == 3 ? 3 : 2;
+    if (gen == 3) flash_default(&slots[slot]);
+}
+
+// The blade's MCU restarts (its watchdog, a brown-out): the slot's EN is
+// the backplane's and stays.
+void sim_blade_restart(uint8_t slot) {
+    mcu_reset(&slots[slot], false);
+}
+
+void sim_blade_power_cut(uint8_t slot) {
+    mcu_reset(&slots[slot], false);
+}
+
+void sim_blade_erase(uint8_t slot) {
+    memset(slots[slot].flash, 0xFF, sizeof slots[slot].flash);
+    mcu_reset(&slots[slot], false);
+}
+
+void sim_blade_flash_image(uint8_t slot, const uint8_t *image, uint32_t len) {
+    sim_slot_t *s = &slots[slot];
+    memset(s->flash, 0xFF, sizeof s->flash);
+    if (len > sizeof s->flash) len = sizeof s->flash;
+    memcpy(s->flash, image, len);
+    mcu_reset(s, false);
+}
+
+void sim_blade_set_boot_via_loader(uint8_t slot, bool set) { slots[slot].boot_via_loader = set; }
+void sim_blade_crash_next(uint8_t slot, uint8_t times) { slots[slot].crashes_left = times; }
+void sim_blade_cut_power_after_writes(uint8_t slot, uint32_t writes) { slots[slot].cut_after_writes = writes; }
+bool sim_blade_in_loader(uint8_t slot) { return slots[slot].loader; }
+bool sim_blade_boot_via_loader(uint8_t slot) { return slots[slot].boot_via_loader; }
+bool sim_blade_locked_up(uint8_t slot) { return slots[slot].locked_up; }
+uint32_t sim_blade_go_count(uint8_t slot) { return slots[slot].goes; }
+uint8_t  sim_blade_watch_s(uint8_t slot) { return slots[slot].watch_s; }
+uint32_t sim_blade_erase_count(uint8_t slot) { return slots[slot].erases; }
+uint32_t sim_blade_write_count(uint8_t slot) { return slots[slot].writes; }
+const uint8_t *sim_blade_flash(uint8_t slot) { return slots[slot].flash; }
+uint32_t sim_blade_flash_version(uint8_t slot) {
+    const sim_slot_t *s = &slots[slot];
+    if (!flash_has_image(s)) return 0xFFFFFFFFu;
+    const blade_image_header_t *h = flash_header(s);
+    return (uint32_t)h->major << 16 | (uint32_t)h->minor << 8 | h->patch;
 }
 
 void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma) {
@@ -461,10 +569,29 @@ bool mpq4242_send_hard_reset(void) {
 
 static sim_slot_t *blade3(void) {
     sim_slot_t *s = sel();
-    return (s && s->present && s->gen == 3 && s->blade_ok) ? s : NULL;
+    return (s && s->present && s->gen == 3 && s->blade_ok && !s->loader && !s->locked_up) ? s : NULL;
+}
+
+static sim_slot_t *loader3(void) {
+    sim_slot_t *s = sel();
+    return (s && s->present && s->gen == 3 && s->blade_ok && s->loader) ? s : NULL;
 }
 
 bool blade3_probe(void) { return blade3() != NULL; }
+
+bool blade3_read_identity(blade3_identity_t *id) {
+    const sim_slot_t *s = blade3();
+    if (!s) return false;
+    const blade_image_header_t *h = flash_header(s);
+    id->proto = h->proto;
+    id->major = h->major;
+    id->minor = h->minor;
+    id->patch = h->patch;
+    id->reset_cause = BLADE_RESET_POWER;
+    id->caps = BLADE_CAP_PPS;
+    id->boot = s->boot_via_loader ? BLADE_BOOT_VIA_LOADER : 0;
+    return true;
+}
 
 bool blade3_read_status(blade3_status_t *st) {
     const sim_slot_t *s = blade3();
@@ -506,6 +633,7 @@ bool blade3_read_config(blade3_config_t *c) {
     c->port_en = s->port_en;
     c->max_ma = (uint16_t)s->adv_ma;
     c->max_mv = s->adv_mv;
+    c->watch_s = s->watch_s;
     return true;
 }
 
@@ -515,6 +643,7 @@ bool blade3_write_config(const blade3_config_t *c) {
     s->port_en = c->port_en;
     s->adv_ma = c->max_ma > BLADE_MAX_MA_LIMIT ? BLADE_MAX_MA_LIMIT : c->max_ma; // stored clamped
     s->adv_mv = c->max_mv;
+    s->watch_s = c->watch_s;
     s->configured = true;
     s->cfg_writes++;
     renegotiate(s); // the blade re-advertises whenever its table changes
@@ -537,8 +666,112 @@ bool blade3_command(uint8_t cmd) {
         s->faults = s->cond; // a condition still present latches straight back
         renegotiate(s);
         break;
+    case BLADE_CMD_RESET: // the flash declared empty for the boot that follows
+        mcu_reset(s, false);
+        s->loader = true;
+        break;
+    case BLADE_CMD_BOOT_OPT:
+        s->boot_via_loader = true;
+        mcu_reset(s, false);
+        break;
     default:
         break;
     }
     return true;
+}
+
+// ---- the ROM bootloader (stboot.h) -----------------------------------------
+
+// Flash operations answer BUSY this many times before they are done, so the
+// engine's polling gets exercised.
+#define SIM_BUSY_POLLS 2
+
+static stboot_result_t busy_or_ok(sim_slot_t *s) {
+    if (s->busy_polls) return STBOOT_BUSY;
+    return STBOOT_OK;
+}
+
+stboot_result_t stboot_version(uint8_t *version) {
+    if (!loader3()) return STBOOT_SILENT;
+    *version = 0x12;
+    return STBOOT_OK;
+}
+
+stboot_result_t stboot_id(uint16_t *pid) {
+    if (!loader3()) return STBOOT_SILENT;
+    *pid = BLADE_LOADER_DEVICE_ID;
+    return STBOOT_OK;
+}
+
+stboot_result_t stboot_read(uint32_t addr, uint8_t *buf, size_t n) {
+    const sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    if (addr < BLADE_IMAGE_BASE || addr - BLADE_IMAGE_BASE + n > SIM_FLASH_SIZE) return STBOOT_NACK;
+    memcpy(buf, s->flash + (addr - BLADE_IMAGE_BASE), n);
+    return STBOOT_OK;
+}
+
+stboot_result_t stboot_erase(uint16_t first, uint16_t count, bool no_stretch) {
+    sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    if ((uint32_t)(first + count) * BLADE_IMAGE_PAGE > SIM_FLASH_SIZE) return STBOOT_NACK;
+    memset(s->flash + first * BLADE_IMAGE_PAGE, 0xFF, count * BLADE_IMAGE_PAGE);
+    s->erases++;
+    s->busy_polls = no_stretch ? SIM_BUSY_POLLS : 0;
+    return busy_or_ok(s);
+}
+
+stboot_result_t stboot_write(uint32_t addr, const uint8_t *data, size_t n, bool no_stretch) {
+    sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    if (addr < BLADE_IMAGE_BASE || addr - BLADE_IMAGE_BASE + n > SIM_FLASH_SIZE) return STBOOT_NACK;
+    for (size_t k = 0; k < n; k++) // flash programs erased words only (PROGERR otherwise)
+        if (s->flash[addr - BLADE_IMAGE_BASE + k] != 0xFF) return STBOOT_NACK;
+    if (s->cut_after_writes && --s->cut_after_writes == 0) {
+        // the lights go out halfway through this chunk: half of it lands
+        memcpy(s->flash + (addr - BLADE_IMAGE_BASE), data, n / 2);
+        mcu_reset(s, false);
+        return STBOOT_SILENT;
+    }
+    memcpy(s->flash + (addr - BLADE_IMAGE_BASE), data, n);
+    s->writes++;
+    s->busy_polls = no_stretch ? 1 : 0;
+    return busy_or_ok(s);
+}
+
+stboot_result_t stboot_checksum(uint32_t addr, uint32_t len) {
+    sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    if (addr < BLADE_IMAGE_BASE || len == 0 || len & 3 || addr - BLADE_IMAGE_BASE + len > SIM_FLASH_SIZE)
+        return STBOOT_NACK;
+    s->crc_len = len;
+    s->busy_polls = SIM_BUSY_POLLS;
+    return STBOOT_BUSY;
+}
+
+// The CRC as the controller computes it (blade_update.c): the model of
+// the CRC unit both sides share
+uint32_t blade_image_crc(const uint8_t *data, uint32_t size, uint32_t len);
+
+stboot_result_t stboot_checksum_result(uint32_t *crc) {
+    const sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    *crc = blade_image_crc(s->flash, s->crc_len, s->crc_len);
+    return STBOOT_OK;
+}
+
+stboot_result_t stboot_go(uint32_t addr) {
+    sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    if (addr != BLADE_IMAGE_BASE) return STBOOT_NACK;
+    s->goes++;
+    mcu_reset(s, true);
+    return STBOOT_OK;
+}
+
+stboot_result_t stboot_poll(void) {
+    sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    if (s->busy_polls) s->busy_polls--;
+    return busy_or_ok(s);
 }

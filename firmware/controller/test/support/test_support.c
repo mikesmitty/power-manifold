@@ -1,5 +1,7 @@
 #include "test_support.h"
 
+#include "fake_bundle.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -59,6 +61,10 @@ void support_reset(uint32_t budget_mw) {
     g_settings.fan_on_w = 80;
     g_settings.fan_off_w = 60;
     g_settings.fan_on_ma = 3000;
+    // blade_auto_update / blade_boot_via_loader stay off here: the firmware
+    // defaults them on, and test_blade_update.c switches them on itself, so
+    // the rest of the suite sees gen-3 blades as they are
+    fake_bundle_clear();
     sim_reset();
     tca9539_init(); // cold start, as engine_main does: the sim expander is programmed from here
     budget_init(budget_mw);

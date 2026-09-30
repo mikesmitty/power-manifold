@@ -67,8 +67,10 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_ip(out, cap, off, "dns", s->ip_dns);
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
     off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,"
-               "\"vin_cal\":%u,\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min,
-               s->vin_cal);
+               "\"vin_cal\":%u,\"blade_auto_update\":%s,\"blade_boot_via_loader\":%s,"
+               "\"blade_watch_s\":%u,\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min,
+               s->vin_cal, s->blade_auto_update ? "true" : "false",
+               s->blade_boot_via_loader ? "true" : "false", s->blade_watch_s);
     for (int i = 0; i < NUM_PORTS; i++) {
         off = putf(out, cap, off, "%s\"", i ? "," : "");
         if (off < cap) off += json_escape(out + off, cap - off, s->port_name[i]);
@@ -194,6 +196,13 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
     if (json_get_int(body, "vin_cal", &v)) {
         if (v < VIN_CAL_MIN || v > VIN_CAL_MAX) return "vin_cal: " STR(VIN_CAL_MIN) "-" STR(VIN_CAL_MAX) " (permille)";
         s->vin_cal = (uint16_t)v;
+    }
+    bool b;
+    if (json_get_bool(body, "blade_auto_update", &b)) s->blade_auto_update = b;
+    if (json_get_bool(body, "blade_boot_via_loader", &b)) s->blade_boot_via_loader = b;
+    if (json_get_int(body, "blade_watch_s", &v)) {
+        if (v < 0 || v > 255) return "blade_watch_s: 0-255 (0 disables)";
+        s->blade_watch_s = (uint8_t)v;
     }
     if (via_setup && !s->api_token[0]) return "set an API token to finish setup";
 

@@ -3,6 +3,9 @@
 #include <string.h>
 
 #include "blade.h"
+#include "blade_bundle.h"
+#include "blade_regs.h"
+#include "blade_update.h"
 #include "budget.h"
 #include "ipc.h"
 #include "settings.h"
@@ -11,6 +14,18 @@
 
 #define FAULT_COOLDOWN_MS 5000
 #define PROBE_MAX_ATTEMPTS 3
+// Trips through a gen-3 blade's ROM bootloader (blade_update.h) without its
+// firmware coming up and staying up on the version wanted. Past this the
+// port is held in FAULT until it is reseated, re-enabled or told to update.
+#define UPDATE_ROUNDS_MAX 3
+// After telling a blade to reset into its bootloader (or the bootloader to
+// start the firmware), the probe waits this long for the other party to
+// answer before it starts counting failed attempts.
+#define LOADER_SWITCH_MS 200
+// A powered blade that has not answered a poll for this many ticks is
+// re-probed: a gen-3 blade that reset into its bootloader is found there,
+// anything else fails the probe and is switched off.
+#define SILENT_POLLS_MAX 10
 #ifndef BLADE_WAKE_MS // the host tests set 0: the wait is hardware, not FSM logic
 #define BLADE_WAKE_MS 50 // EN high -> a gen-2 blade's MPQ4242 LDO + digital core up before the first I2C word
 #endif
@@ -38,12 +53,18 @@ typedef struct {
     bool     admin_enabled;
     bool     warm;           // adopted at a warm start: EN is already on, probe without touching it
     uint8_t  probe_attempts;
+    uint8_t  silent_polls;   // polls in a row the blade did not answer
     uint16_t fault_bits;     // PORT_FAULT_*, latched for diagnostics until next probe
     uint32_t cooldown_until_ms;
     uint32_t enable_after_ms; // boot stagger: no probe before this (0 = none)
     uint32_t en_on_ms;        // cold probe: when EN went high (0 = not yet)
     uint32_t step_after_ms;  // next partial unthrottle step allowed at
     uint32_t attached_at_ms; // sleep timer base
+    uint32_t switch_until_ms; // probe attempts are not counted before this (the blade is changing mode)
+    bool     switch_grace;    // ...to be set from the next probe's clock: the mode change was just asked for
+    uint8_t  update_rounds;  // bootloader trips since the firmware last came up as wanted
+    bool     update_rewrite; // the next trip programs the bundle whatever the blade holds (CMD_PORT_UPDATE)
+    bool     held;           // FAULT with no automatic retry (UPDATE_ROUNDS_MAX reached)
     uint32_t side_since_ms;  // draw has been on the current side of the charged floor since
     bool     low_side;       // ...and that side is "under the floor"
     bool     charged;
@@ -64,6 +85,7 @@ const char *port_state_name(port_state_t s) {
     case PORT_STATE_THROTTLED: return "throttled";
     case PORT_STATE_FAULT:     return "fault";
     case PORT_STATE_DISABLED:  return "disabled";
+    case PORT_STATE_UPDATE:    return "updating";
     default:                   return "?";
     }
 }
@@ -84,7 +106,12 @@ static void power_down(uint8_t i, port_state_t next) {
     budget_release(i);
     ctx[i].contract_mw = 0;
     memset(&ctx[i].st, 0, sizeof(ctx[i].st));
-    if (next == PORT_STATE_ABSENT) ctx[i].gen = BLADE_GEN_NONE;
+    if (next == PORT_STATE_ABSENT) {
+        ctx[i].gen = BLADE_GEN_NONE;
+        ctx[i].update_rounds = 0; // whatever comes next is a different blade
+        ctx[i].update_rewrite = false;
+        ctx[i].held = false;
+    }
     enter(i, next);
 }
 
@@ -100,6 +127,7 @@ static void fault(uint8_t i, uint32_t now_ms, uint16_t fault_bits, uint32_t deta
 
 static void start_probe(uint8_t i) {
     ctx[i].probe_attempts = 0;
+    ctx[i].silent_polls = 0;
     ctx[i].fault_bits = 0;
     ctx[i].gen = BLADE_GEN_NONE;
     ctx[i].enable_after_ms = 0; // the boot slot is spent; later seatings are immediate
@@ -110,10 +138,61 @@ static void start_probe(uint8_t i) {
 }
 
 static void probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
+    if ((int32_t)(now_ms - ctx[i].switch_until_ms) < 0) return; // the blade is between modes
     if (++ctx[i].probe_attempts < PROBE_MAX_ATTEMPTS) return;
     emit(EVT_PROBE_FAIL, i, fail, ctx[i].probe_attempts);
     ctx[i].warm = false;
     fault(i, now_ms, 0, fail);
+}
+
+// The blade is in its ROM bootloader: a trip through it (blade_update.h)
+// unless it has had its share of them.
+static void begin_update(uint8_t i, uint32_t now_ms) {
+    ctx[i].warm = false;
+    tca9539_set_en(i, false); // dark anyway; the firmware's start brings it back up the normal way
+    if (ctx[i].update_rounds >= UPDATE_ROUNDS_MAX) {
+        emit(EVT_PROBE_FAIL, i, PROBE_FAIL_UPDATE, UPDATE_FAIL_LOOP);
+        ctx[i].held = true;
+        fault(i, now_ms, 0, PROBE_FAIL_UPDATE);
+        return;
+    }
+    ctx[i].update_rounds++;
+    blade_update_begin(i, ctx[i].update_rewrite);
+    ctx[i].update_rewrite = false;
+    enter(i, PORT_STATE_UPDATE);
+}
+
+// A gen-3 blade's firmware answered the probe. Whether it is the firmware
+// wanted: the bundled version, when the setting says the chassis keeps its
+// blades on it, or a rewrite was asked for; and the boot option, when that
+// setting says so. Either sends the blade to its bootloader (the port stays
+// in PROBE and finds it there next) and the caller stops here.
+static bool wants_loader(uint8_t i, uint32_t now_ms) {
+    blade_identity_t id;
+    if (!blade_identity(ctx[i].gen, &id)) return false; // a probe failure follows on its own
+    if (id.proto < 2) return false; // before the commands existed: what it runs is what it is
+    const blade_image_header_t *want = blade_bundle_header();
+    bool other = want && (id.major != want->major || id.minor != want->minor || id.patch != want->patch);
+    bool rewrite = ctx[i].update_rewrite || (g_settings.blade_auto_update && other);
+    bool boot_opt = g_settings.blade_boot_via_loader && !(id.boot & BLADE_BOOT_VIA_LOADER);
+    if (!rewrite && !boot_opt) {
+        ctx[i].update_rounds = 0; // running what it should: the count starts over
+        return false;
+    }
+    if (ctx[i].update_rounds >= UPDATE_ROUNDS_MAX) {
+        emit(EVT_PROBE_FAIL, i, PROBE_FAIL_UPDATE, UPDATE_FAIL_LOOP);
+        ctx[i].held = true;
+        ctx[i].warm = false;
+        fault(i, now_ms, 0, PROBE_FAIL_UPDATE);
+        return true;
+    }
+    if (!rewrite && boot_opt) ctx[i].update_rounds++; // the boot-option trip counts like any other
+    if (!blade_request_loader(ctx[i].gen, !rewrite && boot_opt)) return false;
+    if (!rewrite) emit(EVT_UPDATE, i, UPDATE_BOOT_OPT, UPDATE_VERSION(id.major, id.minor, id.patch));
+    ctx[i].gen = BLADE_GEN_NONE; // the next attempt finds the bootloader
+    ctx[i].switch_until_ms = now_ms + LOADER_SWITCH_MS;
+    ctx[i].probe_attempts = 0;
+    return true;
 }
 
 // A blade found powered at a warm start: bring it under supervision without
@@ -130,6 +209,8 @@ static void warm_probe(uint8_t i, uint32_t now_ms) {
         fail = PROBE_FAIL_MUX;
     } else {
         if (ctx[i].gen == BLADE_GEN_NONE) ctx[i].gen = blade_detect();
+        if (ctx[i].gen == BLADE_GEN_LOADER) { begin_update(i, now_ms); return; }
+        if (ctx[i].gen == BLADE_GEN_3 && wants_loader(i, now_ms)) return;
         fail = blade_adopt(ctx[i].gen, g_settings.port_limit_ma[i], g_settings.port_max_mv[i],
                            &ctx[i].st);
         if (!fail && ctx[i].st.fault_bits) {
@@ -151,6 +232,10 @@ static void warm_probe(uint8_t i, uint32_t now_ms) {
 
 // One probe attempt per tick keeps the loop cadence flat.
 static void do_probe(uint8_t i, uint32_t now_ms) {
+    if (ctx[i].switch_grace) {
+        ctx[i].switch_grace = false;
+        ctx[i].switch_until_ms = now_ms + LOADER_SWITCH_MS;
+    }
     if (ctx[i].warm) {
         warm_probe(i, now_ms);
         return;
@@ -181,6 +266,8 @@ static void do_probe(uint8_t i, uint32_t now_ms) {
         fail = PROBE_FAIL_MUX;
     } else {
         ctx[i].gen = blade_detect();
+        if (ctx[i].gen == BLADE_GEN_LOADER) { begin_update(i, now_ms); return; }
+        if (ctx[i].gen == BLADE_GEN_3 && wants_loader(i, now_ms)) return;
         fail = blade_setup(ctx[i].gen, g_settings.port_limit_ma[i], g_settings.port_max_mv[i]);
     }
 
@@ -342,7 +429,14 @@ static bool poll_powered(uint8_t i, bool present, uint32_t now_ms) {
     }
     if (!tca9548a_select(i)) return true; // transient; retry next tick
 
-    if (!blade_poll(ctx[i].gen, false, &ctx[i].st)) return true;
+    if (!blade_poll(ctx[i].gen, false, &ctx[i].st)) {
+        if (++ctx[i].silent_polls < SILENT_POLLS_MAX) return true; // transient; retry next tick
+        budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
+        ctx[i].contract_mw = 0;
+        start_probe(i);
+        return false;
+    }
+    ctx[i].silent_polls = 0;
 
     if (ctx[i].st.fault_bits) {
         fault(i, now_ms, ctx[i].st.fault_bits, ctx[i].st.fault_detail);
@@ -499,8 +593,28 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         break;
 
     case PORT_STATE_FAULT:
-        if (!present) { enter(i, PORT_STATE_ABSENT); break; }
+        if (!present) { power_down(i, PORT_STATE_ABSENT); break; }
+        if (p->held) break; // until reseated, re-enabled or told to update
         if (p->admin_enabled && now_ms >= p->cooldown_until_ms) start_probe(i);
+        break;
+
+    case PORT_STATE_UPDATE:
+        if (!present) { power_down(i, PORT_STATE_ABSENT); break; }
+        if (!tca9548a_select(i)) break; // transient; the bootloader waits
+        switch (blade_update_step(i)) {
+        case BLADE_UPDATE_BUSY:
+            break;
+        case BLADE_UPDATE_STARTED:
+            emit(EVT_UPDATE, i, blade_update_wrote(i) ? UPDATE_WRITTEN : UPDATE_STARTED,
+                 blade_update_version(i));
+            start_probe(i); // the firmware answers at its own address once up
+            p->switch_grace = true;
+            break;
+        case BLADE_UPDATE_FAILED:
+            emit(EVT_PROBE_FAIL, i, PROBE_FAIL_UPDATE, blade_update_fail(i));
+            fault(i, now_ms, 0, PROBE_FAIL_UPDATE);
+            break;
+        }
         break;
 
     case PORT_STATE_DISABLED:
@@ -514,7 +628,8 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     }
 
     out->state = (uint8_t)p->state;
-    out->gen = (uint8_t)p->gen;
+    out->gen = blade_gen_number(p->gen);
+    out->update_pct = p->state == PORT_STATE_UPDATE ? blade_update_pct(i) : 0;
     out->attached = p->st.attached;
     out->charged = p->st.attached && p->charged;
     out->selected_pdo = p->st.selected_pdo;
@@ -536,6 +651,29 @@ void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {
     switch ((cmd_op_t)cmd->op) {
     case CMD_PORT_ENABLE:
         ctx[i].admin_enabled = true;
+        if (ctx[i].held) { // a held fault gets another go
+            ctx[i].held = false;
+            ctx[i].update_rounds = 0;
+            ctx[i].cooldown_until_ms = 0;
+        }
+        break;
+    case CMD_PORT_UPDATE:
+        // The bundle goes onto the blade whatever it runs: a running
+        // firmware is sent to its bootloader now, one already there (or a
+        // held port) gets the trip on its next probe.
+        if (!blade_bundle_header() || ctx[i].gen == BLADE_GEN_2) break;
+        ctx[i].update_rewrite = true;
+        ctx[i].update_rounds = 0;
+        ctx[i].held = false;
+        if (powered && tca9548a_select(i) && blade_request_loader(ctx[i].gen, false)) {
+            budget_release(i);
+            ctx[i].contract_mw = 0;
+            memset(&ctx[i].st, 0, sizeof(ctx[i].st));
+            start_probe(i);
+            ctx[i].switch_grace = true;
+        } else if (ctx[i].state == PORT_STATE_FAULT) {
+            ctx[i].cooldown_until_ms = 0;
+        }
         break;
     case CMD_PORT_DISABLE:
         ctx[i].admin_enabled = false;

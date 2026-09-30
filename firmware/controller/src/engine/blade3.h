@@ -31,12 +31,22 @@ typedef struct {
     bool     port_en;
     uint16_t max_ma;
     uint16_t max_mv;
+    uint8_t  watch_s;     // BLADE_REG_WATCH_S (PROTO 2; a PROTO 1 blade ignores it)
 } blade3_config_t;
 
+typedef struct { // the identity block, BLADE_REG_PROTO .. BLADE_REG_BOOT
+    uint8_t proto;
+    uint8_t major, minor, patch;
+    uint8_t reset_cause; // BLADE_RESET_*
+    uint8_t caps;        // BLADE_CAP_*
+    uint8_t boot;        // BLADE_BOOT_*
+} blade3_identity_t;
+
 bool blade3_probe(void); // WHO_AM_I
+bool blade3_read_identity(blade3_identity_t *id);
 bool blade3_read_status(blade3_status_t *s); // BLADE_REG_STATUS .. TEMP_MCU in one read
 bool blade3_read_config(blade3_config_t *c);
-// Limits first, then CONTROL, so the port never arms on limits it has not
-// been given yet.
+// Limits (and the watch) first, then CONTROL, so the port never arms on
+// limits it has not been given yet.
 bool blade3_write_config(const blade3_config_t *c);
 bool blade3_command(uint8_t cmd); // BLADE_CMD_*

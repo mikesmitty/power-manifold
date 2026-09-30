@@ -14,6 +14,7 @@
 #include "boot_reason_hw.h"
 #include "button.h"
 #include "civil_time.h"
+#include "engine/blade_bundle.h"
 #include "engine/engine.h"
 #include "engine/i2c_diag.h"
 #include "engine/sim/sim_inject.h"
@@ -65,7 +66,8 @@ static void print_help(void) {
            "  name <device-name>           hostname / topic id\n"
            "  token <t>|clear              REST API bearer token\n"
            "  budget <watts>               chassis power budget\n"
-           "  port <1-%d> on|off|reset|srccap\n"
+           "  port <1-%d> on|off|reset|srccap|update\n"
+           "                               update: write the bundled gen-3 blade firmware over what it runs\n"
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  port <1-%d> name <text>|clear   label for the web UI and Home Assistant\n"
            "  port <1-%d> limit <500-5000>    advertised current ceiling, mA (21 V PPS: 4750 max)\n"
@@ -74,6 +76,10 @@ static void print_help(void) {
            "  port <1-%d> autooff on|off      switch off once the sink is charged\n"
            "  port <1-%d> sleep <min>|off     switch off this long after a sink attaches\n"
            "  charged <mW> <minutes>       charged = draw under mW for minutes (0 mW = off)\n"
+           "  blades                       the bundled gen-3 blade firmware and the update policy\n"
+           "  blades auto on|off           rewrite blades running another version (default on)\n"
+           "  blades bootopt on|off        set blades to boot through their ROM bootloader (default on)\n"
+           "  blades watch <s>|off         blades reset into it after this long without the controller\n"
            "  fan on|off|auto [on_w off_w [on_ma]]\n"
            "                               auto: on at total >= on_w or any contract > on_ma\n"
            "  led <0-255>                  status LED brightness (0 = off, faults still show)\n"
@@ -105,8 +111,11 @@ static void print_status(void) {
         char conv[8], plug[8]; // a gen-3 blade's thermometers, degC
         port_temp_text(conv, sizeof(conv), p->temp_conv_dc, "-");
         port_temp_text(plug, sizeof(plug), p->temp_plug_dc, "-");
+        char state[12];
+        if (p->state == PORT_STATE_UPDATE) snprintf(state, sizeof state, "upd %3u%%", p->update_pct);
+        else snprintf(state, sizeof state, "%s", port_state_name((port_state_t)p->state));
         printf("%4d %-10s %3s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %5s %5s  %s\n", i + 1,
-               port_state_name((port_state_t)p->state),
+               state,
                p->gen == 3 ? "3" : p->gen == 2 ? "2" : "-",
                p->attached ? (p->charged ? "chg" : "yes") : "no",
                p->selected_pdo, p->bus_mv, (long)p->current_ma,
@@ -601,7 +610,7 @@ static void run_line(char *l) {
         const char *n = strtok_r(NULL, " \t", &save);
         const char *op = strtok_r(NULL, " \t", &save);
         uint8_t port;
-        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|priority|name|limit|volt|boot|autooff|sleep\n", NUM_PORTS); return; }
+        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|update|priority|name|limit|volt|boot|autooff|sleep\n", NUM_PORTS); return; }
         if (!strcmp(op, "autooff")) {
             const char *v = strtok_r(NULL, " \t", &save);
             if (!v || (strcmp(v, "on") && strcmp(v, "off"))) { printf("usage: port <1-%d> autooff on|off\n", NUM_PORTS); return; }
@@ -685,12 +694,44 @@ static void run_line(char *l) {
         else if (!strcmp(op, "off")) c.op = CMD_PORT_DISABLE;
         else if (!strcmp(op, "reset")) c.op = CMD_PORT_HARD_RESET;
         else if (!strcmp(op, "srccap")) c.op = CMD_PORT_SRC_CAP;
+        else if (!strcmp(op, "update")) {
+            if (!blade_bundle_header()) { printf("no blade firmware bundled in this build\n"); return; }
+            c.op = CMD_PORT_UPDATE;
+        }
         else { printf("unknown op '%s'\n", op); return; }
         if (!ipc_cmd_push(&c)) { printf("queue full\n"); return; }
         bool remembered = (c.op == CMD_PORT_ENABLE || c.op == CMD_PORT_DISABLE) &&
                           settings_port_admin_note(port, c.op == CMD_PORT_ENABLE);
         if (remembered) settings_save_later(); // the "last" policy keeps it across reboots
         printf(remembered ? "ok (kept for the next boot)\n" : "ok\n");
+    } else if (!strcmp(cmd, "blades")) {
+        const char *what = strtok_r(NULL, " \t", &save);
+        const char *v = strtok_r(NULL, " \t", &save);
+        if (!what) {
+            const blade_image_header_t *h = blade_bundle_header();
+            if (h) printf("bundled blade firmware %u.%u.%u (protocol %u, %lu bytes)\n", h->major, h->minor,
+                          h->patch, h->proto, (unsigned long)h->length);
+            else printf("no blade firmware bundled in this build\n");
+            printf("auto update %s, boot through the bootloader %s, watch ",
+                   g_settings.blade_auto_update ? "on" : "off", g_settings.blade_boot_via_loader ? "on" : "off");
+            if (g_settings.blade_watch_s) printf("%u s\n", g_settings.blade_watch_s);
+            else printf("off\n");
+            return;
+        }
+        bool on = v && !strcmp(v, "on");
+        if (!strcmp(what, "auto") && v && (on || !strcmp(v, "off"))) {
+            g_settings.blade_auto_update = on;
+        } else if (!strcmp(what, "bootopt") && v && (on || !strcmp(v, "off"))) {
+            g_settings.blade_boot_via_loader = on;
+        } else if (!strcmp(what, "watch") && v) {
+            int sec = !strcmp(v, "off") ? 0 : atoi(v);
+            if (sec < 0 || sec > 255) { printf("watch: 1-255 s, or off\n"); return; }
+            g_settings.blade_watch_s = (uint8_t)sec; // blades pick it up at their next probe
+        } else {
+            printf("usage: blades [auto on|off | bootopt on|off | watch <1-255>|off]\n");
+            return;
+        }
+        printf("ok ('save' to persist)\n");
     } else if (!strcmp(cmd, "charged")) {
         const char *mw = strtok_r(NULL, " \t", &save);
         const char *min = strtok_r(NULL, " \t", &save);

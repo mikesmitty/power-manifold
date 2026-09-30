@@ -25,6 +25,19 @@ bool blade3_probe(void) {
     return read_regs(BLADE_REG_WHO_AM_I, &id, 1) && id == BLADE_WHO_AM_I;
 }
 
+bool blade3_read_identity(blade3_identity_t *id) {
+    uint8_t b[BLADE_REG_BOOT + 1 - BLADE_REG_PROTO];
+    if (!read_regs(BLADE_REG_PROTO, b, sizeof b)) return false;
+    id->proto       = b[BLADE_REG_PROTO - BLADE_REG_PROTO];
+    id->major       = b[BLADE_REG_FW_MAJOR - BLADE_REG_PROTO];
+    id->minor       = b[BLADE_REG_FW_MINOR - BLADE_REG_PROTO];
+    id->patch       = b[BLADE_REG_FW_PATCH - BLADE_REG_PROTO];
+    id->reset_cause = b[BLADE_REG_RESET_CAUSE - BLADE_REG_PROTO];
+    id->caps        = b[BLADE_REG_CAPS - BLADE_REG_PROTO];
+    id->boot        = b[BLADE_REG_BOOT - BLADE_REG_PROTO];
+    return true;
+}
+
 bool blade3_read_status(blade3_status_t *s) {
     uint8_t b[BLADE_REG_TEMP_MCU + 2 - BLADE_REG_STATUS];
     if (!read_regs(BLADE_REG_STATUS, b, sizeof b)) return false;
@@ -43,18 +56,19 @@ bool blade3_read_status(blade3_status_t *s) {
 }
 
 bool blade3_read_config(blade3_config_t *c) {
-    uint8_t ctl, lim[4];
+    uint8_t ctl, lim[5];
     if (!read_regs(BLADE_REG_CONTROL, &ctl, 1)) return false;
     if (!read_regs(BLADE_REG_MAX_MA, lim, sizeof lim)) return false;
     c->port_en = (ctl & BLADE_CTL_PORT_EN) != 0;
     c->max_ma = u16(lim);
     c->max_mv = u16(lim + 2);
+    c->watch_s = lim[4];
     return true;
 }
 
 bool blade3_write_config(const blade3_config_t *c) {
-    uint8_t lim[5] = {BLADE_REG_MAX_MA, (uint8_t)c->max_ma, (uint8_t)(c->max_ma >> 8),
-                      (uint8_t)c->max_mv, (uint8_t)(c->max_mv >> 8)};
+    uint8_t lim[6] = {BLADE_REG_MAX_MA, (uint8_t)c->max_ma, (uint8_t)(c->max_ma >> 8),
+                      (uint8_t)c->max_mv, (uint8_t)(c->max_mv >> 8), c->watch_s};
     if (!write_regs(lim, sizeof lim)) return false;
     uint8_t ctl[2] = {BLADE_REG_CONTROL, c->port_en ? BLADE_CTL_PORT_EN : 0};
     return write_regs(ctl, sizeof ctl);

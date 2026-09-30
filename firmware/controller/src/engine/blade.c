@@ -3,6 +3,8 @@
 #include "blade3.h"
 #include "ina226.h"
 #include "mpq4242.h"
+#include "settings.h"
+#include "stboot.h"
 
 // ---- gen 3 -----------------------------------------------------------------
 
@@ -29,6 +31,7 @@ static blade3_config_t config3(uint32_t max_ma, uint32_t max_mv) {
         .port_en = true,
         .max_ma = (uint16_t)(max_ma > BLADE_MAX_MA_LIMIT ? BLADE_MAX_MA_LIMIT : max_ma),
         .max_mv = (uint16_t)(max_mv > BLADE_MAX_MV_ALL ? BLADE_MAX_MV_ALL : max_mv),
+        .watch_s = g_settings.blade_watch_s,
     };
     return c;
 }
@@ -69,7 +72,8 @@ static uint16_t adopt3(uint32_t max_ma, uint32_t max_mv, blade_status_t *st) {
     blade3_config_t want = config3(max_ma, max_mv), have;
     if (!blade3_read_config(&have)) return PROBE_FAIL_BLADE;
     bool same = st->configured && have.port_en == want.port_en &&
-                have.max_ma == want.max_ma && have.max_mv == want.max_mv;
+                have.max_ma == want.max_ma && have.max_mv == want.max_mv &&
+                have.watch_s == want.watch_s;
     if (!same && !blade3_write_config(&want)) return PROBE_FAIL_BLADE;
     return 0;
 }
@@ -136,8 +140,27 @@ static uint16_t adopt2(uint32_t max_ma, uint32_t max_mv, blade_status_t *st) {
 
 blade_gen_t blade_detect(void) {
     if (blade3_probe()) return BLADE_GEN_3;
+    uint8_t version;
+    if (stboot_version(&version) == STBOOT_OK) return BLADE_GEN_LOADER;
     if (ina226_probe()) return BLADE_GEN_2;
     return BLADE_GEN_NONE;
+}
+
+bool blade_identity(blade_gen_t gen, blade_identity_t *id) {
+    if (gen != BLADE_GEN_3) return false;
+    blade3_identity_t b;
+    if (!blade3_read_identity(&b)) return false;
+    id->proto = b.proto;
+    id->major = b.major;
+    id->minor = b.minor;
+    id->patch = b.patch;
+    id->boot = b.boot;
+    return true;
+}
+
+bool blade_request_loader(blade_gen_t gen, bool boot_option) {
+    if (gen != BLADE_GEN_3) return false;
+    return blade3_command(boot_option ? BLADE_CMD_BOOT_OPT : BLADE_CMD_RESET);
 }
 
 uint16_t blade_setup(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv) {

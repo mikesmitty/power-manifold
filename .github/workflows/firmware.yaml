@@ -4,10 +4,12 @@ on:
       - main
     paths:
       - 'firmware/controller/**'
+      - 'firmware/charger-module/**' # its image rides inside the controller's
       - '.github/workflows/firmware.yaml'
   pull_request:
     paths:
       - 'firmware/controller/**'
+      - 'firmware/charger-module/**'
       - '.github/workflows/firmware.yaml'
   workflow_dispatch:
   workflow_call:
@@ -77,10 +79,20 @@ jobs:
           git -C "$HOME/pico-sdk" submodule update --init --depth 1 \
             lib/cyw43-driver lib/lwip lib/tinyusb lib/btstack
 
+      # The gen-3 blade firmware first: the controller carries its image and
+      # programs blades with it (firmware/controller/README.md, "Blade
+      # firmware updates"). Same cross toolchain; CMSIS and ST's USB-PD stack
+      # are fetched by its CMake at pinned tags.
+      - name: Build blade firmware
+        run: |
+          cmake -S firmware/charger-module -B firmware/charger-module/build -G Ninja
+          ninja -C firmware/charger-module/build
+
       - name: Configure
         run: >
           cmake -S firmware/controller -B firmware/controller/build -G Ninja
           -DPICO_BOARD=pico2_w -DPICO_SDK_PATH="$HOME/pico-sdk"
+          -DBLADE_IMAGE="$GITHUB_WORKSPACE/firmware/charger-module/build/charger-module.bin"
 
       - name: Build
         run: ninja -C firmware/controller/build
@@ -101,6 +113,7 @@ jobs:
         run: >
           cmake -S firmware/controller -B firmware/controller/build-card -G Ninja
           -DPICO_BOARD=pwrman_controller_card -DPICO_SDK_PATH="$HOME/pico-sdk"
+          -DBLADE_IMAGE="$GITHUB_WORKSPACE/firmware/charger-module/build/charger-module.bin"
 
       - name: Build (controller card)
         run: ninja -C firmware/controller/build-card

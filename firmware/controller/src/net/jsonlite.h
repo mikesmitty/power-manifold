@@ -18,6 +18,9 @@ int json_get_str(const char *json, const char *key, char *out, size_t cap);
 // bare number.
 bool json_get_int(const char *json, const char *key, long *out);
 
+// The literal true or false under "key"; false when absent or anything else.
+bool json_get_bool(const char *json, const char *key, bool *out);
+
 // Element idx (0-based) of the string array under "key", with json_get_str's
 // result codes; 0 when the key is absent, not an array, too short, or the
 // element (or an earlier one) is not a string.

@@ -27,6 +27,7 @@ typedef enum {
     PORT_STATE_THROTTLED,   // active with a budget-restricted PDO set
     PORT_STATE_FAULT,       // latched fault, EN low, cooldown running
     PORT_STATE_DISABLED,    // administratively off
+    PORT_STATE_UPDATE,      // a gen-3 blade in its ROM bootloader: being checked, programmed or started
     PORT_STATE_COUNT,
 } port_state_t;
 
@@ -72,6 +73,7 @@ typedef struct {
     uint32_t power_mw;
     uint32_t contract_mw;   // budget reservation held by this port
     uint32_t energy_mwh;    // delivered since boot (not persisted)
+    uint8_t  update_pct;    // PORT_STATE_UPDATE: how far the image has been written, 0-100
     // A gen-3 blade's thermometers, 0.1 degC while the port is powered and
     // polled; PORT_TEMP_NONE otherwise, and for an NTC the blade reads as
     // open. A gen-2 blade has none the controller can read.
@@ -119,6 +121,7 @@ typedef enum {
     CMD_PORT_VOLT,       // port, arg = mV: new voltage cap (g_settings already holds it)
     CMD_LED_HOLD,        // arg = 0-255: front-button hold progress shown on the chain (led_pattern.h)
     CMD_LED_ACK,         // arg = ms: brief white flash of the whole chain (a button press registered)
+    CMD_PORT_UPDATE,     // port: write the bundled firmware to a gen-3 blade, whatever it runs (blade_update.h)
     CMD_SIM,             // FAKE_BLADES only: fault injection, arg packed per engine/sim/sim_inject.h
     CMD_I2C_DIAG,        // real builds only: bench bus access, arg packed per engine/i2c_diag.h
 } cmd_op_t;
@@ -173,6 +176,7 @@ typedef enum {
     EVT_THROTTLE,     // code = THROTTLE_*, arg = granted/restored mW
     EVT_BOOT,         // core 0 only, fault-log record: code = boot_reason_t | core << 8, arg = pc
     EVT_CHARGE,       // code = CHARGE_*, arg: minutes since attach (DONE/RESUMED) or AUTO_OFF_*
+    EVT_UPDATE,       // code = UPDATE_*, arg = the blade firmware version now running, major << 16 | minor << 8 | patch
 } evt_type_t;
 
 // EVT_CHARGE codes
@@ -189,6 +193,12 @@ typedef enum {
 #define THROTTLE_CLAMPED  0 // advertisement reduced to fit the budget
 #define THROTTLE_RESTORED 1 // full advertisement restored after recovery
 #define THROTTLE_STEP     2 // partial step-up toward the pre-throttle ask
+
+// EVT_UPDATE codes: what a trip through a gen-3 blade's ROM bootloader did
+#define UPDATE_WRITTEN    1 // the bundled image was programmed and started
+#define UPDATE_STARTED    2 // the image already there checked out and was started
+#define UPDATE_BOOT_OPT   3 // the blade was told to boot through the bootloader from now on
+#define UPDATE_VERSION(major, minor, patch) ((uint32_t)(major) << 16 | (uint32_t)(minor) << 8 | (patch))
 
 typedef struct {
     uint8_t  type; // evt_type_t

@@ -15,7 +15,7 @@
 // the last two sectors of flash (which, on a freshly partitioned board, is
 // where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    12
+#define SETTINGS_VERSION    13
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -33,6 +33,7 @@
 #define SETTINGS_V9_PAYLOAD ALIGN4(offsetof(settings_t, led_dim))
 #define SETTINGS_V10_PAYLOAD ALIGN4(offsetof(settings_t, port_max_mv))
 #define SETTINGS_V11_PAYLOAD ALIGN4(offsetof(settings_t, vin_cal))
+#define SETTINGS_V12_PAYLOAD ALIGN4(offsetof(settings_t, blade_auto_update))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -44,6 +45,7 @@ _Static_assert(SETTINGS_V8_PAYLOAD == 620, "settings v8 layout moved");
 _Static_assert(SETTINGS_V9_PAYLOAD == 636, "settings v9 layout moved");
 _Static_assert(SETTINGS_V10_PAYLOAD == 644, "settings v10 layout moved");
 _Static_assert(SETTINGS_V11_PAYLOAD == 656, "settings v11 layout moved");
+_Static_assert(SETTINGS_V12_PAYLOAD == 660, "settings v12 layout moved");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
 #define FAN_ON_W_DEFAULT   80
@@ -54,6 +56,10 @@ _Static_assert(SETTINGS_V11_PAYLOAD == 656, "settings v11 layout moved");
 #define CHARGED_MIN_DEFAULT 10
 #define LED_DIM_DEFAULT     4   // just visible in a dark room
 #define VIN_CAL_DEFAULT_    1000 // unity gain trim (vin.h VIN_CAL_DEFAULT)
+// A controller away for longer than this (an update and its trial boot take
+// well under a minute) is presumed gone: the blades go dark and wait in
+// their bootloaders rather than run unsupervised.
+#define BLADE_WATCH_S_DEFAULT 120
 
 #define LEGACY_BASE (PICO_FLASH_SIZE_BYTES - SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
 
@@ -90,6 +96,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t version_payload_len(uint32_t version) {
     switch (version) {
     case SETTINGS_VERSION: return payload_len();
+    case 12:               return SETTINGS_V12_PAYLOAD;
     case 11:               return SETTINGS_V11_PAYLOAD;
     case 10:               return SETTINGS_V10_PAYLOAD;
     case 9:                return SETTINGS_V9_PAYLOAD;
@@ -157,6 +164,9 @@ void settings_defaults(void) {
     g_settings.charged_min = CHARGED_MIN_DEFAULT;
     g_settings.led_dim = LED_DIM_DEFAULT;
     g_settings.vin_cal = VIN_CAL_DEFAULT_;
+    g_settings.blade_auto_update = 1;
+    g_settings.blade_boot_via_loader = 1;
+    g_settings.blade_watch_s = BLADE_WATCH_S_DEFAULT;
 }
 
 void settings_load(void) {
@@ -206,6 +216,11 @@ void settings_load(void) {
             for (int i = 0; i < NUM_PORTS; i++) g_settings.port_max_mv[i] = PORT_VOLT_MAX_MV;
         }
         if (g_settings.version < 12) g_settings.vin_cal = VIN_CAL_DEFAULT_;
+        if (g_settings.version < 13) {
+            g_settings.blade_auto_update = 1;
+            g_settings.blade_boot_via_loader = 1;
+            g_settings.blade_watch_s = BLADE_WATCH_S_DEFAULT;
+        }
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();

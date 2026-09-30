@@ -12,6 +12,7 @@
 #include "pico/rand.h"
 
 #include "boot_reason_hw.h"
+#include "engine/blade_bundle.h"
 #include "fault_log.h"
 #include "fault_text.h"
 #include "flash_map.h"
@@ -36,7 +37,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         3072 // browser headers + a full settings export posted back
-#define STATUS_JSON_MAX 3096 // six ports with escaped labels, generation and thermometers, the problem text, the UPS block and the bus voltage, worst case
+#define STATUS_JSON_MAX 3200 // six ports with escaped labels, generation, thermometers and update progress, the problem text, the UPS block and the bus voltage, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -518,13 +519,18 @@ static void build_status_json(char *out, size_t cap) {
     char vinf[16]; // a number, or null on a board without the divider
     if (vin_fitted()) snprintf(vinf, sizeof(vinf), "%.2f", vin_mv() / 1000.0);
     else snprintf(vinf, sizeof(vinf), "null");
+    char bladef[20]; // the bundled gen-3 blade firmware, or null
+    const blade_image_header_t *bh = blade_bundle_header();
+    if (bh) snprintf(bladef, sizeof(bladef), "\"%u.%u.%u\"", bh->major, bh->minor, bh->patch);
+    else snprintf(bladef, sizeof(bladef), "null");
     size_t off = (size_t)snprintf(out, cap,
         "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
-        "\"vin_v\":%s,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,%s\"ports\":[",
+        "\"vin_v\":%s,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
+        "\"blade_fw\":%s,%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -535,7 +541,7 @@ static void build_status_json(char *out, size_t cap) {
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
         t.warm_start ? "true" : "false", vinf,
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
-        led_sched_level(&g_settings, led_sched_current()), upsf);
+        led_sched_level(&g_settings, led_sched_current()), bladef, upsf);
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];
@@ -549,13 +555,13 @@ static void build_status_json(char *out, size_t cap) {
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"gen\":%u,\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
             "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
             "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u,"
-            "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s}",
+            "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state), p->gen,
             p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
             p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
             p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],
             (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
-            settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, tc, tp, tm);
+            settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, tc, tp, tm, p->update_pct);
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }
@@ -1057,6 +1063,7 @@ static void handle_request(conn_t *c) {
             else if (strstr(body, "\"disable\"")) cmd.op = CMD_PORT_DISABLE;
             else if (strstr(body, "\"hard_reset\"")) cmd.op = CMD_PORT_HARD_RESET;
             else if (strstr(body, "\"src_cap\"")) cmd.op = CMD_PORT_SRC_CAP;
+            else if (strstr(body, "\"update\"")) cmd.op = CMD_PORT_UPDATE;
             else {
                 respond(c, 400, "Bad Request", "application/json",
                         "{\"error\":\"unknown action\"}");

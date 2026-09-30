@@ -24,6 +24,8 @@ add_executable(engine_tests
     ../src/settings_json.c
     ../src/settings_util.c
     ../src/engine/blade.c
+    ../src/engine/blade_bundle.c
+    ../src/engine/blade_update.c
     ../src/engine/budget.c
     ../src/engine/fan_policy.c
     ../src/engine/led_pattern.c
@@ -38,6 +40,7 @@ add_executable(engine_tests
     ../src/vin.c
     ../src/update_image.c
     support/test_support.c
+    support/fake_bundle.c
     test_boot.c
     test_budget.c
     test_button.c
@@ -50,6 +53,7 @@ add_executable(engine_tests
     test_log_ring.c
     test_port_fsm.c
     test_blade3.c
+    test_blade_update.c
     test_priority.c
     test_settings_json.c
     test_sim_inject.c
@@ -74,4 +78,4 @@ enable_testing()
 add_test(NAME engine_tests COMMAND engine_tests)
 
 # The cold probe's EN-to-first-I2C wait is a hardware delay; the sim answers at once.
-target_compile_definitions(engine_tests PRIVATE BLADE_WAKE_MS=0)
+target_compile_definitions(engine_tests PRIVATE BLADE_WAKE_MS=0 PWRMAN_HOST_TEST=1)

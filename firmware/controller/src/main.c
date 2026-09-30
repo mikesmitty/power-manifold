@@ -164,6 +164,12 @@ int main(void) {
         engine_evt_t evt;
         while (ipc_evt_pop(&evt)) {
             if (evt.type == EVT_STATE_CHANGE) led_sched_activity(now_ms); // wakes the LEDs
+            if (evt.type == EVT_UPDATE)
+                printf("port %u: blade firmware %lu.%lu.%lu %s\n", evt.port + 1,
+                       (unsigned long)(evt.arg >> 16), (unsigned long)((evt.arg >> 8) & 0xFF),
+                       (unsigned long)(evt.arg & 0xFF),
+                       evt.code == UPDATE_WRITTEN ? "written and started"
+                       : evt.code == UPDATE_BOOT_OPT ? "set to boot through the bootloader" : "started");
             fault_log_event(&evt);
             mqtt_event(&evt);
             // a port that switched itself off is administratively off now:

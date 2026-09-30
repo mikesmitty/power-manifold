@@ -114,6 +114,14 @@ ninja -C build
 Flash `build/controller.uf2` over BOOTSEL, or `picotool load -f
 build/controller.uf2`.
 
+The image carries the gen-3 blade firmware it programs blades with (see
+[Blade firmware updates](#blade-firmware-updates)): `-DBLADE_IMAGE=<path>`
+names the `charger-module.bin` to bundle, and without it the build takes a
+sibling `../charger-module/build/charger-module.bin` when one is there
+(build `firmware/charger-module` first). A build with neither still starts
+blades that hold a good image, but cannot program a blank one, and says so
+at configure time.
+
 ### Boards
 
 | `PICO_BOARD` | Board | Flash | Partition layout |
@@ -386,14 +394,14 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)), `t_conv` / `t_plug` / `t_mcu` (a gen-3 blade's thermometers in °C, `null` without a reading); chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)), `t_conv` / `t_plug` / `t_mcu` (a gen-3 blade's thermometers in °C, `null` without a reading), `progress` (how much of a firmware image has been written while the state is `updating`, 0–100); chassis `blade_fw` (the gen-3 blade firmware this build carries, `null` without one), `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
 | `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, `pwrman_bus_volts` / `pwrman_bus_voltage_ok` on the controller card, the `pwrman_ups_*` gauges while a UPS answers, every port metric labelled `port` and `name`, and `pwrman_port_temperature_celsius` with a `sensor` label (`converter`, `plug`, `mcu`) for each reading a gen-3 blade gives |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
 | `GET /api/v1/settings` | token or setup secret | Every setting except the secrets, with `mqtt_pass_set` / `token_set` flags in their place |
 | `GET /api/v1/settings/export[?secrets=1]` | token or setup secret | The same object with every setting, plus `format` and `fw`, ready to be posted back |
 | `POST /api/v1/settings` | token or setup secret | Any subset of the keys below, saved to flash at once; the reply says whether a reboot is needed |
-| `POST /api/v1/port/<n>` | token | `{"action":"enable"}`, `"disable"`, `"hard_reset"` or `"src_cap"` |
+| `POST /api/v1/port/<n>` | token | `{"action":"enable"}`, `"disable"`, `"hard_reset"`, `"src_cap"` or `"update"` (write the bundled gen-3 blade firmware over whatever the blade runs) |
 | `POST /api/v1/fan` | token | `{"on":true}`, `{"on":false}` or `{"mode":"auto"}` |
 | `POST /api/v1/budget` | token | `{"watts":N}` |
 | `POST /api/v1/faults/clear` | token | Wipes the fault log |
@@ -424,7 +432,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
 | `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`, and the bus voltage `vin` (fitted), `vin_v` |
-| `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading) |
+| `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading), `progress` (0–100 while `updating`) |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
 | `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.uf2"}`, published by CI or by hand |
@@ -470,8 +478,9 @@ Per port:
 - an *events* entity fed from `.../event` — event types `inserted`,
   `ready`, `attached`, `detached`, `removed`, `enabled`, `disabled`,
   `contract`, `throttled`, `restored`, `fault`, `probe_failed`, `charged`,
-  `charging` and `auto_off`, with the raw `code` / `arg` and the fault or
-  auto-off `text` as attributes, so an automation triggers on
+  `charging`, `auto_off` and `updated` (a gen-3 blade's firmware was
+  written, the version in `text`), with the raw `code` / `arg` and the
+  fault, auto-off or update `text` as attributes, so an automation triggers on
   `event.<label>_events` directly instead of templating over the state
   sensor.
 
@@ -502,7 +511,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 
 | Command | Purpose |
 | --- | --- |
-| `status` | port table (state, contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged, a gen-3 blade's `conv` and `plug` temperatures) and chassis power |
+| `status` | port table (state — `upd NN%` while a blade is being written — contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged, a gen-3 blade's `conv` and `plug` temperatures) and chassis power |
 | `info` | firmware, slot and boot reason, links and addressing, UPS supply, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
@@ -513,7 +522,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `name <device-name>` | hostname and topic id |
 | `token <t>\|clear` | API bearer token |
 | `budget <watts>` | chassis power budget |
-| `port <n> on\|off\|reset\|srccap` | port control |
+| `port <n> on\|off\|reset\|srccap\|update` | port control; `update` writes the bundled gen-3 blade firmware over whatever the blade runs |
 | `port <n> priority <0-255>` | 0 = highest; sheds from the bottom |
 | `port <n> name <text>\|clear` | label for the web UI and Home Assistant |
 | `port <n> limit <500-5000>` | advertised current ceiling in mA, every PDO |
@@ -522,6 +531,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `port <n> autooff on\|off` | switch off once the sink is charged |
 | `port <n> sleep <min>\|off` | switch off this long after a sink attaches |
 | `charged <mW> <minutes>` | charge-complete thresholds; 0 mW switches detection off |
+| `blades [auto on\|off \| bootopt on\|off \| watch <s>\|off]` | the bundled gen-3 blade firmware and the update policy (see [Blade firmware updates](#blade-firmware-updates)) |
 | `fan on\|off\|auto [on_w off_w [on_ma]]` | fan policy |
 | `led <0-255>`, `led boot white\|rainbow` | LED brightness and power-up sweep |
 | `led dim <0-255>`, `led night <HH:MM> <HH:MM>\|off`, `led idle <minutes>\|off` | dimmed level, night window, idle dimming |
@@ -571,9 +581,12 @@ budget arbiter sheds and restores across generations by priority alone.
   recorded it: the engine drops EN, clears the latch and re-probes after
   the cooldown, and a fault whose cause persists (a hot receptacle) comes
   straight back and repeats the cycle. A blade whose MCU restarts (its
-  watchdog, a brown-out on the slot's 5 V) comes back unconfigured; the
-  port notices, goes back through the probe and is configured again with
-  no EN cut and no fault recorded.
+  watchdog, a brown-out on the slot's 5 V) comes back unconfigured — or,
+  once set to boot through its ROM bootloader, in that bootloader; either
+  way the port notices, goes back through the probe (via a
+  [bootloader trip](#blade-firmware-updates) in the latter case) and is
+  configured again with no EN cut and no fault recorded. Its firmware is
+  programmed over the backplane by this controller.
 
 The port fault bits — `fault` in the JSON and MQTT telemetry, `code` on a
 fault event — are one vocabulary for both generations: bits 0–7 are the
@@ -586,6 +599,59 @@ flag for a gen-2 record and the blade's raw fault word for a gen-3 one, and
 the fault text names a gen-3 fault in the blade's own words (`conv-ocp`,
 `plug-hot`, `pd`), which is what the fault log, the console and the
 `last_fault` attribute show.
+
+### Blade firmware updates
+
+A gen-3 blade is programmed in the chassis, over the backplane, by the
+controller: the STM32G0's ROM bootloader speaks its I2C protocol (AN4221)
+on the same pins as the blade's register file, at 0x51, and this firmware
+carries the blade firmware it was built with (`BLADE_IMAGE`, [Building](#building);
+`blades` on the console and `blade_fw` in the status JSON say which). The
+blade side is in the [blade firmware's README](../charger-module/README.md#firmware-updates-over-the-backplane).
+
+**When it happens.** The probe finds a blade in its bootloader — factory
+blank, reset into it, or set to boot through it — and takes it through a
+trip (`updating` in the state column, with a progress percentage): read
+the bootloader's version and the chip's ID, read the image header out of
+the flash, then either start what is there (it is the bundled version, and
+the bootloader's checksum of the flash matches the bundle), or erase and
+write the bundle, check it the same way and start it. A blade running its
+firmware is sent to the bootloader when the firmware is not the bundled
+version (`blades auto on`, the default: the chassis keeps its blades on the
+firmware it was tested with, downgrades included — turn it off to run a
+bench build on a chassis) or when `port <n> update` / the `update` action
+asks for it, and once, when its option bytes are still the factory ones
+(`blades bootopt on`, the default), to have them programmed so every reset
+lands in the bootloader from then on. Both settings ride along with the
+rest (`blade_auto_update`, `blade_boot_via_loader` in the settings JSON).
+
+**Why the boot option.** With it, a blade only ever runs firmware the
+controller has checked and started, and any reset — the watchdog, a
+crash, the blade's own liveness rule — puts it back where the controller
+can reach it. The liveness rule is the `watch` setting (`blade_watch_s`,
+default 120 s): the blade resets into its bootloader after that long
+without being addressed, so a firmware that has gone deaf, or a chassis
+whose controller has died, ends up with dark ports waiting for a
+controller rather than running unsupervised. A controller update and its
+trial boot are well inside the window; `blades watch off` keeps blades
+running without a controller, as a gen-2 blade does.
+
+**What can go wrong.** Each trip that ends with a blade back in its
+bootloader without its firmware having come up as wanted counts; after
+three the port is held in FAULT (`probe: update (crash loop)`) and stays
+there — no retry every cooldown — until the blade is reseated, the port
+re-enabled, or `port <n> update` is given. A trip that fails outright
+(`probe: update (no image)` for a blank blade in a build without one,
+`(write)`, `(verify)`, `(bootloader silent)`, `(wrong chip)`) is a probe
+failure like any other, retried after the cooldown within the same
+allowance. The image is written first page last, its header chunk last of
+all, so a blade that loses power midway reads as blank next time and is
+simply written again; a controller that reboots midway finds the blade
+still in its bootloader and starts the trip over. The writes are sliced one
+chunk per engine tick, so the other five ports keep being served; a whole
+image takes a few seconds. Events: `update` with `written`, `started` or
+`boot option` and the version in `text`; the HA events entity sees
+`updated` when an image was written.
 
 ### Charge-complete and auto-off
 

@@ -30,6 +30,7 @@ const char *event_kind(const engine_evt_t *e) {
     case EVT_CHARGE:
         return e->code == CHARGE_DONE ? "charged" : e->code == CHARGE_RESUMED ? "charging"
                                                                                : "auto_off";
+    case EVT_UPDATE:     return e->code == UPDATE_WRITTEN ? "updated" : ""; // a routine start is not an event
     default:             return "";
     }
 }

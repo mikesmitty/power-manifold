@@ -17,6 +17,14 @@ option(NET_WIFI "CYW43 WiFi + Improv BLE provisioning (Pico 2 W, RM2)" ON)
 option(NET_ETH "WIZnet W6100 wired Ethernet on SPI0 GP16-21, probed at boot" ON)
 option(CARRIER_INTERNAL_PULLUPS
     "Bench only: Pico 2 W on the pcie-breakout without the three 4.7k resistors; RP2350 internal pull-ups on SDA/SCL/ALERT# and a 100 kHz bus" OFF)
+# The gen-3 blade firmware to carry (blade_bundle.h): the blade build's
+# charger-module.bin. Defaults to a sibling build of firmware/charger-module
+# when one is there; an empty value builds without an image, and such a
+# controller starts blades that hold a good image but cannot program a blank one.
+set(BLADE_IMAGE "" CACHE FILEPATH "Gen-3 blade firmware image (charger-module.bin) to bundle")
+if(NOT BLADE_IMAGE AND EXISTS ${CMAKE_CURRENT_LIST_DIR}/../charger-module/build/charger-module.bin)
+    set(BLADE_IMAGE ${CMAKE_CURRENT_LIST_DIR}/../charger-module/build/charger-module.bin)
+endif()
 
 if(CARRIER_INTERNAL_PULLUPS AND PICO_BOARD STREQUAL "pwrman_controller_card")
     message(FATAL_ERROR "CARRIER_INTERNAL_PULLUPS is for the pcie-breakout carrier; the controller card has its own 4.7k pull-ups.")
@@ -38,6 +46,7 @@ else()
         src/engine/mpq4242.c
         src/engine/ina226.c
         src/engine/blade3.c
+        src/engine/stboot.c
         src/engine/tca9548a.c
         src/engine/tca9539.c
         src/engine/i2c_diag.c
@@ -71,6 +80,8 @@ add_executable(controller
     src/engine/fan_policy.c
     src/engine/port_fsm.c
     src/engine/blade.c
+    src/engine/blade_bundle.c
+    src/engine/blade_update.c
     src/engine/budget.c
     src/engine/leds.c
     src/engine/led_pattern.c
@@ -90,7 +101,22 @@ add_executable(controller
 )
 
 if(FAKE_BLADES)
-    target_compile_definitions(controller PRIVATE PWRMAN_FAKE_BLADES=1)
+    # two flash pages per simulated blade: the header and a little "code"
+    target_compile_definitions(controller PRIVATE PWRMAN_FAKE_BLADES=1 SIM_FLASH_SIZE=4096)
+endif()
+if(BLADE_IMAGE)
+    get_filename_component(BLADE_IMAGE ${BLADE_IMAGE} ABSOLUTE)
+    if(NOT EXISTS ${BLADE_IMAGE})
+        message(FATAL_ERROR "BLADE_IMAGE ${BLADE_IMAGE} does not exist (build firmware/charger-module first, or pass an empty value)")
+    endif()
+    message(STATUS "Bundling gen-3 blade firmware ${BLADE_IMAGE}")
+    target_sources(controller PRIVATE src/engine/blade_bundle.S)
+    set_source_files_properties(src/engine/blade_bundle.S PROPERTIES
+        COMPILE_DEFINITIONS "BLADE_BUNDLE_PATH=\"${BLADE_IMAGE}\""
+        OBJECT_DEPENDS ${BLADE_IMAGE})
+    target_compile_definitions(controller PRIVATE PWRMAN_BLADE_BUNDLE=1)
+else()
+    message(STATUS "No gen-3 blade firmware bundled (BLADE_IMAGE unset)")
 endif()
 if(CARRIER_INTERNAL_PULLUPS)
     target_compile_definitions(controller PRIVATE PWRMAN_INTERNAL_PULLUPS=1)

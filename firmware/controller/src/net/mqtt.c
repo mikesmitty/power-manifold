@@ -949,7 +949,7 @@ static void publish_telemetry(void) {
                  "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"max_v\":%u,"
                  "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
                  "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu,"
-                 "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s}",
+                 "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u}",
                  port_state_name((port_state_t)p->state), p->gen, p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
@@ -959,7 +959,7 @@ static void publish_telemetry(void) {
                  p->charged ? "true" : "false",
                  (g_settings.port_auto_off >> i) & 1 ? "true" : "false",
                  g_settings.port_sleep_min[i], p->fault_bits, lf_text, (unsigned long)lf_at,
-                 tc, tp, tm);
+                 tc, tp, tm, p->update_pct);
         publish(topic_buf, payload_buf, 0, 0);
     }
     temp_discovery_check();
@@ -993,6 +993,7 @@ static const char *evt_name(evt_type_t t) {
     case EVT_PROBE_FAIL:   return "probe_fail";
     case EVT_THROTTLE:     return "throttle";
     case EVT_BOOT:         return "boot";
+    case EVT_UPDATE:       return "update";
     default:               return "?";
     }
 }
@@ -1005,6 +1006,11 @@ void mqtt_event(const engine_evt_t *e) {
         fault_text(&r, text, sizeof(text)); // plain words: no escaping needed
     } else if (e->type == EVT_CHARGE && e->code == CHARGE_AUTO_OFF) {
         snprintf(text, sizeof(text), "%s", e->arg == AUTO_OFF_SLEEP ? "sleep timer" : "charged");
+    } else if (e->type == EVT_UPDATE) {
+        snprintf(text, sizeof(text), "%s %lu.%lu.%lu",
+                 e->code == UPDATE_WRITTEN ? "written" : e->code == UPDATE_BOOT_OPT ? "boot option" : "started",
+                 (unsigned long)(e->arg >> 16), (unsigned long)((e->arg >> 8) & 0xFF),
+                 (unsigned long)(e->arg & 0xFF));
     }
     net_lock();
     snprintf(topic_buf, sizeof(topic_buf), "%s/event", base);

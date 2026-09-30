@@ -18,8 +18,25 @@ void sim_reset(void); // all slots absent, faults clear, mux deselected
 
 // blade seating and sink behavior
 void sim_set_present(uint8_t slot, bool present);
-void sim_set_gen(uint8_t slot, uint8_t gen);  // 2 (default) or 3; set before seating
-void sim_blade_restart(uint8_t slot);         // gen 3: the blade's MCU restarts, configuration gone
+void sim_set_gen(uint8_t slot, uint8_t gen);  // 2 (default) or 3; set before seating (a gen-3 blade's flash holds an old image)
+void sim_blade_restart(uint8_t slot);         // gen 3: the blade's MCU restarts, configuration gone (into its bootloader when set to boot through it)
+
+// gen 3: the MCU, its flash and its ROM bootloader (stboot.h)
+void sim_blade_erase(uint8_t slot);           // blank flash: the bootloader answers, nothing else
+void sim_blade_flash_image(uint8_t slot, const uint8_t *image, uint32_t len); // as if flashed over SWD
+void sim_blade_set_boot_via_loader(uint8_t slot, bool set); // the option bytes
+void sim_blade_power_cut(uint8_t slot);       // the slot's 5 V dipped: a power-on reset
+void sim_blade_crash_next(uint8_t slot, uint8_t times); // the firmware crashes on its next starts
+void sim_blade_cut_power_after_writes(uint8_t slot, uint32_t writes); // power lost in the middle of that write
+bool sim_blade_in_loader(uint8_t slot);
+bool sim_blade_boot_via_loader(uint8_t slot);
+bool sim_blade_locked_up(uint8_t slot);       // started without an image, or crash-looping with factory option bytes
+uint32_t sim_blade_go_count(uint8_t slot);
+uint8_t  sim_blade_watch_s(uint8_t slot);     // BLADE_REG_WATCH_S as the controller wrote it
+uint32_t sim_blade_erase_count(uint8_t slot);
+uint32_t sim_blade_write_count(uint8_t slot);
+const uint8_t *sim_blade_flash(uint8_t slot);
+uint32_t sim_blade_flash_version(uint8_t slot); // major << 16 | minor << 8 | patch, 0xFFFFFFFF without an image
 void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma); // sink plugs in
 void sim_detach(uint8_t slot);
 
