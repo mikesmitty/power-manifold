@@ -74,6 +74,7 @@ serial console.
 | `hardware/libraries` | Shared KiCad symbols and footprints |
 | `hardware/CAD` | STEP exports of the boards |
 | `firmware/controller` | Management controller firmware, host tests, and its README |
+| `firmware/charger-module` | Firmware for the STM32G071 on the gen-3 charger blade, host tests, and its README |
 | `docs` | The documentation site (Astro + Starlight) |
 | `cases` | V1 3D-printed cases. The V2 chassis is a metal enclosure and is not in the repo yet. |
 
