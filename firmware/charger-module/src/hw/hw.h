@@ -18,6 +18,16 @@ void     hw_delay_ms(uint32_t ms); // feeds the watchdog while it waits
 uint8_t  hw_reset_cause(void); // BLADE_RESET_*, sampled by hw_init
 void     hw_watchdog_feed(void);
 
+// Booting through the ROM bootloader (blade_regs.h BLADE_BOOT_VIA_LOADER).
+bool hw_boot_via_loader(void);        // the option bytes as loaded send every reset there
+// Reset into the ROM bootloader whatever the option bytes say: the flash is
+// declared empty for the boot that follows, and the firmware clears that
+// again when the controller starts it (RM0444 2.5.4). Does not return.
+void hw_reset_to_loader(void);
+// Program the option bytes so that every reset lands in the ROM bootloader,
+// then reload them, which resets the MCU. Does not return.
+void hw_program_boot_via_loader(void);
+
 bool hw_en(void);              // the slot's EN line: the converter is out of shutdown
 bool hw_converter_fault(void); // TPS55288 FB/INT low
 bool hw_port_fault(void);      // TCPP02 FLGn low

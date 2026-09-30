@@ -27,7 +27,9 @@
 static regmap_live_t live;
 static regmap_config_t cfg;
 static bool en, conv_pending, line_up;
+static bool leaving; // the MCU is on its way to a reset (only ever seen off the board)
 static uint32_t en_ms, sample_ms, report_ms;
+static uint32_t seen_ms, seen_count; // the controller's last transaction
 static uint8_t hot_conv, hot_plug; // consecutive samples past the limit
 
 static void raise(uint16_t faults) {
@@ -75,7 +77,36 @@ static void follow_en(uint32_t now) {
     }
 }
 
-static void take_controller_input(void) {
+// The port goes dark before the MCU leaves: the ROM bootloader would not
+// touch it, but the switch should not be found closed by whoever comes next.
+static void leave_for_loader(bool program_boot_option) {
+    console_str(program_boot_option ? "boot option: programming\n" : "reset: to the bootloader\n");
+    leaving = true;
+    stack_port_disarm();
+    power_port_down();
+    if (program_boot_option && !hw_boot_via_loader()) hw_program_boot_via_loader();
+    else hw_reset_to_loader();
+}
+
+// A controller that has gone quiet for longer than it said it would (the
+// WATCH_S register) gets the blade back in the bootloader, where it can be
+// reached whatever the firmware was doing. Off until the controller sets it,
+// so a blade on the bench keeps running.
+static bool watch_controller(uint32_t now) {
+    hw_backplane_lock();
+    uint32_t n = regmap_transactions();
+    hw_backplane_unlock();
+    if (n != seen_count) {
+        seen_count = n;
+        seen_ms = now;
+    }
+    if (!cfg.watch_s || now - seen_ms < (uint32_t)cfg.watch_s * 1000u) return false;
+    console_str("controller silent: ");
+    leave_for_loader(false);
+    return true;
+}
+
+static bool take_controller_input(void) {
     regmap_config_t c;
     hw_backplane_lock();
     bool changed = regmap_config(&c);
@@ -89,7 +120,9 @@ static void take_controller_input(void) {
         console_dec(cfg.max_ma);
         console_str(" mA, ");
         console_dec(cfg.max_mv);
-        console_str(" mV\n");
+        console_str(" mV, watch ");
+        console_dec(cfg.watch_s);
+        console_str(" s\n");
         if (port_set_limits(cfg.max_ma, cfg.max_mv)) stack_send_capabilities();
     }
     switch (cmd) {
@@ -102,9 +135,16 @@ static void take_controller_input(void) {
     case BLADE_CMD_CLEAR_FAULTS: // the register file has cleared the latch
         if (!line_up) line_raise();
         break;
+    case BLADE_CMD_RESET:
+        leave_for_loader(false);
+        return true;
+    case BLADE_CMD_BOOT_OPT:
+        leave_for_loader(true);
+        return true;
     default:
         break;
     }
+    return false;
 }
 
 static uint8_t hot_for(uint8_t samples, int16_t t_dc, int16_t limit_dc) {
@@ -168,18 +208,21 @@ static void report(void) {
 void supervisor_init(void) {
     en = false;
     conv_pending = false;
+    leaving = false;
     hot_conv = hot_plug = 0;
-    sample_ms = report_ms = hw_ms();
+    sample_ms = report_ms = seen_ms = hw_ms();
+    seen_count = regmap_transactions();
     sample();
     line_raise();
 }
 
 void supervisor_run(void) {
+    if (leaving) return;
     hw_watchdog_feed();
     uint32_t now = hw_ms();
 
     follow_en(now);
-    take_controller_input();
+    if (take_controller_input() || watch_controller(now)) return; // the MCU is resetting
 
     if (now - sample_ms >= SAMPLE_MS) {
         sample_ms = now;

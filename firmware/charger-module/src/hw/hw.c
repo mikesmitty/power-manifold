@@ -76,8 +76,58 @@ static void watchdog_start(void) {
 #endif
 }
 
+// Whoever ran before us — the ROM bootloader, when the controller started
+// the firmware with its Go command — leaves its peripherals as it used
+// them. Everything this firmware touches goes back to its reset state first,
+// and the flash stops being declared empty (hw_reset_to_loader).
+static void undo_loader(void) {
+    RCC->IOPRSTR |= RCC_IOPRSTR_GPIOARST | RCC_IOPRSTR_GPIOBRST;
+    RCC->APBRSTR1 |= RCC_APBRSTR1_I2C1RST | RCC_APBRSTR1_I2C2RST | RCC_APBRSTR1_USART2RST |
+                     RCC_APBRSTR1_SPI2RST;
+    RCC->APBRSTR2 |= RCC_APBRSTR2_SYSCFGRST | RCC_APBRSTR2_USART1RST | RCC_APBRSTR2_SPI1RST;
+    RCC->IOPRSTR = 0;
+    RCC->APBRSTR1 = 0;
+    RCC->APBRSTR2 = 0;
+    if (FLASH->ACR & FLASH_ACR_PROGEMPTY) FLASH->ACR &= ~FLASH_ACR_PROGEMPTY;
+}
+
+bool hw_boot_via_loader(void) {
+    uint32_t opt = FLASH->OPTR;
+    return (opt & FLASH_OPTR_nBOOT_SEL) && (opt & FLASH_OPTR_nBOOT1) && !(opt & FLASH_OPTR_nBOOT0);
+}
+
+void hw_reset_to_loader(void) {
+    __disable_irq();
+    FLASH->ACR |= FLASH_ACR_PROGEMPTY;
+    NVIC_SystemReset();
+    for (;;) {}
+}
+
+// RM0444 3.4.2. The write is composed from the option bytes as loaded, which
+// is what the register reads; a failure mid-way (power lost) can leave the
+// chip locked, so the watchdog is fed first and nothing else runs meanwhile.
+void hw_program_boot_via_loader(void) {
+    __disable_irq();
+    hw_watchdog_feed();
+    while (FLASH->SR & FLASH_SR_BSY1) {}
+    if (FLASH->CR & FLASH_CR_LOCK) {
+        FLASH->KEYR = 0x45670123u;
+        FLASH->KEYR = 0xCDEF89ABu;
+    }
+    if (FLASH->CR & FLASH_CR_OPTLOCK) {
+        FLASH->OPTKEYR = 0x08192A3Bu;
+        FLASH->OPTKEYR = 0x4C5D6E7Fu;
+    }
+    FLASH->OPTR = (FLASH->OPTR | FLASH_OPTR_nBOOT_SEL | FLASH_OPTR_nBOOT1) & ~FLASH_OPTR_nBOOT0;
+    FLASH->CR |= FLASH_CR_OPTSTRT;
+    while (FLASH->SR & FLASH_SR_BSY1) {}
+    FLASH->CR |= FLASH_CR_OBL_LAUNCH; // reloads the option bytes: a reset
+    for (;;) {}
+}
+
 void hw_init(void) {
     reset_cause = read_reset_cause();
+    undo_loader();
 
     RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN;
     RCC->APBENR2 |= RCC_APBENR2_SYSCFGEN;

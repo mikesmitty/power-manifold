@@ -40,6 +40,7 @@ static bool start_stack(void) {
 int main(void) {
     hw_init();
     regmap_init(hw_reset_cause());
+    regmap_set_boot(hw_boot_via_loader() ? BLADE_BOOT_VIA_LOADER : 0);
     console_init();
     adc_init();
     dac_init();

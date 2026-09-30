@@ -155,7 +155,8 @@ disclaimer in what accompanies it.
 The blade is an I2C slave at **0x3A** on its slot's mux channel. `blade_regs.h`
 is the reference; this is its summary. The controller's driver
 (`firmware/controller/src/engine/blade3.c`) includes that header as-is, and
-`PROTO` reads 1: the version both sides speak.
+`PROTO` reads 2: the version both sides speak (2 added `BOOT`, `WATCH_S` and
+the reset and boot-option commands).
 
 A write's first byte sets the register pointer; reads and further writes
 advance it. Multi-byte values are little-endian. A read sees one snapshot,
@@ -169,6 +170,7 @@ takes effect together at its end.
 | 0x02–0x04 | FW_MAJOR / MINOR / PATCH | R | |
 | 0x05 | RESET_CAUSE | R | why the MCU last started |
 | 0x06 | CAPS | R | bit 0: PPS |
+| 0x07 | BOOT | R | bit 0: every reset lands in the ROM bootloader (see [Firmware updates](#firmware-updates-over-the-backplane)) |
 | 0x10 | STATUS | R | attached, contract, PPS, VBUS on, 5 A cable, configured, fault, EN |
 | 0x11 | PDO | R | object position of the contract |
 | 0x12 | FAULT | R, u16 | latched until the clear command |
@@ -176,9 +178,10 @@ takes effect together at its end.
 | 0x20 / 0x22 / 0x24 | VBUS_MV / IOUT_MA / VOUT_MV | R, u16 | |
 | 0x26 / 0x28 / 0x2A | TEMP_CONV / TEMP_PLUG / TEMP_MCU | R, i16 | 0.1 °C |
 | 0x40 | CONTROL | R/W | bit 0: port enable |
-| 0x41 | COMMAND | W | 1 re-send capabilities, 2 hard reset, 3 clear faults |
+| 0x41 | COMMAND | W | 1 re-send capabilities, 2 hard reset, 3 clear faults, 4 reset into the ROM bootloader, 5 program the boot option and reset |
 | 0x42 | MAX_MA | R/W, u16 | current ceiling, stored clamped to 5000 |
 | 0x44 | MAX_MV | R/W, u16 | voltage cap; 20000 and up = no cap, the 21 V PPS range included |
+| 0x46 | WATCH_S | R/W, u8 | seconds without a transaction from the controller before the blade resets itself into the bootloader; 0 = never (the reset state) |
 
 How it differs from the gen-2 blade, for the controller:
 
@@ -190,12 +193,67 @@ How it differs from the gen-2 blade, for the controller:
 - Telemetry comes from the blade itself; there is no INA226.
 - ALERT# is low while any fault but `RESET` is latched.
 - A blank or erased blade runs the STM32 ROM bootloader, which answers at
-  0x51 on the same pins.
+  0x51 on the same pins; so does a blade set to boot through it, after
+  every reset, until the controller starts the firmware. That is how the
+  controller programs blades — the next section.
 
 The advertised table is the gen-2 one: fixed 5, 9, 12, 15 and 20 V, PPS
 3.3–11 V and 3.3–21 V. Every object's current is the lowest of `MAX_MA`, what
 the cable carries (3 A unless its e-marker says 5 A) and what keeps the object
 within 100 W, so the 21 V range stops at 4.75 A.
+
+## Firmware updates over the backplane
+
+The STM32G0's ROM bootloader speaks its I2C protocol (AN4221) on the same
+pins as the register file, at 0x51, and the controller carries this
+firmware's image inside its own, so blades are programmed in the chassis
+with nothing but the backplane. The controller side is described in
+[its README](../controller/README.md#blade-firmware-updates); this is the
+blade's part of it.
+
+**The image.** `blade_image.h` is the contract. Right after the vector
+table, at 0xC0, the linker places a 16-byte header — magic, version,
+protocol, length — that the controller reads out of a blade sitting in the
+bootloader to decide whether to start what is there or replace it. The
+image carries no checksum: the controller holds the reference copy and asks
+the bootloader for the CRC of the flash. `build/charger-module.bin` is the
+image, and what the controller bundles.
+
+**Getting to the bootloader.** A blank chip boots into it (the flash's
+empty check), and so does a chip whose option bytes say so: `nBOOT_SEL=1,
+nBOOT0=0` sends *every* reset — power-on, the watchdog, a crash, a software
+reset — to the bootloader, where the port is dark and the controller can
+reach the MCU whatever its firmware was doing. `BOOT` bit 0 reports the
+option as loaded; `BLADE_CMD_BOOT_OPT` programs it (RM0444 3.4.2, from the
+firmware, then an option-byte reload, which is a reset) and the controller
+sends it once per blade when its setting says so. With factory option bytes
+the chip boots the firmware directly, and `BLADE_CMD_RESET` still gets to
+the bootloader by declaring the flash empty for the reset that follows
+(RM0444 2.5.4); the firmware clears that again when it starts.
+
+**Coming back.** The bootloader's Go command starts the firmware in place.
+`hw_init` resets every peripheral the bootloader configured, `SystemInit`
+points the vector table at the flash (`USER_VECT_TAB_ADDRESS`), and the
+`RESET` fault and `CONFIGURED` clear tell the controller it is looking at
+a fresh start, as after any reset.
+
+**The watch.** `WATCH_S` is the liveness rule in the other direction: a
+controller that has not addressed the blade for that long is presumed gone,
+and the blade resets into the bootloader rather than run unsupervised — or
+keep running deaf, which is the case the controller could not otherwise
+reach. Off until the controller sets it, so a blade on the bench runs on
+its own.
+
+**On the bench.** With the boot option programmed, `reset run` from a
+debugger lands in the bootloader too, so a bring-up blade is easier kept on
+factory option bytes until the controller side is in use. OpenOCD's
+`stm32l4x` driver (which serves the G0) can flip the bit by hand:
+`stm32l4x option_write 0 0x20 0x00000000 0x04000000` clears `nBOOT0`,
+`... 0x04000000 0x04000000` sets it back, `stm32l4x option_load 0` applies
+either. RM0444 warns that losing power during an option-byte write can
+leave the chip locked; the firmware feeds the watchdog and disables
+interrupts around its own write, and the controller only ever asks for it
+once.
 
 ## Building
 
@@ -208,8 +266,10 @@ cmake -S . -B build -G Ninja
 ninja -C build
 ```
 
-produces `build/charger-module.elf`, `.bin` and `.hex`: 43 KB of the 64 KB
+produces `build/charger-module.elf`, `.bin` and `.hex`: 44 KB of the 64 KB
 of flash. `-DBLADE_WATCHDOG=OFF` builds without the independent watchdog.
+The controller's build picks `build/charger-module.bin` up from here as the
+image it bundles (its `BLADE_IMAGE` option).
 
 ### Host tests
 
@@ -230,7 +290,8 @@ openocd -f interface/cmsis-dap.cfg -f target/stm32g0x.cfg \
 ```
 
 A factory-fresh chip starts its ROM bootloader until it has been programmed
-and power-cycled once.
+and power-cycled once — or, seated in a chassis whose controller carries an
+image, until the controller programs it over the backplane.
 
 ## Console
 
@@ -268,11 +329,8 @@ In this order. Steps 1 to 4 need no sink.
 
 ## What comes next
 
-1. **Bring-up** on the first gen-3 blade, per the checklist.
-2. **Controller driver** for this register map next to the MPQ4242/INA226
-   one, picked per slot by what answers, so both generations can share a
-   chassis.
-3. **Alert messages** to the sink (`Is_Alert_Supported`), so an
+1. **Bring-up** on the first gen-3 blade, per the checklist — the update
+   path included: the ROM bootloader's answer on the backplane bus, a
+   controller-programmed blank blade, and the option-byte trip.
+2. **Alert messages** to the sink (`Is_Alert_Supported`), so an
    over-temperature shows at the sink before the port drops.
-4. **Firmware update over the backplane**, through the ROM bootloader's I2C
-   interface on the same pins.

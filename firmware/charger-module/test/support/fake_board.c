@@ -22,11 +22,16 @@ static unsigned feeds;
 static uint32_t vout_mv, vbus_mv, peak_mv;
 static bool ever_tripped, ever_bare_output;
 
+static bool boot_via_loader;
+static unsigned loader_resets, boot_option_writes;
+
 static void tcpp_follows_en(void);
 static void comparator(void);
 static void written(void);
 
 void fake_board_reset(void) {
+    boot_via_loader = false;
+    loader_resets = boot_option_writes = 0;
     now_ms = 0;
     vdda_mv = 3300;
     dac_code = 0;
@@ -155,6 +160,15 @@ bool hw_en(void) { return en_line; }
 void hw_alert(bool asserted) { alert = asserted; }
 void hw_led(bool on) { (void)on; }
 void hw_watchdog_feed(void) { feeds++; }
+void fake_board_set_boot_via_loader(bool set) { boot_via_loader = set; }
+unsigned fake_board_loader_resets(void) { return loader_resets; }
+unsigned fake_board_boot_option_writes(void) { return boot_option_writes; }
+bool hw_boot_via_loader(void) { return boot_via_loader; }
+void hw_reset_to_loader(void) { loader_resets++; }
+void hw_program_boot_via_loader(void) {
+    boot_option_writes++;
+    boot_via_loader = true;
+}
 void hw_backplane_lock(void) {}
 void hw_backplane_unlock(void) {}
 bool hw_converter_fault(void) { return conv_flt; }

@@ -24,6 +24,15 @@ SECTIONS
         . = ALIGN(4);
     } > FLASH
 
+    /* The image header (blade_image.h) at its fixed offset, where the
+     * controller reads it out of a blade sitting in the ROM bootloader */
+    ASSERT(. <= ORIGIN(FLASH) + 0xC0, "vector table runs into the image header")
+    .image_header ORIGIN(FLASH) + 0xC0 :
+    {
+        KEEP(*(.image_header))
+    } > FLASH
+    ASSERT(SIZEOF(.image_header) == 16, "image header is not 16 bytes")
+
     .text :
     {
         . = ALIGN(4);
@@ -83,6 +92,9 @@ SECTIONS
         . = ALIGN(4);
         _edata = .;
     } > RAM AT > FLASH
+    /* the end of what goes into flash, on the double word the flash is
+     * programmed in: the header's length, and what the controller writes */
+    _image_end = ALIGN(_sidata + SIZEOF(.data), 8);
 
     .bss :
     {

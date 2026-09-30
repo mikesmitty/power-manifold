@@ -340,6 +340,58 @@ static void telemetry_reaches_the_controller(void) {
     MT_ASSERT_EQ((int16_t)ctl_read16(BLADE_REG_TEMP_PLUG), 388);
 }
 
+// The reset command takes the port down and hands the MCU to the ROM
+// bootloader; the boot-option command programs the option bytes first,
+// unless they are already so.
+static void reset_and_boot_option_commands(void) {
+    boot();
+    en_high();
+    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    run_ms(100);
+    MT_ASSERT(stack_port_armed());
+    ctl_command(BLADE_CMD_RESET);
+    run_ms(5);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 1);
+    MT_ASSERT(!stack_port_armed());
+    MT_ASSERT(!hw_tcpp_en_sense());
+    MT_ASSERT_EQ(fake_board_boot_option_writes(), 0);
+
+    boot();
+    ctl_command(BLADE_CMD_BOOT_OPT);
+    run_ms(5);
+    MT_ASSERT_EQ(fake_board_boot_option_writes(), 1);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 0); // the option load is the reset
+
+    boot();
+    fake_board_set_boot_via_loader(true);
+    ctl_command(BLADE_CMD_BOOT_OPT); // already programmed: a plain trip to the loader
+    run_ms(5);
+    MT_ASSERT_EQ(fake_board_boot_option_writes(), 0);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 1);
+}
+
+// A controller that stops talking for longer than WATCH_S gets the blade
+// back in the bootloader; any transaction resets the clock, and a blade
+// that was never given a watch keeps running on its own.
+static void a_silent_controller_resets_the_blade(void) {
+    boot();
+    en_high();
+    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    run_ms(3000);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 0); // watch 0: never
+
+    uint8_t watch = 2;
+    ctl_write(BLADE_REG_WATCH_S, &watch, 1);
+    run_ms(1500);
+    ctl_read8(BLADE_REG_STATUS); // a sign of life
+    run_ms(1500);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 0);
+    MT_ASSERT(stack_port_armed());
+    run_ms(600);
+    MT_ASSERT_EQ(fake_board_loader_resets(), 1);
+    MT_ASSERT(!stack_port_armed());
+}
+
 void run_supervisor_tests(void) {
     mt_run("supervisor: boots dark and quiet", boots_dark_and_quiet);
     mt_run("supervisor: EN alone does not arm the port", en_alone_does_not_arm);
@@ -356,4 +408,6 @@ void run_supervisor_tests(void) {
     mt_run("supervisor: a missing part is a fault", a_missing_part_is_a_fault);
     mt_run("supervisor: stack failures are faults", stack_failures_are_faults);
     mt_run("supervisor: telemetry reaches the controller", telemetry_reaches_the_controller);
+    mt_run("supervisor: reset and boot-option commands", reset_and_boot_option_commands);
+    mt_run("supervisor: a silent controller resets the blade", a_silent_controller_resets_the_blade);
 }

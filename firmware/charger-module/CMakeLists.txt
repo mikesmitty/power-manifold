@@ -31,6 +31,7 @@ add_executable(charger-module
     src/hw/hw.c
     src/hw/meter.c
     src/hw/private_bus.c
+    src/image_header.c
     src/usbpd/usbpd_dpm_user.c
     src/usbpd/usbpd_pwr_if.c
     src/usbpd/usbpd_pwr_user.c
@@ -50,6 +51,7 @@ target_include_directories(charger-module SYSTEM PRIVATE ${CMSIS_INCLUDE_DIRS} $
 
 target_compile_definitions(charger-module PRIVATE
     STM32G071xx
+    USER_VECT_TAB_ADDRESS # SystemInit points VTOR at the flash: the ROM bootloader may have started us
     ${FW_VERSION_DEFINITIONS}
     ${USBPD_DEFINITIONS}
 )

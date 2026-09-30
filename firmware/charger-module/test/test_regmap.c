@@ -39,7 +39,7 @@ static void write16(uint8_t reg, uint16_t v) {
 
 static void identity(void) {
     regmap_init(BLADE_RESET_POWER);
-    uint8_t id[7];
+    uint8_t id[8];
     bus_read(BLADE_REG_WHO_AM_I, id, sizeof id);
     MT_ASSERT_EQ(id[0], BLADE_WHO_AM_I);
     MT_ASSERT_EQ(id[1], BLADE_PROTO_VERSION);
@@ -48,6 +48,31 @@ static void identity(void) {
     MT_ASSERT_EQ(id[4], FW_PATCH);
     MT_ASSERT_EQ(id[5], BLADE_RESET_POWER);
     MT_ASSERT_EQ(id[6], BLADE_CAP_PPS);
+    MT_ASSERT_EQ(id[7], 0); // factory option bytes until told otherwise
+    regmap_set_boot(BLADE_BOOT_VIA_LOADER);
+    MT_ASSERT_EQ(read8(BLADE_REG_BOOT), BLADE_BOOT_VIA_LOADER);
+    write8(BLADE_REG_BOOT, 0); // read-only
+    MT_ASSERT_EQ(read8(BLADE_REG_BOOT), BLADE_BOOT_VIA_LOADER);
+}
+
+// The watch register rides with the limits, and every time the controller
+// addresses the blade counts as a sign of life.
+static void watch_register_and_transactions(void) {
+    regmap_init(0);
+    regmap_config_t c;
+    MT_ASSERT_EQ(regmap_transactions(), 0);
+    uint8_t limits[5] = {0xB8, 0x0B, 0x20, 0x4E, 30}; // 3000 mA, 20000 mV, watch 30 s
+    bus_write(BLADE_REG_MAX_MA, limits, sizeof limits);
+    MT_ASSERT(regmap_config(&c));
+    MT_ASSERT_EQ(c.max_ma, 3000);
+    MT_ASSERT_EQ(c.max_mv, 20000);
+    MT_ASSERT_EQ(c.watch_s, 30);
+    MT_ASSERT_EQ(read8(BLADE_REG_WATCH_S), 30);
+    MT_ASSERT_EQ(regmap_transactions(), 3); // the write, and the read's two address phases
+    write8(BLADE_REG_WATCH_S, 0);
+    MT_ASSERT(regmap_config(&c));
+    MT_ASSERT_EQ(c.watch_s, 0);
+    MT_ASSERT_EQ(c.max_ma, 3000); // the limits stay
 }
 
 static void starts_dark_and_flagged(void) {
@@ -209,6 +234,7 @@ static void commands_queue_in_order(void) {
 
 void run_regmap_tests(void) {
     mt_run("regmap: identity block", identity);
+    mt_run("regmap: watch register and transaction count", watch_register_and_transactions);
     mt_run("regmap: starts dark with the reset fault latched", starts_dark_and_flagged);
     mt_run("regmap: telemetry", telemetry);
     mt_run("regmap: a read sees one snapshot", a_read_sees_one_snapshot);

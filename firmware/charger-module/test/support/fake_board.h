@@ -30,6 +30,12 @@ void fake_board_set_temps_dc(int16_t conv, int16_t plug);
 bool fake_board_alert(void);                  // ALERT# asserted
 unsigned fake_board_watchdog_feeds(void);
 
+// The MCU's boot option and the resets the firmware asks for (which, on
+// the board, do not return)
+void     fake_board_set_boot_via_loader(bool set);
+unsigned fake_board_loader_resets(void);      // hw_reset_to_loader() calls
+unsigned fake_board_boot_option_writes(void); // hw_program_boot_via_loader() calls
+
 uint32_t fake_board_vbus_mv(void);
 uint32_t fake_board_vout_mv(void);
 uint32_t fake_board_trip_mv(void);            // what the DAC code amounts to

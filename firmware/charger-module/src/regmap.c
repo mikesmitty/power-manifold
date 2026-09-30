@@ -17,6 +17,7 @@ static bool    config_changed;
 
 static uint8_t cmd_q[CMD_QUEUE];
 static uint8_t cmd_head, cmd_n;
+static volatile uint32_t transactions;
 
 static uint16_t get16(const uint8_t *b, uint8_t reg) {
     return (uint16_t)(b[reg] | (b[reg + 1] << 8));
@@ -74,6 +75,7 @@ void regmap_init(uint8_t reset_cause) {
     configured = false;
     config_changed = false;
     cmd_head = cmd_n = 0;
+    transactions = 0;
 
     img[BLADE_REG_WHO_AM_I] = BLADE_WHO_AM_I;
     img[BLADE_REG_PROTO] = BLADE_PROTO_VERSION;
@@ -87,7 +89,13 @@ void regmap_init(uint8_t reset_cause) {
     memcpy(snap, img, sizeof snap);
 }
 
+void regmap_set_boot(uint8_t flags) {
+    img[BLADE_REG_BOOT] = flags;
+    snap[BLADE_REG_BOOT] = flags;
+}
+
 void regmap_addressed(bool read) {
+    transactions++;
     commit(); // a repeated start ends the write before it
     if (read) memcpy(snap, img, sizeof snap);
     else want_ptr = true;
@@ -147,9 +155,14 @@ bool regmap_config(regmap_config_t *out) {
     out->port_en = (img[BLADE_REG_CONTROL] & BLADE_CTL_PORT_EN) != 0;
     out->max_ma = get16(img, BLADE_REG_MAX_MA);
     out->max_mv = get16(img, BLADE_REG_MAX_MV);
+    out->watch_s = img[BLADE_REG_WATCH_S];
     bool changed = config_changed;
     config_changed = false;
     return changed;
+}
+
+uint32_t regmap_transactions(void) {
+    return transactions;
 }
 
 uint8_t regmap_command(void) {

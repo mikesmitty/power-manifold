@@ -27,9 +27,11 @@ typedef struct {
     bool     port_en;
     uint16_t max_ma;
     uint16_t max_mv;
+    uint8_t  watch_s;  // BLADE_REG_WATCH_S
 } regmap_config_t;
 
 void regmap_init(uint8_t reset_cause); // port off, limits 0, BLADE_FAULT_RESET latched
+void regmap_set_boot(uint8_t flags);   // BLADE_REG_BOOT
 
 // Bus side
 void    regmap_addressed(bool read); // address match, also after a repeated start
@@ -43,3 +45,4 @@ void     regmap_raise(uint16_t faults);       // latch BLADE_FAULT_*
 uint16_t regmap_faults(void);
 bool     regmap_config(regmap_config_t *out); // true when written since the last call
 uint8_t  regmap_command(void);                // next BLADE_CMD_*, 0 = none
+uint32_t regmap_transactions(void);           // times the controller has addressed the blade

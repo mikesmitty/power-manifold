@@ -19,14 +19,17 @@
 
 // Clear of everything else the controller can see through the mux (0x70 mux,
 // 0x74 expander, 0x40 INA226 / 0x61 MPQ4242 on a gen-2 blade) and of the
-// STM32G0 ROM bootloader (0x51), which is what a blank blade answers as.
+// STM32G0 ROM bootloader, which is what a blank blade answers as, and what a
+// blade set up to boot through it (BLADE_BOOT_VIA_LOADER) answers as after
+// every reset until the controller starts its firmware (blade_image.h).
 #define BLADE_I2C_ADDR        0x3A
+#define BLADE_LOADER_I2C_ADDR 0x51
 
 #define BLADE_WHO_AM_I        0xB3
 // The map below, as both the blade firmware and the controller's driver
 // (firmware/controller/src/engine/blade3.c) speak it. Bumped when a change
 // would mislead an older controller.
-#define BLADE_PROTO_VERSION   1
+#define BLADE_PROTO_VERSION   2
 
 // identity, read-only
 #define BLADE_REG_WHO_AM_I    0x00
@@ -36,6 +39,7 @@
 #define BLADE_REG_FW_PATCH    0x04
 #define BLADE_REG_RESET_CAUSE 0x05 // BLADE_RESET_*, why the MCU last started
 #define BLADE_REG_CAPS        0x06 // BLADE_CAP_*
+#define BLADE_REG_BOOT        0x07 // BLADE_BOOT_*, how the MCU boots (PROTO 2)
 
 // status, read-only
 #define BLADE_REG_STATUS      0x10 // BLADE_ST_*
@@ -57,8 +61,9 @@
 #define BLADE_REG_COMMAND     0x41 // BLADE_CMD_*, write-only, reads 0
 #define BLADE_REG_MAX_MA      0x42 // u16, current field of every advertised PDO
 #define BLADE_REG_MAX_MV      0x44 // u16, voltage cap, see BLADE_MAX_MV_ALL
+#define BLADE_REG_WATCH_S     0x46 // u8, seconds without the controller before the blade resets itself, 0 = never (PROTO 2)
 
-#define BLADE_REG_END         0x46 // one past the last register
+#define BLADE_REG_END         0x47 // one past the last register
 
 #define BLADE_RESET_POWER     (1u << 0) // power-on / brown-out
 #define BLADE_RESET_PIN       (1u << 1) // NRST
@@ -67,6 +72,12 @@
 #define BLADE_RESET_OTHER     (1u << 4) // option-byte load, low-power, window watchdog
 
 #define BLADE_CAP_PPS         (1u << 0)
+
+// Every reset lands in the ROM bootloader (option bytes nBOOT_SEL=1,
+// nBOOT0=0): the firmware only runs once the controller has checked it and
+// started it. Clear on a chip with factory option bytes, which boots its
+// firmware directly; BLADE_CMD_BOOT_OPT sets it.
+#define BLADE_BOOT_VIA_LOADER (1u << 0)
 
 #define BLADE_ST_ATTACHED     (1u << 0) // a sink is on the port
 #define BLADE_ST_CONTRACT     (1u << 1) // explicit PD contract in place
@@ -102,6 +113,13 @@
 #define BLADE_CMD_SRC_CAP      1 // re-send Source_Capabilities
 #define BLADE_CMD_HARD_RESET   2 // PD hard reset
 #define BLADE_CMD_CLEAR_FAULTS 3
+// The port goes dark and the MCU resets into the ROM bootloader, whatever
+// the option bytes say (PROTO 2). The controller programs or starts it from
+// there.
+#define BLADE_CMD_RESET        4
+// Program the option bytes for BLADE_BOOT_VIA_LOADER and reset (PROTO 2).
+// Once per chip; a no-op reset when they are already so.
+#define BLADE_CMD_BOOT_OPT     5
 
 // Limits of the blade hardware; values written past them are stored clamped.
 #define BLADE_MAX_MA_LIMIT    5000
