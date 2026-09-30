@@ -62,9 +62,9 @@ bool tca9539_init(void) {
     return true;
 }
 
-bool tca9539_config_ok(void) {
+bool tca9539_config_lost(void) {
     uint16_t config;
-    return read_reg16(REG_CONFIG0, &config) && config == CONFIG_VALUE;
+    return read_reg16(REG_CONFIG0, &config) && config != CONFIG_VALUE;
 }
 
 bool tca9539_recover(void) {
@@ -75,15 +75,20 @@ bool tca9539_recover(void) {
     return write_reg16(REG_CONFIG0, CONFIG_VALUE);
 }
 
-bool tca9539_attach(void) {
+tca9539_found_t tca9539_find(void) {
     reset_line_setup();
     // Our configuration word is the signature: the power-on state is 0xFFFF
     // (all inputs), and nothing else programs this part.
     uint16_t config, outputs;
-    if (!read_reg16(REG_CONFIG0, &config) || config != CONFIG_VALUE) return false;
-    if (!read_reg16(REG_OUTPUT0, &outputs)) return false;
+    if (!read_reg16(REG_CONFIG0, &config)) return TCA9539_NO_ANSWER;
+    if (config != CONFIG_VALUE) return TCA9539_POWER_ON;
+    if (!read_reg16(REG_OUTPUT0, &outputs)) return TCA9539_NO_ANSWER;
     output_cache = outputs;
-    return true;
+    return TCA9539_OURS;
+}
+
+bool tca9539_attach(void) {
+    return tca9539_find() == TCA9539_OURS;
 }
 
 uint16_t tca9539_outputs(void) {

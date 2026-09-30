@@ -7,10 +7,13 @@
 
 #define TRIES     3   // a command that fails this often ends the trip
 #define WAIT_MAX  300 // BUSY polls (ticks) per flash operation before giving up
+// Slices after each page erase before the next flash operation: 40 ms by
+// AN2606 (blade_update.h), and a slice is an engine tick of 10 ms.
+#define ERASE_SETTLE_TICKS 5
 
 enum {
     S_VERSION, S_ID, S_INSPECT,
-    S_ERASE, S_ERASE_WAIT,
+    S_ERASE, S_ERASE_WAIT, S_ERASE_SETTLE,
     S_WRITE, S_WRITE_WAIT,
     S_CRC, S_CRC_WAIT, S_READBACK,
     S_GO,
@@ -19,8 +22,9 @@ enum {
 typedef struct {
     uint8_t  step, tries, fail;
     uint16_t waits;
-    bool     rewrite, no_stretch, has_crc, wrote, rewritten;
-    uint32_t chunk;   // position in the write (or read-back) order
+    uint8_t  mode;    // blade_update_mode_t
+    bool     no_stretch, has_crc, wrote, rewritten;
+    uint32_t chunk;   // the page being erased, then the position in the write (or read-back) order
     uint32_t length;  // bytes of image on the blade once done
     uint32_t version; // UPDATE_VERSION() of it
     blade_image_header_t have; // what the blade's flash holds
@@ -97,6 +101,7 @@ static void start_verify(update_t *p) {
 static blade_update_status_t verify_failed(update_t *p) {
     if (p->rewritten) return fail(p, UPDATE_FAIL_VERIFY);
     p->rewritten = true;
+    p->chunk = 0;
     next(p, S_ERASE);
     return BLADE_UPDATE_BUSY;
 }
@@ -110,10 +115,10 @@ static blade_update_status_t crc_result(update_t *p) {
     return BLADE_UPDATE_BUSY;
 }
 
-void blade_update_begin(uint8_t port, bool rewrite) {
+void blade_update_begin(uint8_t port, blade_update_mode_t mode) {
     update_t *p = &u[port];
     memset(p, 0, sizeof *p);
-    p->rewrite = rewrite;
+    p->mode = (uint8_t)mode;
 }
 
 blade_update_status_t blade_update_step(uint8_t port) {
@@ -148,11 +153,13 @@ blade_update_status_t blade_update_step(uint8_t port) {
         bool same = want && p->have_valid && p->have.length == want->length &&
                     p->have.major == want->major && p->have.minor == want->minor &&
                     p->have.patch == want->patch;
-        if (want && (p->rewrite || !same)) {
+        bool program = want && (p->mode == BLADE_UPDATE_REWRITE ||
+                                (p->mode == BLADE_UPDATE_MATCH ? !same : !p->have_valid));
+        if (program) {
             p->length = want->length;
             p->version = UPDATE_VERSION(want->major, want->minor, want->patch);
             next(p, S_ERASE);
-        } else if (same) {
+        } else if (same && p->mode == BLADE_UPDATE_MATCH) {
             p->length = want->length;
             p->version = UPDATE_VERSION(want->major, want->minor, want->patch);
             start_verify(p);
@@ -165,19 +172,26 @@ blade_update_status_t blade_update_step(uint8_t port) {
         }
         return BLADE_UPDATE_BUSY;
     }
-    case S_ERASE: {
-        uint16_t pages = (uint16_t)((p->length + BLADE_IMAGE_PAGE - 1) / BLADE_IMAGE_PAGE);
-        r = stboot_erase(0, pages, p->no_stretch);
-        if (r == STBOOT_OK) { p->chunk = 0; next(p, S_WRITE); }
+    case S_ERASE: // one page: the header's first, so nothing half-erased reads as an image
+        r = stboot_erase((uint16_t)p->chunk, 1, p->no_stretch);
+        if (r == STBOOT_OK) next(p, S_ERASE_SETTLE);
         else if (r == STBOOT_BUSY) next(p, S_ERASE_WAIT);
         else return retry(p, UPDATE_FAIL_ERASE);
         return BLADE_UPDATE_BUSY;
-    }
     case S_ERASE_WAIT:
         r = stboot_poll();
-        if (r == STBOOT_OK) { p->chunk = 0; next(p, S_WRITE); }
+        if (r == STBOOT_OK) next(p, S_ERASE_SETTLE);
         else if (r == STBOOT_BUSY) return wait_more(p, UPDATE_FAIL_ERASE);
         else return fail(p, UPDATE_FAIL_ERASE);
+        return BLADE_UPDATE_BUSY;
+    case S_ERASE_SETTLE:
+        if (++p->waits < ERASE_SETTLE_TICKS) return BLADE_UPDATE_BUSY;
+        if (++p->chunk < (p->length + BLADE_IMAGE_PAGE - 1) / BLADE_IMAGE_PAGE) {
+            next(p, S_ERASE);
+        } else {
+            p->chunk = 0;
+            next(p, S_WRITE);
+        }
         return BLADE_UPDATE_BUSY;
     case S_WRITE: {
         if (p->chunk >= chunks(p)) {

@@ -59,11 +59,12 @@ typedef struct {
     uint8_t  watch_s;      // gen 3: BLADE_REG_WATCH_S as written
     bool     loader;       // in the bootloader (else running whatever the flash holds)
     bool     boot_via_loader; // option bytes: every reset lands in the bootloader
+    bool     boot_opt_stuck;  // the boot-option command resets the blade without the option taking
     bool     locked_up;    // started with no image: a HardFault loop until power is cut
     uint8_t  busy_polls;   // BUSY answers left on the flash operation in progress
     uint8_t  crashes_left; // the firmware crashes this many more starts
     uint32_t goes;         // Go commands accepted
-    uint32_t erases, writes; // bootloader erase commands and write commands
+    uint32_t erases, writes; // erase passes (each starts at the first page) and write commands
     uint32_t cut_after_writes; // a power cut lands after this many more write commands (0 = none)
     uint32_t crc_len;      // the range of the checksum command in progress
     uint8_t  flash[SIM_FLASH_SIZE];
@@ -263,6 +264,19 @@ void sim_blade_flash_image(uint8_t slot, const uint8_t *image, uint32_t len) {
 }
 
 void sim_blade_set_boot_via_loader(uint8_t slot, bool set) { slots[slot].boot_via_loader = set; }
+void sim_blade_set_boot_opt_stuck(uint8_t slot, bool stuck) { slots[slot].boot_opt_stuck = stuck; }
+
+// The blade's watch runs out (blade_regs.h WATCH_S): with EN low and a
+// watch set, its MCU resets into the bootloader, and whatever kept it from
+// answering is gone with the firmware that was running.
+bool sim_blade_watch_expire(uint8_t slot) {
+    sim_slot_t *s = &slots[slot];
+    if (s->gen != 3 || s->en || !s->watch_s || s->loader) return false;
+    mcu_reset(s, false);
+    s->loader = true;
+    s->blade_ok = true;
+    return true;
+}
 void sim_blade_crash_next(uint8_t slot, uint8_t times) { slots[slot].crashes_left = times; }
 void sim_blade_cut_power_after_writes(uint8_t slot, uint32_t writes) { slots[slot].cut_after_writes = writes; }
 bool sim_blade_in_loader(uint8_t slot) { return slots[slot].loader; }
@@ -395,10 +409,14 @@ bool tca9539_init(void) {
     return true;
 }
 
-bool tca9539_attach(void) {
+tca9539_found_t tca9539_find(void) {
     // programmed since the last power cycle (sim_reset): the outputs stand
-    if (exp_fail) return false;
-    return exp_programmed;
+    if (exp_fail) return TCA9539_NO_ANSWER;
+    return exp_programmed ? TCA9539_OURS : TCA9539_POWER_ON;
+}
+
+bool tca9539_attach(void) {
+    return tca9539_find() == TCA9539_OURS;
 }
 
 uint16_t tca9539_outputs(void) {
@@ -427,8 +445,12 @@ bool tca9539_all_en_off(void) {
     return true;
 }
 
-bool tca9539_config_ok(void) { return true; }
-bool tca9539_recover(void) { return true; }
+bool tca9539_config_lost(void) { return false; }
+// The reset un-wedges the part; the engine writes the EN pattern straight back
+bool tca9539_recover(void) {
+    exp_fail = false;
+    return true;
+}
 
 bool tca9539_read_inputs(uint16_t *inputs) {
     if (exp_fail) return false;
@@ -671,7 +693,7 @@ bool blade3_command(uint8_t cmd) {
         s->loader = true;
         break;
     case BLADE_CMD_BOOT_OPT:
-        s->boot_via_loader = true;
+        if (!s->boot_opt_stuck) s->boot_via_loader = true;
         mcu_reset(s, false);
         break;
     default:
@@ -716,7 +738,7 @@ stboot_result_t stboot_erase(uint16_t first, uint16_t count, bool no_stretch) {
     if (!s) return STBOOT_SILENT;
     if ((uint32_t)(first + count) * BLADE_IMAGE_PAGE > SIM_FLASH_SIZE) return STBOOT_NACK;
     memset(s->flash + first * BLADE_IMAGE_PAGE, 0xFF, count * BLADE_IMAGE_PAGE);
-    s->erases++;
+    if (first == 0) s->erases++;
     s->busy_polls = no_stretch ? SIM_BUSY_POLLS : 0;
     return busy_or_ok(s);
 }

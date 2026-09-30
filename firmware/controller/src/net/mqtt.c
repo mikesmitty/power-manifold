@@ -949,7 +949,8 @@ static void publish_telemetry(void) {
                  "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"max_v\":%u,"
                  "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
                  "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu,"
-                 "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u}",
+                 "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u,"
+                 "\"update_due\":%s,\"silent\":%s}",
                  port_state_name((port_state_t)p->state), p->gen, p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
@@ -959,7 +960,8 @@ static void publish_telemetry(void) {
                  p->charged ? "true" : "false",
                  (g_settings.port_auto_off >> i) & 1 ? "true" : "false",
                  g_settings.port_sleep_min[i], p->fault_bits, lf_text, (unsigned long)lf_at,
-                 tc, tp, tm, p->update_pct);
+                 tc, tp, tm, p->update_pct,
+                 p->update_due ? "true" : "false", p->silent ? "true" : "false");
         publish(topic_buf, payload_buf, 0, 0);
     }
     temp_discovery_check();

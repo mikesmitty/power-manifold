@@ -4,7 +4,9 @@
 #include "blade_bundle.h"
 #include "blade_regs.h"
 #include "blade_update.h"
+#include "budget.h"
 #include "fake_bundle.h"
+#include "fan_policy.h"
 #include "fault_text.h"
 #include "manifold.h"
 #include "microtest.h"
@@ -35,6 +37,21 @@ static uint32_t settle(uint8_t port, uint32_t max_ticks) {
         if (st != PORT_STATE_PROBE && st != PORT_STATE_UPDATE) break;
     }
     return n;
+}
+
+// The controller restarts; the backplane (the sim) stays as it was:
+// engine_main's start-up again (see test_warm.c).
+static void controller_reboot(void) {
+    budget_init(g_settings.budget_mw);
+    port_fsm_init();
+    tca9539_attach();
+    fan_policy_init(g_settings.fan_auto != 0, (tca9539_outputs() >> TCA9539_FAN_BIT) & 1u);
+    evt_clear();
+    uint16_t inputs = 0;
+    tca9539_read_inputs(&inputs);
+    bool present[NUM_PORTS];
+    for (uint8_t i = 0; i < NUM_PORTS; i++) present[i] = tca9539_present_from(inputs, i);
+    port_fsm_boot_inventory(present, (uint8_t)(tca9539_outputs() & 0x3F), now_ms);
 }
 
 static bool flash_holds_bundle(uint8_t slot) {
@@ -141,7 +158,7 @@ static void test_other_version_follows_the_setting(void) {
     g_settings.blade_auto_update = 1;
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     seat3(0);
-    sim_attach(0, 9000, 2000); // even with a sink on: the chassis keeps its blades on its version
+    sim_attach(0, 9000, 2000); // plugged in before the port has had power: it loses nothing by waiting
     settle(0, 200);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
     MT_ASSERT_EQ(sim_blade_flash_version(0), UPDATE_VERSION(0, 2, 0));
@@ -174,17 +191,220 @@ static void test_boot_option_is_programmed_once(void) {
     MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
     MT_ASSERT_EQ(evt_count(EVT_UPDATE, 0), 3); // only the start: the option holds
 
-    // with a bundle as well: rewritten and set, in whichever order, within the allowance
+    // with a bundle as well: the option first, the image under it, one trip for both
     support_reset(360000);
     g_settings.blade_boot_via_loader = 1;
     g_settings.blade_auto_update = 1;
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     seat3(0);
+    tick(2);
+    MT_ASSERT(sim_blade_boot_via_loader(0)); // set before anything is erased
+    MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
     settle(0, 300);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
-    MT_ASSERT(sim_blade_boot_via_loader(0));
     MT_ASSERT_EQ(sim_blade_flash_version(0), UPDATE_VERSION(0, 2, 0));
+    MT_ASSERT_EQ(sim_blade_go_count(0), 1);
     MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 0);
+}
+
+// An option that will not take costs three tries and no more, and never
+// the port: the blade runs, so the port is served.
+static void test_a_stuck_option_leaves_the_port_working(void) {
+    support_reset(360000);
+    g_settings.blade_boot_via_loader = 1;
+    seat3(0);
+    sim_blade_set_boot_opt_stuck(0, true);
+    sim_attach(0, 9000, 2000);
+    settle(0, 400);
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT(!sim_blade_boot_via_loader(0));
+    MT_ASSERT_EQ(evt_count(EVT_UPDATE, 0), 3); // UPDATE_ROUNDS_MAX asks
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 1);
+    const engine_evt_t *e = evt_last(EVT_PROBE_FAIL, 0);
+    MT_ASSERT_EQ(e->code, PROBE_FAIL_UPDATE);
+    MT_ASSERT_EQ(e->arg, UPDATE_FAIL_STUCK);
+    fault_rec_t r = {.type = EVT_PROBE_FAIL, .code = e->code, .arg = e->arg};
+    char text[48];
+    fault_text(&r, text, sizeof text);
+    MT_ASSERT(!strcmp(text, "probe: update (not taking)"));
+    MT_ASSERT(!tele.port[0].update_due);
+
+    sim_detach(0);
+    tick_ms(60000); // idle for as long as it likes: not asked again
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(evt_count(EVT_UPDATE, 0), 3);
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 1);
+}
+
+// A port with something plugged in is not taken down for its blade's
+// firmware. The controller comes back from its own update carrying a newer
+// blade image; the port that is charging keeps charging, shows the update
+// as due, and gets it once it has sat empty for a while.
+static void test_a_busy_port_waits_for_its_update(void) {
+    support_reset(360000);
+    seat3(0); // runs 0.0.1; nothing bundled yet
+    settle(0, 100);
+    sim_attach(0, 20000, 3000);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    uint32_t en = sim_en_change_count(0);
+
+    g_settings.blade_auto_update = 1;
+    g_settings.blade_boot_via_loader = 1;
+    fake_bundle_make(0, 2, 0, IMAGE_LEN);
+    controller_reboot();
+    tick_ms(60000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(sim_en_change_count(0), en);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000);
+    MT_ASSERT_EQ(sim_blade_flash_version(0), UPDATE_VERSION(0, 0, 1));
+    MT_ASSERT(!sim_blade_boot_via_loader(0));
+    MT_ASSERT_EQ(sim_blade_go_count(0), 0);
+    MT_ASSERT_EQ(evt_count(EVT_UPDATE, 0), 0);
+    MT_ASSERT(tele.port[0].update_due);
+
+    // unplugged and plugged back in within the wait: still nothing
+    sim_detach(0);
+    tick_ms(9000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    sim_attach(0, 20000, 3000);
+    tick_ms(9000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 0);
+
+    // left empty: the option, the image, one trip
+    sim_detach(0);
+    tick_ms(9000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 0);
+    tick_ms(1100);
+    settle(0, 400);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT(sim_blade_boot_via_loader(0));
+    MT_ASSERT(flash_holds_bundle(0));
+    MT_ASSERT_EQ(sim_blade_go_count(0), 1);
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 0);
+    MT_ASSERT(!tele.port[0].update_due);
+}
+
+// While the controller's own image is on trial it changes nothing about a
+// blade's firmware: an update that gets reverted has touched no blade. A
+// blade already in its bootloader is started on what it holds. Once the
+// image commits, idle ports get what was waiting.
+static void test_a_trial_image_leaves_the_blades_alone(void) {
+    support_reset(360000);
+    g_settings.blade_auto_update = 1;
+    g_settings.blade_boot_via_loader = 1;
+    fake_bundle_make(0, 2, 0, IMAGE_LEN);
+    port_fsm_hold_updates(true);
+    seat3(0);
+    sim_set_gen(1, 3);
+    sim_blade_set_boot_via_loader(1, true);
+    sim_set_present(1, true); // in its bootloader, holding 0.0.1
+    settle(0, 100);
+    settle(1, 100);
+    tick_ms(30000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 0);
+    MT_ASSERT(!sim_blade_boot_via_loader(0));
+    MT_ASSERT_EQ(sim_blade_flash_version(0), UPDATE_VERSION(0, 0, 1));
+    MT_ASSERT(!tele.port[0].update_due);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(sim_blade_go_count(1), 1);
+    MT_ASSERT_EQ(sim_blade_erase_count(1), 0);
+    MT_ASSERT_EQ(sim_blade_flash_version(1), UPDATE_VERSION(0, 0, 1));
+
+    port_fsm_hold_updates(false); // committed
+    tick(2);
+    settle(0, 400);
+    settle(1, 400);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_IDLE);
+    MT_ASSERT(sim_blade_boot_via_loader(0));
+    MT_ASSERT(flash_holds_bundle(0));
+    MT_ASSERT(flash_holds_bundle(1));
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0xFF), 0);
+}
+
+// With the update setting off the chassis does not push its image onto a
+// blade that has one of its own, the way in through the bootloader
+// included.
+static void test_setting_off_keeps_what_the_blade_holds(void) {
+    support_reset(360000);
+    fake_bundle_make(0, 2, 0, IMAGE_LEN);
+    sim_set_gen(0, 3);
+    sim_blade_set_boot_via_loader(0, true);
+    sim_set_present(0, true);
+    MT_ASSERT(sim_blade_in_loader(0));
+    settle(0, 100);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 1);
+    MT_ASSERT_EQ(sim_blade_flash_version(0), UPDATE_VERSION(0, 0, 1));
+    const engine_evt_t *e = evt_last(EVT_UPDATE, 0);
+    MT_ASSERT(e != NULL);
+    MT_ASSERT_EQ(e->code, UPDATE_STARTED);
+    MT_ASSERT_EQ(e->arg, UPDATE_VERSION(0, 0, 1));
+}
+
+// A blade that stops answering while its port is powered keeps the port
+// powered: EN stays, the budget keeps its share, it is said once and shown.
+// When it answers again nothing is redone. Told to update while deaf, the
+// only word it can take is EN low: its watch takes it to the bootloader,
+// and the probe finds it there.
+static void test_a_silent_blade_keeps_its_power(void) {
+    support_reset(360000);
+    g_settings.blade_watch_s = 120;
+    fake_bundle_make(0, 2, 0, IMAGE_LEN);
+    seat3(0);
+    settle(0, 100);
+    sim_attach(0, 20000, 3000);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    uint32_t en = sim_en_change_count(0);
+
+    sim_set_blade_ok(0, false);
+    tick_ms(30000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT(sim_en(0));
+    MT_ASSERT_EQ(sim_en_change_count(0), en);
+    MT_ASSERT_EQ(sim_contract_mw(0), 60000);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000);
+    MT_ASSERT(tele.port[0].silent);
+    MT_ASSERT_EQ(evt_count(EVT_FAULT, 0), 0);
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 1);
+    const engine_evt_t *e = evt_last(EVT_PROBE_FAIL, 0);
+    MT_ASSERT_EQ(e->code, PROBE_FAIL_SILENT);
+    fault_rec_t r = {.type = EVT_PROBE_FAIL, .code = e->code, .arg = e->arg};
+    char text[48];
+    fault_text(&r, text, sizeof text);
+    MT_ASSERT(!strcmp(text, "probe: stopped answering"));
+
+    uint32_t cfg = sim_blade_config_writes(0);
+    sim_set_blade_ok(0, true);
+    tick_ms(1100); // asked once a second while silent
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT(!tele.port[0].silent);
+    MT_ASSERT_EQ(sim_blade_config_writes(0), cfg); // what it holds is what it should
+    MT_ASSERT_EQ(sim_en_change_count(0), en);
+
+    sim_set_blade_ok(0, false);
+    tick(12);
+    MT_ASSERT(tele.port[0].silent);
+    MT_ASSERT(!sim_blade_watch_expire(0)); // EN is high: its watch does nothing
+    engine_cmd_t c = {.op = CMD_PORT_UPDATE, .port = 0};
+    port_fsm_cmd(0, &c);
+    tick(10);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
+    MT_ASSERT(!sim_en(0));
+    MT_ASSERT(sim_blade_watch_expire(0)); // two minutes later, on the blade
+    tick_ms(5100);
+    settle(0, 400);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT(flash_holds_bundle(0));
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
 }
 
 // Power lost in the middle of a write: the blade comes back blank in its
@@ -216,7 +436,7 @@ static void test_controller_reboot_mid_write_is_recovered(void) {
     sim_set_gen(0, 3);
     sim_blade_erase(0);
     sim_set_present(0, true);
-    tick(14);
+    tick(50); // past the erase, a page at a time, and into the write
     MT_ASSERT_EQ(port_state(0), PORT_STATE_UPDATE);
     uint32_t written = sim_blade_write_count(0);
     MT_ASSERT(written > 0 && written < (IMAGE_LEN + 255) / 256);
@@ -382,6 +602,11 @@ void run_blade_update_tests(void) {
     mt_run("update: a matching image is started", test_matching_image_is_started);
     mt_run("update: another version follows the setting", test_other_version_follows_the_setting);
     mt_run("update: the boot option is programmed once", test_boot_option_is_programmed_once);
+    mt_run("update: a stuck option leaves the port working", test_a_stuck_option_leaves_the_port_working);
+    mt_run("update: a busy port waits for its update", test_a_busy_port_waits_for_its_update);
+    mt_run("update: a trial image leaves the blades alone", test_a_trial_image_leaves_the_blades_alone);
+    mt_run("update: the setting off keeps what the blade holds", test_setting_off_keeps_what_the_blade_holds);
+    mt_run("update: a silent blade keeps its power", test_a_silent_blade_keeps_its_power);
     mt_run("update: a power cut mid-write is recovered", test_power_cut_mid_write_is_recovered);
     mt_run("update: a controller reboot mid-write is recovered", test_controller_reboot_mid_write_is_recovered);
     mt_run("update: a crash loop is held", test_crash_loop_is_held);

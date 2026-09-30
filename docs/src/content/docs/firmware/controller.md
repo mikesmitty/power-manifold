@@ -86,6 +86,11 @@ off), which is what makes a [warm start](#warm-start) possible. Should
 the expander ever come back at its power-on registers anyway, the
 presence refresh notices the lost configuration word, rewrites outputs
 and direction with every EN as it was, and logs `probe: expander reset`.
+An expander that merely fails to answer is not reset for it: the mux is
+(after half a second; that frees a blade segment holding the bus and
+costs no port anything), and only after five seconds out of reach is the
+expander itself reset and its EN pattern written straight back — see
+[Keeping ports powered](#keeping-ports-powered).
 
 Behind the mux and the expander, port *n* (1-based wherever the firmware
 talks to a person) is mux channel *n*−1, EN on P0(*n*−1), PRSNT# on
@@ -396,7 +401,7 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)), `t_conv` / `t_plug` / `t_mcu` (a gen-3 blade's thermometers in °C, `null` without a reading), `progress` (how much of a firmware image has been written while the state is `updating`, 0–100); chassis `blade_fw` (the gen-3 blade firmware this build carries, `null` without one), `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)), `t_conv` / `t_plug` / `t_mcu` (a gen-3 blade's thermometers in °C, `null` without a reading), `progress` (how much of a firmware image has been written while the state is `updating`, 0–100), `update_due` (the blade's firmware will be updated once the port is empty), `silent` (the port is powered and its blade is not answering; the readings are its last); chassis `blade_fw` (the gen-3 blade firmware this build carries, `null` without one), `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
 | `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, `pwrman_bus_volts` / `pwrman_bus_voltage_ok` on the controller card, the `pwrman_ups_*` gauges while a UPS answers, every port metric labelled `port` and `name`, and `pwrman_port_temperature_celsius` with a `sensor` label (`converter`, `plug`, `mcu`) for each reading a gen-3 blade gives |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
@@ -434,7 +439,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
 | `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`, and the bus voltage `vin` (fitted), `vin_v` |
-| `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading), `progress` (0–100 while `updating`) |
+| `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading), `progress` (0–100 while `updating`), `update_due`, `silent` |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
 | `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.uf2"}`, published by CI or by hand |
@@ -617,41 +622,89 @@ trip (`updating` in the state column, with a progress percentage): read
 the bootloader's version and the chip's ID, read the image header out of
 the flash, then either start what is there (it is the bundled version, and
 the bootloader's checksum of the flash matches the bundle), or erase and
-write the bundle, check it the same way and start it. A blade running its
-firmware is sent to the bootloader when the firmware is not the bundled
-version (`blades auto on`, the default: the chassis keeps its blades on the
-firmware it was tested with, downgrades included — turn it off to run a
-bench build on a chassis) or when `port <n> update` / the `update` action
-asks for it, and once, when its option bytes are still the factory ones
-(`blades bootopt on`, the default), to have them programmed so every reset
-lands in the bootloader from then on. Both settings ride along with the
-rest (`blade_auto_update`, `blade_boot_via_loader` in the settings JSON).
+write the bundle, check it the same way and start it. That port is dark
+already, so the trip costs nothing.
 
-**Why the boot option.** With it, a blade only ever runs firmware the
-controller has checked and started, and any reset — the watchdog, a
-crash, the blade's own liveness rule — puts it back where the controller
-can reach it. The liveness rule is the `watch` setting (`blade_watch_s`,
-default 120 s): the blade resets into its bootloader after that long
-without being addressed, so a firmware that has gone deaf, or a chassis
-whose controller has died, ends up with dark ports waiting for a
-controller rather than running unsupervised. A controller update and its
-trial boot are well inside the window; `blades watch off` keeps blades
-running without a controller, as a gen-2 blade does.
+A blade *running* its firmware has to be sent to the bootloader, and that
+takes its port down for the few seconds the trip lasts. The controller
+wants it in two cases: the firmware is not the bundled version (`blades
+auto on`, the default: the chassis keeps its blades on the firmware it was
+tested with, downgrades included — turn it off to run a bench build on a
+chassis, and then a blade in its bootloader is started on whatever good
+image it holds), and its option bytes are still the factory ones (`blades
+bootopt on`, the default), to have them programmed, once, so every reset
+lands in the bootloader from then on. When both are wanted the option goes
+first and the image is written under it, in the same trip. Both settings
+ride along with the rest (`blade_auto_update`, `blade_boot_via_loader` in
+the settings JSON).
+
+Neither is worth a port's power, so **a port with something plugged in is
+never taken down for them**. They are done
+
+- at a probe that starts from a dark port — a blade just seated, the
+  chassis powering up, a port switched on, the retry after a fault — before
+  the port is given power, a sink already plugged in or not;
+- once a powered port has had nothing plugged in for ten seconds.
+
+A port that is charging something keeps charging on the firmware its blade
+has, for days if that is how long the device stays: `status` marks it
+`[blade update due when idle]`, the status JSON and the telemetry carry
+`update_due`. `port <n> update` (the `update` action) is the way to say
+"now": it rewrites the bundle onto the blade whatever is plugged in and
+whatever the blade runs.
+
+And nothing is done on the controller's own account **while its image is
+on trial**. A controller update that carries a newer blade firmware
+changes no blade until the trial has committed (ten seconds of health, see
+[Flash layout & updates](#flash-layout--updates)); one that never gets there — a link
+too poor to count as healthy, a crash — is reverted having touched
+nothing, so the old image does not find blades it has to take back.
+(`blades` says so while it lasts.) A blade found in its bootloader during
+the trial is started on what it holds.
+
+**Why the boot option.** With it, any reset — the watchdog, a crash, a
+brown-out — puts the blade where the controller can reach it, and a
+rewrite that is interrupted at any point just starts over. Without it the
+way into the bootloader is the flash's empty flag, and the bootloader
+clears that flag when it starts (AN2606, 48.3.1): a reset halfway through
+a rewrite then boots a flash with no first page, and the blade stays dead
+until it is reseated. That is why the option is set before the first
+rewrite, and why the controller puts off its own restarts (an OTA reboot,
+a trial revert) while a blade is mid-trip — the bootloader resets the
+blade if the controller goes quiet for a second in the middle of a
+command.
+
+**The watch** (`blades watch`, `blade_watch_s`, default 120 s) is the way
+to a blade whose firmware runs but has stopped answering. It is not a
+timeout on the controller: a blade only resets into its bootloader when
+its EN is low *and* it has not been addressed for that long. A controller
+that is rebooting, updating or gone leaves EN where it was, and the ports
+run on. `port <n> update` on a silent port is what uses it: EN goes low,
+the blade finds its own way to the bootloader within the watch time, and
+the retry after each cooldown picks it up there. Switching the port off
+and on does the same, slower. `blades watch off` leaves only a reseat.
 
 **What can go wrong.** Each trip that ends with a blade back in its
 bootloader without its firmware having come up as wanted counts; after
 three the port is held in FAULT (`probe: update (crash loop)`) and stays
 there — no retry every cooldown — until the blade is reseated, the port
-re-enabled, or `port <n> update` is given. A trip that fails outright
-(`probe: update (no image)` for a blank blade in a build without one,
-`(write)`, `(verify)`, `(bootloader silent)`, `(wrong chip)`) is a probe
-failure like any other, retried after the cooldown within the same
-allowance. The image is written first page last, its header chunk last of
-all, so a blade that loses power midway reads as blank next time and is
-simply written again; a controller that reboots midway finds the blade
-still in its bootloader and starts the trip over. The writes are sliced one
-chunk per engine tick, so the other five ports keep being served; a whole
-image takes a few seconds. Events: `update` with `written`, `started` or
+re-enabled, or `port <n> update` is given. A blade that *does* run but
+cannot be brought to what was wanted (an option that will not take) is
+not faulted for it: after three tries the controller logs `probe: update
+(not taking)` once, leaves the port in service and stops asking until one
+of those three things happens. A trip that fails outright (`probe: update (no image)` for
+a blank blade in a build without one, `(write)`, `(verify)`, `(bootloader
+silent)`, `(wrong chip)`) is a probe failure like any other, retried after
+the cooldown within the same allowance. The image is erased a page at a
+time, first page first, and written first page last, its header chunk
+last of all, so a blade that loses power midway reads as blank next time
+and is simply written again; a controller that reboots midway finds the
+blade still in its bootloader and starts the trip over. (A page per erase
+command with a pause after each is ST's workaround for bootloader V11.3,
+which acknowledges an erase before the flash has finished; V11.4, the
+current one, does not need it.) The work is sliced one step per engine
+tick, so the other five ports keep being served; a whole image takes
+well under ten seconds. Events: `update` with `written`, `started` or
 `boot option` and the version in `text`; the HA events entity sees
 `updated` when an image was written.
 
@@ -722,11 +775,15 @@ configuration is compared, read-only, with the settings and rewritten
 (and re-advertised to an attached sink) only when it differs, so a live
 contract normally rides through untouched. The port then reports `active`
 with its contract reserved in the budget as if nothing had happened. A
-blade that does not answer cannot be supervised and is switched off like
-any failed probe; a port whose boot policy is `off` (or `last` with the
-port last switched off) is switched off at once; an EN left on with no
-blade seated behind it is dropped. The fan is adopted the same way, and
-the policy then decides whether it stays on.
+blade that does not answer stays powered all the same — it ran without
+the controller until now — and is shown as silent and asked again every
+second ([Keeping ports powered](#keeping-ports-powered)); a port whose
+boot policy is `off` (or `last` with the port last switched off) is
+switched off at once; an EN left on with no blade seated behind it is
+dropped. The fan is adopted the same way, and the policy then decides
+whether it stays on. Whether it is a warm start at all rests on one read
+of the expander, so an expander that does not answer that read is asked
+again for half a second before its silence is taken for a cold start.
 
 What a warm start cannot do is make up for the time the controller was
 down: there is no budget arbitration and no firmware fault response while
@@ -737,6 +794,46 @@ logs `engine: warm start, ports 1 and 3 kept powered` (or `cold start`),
 Pico 2 W carrier and the controller card both behave this way; it is
 exercised against the simulator in the host tests and still to be
 confirmed on a live backplane.
+
+### Keeping ports powered
+
+A port that is delivering power keeps delivering it unless something
+requires otherwise. What does: a fault the blade or the controller's own
+meter reports, the blade being pulled, the port being switched off (by
+hand, by its sleep timer or charged-off rule), and `port <n> update`.
+The budget never cuts a port; it lowers what the port advertises.
+
+What does not, and what the firmware does instead:
+
+- **The controller restarting**, for any reason and for however long: a
+  warm start, above. The blades' own watch does not count the controller's
+  silence against a port whose EN is high.
+- **A blade that stops answering** while its port is powered. EN stays,
+  the budget keeps the port's reservation, and nothing is decided from
+  readings that have gone stale: no charge-complete, no throttling of that
+  port. It is logged once (`probe: stopped answering`), `status` marks the
+  port `[silent: last answer shown]`, the JSON and telemetry carry
+  `silent`, the problem sensor lists it under `not answering`, and it is
+  polled on; when it answers, its limits are checked against what it
+  should hold and the port carries on. A gen-3 blade is also looked for in
+  its bootloader, where a reset of its own MCU leaves it — that port is
+  dark already, and the trip starts its firmware again. The same goes for
+  a blade that will not answer at a warm start. Only a probe that *starts*
+  from a dark port ends with EN off when nothing answers.
+- **A newer blade firmware, or the boot option**: they wait for an empty
+  port ([Blade firmware updates](#blade-firmware-updates)).
+- **A controller update that does not stick**: a trial image changes
+  nothing about a blade.
+- **One bad read.** A presence read that says a seated blade has left is
+  taken again before it is believed; an expander whose configuration word
+  cannot be read is not treated as one that lost it; an expander that does
+  not answer is left holding its EN lines while the mux is reset, and is
+  itself reset (EN pattern written straight back) only after five seconds
+  out of reach.
+
+The price is a port that may run for a while with nobody watching it, on
+the limits it was last given and the blade's own protections — which is
+what every port does whenever the controller restarts.
 
 ### Status LEDs
 

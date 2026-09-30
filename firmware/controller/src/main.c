@@ -34,6 +34,21 @@
 #define UPDATE_HEALTH_MS   (10 * 1000)
 #define UPDATE_DEADLINE_MS (10 * 60 * 1000)
 
+// A blade is being taken through its ROM bootloader (blade_update.h). The
+// bootloader resets the blade when the controller goes quiet in the middle
+// of a command (AN2606: 1 s), and a blade that is not yet set to boot
+// through its bootloader then starts on a half-written flash and stays
+// there until it is reseated. A restart of our own choosing waits the few
+// seconds for the trip to end.
+static bool blade_trip_running(void) {
+    if (!ipc_engine_alive()) return false; // nothing is being written, and the restart may be the cure
+    telemetry_t t;
+    ipc_snapshot_read(&t);
+    for (unsigned i = 0; i < NUM_PORTS; i++)
+        if (t.port[i].state == PORT_STATE_UPDATE) return true;
+    return false;
+}
+
 // The button held to the end: back to factory settings. The chain is all
 // red by now (CMD_LED_HOLD 255 went out first); give it and the console
 // line a moment, then wipe and restart. Never returns.
@@ -179,7 +194,7 @@ int main(void) {
                 settings_save_later();
         }
 
-        if (http_reboot_due(now_ms)) {
+        if (http_reboot_due(now_ms) && !blade_trip_running()) {
             // asked for from the web UI after a settings change; the CLI's
             // 'reboot' is immediate for the same watchdog reason
             if (settings_save_pending()) settings_save();
@@ -188,7 +203,7 @@ int main(void) {
             boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);
             watchdog_reboot(0, 0, 0);
         }
-        if (update_reboot_due()) {
+        if (update_reboot_due() && !blade_trip_running()) {
             // scheduled by the OTA endpoint once its 200 response is queued
             printf("update: rebooting into slot %s (trial)\n", update_slot_name());
             sleep_ms(20); // let the CDC console flush
@@ -241,7 +256,7 @@ int main(void) {
                     healthy_since = 0;
                 }
             }
-            if (trial && now_ms >= UPDATE_DEADLINE_MS) {
+            if (trial && now_ms >= UPDATE_DEADLINE_MS && !blade_trip_running()) {
                 printf("update: never became healthy; reverting to previous image\n");
                 sleep_ms(50);
                 boot_reason_mark(BOOT_TRIAL_REVERT, 0, 0, 0, 0);

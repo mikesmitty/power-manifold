@@ -10,6 +10,7 @@
 
 #include "budget.h"
 #include "fan_policy.h"
+#include "flash_map.h"
 #include "ipc.h"
 #include "leds.h"
 #include "manifold.h"
@@ -34,6 +35,11 @@
 
 static volatile bool alert_irq;
 static volatile bool exp_irq;
+
+// Expander reads missed in a row (one try per 100 ms) before the mux is
+// reset, and before the expander itself is
+#define EXP_FAILS_MUX_RESET 5
+#define EXP_FAILS_RECOVER   50
 
 static bool present[NUM_PORTS];
 static uint8_t exp_fail_streak;
@@ -70,24 +76,48 @@ static bool alert_line_active(void) {
 static void refresh_presence(void) {
     uint16_t inputs;
     if (!tca9539_read_inputs(&inputs)) {
-        // I2C trouble at the expander is chassis-level: after a few misses,
-        // reset the mux (frees a hung downstream segment) and re-init the
-        // expander, which drops every EN — safe-side behavior by design.
-        if (++exp_fail_streak >= 5) {
-            exp_fail_streak = 0;
+        // I2C trouble at the expander is chassis-level. After a few misses
+        // the mux is reset, which frees a downstream segment that hung the
+        // bus and costs no port anything. The expander keeps every EN where
+        // it was through all of that, so it is left alone: only when it has
+        // been out of reach for seconds — nobody can switch a port off then
+        // — is it reset and its EN pattern written straight back
+        // (tca9539_recover). That reset floats the EN lines for the moment
+        // between the pulse and the write, which a running port will
+        // notice; it is the last resort, not the first.
+        exp_fail_streak++;
+        if (exp_fail_streak % EXP_FAILS_MUX_RESET == 0) {
             tca9548a_hw_reset();
-            tca9539_init();
-            engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT};
+            if (exp_fail_streak == EXP_FAILS_MUX_RESET) {
+                engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT};
+                ipc_evt_push(&e);
+            }
+        }
+        if (exp_fail_streak >= EXP_FAILS_RECOVER) {
+            exp_fail_streak = 0;
+            tca9539_recover();
+            engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT, .code = 5};
             ipc_evt_push(&e);
         }
         return;
     }
     exp_fail_streak = 0;
+    // A blade that reads as gone costs its port its power that tick, and
+    // the read has nothing guarding it against a flipped bit. One that
+    // says a seated blade has left is asked again, and only what both
+    // reads agree on counts (PRES# is active low: a set bit is "absent").
+    for (uint8_t i = 0; i < NUM_PORTS; i++) {
+        if (!present[i] || tca9539_present_from(inputs, i)) continue;
+        uint16_t again;
+        if (!tca9539_read_inputs(&again)) return; // the next refresh decides
+        inputs &= again;
+        break;
+    }
     for (uint8_t i = 0; i < NUM_PORTS; i++)
         present[i] = tca9539_present_from(inputs, i);
     // An expander back at its power-on registers (a reset nobody asked for)
     // has every EN floating: put its outputs and direction back and say so.
-    if (!tca9539_config_ok()) {
+    if (tca9539_config_lost()) {
         tca9539_recover();
         engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT, .code = 5};
         ipc_evt_push(&e);
@@ -188,7 +218,20 @@ void engine_main(void) {
     // outputs low FIRST, then direction (spec §6.4). While the controller
     // was down nothing arbitrated the budget or reacted to faults beyond
     // the blades' own limits; warm_probe reads what latched meanwhile.
-    warm_start = tca9539_attach();
+    //
+    // Which of the two it is rests on one register read, and reading it
+    // wrong as cold takes every port down. So an expander that does not
+    // answer is asked again for half a second, with the mux reset in between
+    // (a downstream segment holding the bus is the likely cause), before
+    // its silence is taken for a cold start; one that answers with anything
+    // but our configuration is a cold start at once.
+    tca9539_found_t found = tca9539_find();
+    for (int tries = 0; found == TCA9539_NO_ANSWER && tries < 50; tries++) {
+        tca9548a_hw_reset();
+        sleep_ms(10);
+        found = tca9539_find();
+    }
+    warm_start = found == TCA9539_OURS;
     if (!warm_start) tca9539_init();
     STAGE(ENGINE_STAGE_MUX_EXP);
     leds_init();
@@ -231,6 +274,9 @@ void engine_main(void) {
 
         engine_cmd_t cmd;
         while (ipc_cmd_pop(&cmd)) dispatch_cmd(&cmd, now_ms);
+
+        // a controller image still on trial leaves the blades' firmware alone
+        port_fsm_hold_updates(flash_map_update_pending());
 
         // Fault line first: it is wire-OR'd, so sweep all powered ports.
         // Level-check as well as the IRQ flag in case an edge was missed.

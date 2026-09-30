@@ -212,27 +212,59 @@ static void test_changed_settings_reconfigure(void) {
     MT_ASSERT_EQ(sim_src_cap_count(1), caps1);
 }
 
-static void test_silent_blade_switched_off(void) {
+// A blade found powered that will not answer keeps its power: it ran
+// without the controller until now, and the controller coming back is no
+// reason for what it is charging to stop. Said once, shown as silent, and
+// adopted whenever it does answer.
+static void test_silent_blade_stays_powered(void) {
     support_reset(360000);
     sim_set_present(0, true);
     tick(2);
+    sim_attach(0, 20000, 3000);
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    uint32_t en = sim_en_change_count(0), caps = sim_src_cap_count(0);
+
     sim_set_probe_ok(0, false, true); // INA226 not answering: nothing identifies the blade
     MT_ASSERT_EQ(warm_reboot(), 0x01);
-    tick(5);
-    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
-    MT_ASSERT(!sim_en(0));
+    tick_ms(30000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_PROBE);
+    MT_ASSERT(sim_en(0));
+    MT_ASSERT_EQ(sim_en_change_count(0), en);
+    MT_ASSERT_EQ(sim_contract_mw(0), 60000); // still charging
+    MT_ASSERT(tele.port[0].silent);
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 1); // once, not every retry
+    MT_ASSERT_EQ(evt_count(EVT_FAULT, 0), 0);
     const engine_evt_t *e = evt_last(EVT_PROBE_FAIL, 0);
     MT_ASSERT(e != NULL);
     MT_ASSERT_EQ(e->code, 7); // PROBE_FAIL_NONE: no answer
+    MT_ASSERT(budget_port_reservation(0) >= BUDGET_BASE_RESERVE_MW);
 
-    // the INA226 answers but the MPQ4242 does not: that names the part
+    // it answers: adopted as any warm blade is, the contract untouched
+    sim_set_probe_ok(0, true, true);
+    tick_ms(1100);
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT(!tele.port[0].silent);
+    MT_ASSERT_EQ(sim_en_change_count(0), en);
+    MT_ASSERT_EQ(sim_src_cap_count(0), caps);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000);
+
+    // and switching the port off is still the operator's to do
     sim_set_probe_ok(0, true, false);
-    tick_ms(5100);
-    tick(5);
-    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
+    MT_ASSERT_EQ(warm_reboot(), 0x01);
+    tick_ms(3000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_PROBE);
+    MT_ASSERT(sim_en(0));
     e = evt_last(EVT_PROBE_FAIL, 0);
     MT_ASSERT(e != NULL);
-    MT_ASSERT_EQ(e->code, 3); // PROBE_FAIL_MPQ4242
+    MT_ASSERT_EQ(e->code, 3); // PROBE_FAIL_MPQ4242: the part that is missing is named
+    engine_cmd_t off = {.op = CMD_PORT_DISABLE, .port = 0};
+    port_fsm_cmd(0, &off);
+    tick(1);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED);
+    MT_ASSERT(!sim_en(0));
+    MT_ASSERT(!tele.port[0].silent);
 }
 
 static void test_smaller_budget_throttles_not_cuts(void) {
@@ -281,7 +313,7 @@ void run_warm_tests(void) {
     mt_run("warm: a latched INA226 alert is a fault", test_latched_ocp_is_a_fault);
     mt_run("warm: MPQ4242 fault bits are a fault", test_mpq_fault_bits_are_a_fault);
     mt_run("warm: changed settings reconfigure and re-advertise", test_changed_settings_reconfigure);
-    mt_run("warm: a silent blade is switched off", test_silent_blade_switched_off);
+    mt_run("warm: a silent blade stays powered", test_silent_blade_stays_powered);
     mt_run("warm: a smaller budget throttles, never cuts", test_smaller_budget_throttles_not_cuts);
     mt_run("warm: the fan state is adopted", test_fan_state_adopted);
 }

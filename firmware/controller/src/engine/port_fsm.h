@@ -18,6 +18,13 @@ void port_fsm_init(void);
 // the DC input at once. Blades seated later are not paced. Returns the
 // adopted set.
 uint8_t port_fsm_boot_inventory(const bool *present, uint8_t powered, uint32_t now_ms);
+// While held, nothing is done to a blade's firmware on the controller's own
+// account: no rewrite to the bundled version, no boot option. The engine
+// holds while the controller's image is on trial, so an update that ends up
+// reverted has not touched a blade. A blade found in its bootloader is
+// still started (it has no other way back), and the update command still
+// works.
+void port_fsm_hold_updates(bool hold);
 void port_fsm_tick(uint8_t port, bool present, uint32_t now_ms,
                    port_telemetry_t *out);
 void port_fsm_cmd(uint8_t port, const engine_cmd_t *cmd);

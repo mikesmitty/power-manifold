@@ -68,9 +68,9 @@ typedef struct {
     // -- added in layout version 12 --
     uint16_t vin_cal;         // bus-voltage gain trim, permille (see vin.h)
     // -- added in layout version 13 --
-    uint8_t  blade_auto_update;    // 1: a gen-3 blade running anything but the bundled firmware is rewritten (blade_update.h)
-    uint8_t  blade_boot_via_loader; // 1: gen-3 blades are set to boot through their ROM bootloader (blade_regs.h BLADE_BOOT_VIA_LOADER)
-    uint8_t  blade_watch_s;        // gen-3 blades reset into their bootloader after this long without the controller (0 = never)
+    uint8_t  blade_auto_update;    // 1: a gen-3 blade running anything but the bundled firmware is rewritten, once its port is idle (blade_update.h)
+    uint8_t  blade_boot_via_loader; // 1: gen-3 blades are set to boot through their ROM bootloader, once idle (blade_regs.h BLADE_BOOT_VIA_LOADER)
+    uint8_t  blade_watch_s;        // a gen-3 blade with EN low resets into its bootloader after this long without the controller (0 = never)
     uint32_t crc; // must remain last
 } settings_t;
 

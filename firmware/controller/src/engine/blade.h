@@ -35,6 +35,7 @@ static inline uint8_t blade_gen_number(blade_gen_t g) { return g == BLADE_GEN_LO
 #define PROBE_FAIL_BLADE   6 // a gen-3 blade stopped answering or refused its configuration
 #define PROBE_FAIL_NONE    7 // nothing answered on the channel
 #define PROBE_FAIL_UPDATE  8 // a trip through the ROM bootloader failed; the arg says how (UPDATE_FAIL_*)
+#define PROBE_FAIL_SILENT  9 // a powered blade stopped answering; it is left powered and polled on
 
 typedef struct {
     bool     attached;
@@ -67,7 +68,8 @@ typedef struct {
 bool blade_identity(blade_gen_t gen, blade_identity_t *id);
 // Send a gen-3 blade to its ROM bootloader: a reset, or first the
 // programming of its option bytes so every reset lands there (a PROTO 2
-// blade; an older one ignores the command). The port goes dark with it.
+// blade; an older one ignores the command). The port goes dark with it, so
+// the caller picks a moment when nothing is plugged in, or has been told to.
 bool blade_request_loader(blade_gen_t gen, bool boot_option);
 
 // Probe steps: 0 on success, else a PROBE_FAIL_* code.

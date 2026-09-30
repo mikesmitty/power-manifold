@@ -133,6 +133,9 @@ static void test_fault_text(void) {
     MT_ASSERT(!strcmp(buf, "probe: ina226"));
     r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = 9};
     fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "probe: stopped answering"));
+    r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = 99};
+    fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "probe: ?"));
     r = (fault_rec_t){.type = EVT_BOOT, .code = BOOT_HARDFAULT | (1u << 8), .arg = 0x10000010,
                       .power_mw = 0x10000020, .contract_mw = 0x400};

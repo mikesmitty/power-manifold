@@ -75,6 +75,7 @@ bool blade3_write_config(const blade3_config_t *c) {
 }
 
 bool blade3_command(uint8_t cmd) {
-    uint8_t b[2] = {BLADE_REG_COMMAND, cmd};
-    return write_regs(b, sizeof b);
+    // the commands that reset the blade's MCU carry their complement (blade_regs.h)
+    uint8_t b[3] = {BLADE_REG_COMMAND, cmd, (uint8_t)~cmd};
+    return write_regs(b, BLADE_CMD_GUARDED(cmd) ? 3 : 2);
 }

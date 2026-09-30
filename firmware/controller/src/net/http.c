@@ -37,7 +37,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         3072 // browser headers + a full settings export posted back
-#define STATUS_JSON_MAX 3200 // six ports with escaped labels, generation, thermometers and update progress, the problem text, the UPS block and the bus voltage, worst case
+#define STATUS_JSON_MAX 3456 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block and the bus voltage, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -555,13 +555,15 @@ static void build_status_json(char *out, size_t cap) {
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"gen\":%u,\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
             "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
             "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u,"
-            "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u}",
+            "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u,"
+            "\"update_due\":%s,\"silent\":%s}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state), p->gen,
             p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
             p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
             p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],
             (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
-            settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, tc, tp, tm, p->update_pct);
+            settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, tc, tp, tm, p->update_pct,
+            p->update_due ? "true" : "false", p->silent ? "true" : "false");
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }

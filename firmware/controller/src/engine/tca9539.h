@@ -17,8 +17,16 @@ bool tca9539_init(void);
 // the power-on state (or does not answer); the caller then runs
 // tca9539_init.
 bool tca9539_attach(void);
-// The configuration word is still ours (a reset would leave the power-on 0xFFFF)
-bool tca9539_config_ok(void);
+// The same look with the two ways of "false" told apart: an expander that
+// answers with something other than our configuration has been reset (cold
+// start), one that does not answer may only have been missed, and treating
+// that as cold costs every port its power.
+typedef enum { TCA9539_OURS, TCA9539_POWER_ON, TCA9539_NO_ANSWER } tca9539_found_t;
+tca9539_found_t tca9539_find(void);
+// The expander answered and its configuration word is no longer ours (a
+// reset leaves the power-on 0xFFFF). A read that fails is not that: the
+// remedy (tca9539_recover) resets the part, and a missed read must not.
+bool tca9539_config_lost(void);
 // Re-apply outputs then direction after an unexpected reset, keeping every EN as it was
 bool tca9539_recover(void);
 // The output register as last written or adopted: TCA9539_EN_BIT(port) and

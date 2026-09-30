@@ -114,7 +114,7 @@ static void print_status(void) {
         char state[12];
         if (p->state == PORT_STATE_UPDATE) snprintf(state, sizeof state, "upd %3u%%", p->update_pct);
         else snprintf(state, sizeof state, "%s", port_state_name((port_state_t)p->state));
-        printf("%4d %-10s %3s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %5s %5s  %s\n", i + 1,
+        printf("%4d %-10s %3s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %5s %5s  %s%s%s\n", i + 1,
                state,
                p->gen == 3 ? "3" : p->gen == 2 ? "2" : "-",
                p->attached ? (p->charged ? "chg" : "yes") : "no",
@@ -122,7 +122,9 @@ static void print_status(void) {
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
                (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
                g_settings.port_priority[i],
-               settings_port_boot_name(g_settings.port_boot[i]), conv, plug, settings_port_name(i));
+               settings_port_boot_name(g_settings.port_boot[i]), conv, plug, settings_port_name(i),
+               p->silent ? "  [silent: last answer shown]" : "",
+               p->update_due ? "  [blade update due when idle]" : "");
     }
     printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
@@ -249,9 +251,9 @@ static void print_sim_help(void) {
            "  sim restart <n>              gen 3: the blade's MCU restarts (configuration gone)\n"
            "  sim temp <n> <conv> <plug>   gen 3: pin the converter and receptacle thermometers (degC)\n"
            "  sim temp <n> auto            ...back to the load-driven model\n"
-           "  sim probe <n> ina|mpq|blade|ok  the next probes fail (chip silent) or succeed\n"
+           "  sim probe <n> ina|mpq|blade|ok  the chip goes silent (a powered port stays powered) or answers\n"
            "  sim mux fail|ok              I2C mux select fails until the engine resets it\n"
-           "  sim expander fail|ok         GPIO expander I/O fails until the engine resets it\n",
+           "  sim expander fail|ok         GPIO expander I/O fails until the engine resets it (after 5 s)\n",
            sim_paused ? "paused" : "running");
 }
 
@@ -716,6 +718,9 @@ static void run_line(char *l) {
                    g_settings.blade_auto_update ? "on" : "off", g_settings.blade_boot_via_loader ? "on" : "off");
             if (g_settings.blade_watch_s) printf("%u s\n", g_settings.blade_watch_s);
             else printf("off\n");
+            printf("a port with something plugged in is left alone: its blade is updated once the port has been empty for a while,\n"
+                   "or now with 'port <n> update'%s\n",
+                   flash_map_update_pending() ? "; nothing is changed while this controller image is on trial" : "");
             return;
         }
         bool on = v && !strcmp(v, "on");

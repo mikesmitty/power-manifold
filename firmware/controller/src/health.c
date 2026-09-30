@@ -34,6 +34,14 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
         any_fault = true;
         count++;
     }
+    bool any_silent = false;
+    for (unsigned i = 0; i < NUM_PORTS; i++) {
+        if (!t->port[i].silent) continue; // powered, its blade not answering
+        n = put(buf, cap, n, any_silent ? ", " : count ? "; not answering: " : "not answering: ");
+        n = put(buf, cap, n, settings_port_name(i));
+        any_silent = true;
+        count++;
+    }
     if (!ipc_engine_alive()) {
         n = put(buf, cap, n, count ? "; " : "");
         n = put(buf, cap, n, "engine stalled");

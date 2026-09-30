@@ -33,6 +33,8 @@ bool sim_blade_boot_via_loader(uint8_t slot);
 bool sim_blade_locked_up(uint8_t slot);       // started without an image, or crash-looping with factory option bytes
 uint32_t sim_blade_go_count(uint8_t slot);
 uint8_t  sim_blade_watch_s(uint8_t slot);     // BLADE_REG_WATCH_S as the controller wrote it
+void sim_blade_set_boot_opt_stuck(uint8_t slot, bool stuck); // the boot-option command resets the blade, the option does not take
+bool sim_blade_watch_expire(uint8_t slot); // the blade's watch runs out: into the bootloader if EN is low and a watch is set
 uint32_t sim_blade_erase_count(uint8_t slot);
 uint32_t sim_blade_write_count(uint8_t slot);
 const uint8_t *sim_blade_flash(uint8_t slot);
