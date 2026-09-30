@@ -22,6 +22,8 @@ jobs:
     outputs:
       controller-released: ${{ steps.release-please.outputs['firmware/controller--release_created'] }}
       controller-tag: ${{ steps.release-please.outputs['firmware/controller--tag_name'] }}
+      charger-module-released: ${{ steps.release-please.outputs['firmware/charger-module--release_created'] }}
+      charger-module-tag: ${{ steps.release-please.outputs['firmware/charger-module--tag_name'] }}
 
   build-controller-firmware:
     name: Build controller firmware
@@ -52,4 +54,35 @@ jobs:
         run: |
           gh release upload "$TAG" dist/controller.uf2 dist/controller.elf \
             dist/partition_table.uf2 \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+  build-charger-module-firmware:
+    name: Build charger module firmware
+    needs: release-please
+    if: needs.release-please.outputs.charger-module-released == 'true'
+    uses: ./.github/workflows/firmware-charger-module.yaml
+    with:
+      ref: ${{ needs.release-please.outputs.charger-module-tag }}
+
+  attach-charger-module-firmware:
+    name: Attach charger module firmware to release
+    needs:
+      - release-please
+      - build-charger-module-firmware
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: charger-module-firmware
+          path: dist
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.charger-module-tag }}
+        run: |
+          gh release upload "$TAG" dist/charger-module.elf dist/charger-module.bin \
+            dist/charger-module.hex \
             --repo "$GITHUB_REPOSITORY" --clobber

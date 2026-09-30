@@ -1,0 +1,74 @@
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'firmware/charger-module/**'
+      - '.github/workflows/firmware-charger-module.yaml'
+  pull_request:
+    paths:
+      - 'firmware/charger-module/**'
+      - '.github/workflows/firmware-charger-module.yaml'
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git ref to build"
+        type: string
+        required: false
+        default: ''
+
+name: Charger Module Firmware Build
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    name: Host tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || '' }}
+
+      - name: Configure
+        run: cmake -S firmware/charger-module/test -B firmware/charger-module/test/build
+
+      - name: Build
+        run: cmake --build firmware/charger-module/test/build
+
+      - name: Run
+        run: ctest --test-dir firmware/charger-module/test/build --output-on-failure
+
+  build:
+    name: Build charger module firmware
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || '' }}
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      # CMSIS headers and ST's USB-PD stack are fetched by CMake at pinned tags
+      - name: Configure
+        run: cmake -S firmware/charger-module -B firmware/charger-module/build -G Ninja
+
+      - name: Build
+        run: ninja -C firmware/charger-module/build
+
+      - name: Store firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: charger-module-firmware
+          path: |
+            firmware/charger-module/build/charger-module.elf
+            firmware/charger-module/build/charger-module.bin
+            firmware/charger-module/build/charger-module.hex

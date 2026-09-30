@@ -10,6 +10,14 @@
                 "src/manifold.h"
             ]
         },
+        "firmware/charger-module": {
+            "component": "charger-module-firmware",
+            "include-component-in-tag": true,
+            "initial-version": "0.1.0",
+            "extra-files": [
+                "src/blade.h"
+            ]
+        },
         "hardware/backplane": {
             "component": "backplane",
             "include-component-in-tag": true
