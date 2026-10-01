@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.1.0...charger-module-firmware-v0.2.0) (2026-10-01)
+
+
+### Features
+
+* **charger-module-firmware:** declare register map version 1 ([1eb111e](https://github.com/mikesmitty/power-manifold/commit/1eb111e6ab9cdf9fb9246b9d0b3d941c196a732b))
+* **charger-module-firmware:** reset into the ROM bootloader on request, on silence, and by option ([caac111](https://github.com/mikesmitty/power-manifold/commit/caac111e6694836d9445bfc8548a0c861c55654b))
+
+
+### Bug Fixes
+
+* **charger-module-firmware:** hold a hot reading for 50 ms before tripping ([d359fab](https://github.com/mikesmitty/power-manifold/commit/d359fab741582481ed11e9370d814db3d8eb17ff))
+* **charger-module-firmware:** reset on the watch only with EN low, guard the reset commands ([b46f999](https://github.com/mikesmitty/power-manifold/commit/b46f9999985126b75c875c07b55e78d59988d1d4))
+
 ## 0.1.0 (2026-09-30)
 
 
