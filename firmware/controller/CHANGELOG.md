@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.11.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.10.0...controller-firmware-v0.11.0) (2026-10-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **controller:** POST /api/v1/update and the Home Assistant install refuse unsigned images (controller.uf2, a plain controller.bin) and images older than the running firmware. Use the release's controller.signed.bin, or the console's `update --unsigned` / `--downgrade`.
+
+### Features
+
+* **controller:** drive gen-3 charger blades ([bfe9e21](https://github.com/mikesmitty/power-manifold/commit/bfe9e2197b359ca84e9c29a2a06b7411baff8b67))
+* **controller:** install only signed images over the network ([c9f8365](https://github.com/mikesmitty/power-manifold/commit/c9f83656192faf857771c028838adeb7319cf174))
+* **controller:** program gen-3 blade firmware over the backplane ([6264846](https://github.com/mikesmitty/power-manifold/commit/62648468bd28f223099555a4d67a6dd6dc49f644))
+* **controller:** read the gen-3 blade's thermometers ([187d6d6](https://github.com/mikesmitty/power-manifold/commit/187d6d6c72eec33c72838535d7864d573b935859))
+
+
+### Bug Fixes
+
+* **controller:** build fake-blade images without a blade firmware bundle ([be6711b](https://github.com/mikesmitty/power-manifold/commit/be6711bfe97188892ec3802a259191b4230b08e4))
+* **controller:** build the MPQ4242 driver with the port fault names ([2b32b32](https://github.com/mikesmitty/power-manifold/commit/2b32b32afe2e036b63ee18c3f35d555a106b53c9))
+* **controller:** keep ports powered through updates, silent blades and bad reads ([77805dc](https://github.com/mikesmitty/power-manifold/commit/77805dcb48593ccc728670e56960e264620d9f7b))
+* **controller:** keep settings readable across a reverted update ([2bf24c9](https://github.com/mikesmitty/power-manifold/commit/2bf24c98622522969718758021f0103dca3f9755))
+
 ## [0.10.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.9.0...controller-firmware-v0.10.0) (2026-09-24)
 
 
