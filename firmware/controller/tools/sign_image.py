@@ -9,6 +9,9 @@ over that description. Three ways to get the signature:
         Cloud KMS, through gcloud (the release workflow)
   sign IMAGE --openssl-key private.pem
         a key file, through openssl (bench and test keys)
+  sign IMAGE --yubikey
+        the backup key in a YubiKey's PIV slot 9c, through ykman; asks for
+        the PIN and a touch
   tbs IMAGE, then attach IMAGE --signature FILE
         any other signer (a hardware token): `tbs` writes the 112 bytes to
         sign, `attach` takes the 64-byte signature back, raw or base64
@@ -88,6 +91,11 @@ def openssl_sign(tbs_path: pathlib.Path, sig_path: pathlib.Path, key: pathlib.Pa
          "-in", str(tbs_path), "-out", str(sig_path)])
 
 
+def yubikey_sign(tbs_path: pathlib.Path, sig_path: pathlib.Path) -> None:
+    script = pathlib.Path(__file__).with_name("yubikey_sign.py")
+    run(["ykman", "script", "--force", str(script), str(tbs_path), str(sig_path)])
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", choices=["sign", "tbs", "attach"])
@@ -96,6 +104,7 @@ def main() -> None:
     ap.add_argument("-o", "--out", type=pathlib.Path, help="default: IMAGE with .signed.bin or .tbs")
     ap.add_argument("--kms-key", help="sign: Cloud KMS key version resource name")
     ap.add_argument("--openssl-key", type=pathlib.Path, help="sign: Ed25519 private key file (PEM)")
+    ap.add_argument("--yubikey", action="store_true", help="sign: the key in a YubiKey's PIV slot 9c")
     ap.add_argument("--signature", type=pathlib.Path, help="attach: the signature over the tbs file")
     args = ap.parse_args()
 
@@ -113,14 +122,16 @@ def main() -> None:
             sys.exit("attach needs --signature")
         sig = read_signature(args.signature)
     else:
-        if bool(args.kms_key) == bool(args.openssl_key):
-            sys.exit("sign needs one of --kms-key, --openssl-key")
+        if bool(args.kms_key) + bool(args.openssl_key) + args.yubikey != 1:
+            sys.exit("sign needs one of --kms-key, --openssl-key, --yubikey")
         with tempfile.TemporaryDirectory() as tmp:
             tbs_path = pathlib.Path(tmp, "image.tbs")
             sig_path = pathlib.Path(tmp, "image.sig")
             tbs_path.write_bytes(tbs)
             if args.kms_key:
                 kms_sign(tbs_path, sig_path, args.kms_key)
+            elif args.yubikey:
+                yubikey_sign(tbs_path, sig_path)
             else:
                 openssl_sign(tbs_path, sig_path, args.openssl_key)
             sig = read_signature(sig_path)

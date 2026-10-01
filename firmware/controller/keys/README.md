@@ -18,6 +18,11 @@ gcloud kms keys versions get-public-key <version> --key <key> \
     --keyring <keyring> --location <location> --output-file keys/kms-primary.pem
 ```
 
+```
+ykman piv keys generate --algorithm ed25519 --pin-policy always \
+    --touch-policy always 9c keys/yubikey-backup.pem
+```
+
 Keep two: the one the release workflow signs with, and an offline backup
 whose only job is to sign the release that replaces a lost or leaked primary.
 
@@ -48,7 +53,18 @@ guard the key.
 
 Until `UPDATE_SIGNING_KMS_KEY` is set, releases are published unsigned.
 
-By hand, with any signer that produces a plain (not prehashed) Ed25519
+With the backup key, which lives in a YubiKey's PIV signature slot (9c,
+generated on the key, PIN and touch required for every signature) and has no
+copy anywhere else:
+
+```
+tools/sign_image.py sign build/controller.bin --board pico2_w --yubikey
+test/build/verify_image build/controller.signed.bin pico2_w
+```
+
+That needs YubiKey Manager (`ykman`) and firmware 5.7 or later on the key.
+
+By hand, with any other signer that produces a plain (not prehashed) Ed25519
 signature:
 
 ```
