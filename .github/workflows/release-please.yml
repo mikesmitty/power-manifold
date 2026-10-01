@@ -39,21 +39,66 @@ jobs:
       - release-please
       - build-controller-firmware
     runs-on: ubuntu-latest
+    # Holds the signing variables; its protection rules decide who may
+    # release a signed image (firmware/controller/keys/README.md).
+    environment: firmware-signing
     permissions:
       contents: write
+      id-token: write # Workload Identity Federation, for Cloud KMS
+    env:
+      # the board firmware.yaml's released build is for
+      BOARD: pico2_w
+      KMS_KEY: ${{ vars.UPDATE_SIGNING_KMS_KEY }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-please.outputs.controller-tag }}
+
       - uses: actions/download-artifact@v8
         with:
           name: controller-firmware
           path: dist
+
+      # controller.signed.bin is what a controller installs over the network:
+      # the raw image plus an Ed25519 signature made by Cloud KMS. The private
+      # key never leaves KMS; this job only asks it to sign 112 bytes.
+      # Direct Workload Identity Federation, no service account: the key's
+      # signer role is granted to jobs of this repository that run in the
+      # firmware-signing environment, and to nothing else.
+      - name: Authenticate to Google Cloud
+        if: env.KMS_KEY != ''
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Set up gcloud
+        if: env.KMS_KEY != ''
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Sign the image
+        if: env.KMS_KEY != ''
+        run: |
+          python3 firmware/controller/tools/sign_image.py sign dist/controller.bin \
+            --board "$BOARD" --kms-key "$KMS_KEY" -o dist/controller.signed.bin
+
+      # The firmware's own check, with the public keys this release is built
+      # with: a signature those keys do not accept must not be published.
+      - name: Verify the signed image
+        if: env.KMS_KEY != ''
+        run: |
+          cmake -S firmware/controller/test -B verify-build
+          cmake --build verify-build --target verify_image
+          verify-build/verify_image dist/controller.signed.bin "$BOARD"
 
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.controller-tag }}
         run: |
+          signed=dist/controller.signed.bin
+          [ -f "$signed" ] || { signed=; echo "::warning::UPDATE_SIGNING_KMS_KEY is not set: this release has no signed image"; }
           gh release upload "$TAG" dist/controller.uf2 dist/controller.elf \
-            dist/partition_table.uf2 \
+            dist/partition_table.uf2 $signed \
             --repo "$GITHUB_REPOSITORY" --clobber
 
   build-charger-module-firmware:
