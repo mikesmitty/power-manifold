@@ -31,6 +31,14 @@ env:
 jobs:
   host-tests:
     name: Engine host tests
+    # Skipped where the same code is built anyway: on a release PR's branch
+    # (main already built it; only the version differs), and on the push of
+    # this component's release commit, which Release Please builds itself at
+    # the tag (that call sets inputs.ref).
+    if: >-
+      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--')) &&
+      !(github.event_name == 'push' && !inputs.ref &&
+        startsWith(github.event.head_commit.message, 'chore(main): release controller-firmware'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -49,6 +57,10 @@ jobs:
 
   build:
     name: Build controller firmware
+    if: >- # as for host-tests
+      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--')) &&
+      !(github.event_name == 'push' && !inputs.ref &&
+        startsWith(github.event.head_commit.message, 'chore(main): release controller-firmware'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
