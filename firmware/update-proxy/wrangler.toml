@@ -1,0 +1,10 @@
+name = "power-manifold-updates"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Served on a hostname of your own only: the zone must let plain HTTP through
+# for it (README.md), which a workers.dev address does not let you choose.
+workers_dev = false
+preview_urls = false
+
+routes = [{ pattern = "fw.powermanifold.io", custom_domain = true }]
