@@ -254,7 +254,7 @@ static void handle_command(const char *topic, const char *data) {
         if (!strcasecmp(data, "open")) improv_open(IMPROV_WINDOW_MS, "Home Assistant");
     } else if (strcmp(sub, "/update/latest") == 0) {
         // retained release pointer, published by CI or by hand:
-        //   {"version":"x.y.z","url":"http://lan-host/controller.uf2"}
+        //   {"version":"x.y.z","url":"http://host/controller.signed.bin"}
         json_str(data, "version", latest_version, sizeof(latest_version));
         json_str(data, "url", latest_url, sizeof(latest_url));
         publish_update_state();
@@ -265,7 +265,7 @@ static void handle_command(const char *topic, const char *data) {
             return;
         }
         char e[96];
-        if (!ota_pull_start(latest_url, e, sizeof(e)))
+        if (!ota_pull_start(latest_url, 0, e, sizeof(e)))
             printf("update: %s\n", e);
     }
 }

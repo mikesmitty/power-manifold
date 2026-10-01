@@ -97,7 +97,9 @@ static void print_help(void) {
 #ifdef PWRMAN_FAKE_BLADES
            "  sim ...                      fault injection on the simulated blades ('sim' for help)\n"
 #endif
-           "  update <http-url>            OTA pull into the inactive slot\n"
+           "  update [--unsigned] [--downgrade] <http-url>\n"
+           "                               OTA pull into the inactive slot; the flags let an unsigned\n"
+           "                               or an older image in (this console only)\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
 }
@@ -149,6 +151,11 @@ static void print_info(void) {
     char boot_text[80];
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
     printf("last boot: %s\n", boot_text);
+    if (update_key_count())
+        printf("updates: signed images only (%u key%s built in); unsigned or older ones from this console\n",
+               update_key_count(), update_key_count() == 1 ? "" : "s");
+    else
+        printf("updates: NOT checked for a signature (no keys in this build)\n");
     printf("device name: %s\n", g_settings.device_name);
 #if PWRMAN_NET_WIFI
     printf("wifi: %s (%s)\n",
@@ -843,10 +850,23 @@ static void run_line(char *l) {
         ipc_cmd_push(&c);
         printf("ok\n");
     } else if (!strcmp(cmd, "update")) {
-        const char *url = strtok_r(NULL, " \t", &save);
-        if (!url) { printf("usage: update <http://host[:port]/controller.uf2>\n"); return; }
+        // This console is the one place the signing and no-downgrade rules
+        // can be waived: getting here takes the USB header or a debug probe.
+        unsigned allow = 0;
+        const char *url = NULL;
+        bool bad = false;
+        for (const char *a; (a = strtok_r(NULL, " \t", &save)) != NULL;) {
+            if (!strcmp(a, "--unsigned")) allow |= UPDATE_ALLOW_UNSIGNED;
+            else if (!strcmp(a, "--downgrade")) allow |= UPDATE_ALLOW_DOWNGRADE;
+            else if (a[0] == '-' || url) bad = true;
+            else url = a;
+        }
+        if (bad || !url) {
+            printf("usage: update [--unsigned] [--downgrade] <http://host[:port]/controller.signed.bin>\n");
+            return;
+        }
         char e[96];
-        if (ota_pull_start(url, e, sizeof(e)))
+        if (ota_pull_start(url, allow, e, sizeof(e)))
             printf("pulling; progress lands on this console\n");
         else
             printf("update: %s\n", e);

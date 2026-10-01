@@ -887,7 +887,8 @@ static long content_length(const char *req) {
     return -1;
 }
 
-// ---- OTA upload: POST /api/v1/update, body = firmware image (uf2 or bin).
+// ---- OTA upload: POST /api/v1/update, body = firmware image (the signed
+// .bin; an unsigned bin or uf2 only in a build without signing keys).
 // The body streams straight into update_write(); nothing except the request
 // headers ever lands in req[].
 
@@ -960,7 +961,7 @@ static void update_post_start(conn_t *c, const char *body_start) {
     }
 
     char err[96], body[160];
-    if (!update_begin((uint32_t)cl, err, sizeof(err))) {
+    if (!update_begin((uint32_t)cl, 0, err, sizeof(err))) {
         // no update_fail(): a refusal must not abort a transfer that another
         // connection legitimately still owns
         snprintf(body, sizeof(body), "{\"error\":\"%s\"}", err);

@@ -85,6 +85,9 @@ int main(void) {
     vin_init(); // the bus-voltage divider, where the board has one
     button_init(); // the front-panel button (GP22)
 
+    if (!update_key_count())
+        printf("update: no signing keys in this build; unsigned images install from the network\n");
+
     char boot_text[80];
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
     printf("power-manifold controller %s (slot %s%s, boot: %s; 'help' for console)\n> ",

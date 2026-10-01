@@ -17,6 +17,7 @@ static httpc_state_t *conn;
 static char           host[64];
 static char           uri[160];
 static uint16_t       port_num;
+static unsigned       allow; // UPDATE_ALLOW_*, from whoever asked for the pull
 
 static err_t recv_cb(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err) {
     (void)arg; (void)err;
@@ -46,7 +47,7 @@ static err_t headers_cb(httpc_state_t *c, void *arg, struct pbuf *hdr,
         printf("update: pull aborted: server sent no Content-Length\n");
         return ERR_VAL;
     }
-    if (!update_begin(content_len, e, sizeof(e))) {
+    if (!update_begin(content_len, allow, e, sizeof(e))) {
         printf("update: pull refused: %s\n", e);
         return ERR_VAL; // aborts the transfer; result_cb sees LOCAL_ABORT
     }
@@ -115,9 +116,10 @@ static bool parse_url(const char *url, char *err, size_t errlen) {
     return true;
 }
 
-bool ota_pull_start(const char *url, char *err, size_t errlen) {
+bool ota_pull_start(const char *url, unsigned allow_flags, char *err, size_t errlen) {
     if (busy) return eout(err, errlen, "a pull is already in progress");
     if (!parse_url(url, err, errlen)) return false;
+    allow = allow_flags;
 
     feed_failed = false;
     net_lock();

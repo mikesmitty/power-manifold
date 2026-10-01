@@ -64,5 +64,9 @@ typedef struct {
 // the bootrom would find. Returns NULL on success, else an error string.
 const char *update_image_scan(const uint8_t *buf, uint32_t len, image_def_t *out);
 
+// "x.y.z" as the IMAGE_DEF carries it, (major << 16) | minor with minor =
+// y*256+z, for comparing against a scanned image. 0 when it does not parse.
+uint32_t update_version_word(const char *xyz);
+
 // Sets the TBYB flag on a block previously located by update_image_scan.
 void update_image_set_tbyb(uint8_t *buf, const image_def_t *def);

@@ -79,6 +79,9 @@ add_executable(controller
     src/fault_log.c
     src/update.c
     src/update_image.c
+    src/update_sig.c
+    lib/monocypher/monocypher.c
+    lib/monocypher/monocypher-ed25519.c
     src/cli.c
     src/engine/engine.c
     src/engine/fan_policy.c
@@ -126,6 +129,11 @@ if(CARRIER_INTERNAL_PULLUPS)
     target_compile_definitions(controller PRIVATE PWRMAN_INTERNAL_PULLUPS=1)
 endif()
 
+# Update signing: the public keys in keys/*.pem are built in, and an image
+# then has to be signed by one of them to be installed over the network.
+include(${CMAKE_CURRENT_LIST_DIR}/tools/update_keys.cmake)
+pwrman_update_keys(controller ${CMAKE_CURRENT_LIST_DIR})
+
 pico_generate_pio_header(controller ${CMAKE_CURRENT_LIST_DIR}/src/engine/ws2812.pio)
 
 if(NET_WIFI)
@@ -169,6 +177,7 @@ target_include_directories(controller PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src/engine # driver headers, for the sim seam
     ${CMAKE_CURRENT_LIST_DIR}/../charger-module/include # blade_regs.h: the gen-3 blade's register map, shared with its firmware
     ${CMAKE_CURRENT_LIST_DIR} # lwipopts.h, btstack_config.h
+    ${CMAKE_CURRENT_LIST_DIR}/lib/monocypher # Ed25519 + SHA-512 for signed updates
 )
 
 target_link_libraries(controller pico_rand) # setup secret for the web UI

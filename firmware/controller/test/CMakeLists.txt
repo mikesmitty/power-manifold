@@ -40,6 +40,9 @@ add_executable(engine_tests
     ../src/ups/ups.c
     ../src/vin.c
     ../src/update_image.c
+    ../src/update_sig.c
+    ../lib/monocypher/monocypher.c
+    ../lib/monocypher/monocypher-ed25519.c
     support/test_support.c
     support/fake_bundle.c
     test_boot.c
@@ -60,6 +63,7 @@ add_executable(engine_tests
     test_settings_json.c
     test_sim_inject.c
     test_update_image.c
+    test_update_sig.c
     test_ups.c
     test_vin.c
     test_w6100.c
@@ -73,6 +77,7 @@ target_include_directories(engine_tests PRIVATE
     ../src/net
     ../src/ups
     ../../charger-module/include # blade_regs.h, shared with the gen-3 blade firmware
+    ../lib/monocypher
     support
 )
 
@@ -81,3 +86,26 @@ add_test(NAME engine_tests COMMAND engine_tests)
 
 # The cold probe's EN-to-first-I2C wait is a hardware delay; the sim answers at once.
 target_compile_definitions(engine_tests PRIVATE BLADE_WAKE_MS=0 PWRMAN_HOST_TEST=1)
+
+# The signed-update verifier as a host tool: the firmware's own check
+# (src/update_sig.c) with the keys it is built with (keys/*.pem). The release
+# workflow runs it on the image it is about to publish.
+add_executable(verify_image
+    ../tools/verify_image.c
+    ../src/update_image.c
+    ../src/update_sig.c
+    ../lib/monocypher/monocypher.c
+    ../lib/monocypher/monocypher-ed25519.c
+)
+target_include_directories(verify_image PRIVATE ../src ../lib/monocypher)
+include(../tools/update_keys.cmake)
+pwrman_update_keys(verify_image ${CMAKE_CURRENT_LIST_DIR}/..)
+
+# tools/sign_image.py against that verifier, with a throwaway key
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_program(OPENSSL_PROGRAM openssl)
+if(OPENSSL_PROGRAM)
+    add_test(NAME sign_roundtrip
+        COMMAND ${CMAKE_CURRENT_LIST_DIR}/sign_roundtrip.sh
+                ${CMAKE_CURRENT_LIST_DIR}/.. $<TARGET_FILE:verify_image> ${Python3_EXECUTABLE})
+endif()

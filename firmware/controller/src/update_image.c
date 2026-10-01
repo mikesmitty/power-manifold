@@ -1,5 +1,6 @@
 #include "update_image.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static uint32_t rd32(const uint8_t *p) {
@@ -107,6 +108,12 @@ const char *update_image_scan(const uint8_t *buf, uint32_t len, image_def_t *out
         err = e; // a stray marker word parses as garbage; keep scanning
     }
     return err;
+}
+
+uint32_t update_version_word(const char *xyz) {
+    unsigned x, y, z;
+    if (sscanf(xyz, "%u.%u.%u", &x, &y, &z) != 3 || x > 0xffff || y > 0xff || z > 0xff) return 0;
+    return ((uint32_t)x << 16) | (y << 8) | z;
 }
 
 void update_image_set_tbyb(uint8_t *buf, const image_def_t *def) {

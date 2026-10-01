@@ -274,11 +274,10 @@ for local iteration: two builds with the *same* version tie-break to slot A —
 either bump `FW_VERSION` locally or target a slot explicitly with
 `picotool load -f -p <0|1> build/controller.uf2`.
 
-**OTA**: push a firmware image to the update endpoint over the LAN — the
-release `controller.uf2` and the raw `controller.bin` both work:
+**OTA**: push the release's `controller.signed.bin` to the update endpoint:
 
 ```
-curl --data-binary @controller.uf2 http://<name>.local/api/v1/update
+curl --data-binary @controller.signed.bin http://<name>.local/api/v1/update
 ```
 
 (add `-H "Authorization: Bearer <token>"` if an API token is set). The body
@@ -289,11 +288,37 @@ bootable behind — the slot's first sector is erased before the transfer and
 written last.
 
 The same pipeline also *pulls*: `update <http-url>` on the CLI fetches an
-image over plain HTTP (serve it from any LAN box, `python3 -m http.server`
+image over plain HTTP (any static file server, `python3 -m http.server`
 included), and Home Assistant gets an update entity — publish a retained
 release pointer to `pwrman/<name>/update/latest` as
-`{"version":"x.y.z","url":"http://.../controller.uf2"}` and HA shows the
-update and installs it with one click.
+`{"version":"x.y.z","url":"http://.../controller.signed.bin"}` and HA shows
+the update and installs it with one click.
+
+**Signed updates**: what makes an image trustworthy is its signature, not
+where it came from, so it can be served over plain HTTP from anywhere.
+`controller.signed.bin` is the raw `controller.bin` with a 176-byte trailer —
+the image's length, the board it was built for, its SHA-512, and an Ed25519
+signature over those — and the firmware carries the public keys in
+`keys/*.pem`. Before the new slot is made bootable, the image has to be
+
+- signed by one of the built-in keys,
+- built for this board, and
+- no older than the running firmware.
+
+The push endpoint and the Home Assistant install have no way around these.
+The console has: `update --unsigned <url>` takes an image without a trailer
+(a local `controller.bin` or `.uf2`) and `update --downgrade <url>` an older
+one, because reaching the console takes the unpopulated USB header or a debug
+probe, and either of those can flash anything already. BOOTSEL and picotool
+are untouched by all of this. A build with no keys in `keys/` says so when it
+is configured, at boot and in `info`; it accepts unsigned images from the
+network, and still refuses older ones.
+
+The release workflow signs with a Cloud KMS key. `tools/sign_image.py` does
+the signing (Cloud KMS, a key file, or any other signer in two steps),
+`test/build/verify_image` checks a signed image with the firmware's own code
+and keys, and [`keys/README.md`](keys/README.md) covers adding and retiring
+keys.
 
 **Try-before-you-buy**: a TBYB-flagged image boots as a *trial* — `info`
 shows `slot B (TRIAL, uncommitted)` — and commits itself only after 10 s of
@@ -426,7 +451,7 @@ Improv redirect while no token exists yet.
 | `POST /api/v1/budget` | token | `{"watts":N}` |
 | `POST /api/v1/faults/clear` | token | Wipes the fault log |
 | `POST /api/v1/reboot` | token | Reboots after flushing any pending settings save |
-| `POST /api/v1/update` | token | OTA push, body = firmware image (see [Flash layout & updates](#flash-layout--updates)) |
+| `POST /api/v1/update` | token | OTA push, body = the signed firmware image (see [Flash layout & updates](#flash-layout--updates)) |
 
 *Token* means a Bearer token once `token` is set and nothing before that;
 `/settings` always wants one — the token, or the setup secret from an Improv
@@ -455,7 +480,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading), `progress` (0–100 while `updating`), `update_due`, `silent` |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
-| `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.uf2"}`, published by CI or by hand |
+| `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}`, published by CI or by hand |
 | `port/<n>/set` | subscribed | `ON`, `OFF`, `hard_reset` or `src_cap` |
 | `port/<n>/priority/set` | subscribed | 0–255, 0 = highest |
 | `port/<n>/limit/set` | subscribed | 500–5000 mA |
@@ -561,7 +586,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `vin [cal <volts>\|cal reset]` | DC bus voltage with the raw count and gain trim; `cal 24.13` trims the reading to a meter's (then `save`) |
 | `button [short\|long]` | front-panel button input and state; `short` (wake the chain) / `long` (open BLE) act as if it had been pressed |
 | `export` | every setting as JSON, without passwords |
-| `update <http-url>` | OTA pull into the inactive slot |
+| `update [--unsigned] [--downgrade] <http-url>` | OTA pull into the inactive slot; the flags let in an unsigned or an older image, which only this console can do |
 | `stack` | per-core stack high-water marks |
 | `i2c scan <ch\|none>`, `i2c read <ch> <addr> <reg> [n]`, `i2c write <ch> <addr> <reg> <val>`, `i2c en <port> on\|off` | bench access to the backplane bus, run on the engine core: scan a mux channel (`none` = the upstream side), read or write a register, drive a blade's EN; a healthy blade segment answers `0x40 0x61 0x70 0x74` |
 | `save`, `defaults`, `reboot`, `bootsel` | settings and lifecycle |

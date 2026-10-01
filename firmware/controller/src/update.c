@@ -17,8 +17,13 @@
 #include "boot/uf2.h"
 #include "hardware/regs/addressmap.h"
 
+#include "monocypher-ed25519.h"
+
 #include "flash_map.h"
+#include "manifold.h"
 #include "update_image.h"
+#include "update_keys.h" // generated from keys/*.pem (tools/update_keys.py)
+#include "update_sig.h"
 
 // update_image.h duplicates SDK constants so the parser stays host-testable;
 // fail the build if they ever drift.
@@ -49,6 +54,9 @@ typedef enum { FMT_UNKNOWN = 0, FMT_UF2, FMT_BIN } stream_fmt_t;
 static struct {
     bool         active;
     stream_fmt_t fmt;
+    unsigned     allow;      // UPDATE_ALLOW_*: what this transfer's caller waived
+    uint32_t     stream_len; // as declared at begin
+    uint32_t     stream_pos; // raw-image bytes taken so far
     uint32_t     target_off, target_size;
     flash_slot_t target_slot;
     uint32_t     cursor;    // next logical image byte (streams are contiguous)
@@ -57,6 +65,8 @@ static struct {
     uint8_t      acc[FLASH_SECTOR_SIZE];    // sector being assembled
     uint8_t      frame[UPD_UF2_BLOCK_SIZE]; // uf2 reframing across TCP chunks
     uint32_t     frame_len;
+    uint8_t      trailer[UPD_SIG_TRAILER_LEN]; // a raw image's tail, held back
+    crypto_sha512_ctx hash;                    // of the image bytes placed
     uint32_t     last_ms;
     uint32_t     reboot_at_ms; // 0 = no reboot scheduled
     char         ver[16];
@@ -100,7 +110,7 @@ static bool flash_sector(uint32_t storage_off, const uint8_t *data) {
     return flash_safe_execute(do_flash_op, &op, 500) == PICO_OK;
 }
 
-bool update_begin(uint32_t stream_len, char *err, size_t errlen) {
+bool update_begin(uint32_t stream_len, unsigned allow, char *err, size_t errlen) {
     if (up.active && update_age_ms() < UPDATE_STALL_MS)
         return eout(err, errlen, "another update is already in progress");
     if (up.reboot_at_ms)
@@ -124,6 +134,9 @@ bool update_begin(uint32_t stream_len, char *err, size_t errlen) {
     up.target_off = off;
     up.target_size = size;
     up.target_slot = slot;
+    up.allow = allow;
+    up.stream_len = stream_len;
+    crypto_sha512_init(&up.hash);
     up.crc_tail = 0xFFFFFFFFu;
     strcpy(up.ver, "?");
 
@@ -140,6 +153,7 @@ bool update_begin(uint32_t stream_len, char *err, size_t errlen) {
 // Append bytes at the logical cursor; sector 0 is held back for finish, full
 // sectors past it are erased+programmed as they complete.
 static bool put_bytes(const uint8_t *data, uint32_t len, char *err, size_t errlen) {
+    crypto_sha512_update(&up.hash, data, len);
     while (len) {
         if (up.cursor >= up.target_size) {
             update_abort();
@@ -171,9 +185,32 @@ static bool put_bytes(const uint8_t *data, uint32_t len, char *err, size_t errle
     return true;
 }
 
+// A raw image. Its last UPD_SIG_TRAILER_LEN bytes may be a signature
+// trailer, so they are held back until finish can tell; the stream's length
+// was declared at begin, which is what makes the tail findable.
+static bool bin_bytes(const uint8_t *data, uint32_t len, char *err, size_t errlen) {
+    if (len > up.stream_len - up.stream_pos) {
+        update_abort();
+        return eout(err, errlen, "more data than the declared length");
+    }
+    uint32_t body_end = up.stream_len - UPD_SIG_TRAILER_LEN;
+    if (up.stream_pos < body_end) {
+        uint32_t n = body_end - up.stream_pos;
+        if (n > len) n = len;
+        if (!put_bytes(data, n, err, errlen)) return false;
+        up.stream_pos += n;
+        data += n;
+        len -= n;
+    }
+    memcpy(up.trailer + (up.stream_pos - body_end), data, len);
+    up.stream_pos += len;
+    up.last_ms = now_ms();
+    return true;
+}
+
 bool update_write(const uint8_t *data, size_t len, char *err, size_t errlen) {
     if (!up.active) return eout(err, errlen, "no update in progress");
-    if (up.fmt == FMT_BIN) return put_bytes(data, (uint32_t)len, err, errlen);
+    if (up.fmt == FMT_BIN) return bin_bytes(data, (uint32_t)len, err, errlen);
 
     // UF2 until proven otherwise: reassemble 512-byte frames across TCP
     // chunk boundaries, sniffing the format off the first four bytes.
@@ -194,8 +231,8 @@ bool update_write(const uint8_t *data, size_t len, char *err, size_t errlen) {
                 up.fmt = FMT_BIN;
                 uint32_t buffered = up.frame_len;
                 up.frame_len = 0;
-                if (!put_bytes(up.frame, buffered, err, errlen)) return false;
-                return len ? put_bytes(data, (uint32_t)len, err, errlen) : true;
+                if (!bin_bytes(up.frame, buffered, err, errlen)) return false;
+                return len ? bin_bytes(data, (uint32_t)len, err, errlen) : true;
             }
         }
 
@@ -227,6 +264,36 @@ bool update_finish(char *err, size_t errlen) {
         update_abort();
         return eout(err, errlen, "truncated uf2 stream");
     }
+
+    // Who may install what: a signed image from anywhere, an unsigned one
+    // only where the caller waived it (the console). A UF2 carries no
+    // trailer, so it is unsigned by definition.
+    bool is_signed = false;
+    if (up.fmt == FMT_BIN) {
+        if (up.stream_pos != up.stream_len) {
+            update_abort();
+            return eout(err, errlen, "truncated image");
+        }
+        if (update_sig_present(up.trailer)) {
+            uint8_t hash[UPD_SIG_HASH_LEN];
+            crypto_sha512_final(&up.hash, hash);
+            const char *bad = update_sig_check(up.trailer, up.cursor, hash, PICO_BOARD,
+                                               update_keys, UPDATE_KEY_COUNT);
+            if (bad) {
+                update_abort();
+                return eout(err, errlen, bad);
+            }
+            is_signed = true;
+        } else if (!put_bytes(up.trailer, UPD_SIG_TRAILER_LEN, err, errlen)) {
+            return false; // no trailer: the held-back tail was image
+        }
+    }
+    if (!is_signed && UPDATE_KEY_COUNT && !(up.allow & UPDATE_ALLOW_UNSIGNED)) {
+        update_abort();
+        return eout(err, errlen,
+                    "unsigned image; only the console installs those (update --unsigned <url>)");
+    }
+
     if (up.cursor <= FLASH_SECTOR_SIZE) {
         update_abort();
         return eout(err, errlen, "image too small");
@@ -251,10 +318,22 @@ bool update_finish(char *err, size_t errlen) {
         update_abort();
         return eout(err, errlen, "image is hashed/signed; cannot set the trial flag");
     }
-    update_image_set_tbyb(up.first, &def);
     if (def.has_version)
         snprintf(up.ver, sizeof(up.ver), "%u.%u.%u", def.ver_major,
                  def.ver_minor >> 8, def.ver_minor & 0xff);
+
+    // An older image (or one that does not say) only where the caller waived
+    // it. The version is inside the signed bytes, so a signed image cannot
+    // lie about it.
+    uint32_t incoming = def.has_version ? ((uint32_t)def.ver_major << 16) | def.ver_minor : 0;
+    if (incoming < update_version_word(FW_VERSION) && !(up.allow & UPDATE_ALLOW_DOWNGRADE)) {
+        update_abort();
+        if (err && errlen)
+            snprintf(err, errlen, "%s is older than the running %s; console only (update --downgrade <url>)",
+                     up.ver, FW_VERSION);
+        return false;
+    }
+    update_image_set_tbyb(up.first, &def);
 
     if (!flash_sector(up.target_off, up.first)) {
         update_abort();
@@ -298,6 +377,10 @@ const char *update_slot_name(void) {
 
 const char *update_version_str(void) {
     return up.ver;
+}
+
+unsigned update_key_count(void) {
+    return UPDATE_KEY_COUNT;
 }
 
 void update_schedule_reboot(uint32_t delay_ms) {
