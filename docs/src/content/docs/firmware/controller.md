@@ -231,7 +231,9 @@ nothing.
 ### Host-side tests
 
 The engine core (state machine + budget arbiter) is hardware-free and runs
-natively against the same simulated drivers:
+natively against the same simulated drivers, and so does everything else
+with a seam under it (the settings store against a flash in RAM, the bus
+monitor against an emulated ADC, the button, the UPS protocol):
 
 ```sh
 cmake -S test -B test/build
@@ -303,6 +305,22 @@ shows `slot B (TRIAL, uncommitted)` — and commits itself only after 10 s of
 continuous health (engine heartbeat, network up if one is configured). Until
 then any reboot, watchdog bite, or the 10-minute deadline reverts to the
 previous image, so a broken OTA push heals itself.
+
+**Settings across a revert.** The settings record only ever grows: a new
+layout appends its fields after the old ones, so a record written by any
+later firmware begins with everything an earlier one knows. Since 0.11 each
+record also states its own length, which is where its crc sits, and a
+firmware that meets a record of a layout it has never seen checks that crc
+and reads the part it understands. The image a failed trial reverts to
+therefore comes back with the WiFi, the names and the limits it had; its
+next save writes its own layout, and the newer firmware defaults its own
+fields again when it returns, as after any upgrade. An image on trial also
+keeps every save to one of the two sectors, so the record the previous
+firmware wrote is still there if the trial is reverted, and a save cut
+short by a reset cannot take it. What a revert loses is at most what was
+changed during the trial. Firmware before 0.11 reads no layout newer than
+its own, so for the first update from it the one-sector rule is what keeps
+the configuration: it finds its own record in the other sector.
 
 Version ordering: pushing a **newer** build sticks by version comparison, and
 pushing a strictly **older** one sticks too — the bootrom records the

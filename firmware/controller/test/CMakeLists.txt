@@ -21,6 +21,7 @@ add_executable(engine_tests
     ../src/ip4_text.c
     ../src/led_sched.c
     ../src/log_ring.c
+    ../src/settings.c
     ../src/settings_json.c
     ../src/settings_util.c
     ../src/engine/blade.c
@@ -55,6 +56,7 @@ add_executable(engine_tests
     test_blade3.c
     test_blade_update.c
     test_priority.c
+    test_settings.c
     test_settings_json.c
     test_sim_inject.c
     test_update_image.c

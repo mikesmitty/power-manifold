@@ -75,6 +75,7 @@ add_executable(controller
     src/settings_json.c
     src/settings_util.c
     src/settings.c
+    src/settings_hw_pico.c
     src/fault_log.c
     src/update.c
     src/update_image.c

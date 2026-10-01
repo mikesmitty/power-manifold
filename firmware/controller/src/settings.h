@@ -10,6 +10,12 @@
 // mid-write leaves the previous copy intact. The pair lives at the start of
 // the partition table's "data" partition (see flash_map.h), falling back to
 // the legacy last-two-sectors-of-flash location on unpartitioned boards.
+//
+// The record is the struct below as it sits in memory, crc last. A new
+// layout version only ever appends fields (settings.c pins every shipped
+// offset), so a record of any later version begins with a complete copy of
+// this one, and payload_len tells a firmware that meets a version it does
+// not know where that record's crc sits — see settings.c.
 
 #define SETTINGS_MAGIC 0x504D4643u // "PMFC"
 #define PORT_NAME_MAX  23          // bytes, excluding the NUL
@@ -71,6 +77,8 @@ typedef struct {
     uint8_t  blade_auto_update;    // 1: a gen-3 blade running anything but the bundled firmware is rewritten, once its port is idle (blade_update.h)
     uint8_t  blade_boot_via_loader; // 1: gen-3 blades are set to boot through their ROM bootloader, once idle (blade_regs.h BLADE_BOOT_VIA_LOADER)
     uint8_t  blade_watch_s;        // a gen-3 blade with EN low resets into its bootloader after this long without the controller (0 = never)
+    // -- added in layout version 14 --
+    uint16_t payload_len;     // bytes the crc covers (= its offset): lets an older firmware read this record
     uint32_t crc; // must remain last
 } settings_t;
 

@@ -4,18 +4,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hardware/flash.h"
-#include "pico/flash.h"
-#include "pico/time.h"
+#include "settings_hw.h"
 
-#include "flash_map.h"
+// The store: which of the two sectors holds the record to use, how a record
+// written by another firmware version is read, and where a save goes. All
+// flash access is behind settings_hw.h, so the host tests run the whole of
+// this against a pair of sectors in RAM.
 
-// The pair lives in the first two sectors of the "data" partition; boards
-// without a partition table fall back to the legacy pre-partition location,
-// the last two sectors of flash (which, on a freshly partitioned board, is
-// where settings written by older firmware are found and migrated from).
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    13
+#define SETTINGS_VERSION    14
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -34,6 +31,7 @@
 #define SETTINGS_V10_PAYLOAD ALIGN4(offsetof(settings_t, port_max_mv))
 #define SETTINGS_V11_PAYLOAD ALIGN4(offsetof(settings_t, vin_cal))
 #define SETTINGS_V12_PAYLOAD ALIGN4(offsetof(settings_t, blade_auto_update))
+#define SETTINGS_V13_PAYLOAD ALIGN4(offsetof(settings_t, payload_len))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -46,6 +44,13 @@ _Static_assert(SETTINGS_V9_PAYLOAD == 636, "settings v9 layout moved");
 _Static_assert(SETTINGS_V10_PAYLOAD == 644, "settings v10 layout moved");
 _Static_assert(SETTINGS_V11_PAYLOAD == 656, "settings v11 layout moved");
 _Static_assert(SETTINGS_V12_PAYLOAD == 660, "settings v12 layout moved");
+_Static_assert(SETTINGS_V13_PAYLOAD == 664, "settings v13 layout moved");
+// From version 14 the record carries its own length: payload_len sits in
+// v13's tail padding, so v14 is as long as v13, and every later version
+// keeps the field at this offset.
+_Static_assert(offsetof(settings_t, payload_len) == 662, "settings payload_len moved");
+_Static_assert(offsetof(settings_t, crc) == 664, "settings v14 layout moved");
+_Static_assert(sizeof(settings_t) <= SETTINGS_SECTOR_SIZE, "settings record outgrew its sector");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
 #define FAN_ON_W_DEFAULT   80
@@ -61,12 +66,11 @@ _Static_assert(SETTINGS_V12_PAYLOAD == 660, "settings v12 layout moved");
 // their bootloaders rather than run unsupervised.
 #define BLADE_WATCH_S_DEFAULT 120
 
-#define LEGACY_BASE (PICO_FLASH_SIZE_BYTES - SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
-
 settings_t g_settings;
 
 static uint32_t home_base;       // storage offset of the active ping-pong pair
 static bool     migrate_pending; // valid legacy copy found while the new home is empty
+static int      trial_slot = -1; // the one slot a trial image writes (settings_save)
 
 static uint32_t crc32_calc(const uint8_t *data, size_t len) {
     uint32_t crc = 0xFFFFFFFFu;
@@ -83,19 +87,24 @@ static uint32_t payload_len(void) {
 }
 
 static uint32_t sector_off(uint32_t base, int i) {
-    return base + (uint32_t)i * FLASH_SECTOR_SIZE;
+    return base + (uint32_t)i * SETTINGS_SECTOR_SIZE;
 }
 
-// Reads go through the untranslated XIP alias: storage offsets stay valid no
-// matter which A/B slot the bootrom mapped at XIP_BASE.
 static const settings_t *slot_ptr(uint32_t base, int i) {
-    return (const settings_t *)flash_map_xip_ptr(sector_off(base, i));
+    return (const settings_t *)settings_hw_sector(sector_off(base, i));
 }
 
-// Payload length of a stored layout version; its crc follows immediately.
-static uint32_t version_payload_len(uint32_t version) {
-    switch (version) {
+// Payload length of a stored record; its crc follows immediately. Layouts
+// up to 13 are known by their version alone. A version newer than this
+// firmware (it was reverted to after a trial of a newer image, or an older
+// build was loaded on purpose) states its length itself: the fields this
+// firmware knows are all there, at the offsets it knows, and the crc at the
+// stated place proves the rest. Without that, a newer record was refused
+// and the reverted firmware came up on defaults, credentials included.
+static uint32_t record_payload_len(const settings_t *s) {
+    switch (s->version) {
     case SETTINGS_VERSION: return payload_len();
+    case 13:               return SETTINGS_V13_PAYLOAD;
     case 12:               return SETTINGS_V12_PAYLOAD;
     case 11:               return SETTINGS_V11_PAYLOAD;
     case 10:               return SETTINGS_V10_PAYLOAD;
@@ -108,25 +117,24 @@ static uint32_t version_payload_len(uint32_t version) {
     case 3:                return SETTINGS_V3_PAYLOAD;
     case 2:                return SETTINGS_V2_PAYLOAD;
     case 1:                return SETTINGS_V1_PAYLOAD;
-    default:               return 0;
+    default:
+        // a later layout states its length: it can only be longer than
+        // this one, and must leave room in the sector for its crc
+        if (s->version < SETTINGS_VERSION ||
+            s->payload_len < payload_len() ||
+            s->payload_len > SETTINGS_SECTOR_SIZE - sizeof(s->crc))
+            return 0;
+        return s->payload_len;
     }
 }
 
 static bool slot_valid(const settings_t *s) {
     if (s->magic != SETTINGS_MAGIC) return false;
-    uint32_t len = version_payload_len(s->version);
+    uint32_t len = record_payload_len(s);
     if (!len) return false;
     uint32_t crc;
     memcpy(&crc, (const uint8_t *)s + len, sizeof(crc));
     return crc32_calc((const uint8_t *)s, len) == crc;
-}
-
-static uint32_t resolve_home(void) {
-    uint32_t off, size;
-    if (flash_map_find(FLASH_MAP_ID_DATA, &off, &size) &&
-        size >= SETTINGS_SLOTS * FLASH_SECTOR_SIZE)
-        return off;
-    return LEGACY_BASE;
 }
 
 static const settings_t *best_in(uint32_t base) {
@@ -170,13 +178,19 @@ void settings_defaults(void) {
 }
 
 void settings_load(void) {
-    home_base = resolve_home();
+    home_base = settings_hw_home();
+    migrate_pending = false;
+    trial_slot = -1;
     const settings_t *best = best_in(home_base);
-    if (!best && home_base != LEGACY_BASE) {
-        best = best_in(LEGACY_BASE);
+    if (!best && home_base != settings_hw_legacy()) {
+        best = best_in(settings_hw_legacy());
         migrate_pending = best != NULL;
     }
     if (best) {
+        // A record of a newer layout is longer than this struct: the copy
+        // takes the part this firmware knows, and the next save writes this
+        // layout — that newer firmware defaults its own fields again when it
+        // comes back, the same as after any upgrade.
         memcpy(&g_settings, best, sizeof(g_settings));
         // upgrade in place: default the fields the old layout lacked
         if (g_settings.version < 2) {
@@ -227,41 +241,37 @@ void settings_load(void) {
     }
 }
 
-typedef struct {
-    uint32_t offset;
-    const uint8_t *data; // NULL: erase only
-} flash_op_t;
-
-static void do_flash_write(void *param) {
-    const flash_op_t *op = (const flash_op_t *)param;
-    flash_range_erase(op->offset, FLASH_SECTOR_SIZE);
-    if (op->data) flash_range_program(op->offset, op->data, FLASH_SECTOR_SIZE);
-}
-
-static bool run_flash_op(uint32_t offset, const uint8_t *data) {
-    flash_op_t op = {.offset = offset, .data = data};
-    // flash_safe_execute parks core 1 (the engine calls
-    // flash_safe_execute_core_init at startup) while XIP is unavailable
-    return flash_safe_execute(do_flash_write, &op, 500) == PICO_OK;
-}
-
 bool settings_save(void) {
-    static uint8_t buf[FLASH_SECTOR_SIZE]; // static: keep 4KB off the stack
+    static uint8_t buf[SETTINGS_SECTOR_SIZE]; // static: keep 4KB off the stack
 
-    if (!home_base) home_base = resolve_home();
+    if (!home_base) home_base = settings_hw_home();
 
     // write to the slot NOT holding the current best copy
     int target = 0;
     const settings_t *s0 = slot_ptr(home_base, 0), *s1 = slot_ptr(home_base, 1);
     if (slot_valid(s0) && (!slot_valid(s1) || s0->seq > s1->seq)) target = 1;
 
+    // An uncommitted trial image keeps to one slot, so the record the
+    // previous firmware wrote is still there if the trial is reverted: that
+    // firmware may not read this layout at all (one older than 0.11 reads
+    // nothing newer than its own), and even when it does, a save that fails
+    // halfway must not cost the last record it wrote. Changes made during
+    // the trial are what is lost then, not the configuration.
+    if (settings_hw_trial()) {
+        if (trial_slot < 0) trial_slot = target;
+        target = trial_slot;
+    }
+
     g_settings.seq++;
+    g_settings.magic = SETTINGS_MAGIC;
+    g_settings.version = SETTINGS_VERSION;
+    g_settings.payload_len = (uint16_t)payload_len();
     g_settings.crc = crc32_calc((const uint8_t *)&g_settings, payload_len());
 
     memset(buf, 0xFF, sizeof(buf));
     memcpy(buf, &g_settings, sizeof(g_settings));
 
-    return run_flash_op(sector_off(home_base, target), buf);
+    return settings_hw_write(sector_off(home_base, target), buf);
 }
 
 #define SAVE_DEBOUNCE_MS 5000
@@ -269,7 +279,7 @@ bool settings_save(void) {
 static uint32_t save_at_ms; // 0 = clean
 
 void settings_save_later(void) {
-    uint32_t t = to_ms_since_boot(get_absolute_time()) + SAVE_DEBOUNCE_MS;
+    uint32_t t = settings_hw_now_ms() + SAVE_DEBOUNCE_MS;
     save_at_ms = t ? t : 1;
 }
 
@@ -295,8 +305,8 @@ bool settings_migrate(void) {
     // Retire the legacy copies so old firmware or a stale sector can't
     // resurrect superseded credentials.
     for (int i = 0; i < SETTINGS_SLOTS; i++) {
-        if (best_in(LEGACY_BASE) == NULL) break;
-        run_flash_op(sector_off(LEGACY_BASE, i), NULL);
+        if (best_in(settings_hw_legacy()) == NULL) break;
+        settings_hw_write(sector_off(settings_hw_legacy(), i), NULL);
     }
     return true;
 }

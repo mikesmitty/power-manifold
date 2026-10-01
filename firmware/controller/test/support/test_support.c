@@ -33,8 +33,6 @@ int mt_summary(void) {
 
 // ---- link-time stand-ins for the engine's environment ----------------------
 
-settings_t g_settings;
-
 #define EVT_CAP 256
 static engine_evt_t evts[EVT_CAP];
 static int n_evts;
