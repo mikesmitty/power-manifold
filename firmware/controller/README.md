@@ -5,12 +5,12 @@ six charger blades of either generation — the MPQ4242 gen-2 blade and the
 STM32G071 gen-3 blade — through the backplane TCA9548A I2C mux and TCA9539
 GPIO expander.
 
-Development target: a Raspberry Pi Pico 2 W (RP2350) on the
-`hardware/pcie-breakout` carrier in the backplane's management socket.
-Production target: the `hardware/controller` card for the same socket, an
-RP2350A with a WIZnet W6100 wired-Ethernet controller and a Raspberry Pi RM2
-radio module (the same CYW43439 as the Pico 2 W, so the WiFi and Bluetooth
-stack carries over).
+Target: the `hardware/controller` card in the backplane's management socket,
+an RP2350A with a WIZnet W6100 wired-Ethernet controller and a Raspberry Pi
+RM2 radio module. Until the card exists, a Raspberry Pi Pico 2 W on the
+`hardware/pcie-breakout` carrier stands in for it in the same socket (the
+RM2 is the Pico 2 W's CYW43439, so the WiFi and Bluetooth stack is the same
+on both).
 
 The [documentation site](https://mikesmitty.github.io/power-manifold/)
 carries this guide alongside the hardware architecture and a hosted Wi-Fi
@@ -47,9 +47,10 @@ The hardware watchdog is fed only while both cores make progress.
 ## GPIO map
 
 Two boards run this firmware, and `src/pins.h` carries a map for each: the
-Pico 2 W on the pcie-breakout (the default `pico2_w` build, also the
-W6100-EVB-Pico2 in the same socket) and the production controller card
-(`PICO_BOARD=pwrman_controller_card`, see [Boards](#boards)).
+production controller card (the default build, `pwrman_controller_card`) and
+the Pico 2 W on the pcie-breakout, a development stand-in until the card
+exists (`PICO_BOARD=pico2_w`, also the W6100-EVB-Pico2 in the same socket;
+see [Boards](#boards)).
 
 | Signal | Pico 2 W carrier | Controller card | Notes |
 | --- | --- | --- | --- |
@@ -111,8 +112,10 @@ cmake -B build -G Ninja
 ninja -C build
 ```
 
-Flash `build/controller.uf2` over BOOTSEL, or `picotool load -f
-build/controller.uf2`.
+A new board takes `build/controller-factory.bin` over SWD, or
+`partition_table.uf2` and `controller.uf2` over BOOTSEL: see
+[First programming](#flash-layout--updates). After that, updates go into the
+inactive image slot.
 
 The image carries the gen-3 blade firmware it programs blades with (see
 [Blade firmware updates](#blade-firmware-updates)): `-DBLADE_IMAGE=<path>`
@@ -126,9 +129,9 @@ at configure time.
 
 | `PICO_BOARD` | Board | Flash | Partition layout |
 | --- | --- | --- | --- |
-| `pico2_w` (default) | Pico 2 W on the pcie-breakout | 4 MB | `pico2w-4mb.json` |
-| `wiznet_w6100_evb_pico2` | WIZnet W6100-EVB-Pico2 in the same socket, no radio | 2 MB | none (runs unpartitioned) |
-| `pwrman_controller_card` | the production controller card, `hardware/controller` | 16 MB | `prod-16mb.json` |
+| `pwrman_controller_card` (default) | the production controller card, `hardware/controller` | 16 MB | `prod-16mb.json` |
+| `pico2_w` | Pico 2 W on the pcie-breakout: a development stand-in until the card exists | 4 MB | `pico2w-4mb.json` |
+| `wiznet_w6100_evb_pico2` | WIZnet W6100-EVB-Pico2 in the breakout's socket, no radio | 2 MB | none (runs unpartitioned) |
 
 The pico-sdk knows the Pico 2 W; `boards/` carries the other two. The EVB's
 header mostly exists to declare its 2 MB flash so the settings and
@@ -140,8 +143,8 @@ fault-log sectors land inside the chip. The card's header declares its
 netlist; the card itself has not been fabricated yet.
 
 ```sh
-cmake -B build-card -G Ninja -DPICO_BOARD=pwrman_controller_card
-ninja -C build-card
+cmake -B build-pico2w -G Ninja -DPICO_BOARD=pico2_w
+ninja -C build-pico2w
 ```
 
 Bench shortcut for the Pico 2 W carrier: `-DCARRIER_INTERNAL_PULLUPS=ON`
@@ -155,7 +158,7 @@ reads no longer fit the 10 ms engine tick. Refused for the controller
 card, which carries the resistors.
 
 ```sh
-cmake -B build-pull -G Ninja -DCARRIER_INTERNAL_PULLUPS=ON
+cmake -B build-pull -G Ninja -DPICO_BOARD=pico2_w -DCARRIER_INTERNAL_PULLUPS=ON
 ninja -C build-pull
 ```
 
@@ -195,7 +198,7 @@ machine, budget arbiter, MQTT/HA, web UI, CLI) is the real code, so the whole
 management plane can be exercised on a bare Pico 2 W:
 
 ```sh
-cmake -B build-fake -G Ninja -DFAKE_BLADES=ON
+cmake -B build-fake -G Ninja -DPICO_BOARD=pico2_w -DFAKE_BLADES=ON
 ninja -C build-fake
 ```
 
@@ -243,29 +246,54 @@ CI runs these on every push/PR touching the firmware.
 The flash is carved up by an RP2350 partition table — two A/B image slots the
 bootrom picks between, plus a `data` partition holding persistent settings
 and the fault log. Layouts live in `partitions/*.json`, one per
-board; the build compiles the selected one (`PARTITION_TABLE_JSON`, default
-`pico2w-4mb.json`) into `build/partition_table.uf2`:
+board; the build compiles the board's own (`PARTITION_TABLE_JSON` overrides
+it) into `build/partition_table.uf2`. The controller card's 16 MB map,
+`prod-16mb.json`:
 
 | Offset | Size | Partition |
 | --- | --- | --- |
 | `0x000000` | 4K | partition table |
-| `0x002000` | 1536K | `A` — image slot |
-| `0x182000` | 1536K | `B` — image slot |
-| `0x302000` | 1016K | `data` — settings ping-pong pair in the first two sectors |
+| `0x002000` | 4096K | `A` — image slot |
+| `0x402000` | 4096K | `B` — image slot |
+| `0x802000` | 7168K | `assets` |
+| `0xF02000` | 1012K | `data` — settings ping-pong pair in the first two sectors |
 
-The firmware never hardcodes these offsets: it looks partitions up **by ID**
-through the bootrom at boot, so the same binary runs on any layout. The
-16 MB map for the controller card (`prod-16mb.json`, the default for that
-board) makes the image slots 4 MB each, adds a 7 MB `assets` partition, and
-leaves the top 4 KB sector unpartitioned, which picotool insists on for the
-RP2350-E10 erratum workaround. Boards with no partition table at all still
+The top 4 KB sector stays unpartitioned, which picotool insists on for the
+RP2350-E10 erratum workaround. The firmware never hardcodes these offsets:
+it looks partitions up **by ID** through the bootrom at boot, so the same
+code runs on any layout. The Pico 2 W stand-in's 4 MB map
+(`pico2w-4mb.json`) has two 1536 KB image slots and a 1016 KB `data`
+partition, and no `assets`. Boards with no partition table at all still
 work — settings fall back to the legacy top-of-flash sectors and `info`
 reports `slot raw`.
 
-**One-time install** (per board): enter BOOTSEL and drag
-`partition_table.uf2`, then `controller.uf2`. The bootrom routes the app UF2
-into an image slot by itself. Settings saved by older raw-layout firmware are
-found and migrated into the data partition on first boot.
+**First programming** (per board). The partition table sits in the first
+4 KB of flash and the firmware in an image slot behind it, so a new board
+needs both.
+
+- *Over SWD*, which is how a controller card is programmed (its USB is an
+  unpopulated header): write `controller-factory.bin` at `0x10000000`. It is
+  the start of flash as one file — the partition table, then the firmware
+  where slot A begins. Not yet tried on a board: see
+  [Not yet run on hardware](#not-yet-run-on-hardware).
+
+  ```
+  openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg -c "adapter speed 4000" \
+      -c "program build/controller-factory.bin 0x10000000 verify reset exit"
+  ```
+
+  Do not `program controller.elf` (or `controller.bin`) on a board meant to
+  take updates: the firmware is linked for `0x10000000`, so that lands it
+  where the partition table belongs, and the board then runs unpartitioned
+  (`slot raw`) with nothing to update into. On a board that already has its
+  partition table, `controller.bin` goes to a slot's own offset, `0x10002000`
+  for slot A.
+- *Over USB*: enter BOOTSEL and drag `partition_table.uf2`, then
+  `controller.uf2`. The bootrom routes the app UF2 into an image slot by
+  itself.
+
+Settings saved by older raw-layout firmware are found and migrated into the
+data partition on first boot.
 
 **Updates**: dragging a newer `controller.uf2` in BOOTSEL lands in the
 *inactive* slot, and the bootrom boots whichever slot holds the higher
@@ -274,7 +302,9 @@ for local iteration: two builds with the *same* version tie-break to slot A —
 either bump `FW_VERSION` locally or target a slot explicitly with
 `picotool load -f -p <0|1> build/controller.uf2`.
 
-**OTA**: push the release's `controller.signed.bin` to the update endpoint:
+**OTA**: push the release's `controller.signed.bin` to the update endpoint
+(a Pico 2 W stand-in takes `controller-pico2w.signed.bin`; the image names
+its board and the other one refuses it):
 
 ```
 curl --data-binary @controller.signed.bin http://<name>.local/api/v1/update
@@ -289,10 +319,25 @@ written last.
 
 The same pipeline also *pulls*: `update <http-url>` on the CLI fetches an
 image over plain HTTP (any static file server, `python3 -m http.server`
-included), and Home Assistant gets an update entity — publish a retained
-release pointer to `pwrman/<name>/update/latest` as
-`{"version":"x.y.z","url":"http://.../controller.signed.bin"}` and HA shows
-the update and installs it with one click.
+included), and `update latest` fetches the newest release the controller
+knows of.
+
+**Update check**: the controller looks for a newer release by itself. Half a
+minute after the network comes up, and once a day after that, it fetches
+`<update source>/controller/<board>/latest.json`, a pointer of the form
+`{"version":"x.y.z","url":"http://.../controller.signed.bin"}`. A release
+newer than the running one is announced on the console, shows in `info`, and
+turns Home Assistant's update entity to *update available*; nothing installs
+until it is asked for, there or with `update latest`. The update source is
+`http://fw.powermanifold.io` unless set otherwise (`update source <url>`,
+`update_url` in the settings, or the page), and `update source off` stops
+the controller asking; `update check` asks at once. That host is a small
+proxy in front of this repository's GitHub releases
+(`firmware/update-proxy`), there because the controller speaks no TLS and
+GitHub nothing else. The same pointer can instead be published, retained, to
+`pwrman/<name>/update/latest` by something on the LAN; the newer of the two
+is the one that counts. Neither needs to be trusted, as the next paragraph
+explains.
 
 **Signed updates**: what makes an image trustworthy is its signature, not
 where it came from, so it can be served over plain HTTP from anywhere.
@@ -314,8 +359,9 @@ are untouched by all of this. A build with no keys in `keys/` says so when it
 is configured, at boot and in `info`; it accepts unsigned images from the
 network, and still refuses older ones.
 
-The release workflow signs with a Cloud KMS key. `tools/sign_image.py` does
-the signing (Cloud KMS, a key file, or any other signer in two steps),
+The release workflow signs both released builds with a Cloud KMS key.
+`tools/sign_image.py` does the signing (Cloud KMS, a YubiKey, a key file, or
+any other signer in two steps),
 `test/build/verify_image` checks a signed image with the firmware's own code
 and keys, and [`keys/README.md`](keys/README.md) covers adding and retiring
 keys.
@@ -460,7 +506,8 @@ redirect while none is stored. The settings keys are `name`, `wifi_ssid`,
 `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`,
 `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`,
 `tz_offset_min`, `ip_mode`, `ip`, `netmask`, `gateway`, `dns`,
-`syslog_host`, `syslog_port`, `charged_mw`, `charged_min`, `vin_cal`, and
+`syslog_host`, `syslog_port`, `update_url`, `charged_mw`, `charged_min`,
+`vin_cal`, and
 the six-element arrays `port_names`, `port_limits_ma`, `port_max_v` (5, 9,
 12, 15 or 20), `port_priorities`, `port_boot`, `port_auto_off` and
 `port_sleep_min`. Budget, fan, LEDs, names, limits, voltage caps,
@@ -480,7 +527,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading), `progress` (0–100 while `updating`), `update_due`, `silent` |
 | `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
-| `update/latest` | subscribed, retained | the release pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}`, published by CI or by hand |
+| `update/latest` | subscribed, retained | a release pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}`, for sites that publish their own; taken when it names a newer release than the controller's own check found |
 | `port/<n>/set` | subscribed | `ON`, `OFF`, `hard_reset` or `src_cap` |
 | `port/<n>/priority/set` | subscribed | 0–255, 0 = highest |
 | `port/<n>/limit/set` | subscribed | 500–5000 mA |
@@ -493,7 +540,7 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | `fan/set` | subscribed | `auto`, `on` or `off` |
 | `led/set` | subscribed | brightness 0–255 |
 | `improv/set` | subscribed | `open` — a ten-minute BLE provisioning window |
-| `update/set` | subscribed | `install` — pull the `update/latest` URL into the inactive slot |
+| `update/set` | subscribed | `install` — pull the newest known release into the inactive slot |
 
 Settings changed over MQTT persist automatically a few seconds after the
 last change.
@@ -537,9 +584,9 @@ Chassis:
 - diagnostic sensors for the last boot reason and the LED mode, and a
   *Problem* binary sensor whose `detail` attribute names what needs
   attention;
-- an *Open BLE provisioning* button, and a firmware update entity fed from
-  the retained `update/latest` pointer whose Install pulls the URL into the
-  inactive slot;
+- an *Open BLE provisioning* button, and a firmware update entity fed by
+  the controller's daily update check (or a retained `update/latest`
+  pointer) whose Install pulls that release into the inactive slot;
 - on the controller card, a *Bus voltage* sensor (the DC input, from the
   card's divider; retracted on a board without one);
 - while a UPS supply answers on the UPS header: *UPS AC input* (device
@@ -586,7 +633,8 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `vin [cal <volts>\|cal reset]` | DC bus voltage with the raw count and gain trim; `cal 24.13` trims the reading to a meter's (then `save`) |
 | `button [short\|long]` | front-panel button input and state; `short` (wake the chain) / `long` (open BLE) act as if it had been pressed |
 | `export` | every setting as JSON, without passwords |
-| `update [--unsigned] [--downgrade] <http-url>` | OTA pull into the inactive slot; the flags let in an unsigned or an older image, which only this console can do |
+| `update [--unsigned] [--downgrade] <http-url>\|latest` | OTA pull into the inactive slot, `latest` being the newest release the controller knows of; the flags let in an unsigned or an older image, which only this console can do |
+| `update check`, `update source <http-url>\|default\|off` | ask the update source for the newest release now; set where the daily check asks, or stop it asking (then `save`) |
 | `stack` | per-core stack high-water marks |
 | `i2c scan <ch\|none>`, `i2c read <ch> <addr> <reg> [n]`, `i2c write <ch> <addr> <reg> <val>`, `i2c en <port> on\|off` | bench access to the backplane bus, run on the engine core: scan a mux channel (`none` = the upstream side), read or write a register, drive a blade's EN; a healthy blade segment answers `0x40 0x61 0x70 0x74` |
 | `save`, `defaults`, `reboot`, `bootsel` | settings and lifecycle |
@@ -1074,6 +1122,33 @@ needed for. Deliberate reboots and the fault handler stamp the watchdog
 scratch registers before the reset, every boot leaves a sentinel there, and
 the rest comes from the chip's reset-cause bits (which a SYSRESETREQ does
 not update, hence the sentinel).
+
+## Not yet run on hardware
+
+Signed updates, the update check and first programming over SWD were written
+and host-tested before a controller card existed, and none of it has run on
+a board. To check when one arrives, in this order:
+
+1. **First programming over SWD.** `controller-factory.bin` written at
+   `0x10000000` with openocd, on the card's 16 MB flash. `info` then reports
+   `boot: slot A`, not `slot raw`.
+2. **A signed image installs.** Once by push (`POST /api/v1/update`) and once
+   by pull (`update <url>`): the trial boot, then `slot … committed` ten
+   seconds later.
+3. **The refusals.** Over the network: an unsigned image, one signed for the
+   other board, and an older one are each turned away with their own message
+   and nothing is left bootable in the slot. From the console,
+   `update --unsigned` and `update --downgrade` let the first and the last in.
+4. **Stack.** `stack` after a signature check: the Ed25519 verification runs
+   on core 0's stack, in the network callback.
+5. **The update check.** `update check` fetches the pointer from the update
+   source; `info` and Home Assistant's update entity show the release;
+   `update latest` and the entity's Install pull it.
+6. **Settings across the upgrade.** A board coming from 0.11.0 keeps its
+   settings and gains the default update source.
+7. **The release assets.** The first release built this way carries
+   `controller-factory.bin`, the signed images for both boards, and the
+   `-pico2w` files; `fw.powermanifold.io` serves the signed ones.
 
 ## Not yet implemented
 
