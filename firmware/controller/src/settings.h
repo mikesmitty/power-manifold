@@ -79,6 +79,8 @@ typedef struct {
     uint8_t  blade_watch_s;        // a gen-3 blade with EN low resets into its bootloader after this long without the controller (0 = never)
     // -- added in layout version 14 --
     uint16_t payload_len;     // bytes the crc covers (= its offset): lets an older firmware read this record
+    // -- added in layout version 15 --
+    char     update_url[64];  // where to ask for the newest release, "" = never ask (update_latest.h)
     uint32_t crc; // must remain last
 } settings_t;
 

@@ -23,6 +23,7 @@
 #include "net.h"
 #include "ota_pull.h"
 #include "settings.h"
+#include "update_latest.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
 #include "vin.h"
@@ -77,8 +78,7 @@ static char in_topic[96];   // topic of the in-flight incoming publish
 static char in_data[192];   // sized for the update/latest JSON pointer
 static uint16_t in_len;
 
-static char latest_version[16]; // from the retained update/latest pointer
-static char latest_url[160];
+static unsigned latest_seq_sent; // update_latest_seq() as of the last update/state published
 
 static char topic_buf[160];
 static char payload_buf[1024]; // largest: a port's event entity config
@@ -130,26 +130,13 @@ static void publish(const char *topic, const char *payload, uint8_t qos,
 
 // ---- incoming commands -----------------------------------------------------
 
-// minimal {"key":"value"} extraction; enough for the update/latest pointer
-static void json_str(const char *json, const char *key, char *out, size_t cap) {
-    char pat[24];
-    snprintf(pat, sizeof(pat), "\"%s\":\"", key);
-    out[0] = '\0';
-    const char *s = strstr(json, pat);
-    if (!s) return;
-    s += strlen(pat);
-    const char *e = strchr(s, '"');
-    if (!e || (size_t)(e - s) >= cap) return;
-    memcpy(out, s, (size_t)(e - s));
-    out[e - s] = '\0';
-}
-
 static void publish_update_state(void) {
     snprintf(topic_buf, sizeof(topic_buf), "%s/update/state", base);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"installed_version\":\"%s\",\"latest_version\":\"%s\"}",
-             FW_VERSION, latest_version[0] ? latest_version : FW_VERSION);
+             FW_VERSION, update_latest_newer_than(FW_VERSION) ? update_latest_version() : FW_VERSION);
     publish(topic_buf, payload_buf, 1, 1);
+    latest_seq_sent = update_latest_seq();
 }
 
 static void handle_command(const char *topic, const char *data) {
@@ -253,19 +240,20 @@ static void handle_command(const char *topic, const char *data) {
     } else if (strcmp(sub, "/improv/set") == 0) {
         if (!strcasecmp(data, "open")) improv_open(IMPROV_WINDOW_MS, "Home Assistant");
     } else if (strcmp(sub, "/update/latest") == 0) {
-        // retained release pointer, published by CI or by hand:
+        // retained release pointer, published by hand or by something on
+        // the LAN; the controller's own check (update_check.h) feeds the
+        // same place, and the newer of the two is what Install pulls:
         //   {"version":"x.y.z","url":"http://host/controller.signed.bin"}
-        json_str(data, "version", latest_version, sizeof(latest_version));
-        json_str(data, "url", latest_url, sizeof(latest_url));
+        update_latest_offer_json(data);
         publish_update_state();
     } else if (strcmp(sub, "/update/set") == 0) {
         if (strcasecmp(data, "install") != 0) return;
-        if (!latest_url[0]) {
-            printf("update: install requested but no update/latest url is set\n");
+        if (!update_latest_url()[0]) {
+            printf("update: install requested but no release is known yet\n");
             return;
         }
         char e[96];
-        if (!ota_pull_start(latest_url, 0, e, sizeof(e)))
+        if (!ota_pull_start(update_latest_url(), 0, e, sizeof(e)))
             printf("update: %s\n", e);
     }
 }
@@ -1057,6 +1045,7 @@ void mqtt_poll(uint32_t now_ms) {
         }
         subscribe_step();
         if (subscribed()) discovery_step();
+        if (update_latest_seq() != latest_seq_sent) publish_update_state(); // the daily check found one
         if (now_ms - last_telemetry_ms >= TELEMETRY_MS) {
             last_telemetry_ms = now_ms;
             publish_telemetry();

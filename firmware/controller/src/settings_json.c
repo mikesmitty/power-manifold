@@ -9,6 +9,7 @@
 #include "net/jsonlite.h"
 #include "manifold.h"
 #include "vin.h"
+#include "update_latest.h"
 
 #define STR_(x) #x
 #define STR(x) STR_(x)
@@ -66,6 +67,7 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_ip(out, cap, off, "gateway", s->ip_gw);
     off = put_ip(out, cap, off, "dns", s->ip_dns);
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
+    off = put_str(out, cap, off, "update_url", s->update_url);
     off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,"
                "\"vin_cal\":%u,\"blade_auto_update\":%s,\"blade_boot_via_loader\":%s,"
                "\"blade_watch_s\":%u,\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min,
@@ -177,6 +179,13 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
     if ((err = take_str(body, "syslog_host", s->syslog_host, sizeof(s->syslog_host), header_safe,
                         "syslog_host too long", "syslog_host: no spaces or control characters")))
         return err;
+    char source[sizeof(s->update_url) + 8];
+    int got = json_get_str(body, "update_url", source, sizeof(source));
+    if (got) {
+        if (got < 0 || !update_source_valid(source, sizeof(s->update_url)))
+            return "update_url: http://host[:port][/path] without a trailing slash, or empty";
+        strcpy(s->update_url, source);
+    }
     if (json_get_int(body, "mqtt_port", &v)) {
         if (v < 1 || v > 65535) return "mqtt_port out of range";
         s->mqtt_port = (uint16_t)v;

@@ -19,6 +19,7 @@
 #include "net/improv.h"
 #include "net/mqtt.h"
 #include "net/net.h"
+#include "net/update_check.h"
 #include "settings.h"
 #include "stack_probe.h"
 #include "update.h"
@@ -114,6 +115,7 @@ int main(void) {
         improv_poll(now_ms); // before net_poll: sees a join result before the retry
         net_poll(now_ms);
         mqtt_poll(now_ms);
+        update_check_poll(now_ms);
         log_sink_poll(now_ms);
         ups_poll(now_ms);
         vin_poll(now_ms);

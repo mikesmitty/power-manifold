@@ -8,15 +8,14 @@
 #include "lwip/altcp.h"
 #include "lwip/apps/http_client.h"
 
+#include "http_url.h"
 #include "net.h"
 #include "update.h"
 
 static bool           busy;
 static bool           feed_failed; // update_write refused; drain the rest
 static httpc_state_t *conn;
-static char           host[64];
-static char           uri[160];
-static uint16_t       port_num;
+static http_url_t     target;
 static unsigned       allow; // UPDATE_ALLOW_*, from whoever asked for the pull
 
 static err_t recv_cb(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err) {
@@ -89,41 +88,14 @@ static bool eout(char *err, size_t errlen, const char *msg) {
     return false;
 }
 
-static bool parse_url(const char *url, char *err, size_t errlen) {
-    if (!strncmp(url, "https://", 8))
-        return eout(err, errlen, "https unsupported; serve the image over plain http");
-    if (strncmp(url, "http://", 7))
-        return eout(err, errlen, "url must start with http://");
-
-    const char *h = url + 7;
-    const char *path = strchr(h, '/');
-    const char *colon = strchr(h, ':');
-    if (colon && path && colon > path) colon = NULL; // ':' inside the path
-
-    size_t hlen = (colon ? colon : path ? path : h + strlen(h)) - h;
-    if (hlen == 0 || hlen >= sizeof(host))
-        return eout(err, errlen, "bad host in url");
-    memcpy(host, h, hlen);
-    host[hlen] = '\0';
-
-    port_num = 80;
-    if (colon) {
-        long pn = strtol(colon + 1, NULL, 10);
-        if (pn <= 0 || pn > 65535) return eout(err, errlen, "bad port in url");
-        port_num = (uint16_t)pn;
-    }
-    snprintf(uri, sizeof(uri), "%s", path ? path : "/");
-    return true;
-}
-
 bool ota_pull_start(const char *url, unsigned allow_flags, char *err, size_t errlen) {
     if (busy) return eout(err, errlen, "a pull is already in progress");
-    if (!parse_url(url, err, errlen)) return false;
+    if (!http_url_parse(url, &target, err, errlen)) return false;
     allow = allow_flags;
 
     feed_failed = false;
     net_lock();
-    err_t rc = httpc_get_file_dns(host, port_num, uri, &settings, recv_cb,
+    err_t rc = httpc_get_file_dns(target.host, target.port, target.path, &settings, recv_cb,
                                   NULL, &conn);
     net_unlock();
     if (rc != ERR_OK) {

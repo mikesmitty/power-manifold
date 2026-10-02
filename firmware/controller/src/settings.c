@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "settings_hw.h"
+#include "update_latest.h"
 
 // The store: which of the two sectors holds the record to use, how a record
 // written by another firmware version is read, and where a save goes. All
@@ -12,7 +13,7 @@
 // this against a pair of sectors in RAM.
 
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    14
+#define SETTINGS_VERSION    15
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -32,6 +33,7 @@
 #define SETTINGS_V11_PAYLOAD ALIGN4(offsetof(settings_t, vin_cal))
 #define SETTINGS_V12_PAYLOAD ALIGN4(offsetof(settings_t, blade_auto_update))
 #define SETTINGS_V13_PAYLOAD ALIGN4(offsetof(settings_t, payload_len))
+#define SETTINGS_V14_PAYLOAD ALIGN4(offsetof(settings_t, update_url))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -49,7 +51,8 @@ _Static_assert(SETTINGS_V13_PAYLOAD == 664, "settings v13 layout moved");
 // v13's tail padding, so v14 is as long as v13, and every later version
 // keeps the field at this offset.
 _Static_assert(offsetof(settings_t, payload_len) == 662, "settings payload_len moved");
-_Static_assert(offsetof(settings_t, crc) == 664, "settings v14 layout moved");
+_Static_assert(SETTINGS_V14_PAYLOAD == 664, "settings v14 layout moved");
+_Static_assert(offsetof(settings_t, crc) == 728, "settings v15 layout moved");
 _Static_assert(sizeof(settings_t) <= SETTINGS_SECTOR_SIZE, "settings record outgrew its sector");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
@@ -104,6 +107,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t record_payload_len(const settings_t *s) {
     switch (s->version) {
     case SETTINGS_VERSION: return payload_len();
+    case 14:               return SETTINGS_V14_PAYLOAD;
     case 13:               return SETTINGS_V13_PAYLOAD;
     case 12:               return SETTINGS_V12_PAYLOAD;
     case 11:               return SETTINGS_V11_PAYLOAD;
@@ -175,6 +179,7 @@ void settings_defaults(void) {
     g_settings.blade_auto_update = 1;
     g_settings.blade_boot_via_loader = 1;
     g_settings.blade_watch_s = BLADE_WATCH_S_DEFAULT;
+    strcpy(g_settings.update_url, UPDATE_SOURCE_DEFAULT);
 }
 
 void settings_load(void) {
@@ -234,6 +239,11 @@ void settings_load(void) {
             g_settings.blade_auto_update = 1;
             g_settings.blade_boot_via_loader = 1;
             g_settings.blade_watch_s = BLADE_WATCH_S_DEFAULT;
+        }
+        // the copy above put the old record's crc where this field starts
+        if (g_settings.version < 15) {
+            memset(g_settings.update_url, 0, sizeof(g_settings.update_url));
+            strcpy(g_settings.update_url, UPDATE_SOURCE_DEFAULT);
         }
         g_settings.version = SETTINGS_VERSION;
     } else {

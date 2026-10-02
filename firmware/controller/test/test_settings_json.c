@@ -38,6 +38,7 @@ static void fill(settings_t *s) {
     s->ip_gw = ip("10.100.55.1");
     s->ip_dns = ip("10.64.0.2");
     strcpy(s->syslog_host, "logs.example");
+    strcpy(s->update_url, "http://updates.example:8080/fw");
     s->syslog_port = 5514;
     s->charged_mw = 750;
     s->charged_min = 20;
@@ -130,6 +131,10 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"port_max_v\":[7]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_max_v\":[15,9]}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"syslog_port\":0}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"update_url\":\"https://updates.example\"}", false) != NULL); // no TLS here
+    MT_ASSERT(apply_fresh("{\"update_url\":\"http://updates.example/\"}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"update_url\":\"updates.example\"}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"update_url\":\"\"}", false) == NULL); // empty = never ask
     MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_auto_off\":[2]}", false) != NULL);

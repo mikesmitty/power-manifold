@@ -80,6 +80,7 @@ add_executable(controller
     src/update.c
     src/update_image.c
     src/update_sig.c
+    src/update_latest.c
     lib/monocypher/monocypher.c
     lib/monocypher/monocypher-ed25519.c
     src/cli.c
@@ -97,6 +98,8 @@ add_executable(controller
     src/net/http.c
     src/net/jsonlite.c
     src/net/ota_pull.c
+    src/net/http_url.c
+    src/net/update_check.c
     src/ups/lad_proto.c
     src/ups/ups.c
     src/ups/lad_hw_pico.c

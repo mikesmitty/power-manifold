@@ -34,12 +34,14 @@ add_executable(engine_tests
     ../src/engine/sim/sim_blades.c
     ../src/engine/sim/sim_inject.c
     ../src/net/improv_proto.c
+    ../src/net/http_url.c
     ../src/net/jsonlite.c
     ../src/net/w6100.c
     ../src/ups/lad_proto.c
     ../src/ups/ups.c
     ../src/vin.c
     ../src/update_image.c
+    ../src/update_latest.c
     ../src/update_sig.c
     ../lib/monocypher/monocypher.c
     ../lib/monocypher/monocypher-ed25519.c
@@ -63,6 +65,7 @@ add_executable(engine_tests
     test_settings_json.c
     test_sim_inject.c
     test_update_image.c
+    test_update_latest.c
     test_update_sig.c
     test_ups.c
     test_vin.c

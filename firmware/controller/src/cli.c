@@ -33,10 +33,12 @@
 #include "net/mqtt.h"
 #include "net/net.h"
 #include "net/ota_pull.h"
+#include "net/update_check.h"
 #include "settings.h"
 #include "settings_json.h"
 #include "stack_probe.h"
 #include "update.h"
+#include "update_latest.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
 #include "vin.h"
@@ -97,9 +99,13 @@ static void print_help(void) {
 #ifdef PWRMAN_FAKE_BLADES
            "  sim ...                      fault injection on the simulated blades ('sim' for help)\n"
 #endif
-           "  update [--unsigned] [--downgrade] <http-url>\n"
-           "                               OTA pull into the inactive slot; the flags let an unsigned\n"
-           "                               or an older image in (this console only)\n"
+           "  update [--unsigned] [--downgrade] <http-url>|latest\n"
+           "                               OTA pull into the inactive slot ('latest': the newest known\n"
+           "                               release); the flags let an unsigned or an older image in\n"
+           "                               (this console only)\n"
+           "  update check                 ask the update source for the newest release now\n"
+           "  update source <http-url>|default|off\n"
+           "                               where the daily check asks; 'off' = never ask (then 'save')\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
 }
@@ -156,6 +162,13 @@ static void print_info(void) {
                update_key_count(), update_key_count() == 1 ? "" : "s");
     else
         printf("updates: NOT checked for a signature (no keys in this build)\n");
+    char check[128];
+    update_check_status(to_ms_since_boot(get_absolute_time()), check, sizeof(check));
+    printf("update check: %s\n", check);
+    net_lock(); // the MQTT pointer is offered from lwIP callbacks
+    if (update_latest_newer_than(FW_VERSION))
+        printf("update available: %s ('update latest' installs it)\n", update_latest_version());
+    net_unlock();
     printf("device name: %s\n", g_settings.device_name);
 #if PWRMAN_NET_WIFI
     printf("wifi: %s (%s)\n",
@@ -855,14 +868,44 @@ static void run_line(char *l) {
         unsigned allow = 0;
         const char *url = NULL;
         bool bad = false;
-        for (const char *a; (a = strtok_r(NULL, " \t", &save)) != NULL;) {
+        char known[UPDATE_LATEST_URL_MAX];
+        const char *first = strtok_r(NULL, " \t", &save);
+        if (first && !strcmp(first, "check")) {
+            char e[96];
+            if (update_check_now(e, sizeof(e))) printf("asking %s; the answer lands on this console and in 'info'\n", g_settings.update_url);
+            else printf("update: %s\n", e);
+            return;
+        }
+        if (first && !strcmp(first, "source")) {
+            const char *base = strtok_r(NULL, " \t", &save);
+            if (base && !strcmp(base, "off")) base = "";
+            else if (base && !strcmp(base, "default")) base = UPDATE_SOURCE_DEFAULT;
+            if (!base || !update_source_valid(base, sizeof(g_settings.update_url))) {
+                printf("usage: update source <http://host[:port][/path]>|default|off\n");
+                return;
+            }
+            strcpy(g_settings.update_url, base);
+            printf(base[0] ? "update source %s ('save' to persist; 'update check' asks now)\n"
+                           : "update check off%s ('save' to persist)\n", base);
+            return;
+        }
+        for (const char *a = first; a; a = strtok_r(NULL, " \t", &save)) {
             if (!strcmp(a, "--unsigned")) allow |= UPDATE_ALLOW_UNSIGNED;
             else if (!strcmp(a, "--downgrade")) allow |= UPDATE_ALLOW_DOWNGRADE;
             else if (a[0] == '-' || url) bad = true;
             else url = a;
         }
+        if (url && !strcmp(url, "latest")) { // the release the check or the MQTT pointer named
+            net_lock();
+            snprintf(known, sizeof(known), "%s", update_latest_url());
+            net_unlock();
+            if (!known[0]) { printf("no release is known yet ('update check' asks the update source)\n"); return; }
+            url = known;
+            printf("pulling %s\n", url);
+        }
         if (bad || !url) {
-            printf("usage: update [--unsigned] [--downgrade] <http://host[:port]/controller.signed.bin>\n");
+            printf("usage: update [--unsigned] [--downgrade] <http://host[:port]/controller.signed.bin>|latest\n"
+                   "       update check | update source <http://host[:port][/path]>|default|off\n");
             return;
         }
         char e[96];
