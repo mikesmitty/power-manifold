@@ -9,7 +9,7 @@
 	(paper "A4")
 	(title_block
 		(date "2026-09-06")
-		(rev "v0.4.2")
+		(rev "v0.4.1")
 	)
 	(layers
 		(0 "F.Cu" signal)
@@ -35554,8 +35554,19 @@
 		(uuid "9ab44cf4-e1f5-4852-b698-2af8f817ebf7")
 	)
 	(gr_line
+		(start 63.05 48)
+		(end 155.875 48)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(locked yes)
+		(layer "Edge.Cuts")
+		(uuid "3ffce7dd-df05-441f-b303-4a6fa973c392")
+	)
+	(gr_line
 		(start 63.05 52.75)
-		(end 63.050184 48)
+		(end 63.05 48)
 		(stroke
 			(width 0.05)
 			(type solid)
@@ -35566,7 +35577,7 @@
 	)
 	(gr_line
 		(start 63.05 73.05)
-		(end 63.050283 76)
+		(end 63.05 76)
 		(stroke
 			(width 0.05)
 			(type solid)
@@ -35574,17 +35585,6 @@
 		(locked yes)
 		(layer "Edge.Cuts")
 		(uuid "2e2c6d0b-d8c6-451d-8729-2207f4cca187")
-	)
-	(gr_line
-		(start 63.050184 48)
-		(end 155.875 48)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(locked yes)
-		(layer "Edge.Cuts")
-		(uuid "3ffce7dd-df05-441f-b303-4a6fa973c392")
 	)
 	(gr_line
 		(start 155.875 48)
@@ -35599,7 +35599,7 @@
 	)
 	(gr_line
 		(start 155.875 76)
-		(end 63.050184 76)
+		(end 63.05 76)
 		(stroke
 			(width 0.05)
 			(type solid)
