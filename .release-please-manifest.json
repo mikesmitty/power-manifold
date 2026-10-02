@@ -1,7 +1,7 @@
 {
     "hardware/backplane": "0.13.1",
     "hardware/charger-module": "0.16.1",
-    "hardware/controller": "0.4.1",
+    "hardware/controller": "0.4.2",
     "firmware/controller": "0.11.0",
     "firmware/charger-module": "0.2.0",
     "hardware/backplane-backer": "0.1.3",
