@@ -46,22 +46,37 @@ jobs:
       contents: write
       id-token: write # Workload Identity Federation, for Cloud KMS
     env:
-      # the board firmware.yaml's released build is for
-      BOARD: pico2_w
       KMS_KEY: ${{ vars.UPDATE_SIGNING_KMS_KEY }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-please.outputs.controller-tag }}
 
+      # The release is the controller card's build. The Pico 2 W build (a
+      # development stand-in on the pcie-breakout) rides along under -pico2w
+      # names.
       - uses: actions/download-artifact@v8
         with:
           name: controller-firmware
           path: dist
 
-      # controller.signed.bin is what a controller installs over the network:
-      # the raw image plus an Ed25519 signature made by Cloud KMS. The private
-      # key never leaves KMS; this job only asks it to sign 112 bytes.
+      - uses: actions/download-artifact@v8
+        with:
+          name: controller-pico2w-firmware
+          path: pico2w
+
+      - name: Name the Pico 2 W's files
+        run: |
+          mv pico2w/controller.uf2 dist/controller-pico2w.uf2
+          mv pico2w/controller.bin dist/controller-pico2w.bin
+          mv pico2w/controller.elf dist/controller-pico2w.elf
+          mv pico2w/controller-factory.bin dist/controller-pico2w-factory.bin
+          mv pico2w/partition_table.uf2 dist/partition_table-pico2w.uf2
+
+      # controller*.signed.bin is what a controller installs over the network:
+      # the raw image plus an Ed25519 signature made by Cloud KMS, which names
+      # the board the image is for. The private key never leaves KMS; this job
+      # only asks it to sign 112 bytes per image.
       # Direct Workload Identity Federation, no service account: the key's
       # signer role is granted to jobs of this repository that run in the
       # firmware-signing environment, and to nothing else.
@@ -75,31 +90,40 @@ jobs:
         if: env.KMS_KEY != ''
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Sign the image
+      - name: Sign the images
         if: env.KMS_KEY != ''
         run: |
-          python3 firmware/controller/tools/sign_image.py sign dist/controller.bin \
-            --board "$BOARD" --kms-key "$KMS_KEY" -o dist/controller.signed.bin
+          sign() { python3 firmware/controller/tools/sign_image.py sign "$1" --board "$2" --kms-key "$KMS_KEY"; }
+          sign dist/controller.bin pwrman_controller_card
+          sign dist/controller-pico2w.bin pico2_w
 
       # The firmware's own check, with the public keys this release is built
       # with: a signature those keys do not accept must not be published.
-      - name: Verify the signed image
+      - name: Verify the signed images
         if: env.KMS_KEY != ''
         run: |
           cmake -S firmware/controller/test -B verify-build
           cmake --build verify-build --target verify_image
-          verify-build/verify_image dist/controller.signed.bin "$BOARD"
+          verify-build/verify_image dist/controller.signed.bin pwrman_controller_card
+          verify-build/verify_image dist/controller-pico2w.signed.bin pico2_w
 
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.controller-tag }}
         run: |
-          signed=dist/controller.signed.bin
-          [ -f "$signed" ] || { signed=; echo "::warning::UPDATE_SIGNING_KMS_KEY is not set: this release has no signed image"; }
-          gh release upload "$TAG" dist/controller.uf2 dist/controller.elf \
-            dist/partition_table.uf2 $signed \
-            --repo "$GITHUB_REPOSITORY" --clobber
+          assets=(
+            dist/controller.uf2 dist/controller.elf dist/partition_table.uf2
+            dist/controller-factory.bin
+            dist/controller-pico2w.uf2 dist/controller-pico2w.elf dist/partition_table-pico2w.uf2
+            dist/controller-pico2w-factory.bin
+          )
+          if [ -f dist/controller.signed.bin ]; then
+            assets+=(dist/controller.signed.bin dist/controller-pico2w.signed.bin)
+          else
+            echo "::warning::UPDATE_SIGNING_KMS_KEY is not set: this release has no signed images"
+          fi
+          gh release upload "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
 
   build-charger-module-firmware:
     name: Build charger module firmware

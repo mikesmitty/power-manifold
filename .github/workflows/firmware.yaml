@@ -100,10 +100,11 @@ jobs:
           cmake -S firmware/charger-module -B firmware/charger-module/build -G Ninja
           ninja -C firmware/charger-module/build
 
+      # The production controller card: the default board.
       - name: Configure
         run: >
           cmake -S firmware/controller -B firmware/controller/build -G Ninja
-          -DPICO_BOARD=pico2_w -DPICO_SDK_PATH="$HOME/pico-sdk"
+          -DPICO_SDK_PATH="$HOME/pico-sdk"
           -DBLADE_IMAGE="$GITHUB_WORKSPACE/firmware/charger-module/build/charger-module.bin"
 
       - name: Build
@@ -117,25 +118,28 @@ jobs:
             firmware/controller/build/controller.uf2
             firmware/controller/build/controller.bin
             firmware/controller/build/controller.elf
+            firmware/controller/build/controller-factory.bin
             firmware/controller/build/partition_table.uf2
 
-      # The production controller card: its own board header (16 MB flash,
-      # the card's GPIO map) and partition layout. Built so a change that
-      # breaks it is caught here, not at bring-up.
-      - name: Configure (controller card)
+      # The Pico 2 W on the pcie-breakout: a development stand-in until the
+      # card exists. Built and released so a bench board can be updated; it
+      # goes away with the breakout.
+      - name: Configure (Pico 2 W)
         run: >
-          cmake -S firmware/controller -B firmware/controller/build-card -G Ninja
-          -DPICO_BOARD=pwrman_controller_card -DPICO_SDK_PATH="$HOME/pico-sdk"
+          cmake -S firmware/controller -B firmware/controller/build-pico2w -G Ninja
+          -DPICO_BOARD=pico2_w -DPICO_SDK_PATH="$HOME/pico-sdk"
           -DBLADE_IMAGE="$GITHUB_WORKSPACE/firmware/charger-module/build/charger-module.bin"
 
-      - name: Build (controller card)
-        run: ninja -C firmware/controller/build-card
+      - name: Build (Pico 2 W)
+        run: ninja -C firmware/controller/build-pico2w
 
-      - name: Store card firmware
+      - name: Store Pico 2 W firmware
         uses: actions/upload-artifact@v7
         with:
-          name: controller-card-firmware
+          name: controller-pico2w-firmware
           path: |
-            firmware/controller/build-card/controller.uf2
-            firmware/controller/build-card/controller.elf
-            firmware/controller/build-card/partition_table.uf2
+            firmware/controller/build-pico2w/controller.uf2
+            firmware/controller/build-pico2w/controller.bin
+            firmware/controller/build-pico2w/controller.elf
+            firmware/controller/build-pico2w/controller-factory.bin
+            firmware/controller/build-pico2w/partition_table.uf2
