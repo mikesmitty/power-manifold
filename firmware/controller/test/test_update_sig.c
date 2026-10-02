@@ -8,7 +8,7 @@
 // Signed-image trailers, built here the way tools/sign_image.py builds them
 // (test/sign_roundtrip.sh checks the tool itself against the same verifier).
 
-#define BOARD "pico2_w"
+#define BOARD "pwrman_controller_card"
 
 static uint8_t image[5000];
 static uint8_t hash[UPD_SIG_HASH_LEN];
@@ -95,13 +95,13 @@ static void test_wrong_image(void) {
 
 static void test_wrong_board(void) {
     uint8_t t[UPD_SIG_TRAILER_LEN];
-    make_trailer(t, sizeof(image), "pwrman_controller_card", 0); // validly signed, for the card
+    make_trailer(t, sizeof(image), "pico2_w", 0); // validly signed, for another board
     MT_ASSERT(check(t) != NULL);
-    MT_ASSERT(update_sig_check(t, sizeof(image), hash, "pwrman_controller_card", keys, 2) == NULL);
-    make_trailer(t, sizeof(image), "pico2", 0); // a prefix of this board's name is another board
+    MT_ASSERT(update_sig_check(t, sizeof(image), hash, "pico2_w", keys, 2) == NULL);
+    make_trailer(t, sizeof(image), "pwrman_controller", 0); // a prefix of this board's name is another board
     MT_ASSERT(check(t) != NULL);
     make_trailer(t, sizeof(image), BOARD, 0);
-    MT_ASSERT(update_sig_check(t, sizeof(image), hash, "pico2", keys, 2) != NULL);
+    MT_ASSERT(update_sig_check(t, sizeof(image), hash, "pwrman_controller", keys, 2) != NULL);
 }
 
 static void test_unsigned_tail(void) {
@@ -118,7 +118,7 @@ static void test_no_keys(void) {
     make_trailer(t, sizeof(image), BOARD, 0);
     memset(t + UPD_SIG_SIGNED_LEN, 0, 64);
     MT_ASSERT(update_sig_check(t, sizeof(image), hash, BOARD, keys, 0) == NULL);
-    MT_ASSERT(update_sig_check(t, sizeof(image), hash, "pico2", keys, 0) != NULL);
+    MT_ASSERT(update_sig_check(t, sizeof(image), hash, "pico2_w", keys, 0) != NULL);
     MT_ASSERT(update_sig_check(t, sizeof(image) + 4, hash, BOARD, keys, 0) != NULL);
     MT_ASSERT(update_sig_check(t, sizeof(image), hash, BOARD, keys, 2) != NULL);
 }

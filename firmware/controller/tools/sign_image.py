@@ -100,7 +100,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", choices=["sign", "tbs", "attach"])
     ap.add_argument("image", type=pathlib.Path, help="the raw controller.bin")
-    ap.add_argument("--board", required=True, help="PICO_BOARD the image was built for, e.g. pico2_w")
+    ap.add_argument("--board", required=True, help="PICO_BOARD the image was built for, e.g. pwrman_controller_card")
     ap.add_argument("-o", "--out", type=pathlib.Path, help="default: IMAGE with .signed.bin or .tbs")
     ap.add_argument("--kms-key", help="sign: Cloud KMS key version resource name")
     ap.add_argument("--openssl-key", type=pathlib.Path, help="sign: Ed25519 private key file (PEM)")

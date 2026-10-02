@@ -1,11 +1,12 @@
 #pragma once
 
 // Controller GPIO map. Two boards run this firmware:
-//   - the Pico 2 W on the pcie-breakout (the development carrier; also the
-//     W6100-EVB-Pico2 in the same socket): the default PICO_BOARD=pico2_w;
-//   - the production controller card, hardware/controller:
+//   - the production controller card, hardware/controller: the default
 //     PICO_BOARD=pwrman_controller_card (boards/), which defines
-//     PWRMAN_CONTROLLER_CARD.
+//     PWRMAN_CONTROLLER_CARD;
+//   - the Pico 2 W on the pcie-breakout, a development stand-in until the
+//     card exists (also the W6100-EVB-Pico2 in the same socket):
+//     PICO_BOARD=pico2_w.
 // I2C, the Ethernet pins and the UPS link are common to both; the other
 // backplane signals and the reset drivers differ.
 //

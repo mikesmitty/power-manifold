@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PICO_BOARD pico2_w CACHE STRING "Board type")
+# the production controller card; any other board is named on the command line
+set(PICO_BOARD pwrman_controller_card CACHE STRING "Board type")
 
 # project board headers alongside the SDK's: wiznet_w6100_evb_pico2 and the
 # production card, pwrman_controller_card (see boards/)
@@ -34,7 +35,7 @@ if(CARRIER_INTERNAL_PULLUPS AND PICO_BOARD STREQUAL "pwrman_controller_card")
 endif()
 
 if(NET_WIFI AND NOT PICO_CYW43_SUPPORTED)
-    message(FATAL_ERROR "NET_WIFI=ON needs a CYW43 board (PICO_BOARD=pico2_w). "
+    message(FATAL_ERROR "NET_WIFI=ON needs a board with a CYW43 radio (the controller card, a Pico 2 W). "
         "For a wired-only image (W6100-EVB-Pico2 etc.) configure with -DNET_WIFI=OFF.")
 endif()
 

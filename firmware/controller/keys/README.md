@@ -34,7 +34,8 @@ that never takes the release keeps trusting the old key.
 
 ## Signing
 
-The release workflow signs `controller.bin` with Cloud KMS
+The release workflow signs both released builds (the Pico 2 W's
+`controller.bin` and the controller card's) with Cloud KMS
 (`.github/workflows/release-please.yml`) and checks the result against the
 keys here before publishing it. It reads two variables from the
 `firmware-signing` environment:
@@ -58,8 +59,8 @@ generated on the key, PIN and touch required for every signature) and has no
 copy anywhere else:
 
 ```
-tools/sign_image.py sign build/controller.bin --board pico2_w --yubikey
-test/build/verify_image build/controller.signed.bin pico2_w
+tools/sign_image.py sign build/controller.bin --board pwrman_controller_card --yubikey
+test/build/verify_image build/controller.signed.bin pwrman_controller_card
 ```
 
 That needs YubiKey Manager (`ykman`) and firmware 5.7 or later on the key.
@@ -68,8 +69,8 @@ By hand, with any other signer that produces a plain (not prehashed) Ed25519
 signature:
 
 ```
-tools/sign_image.py tbs build/controller.bin --board pico2_w      # -> controller.tbs, 112 bytes
+tools/sign_image.py tbs build/controller.bin --board pwrman_controller_card      # -> controller.tbs, 112 bytes
 <sign controller.tbs, giving a 64-byte signature, raw or base64>
-tools/sign_image.py attach build/controller.bin --board pico2_w --signature controller.sig
-test/build/verify_image build/controller.signed.bin pico2_w       # the firmware's check, these keys
+tools/sign_image.py attach build/controller.bin --board pwrman_controller_card --signature controller.sig
+test/build/verify_image build/controller.signed.bin pwrman_controller_card       # the firmware's check, these keys
 ```

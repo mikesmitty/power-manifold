@@ -25,24 +25,24 @@ image = bytes(0x134) + block + bytes(range(256)) * 40
 open(sys.argv[1], "wb").write(image)
 PY
 
-"$python" "$dir/tools/sign_image.py" sign "$tmp/image.bin" --board pico2_w \
+"$python" "$dir/tools/sign_image.py" sign "$tmp/image.bin" --board pwrman_controller_card \
     --openssl-key "$tmp/key.pem" -o "$tmp/signed.bin"
-"$verify" "$tmp/signed.bin" pico2_w "$(pubhex "$tmp/key.pem")"
+"$verify" "$tmp/signed.bin" pwrman_controller_card "$(pubhex "$tmp/key.pem")"
 
 # the by-hand route a hardware token takes gives the same file
-"$python" "$dir/tools/sign_image.py" tbs "$tmp/image.bin" --board pico2_w -o "$tmp/image.tbs"
+"$python" "$dir/tools/sign_image.py" tbs "$tmp/image.bin" --board pwrman_controller_card -o "$tmp/image.tbs"
 openssl pkeyutl -sign -inkey "$tmp/key.pem" -rawin -in "$tmp/image.tbs" | openssl base64 > "$tmp/image.sig"
-"$python" "$dir/tools/sign_image.py" attach "$tmp/image.bin" --board pico2_w \
+"$python" "$dir/tools/sign_image.py" attach "$tmp/image.bin" --board pwrman_controller_card \
     --signature "$tmp/image.sig" -o "$tmp/attached.bin"
 cmp "$tmp/signed.bin" "$tmp/attached.bin"
 
-refused "$verify" "$tmp/signed.bin" pico2_w "$(pubhex "$tmp/other.pem")"
-refused "$verify" "$tmp/signed.bin" pwrman_controller_card "$(pubhex "$tmp/key.pem")"
+refused "$verify" "$tmp/signed.bin" pwrman_controller_card "$(pubhex "$tmp/other.pem")"
+refused "$verify" "$tmp/signed.bin" pico2_w "$(pubhex "$tmp/key.pem")"
 "$python" - "$tmp/signed.bin" "$tmp/touched.bin" <<'PY'
 import sys
 image = bytearray(open(sys.argv[1], "rb").read())
 image[1000] ^= 1
 open(sys.argv[2], "wb").write(image)
 PY
-refused "$verify" "$tmp/touched.bin" pico2_w "$(pubhex "$tmp/key.pem")"
+refused "$verify" "$tmp/touched.bin" pwrman_controller_card "$(pubhex "$tmp/key.pem")"
 echo "sign round trip ok"

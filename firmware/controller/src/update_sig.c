@@ -17,7 +17,7 @@ const char *update_sig_check(const uint8_t *trailer, uint32_t image_len,
                    ((uint32_t)trailer[10] << 16) | ((uint32_t)trailer[11] << 24);
     if (len != image_len) return "signed length does not match the image";
 
-    // the whole field, padding included: "pico2" must not pass for "pico2_w"
+    // the whole field, padding included: a prefix of the name is another board
     char want[UPD_SIG_BOARD_LEN] = {0};
     strncpy(want, board, sizeof(want) - 1);
     if (memcmp(trailer + UPD_SIG_BOARD_OFF, want, sizeof(want)) != 0)
