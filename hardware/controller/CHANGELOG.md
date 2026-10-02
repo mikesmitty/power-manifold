@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/mikesmitty/power-manifold/compare/controller-v0.4.1...controller-v0.4.2) (2026-10-02)
+
+
+### Bug Fixes
+
+* **controller:** add pogo pads for bulk programming ([cd95b0e](https://github.com/mikesmitty/power-manifold/commit/cd95b0e9a5231cee077846021b07c2520cd79f0e))
+
 ## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/controller-v0.4.0...controller-v0.4.1) (2026-09-29)
 
 
