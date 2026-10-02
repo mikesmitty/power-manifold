@@ -248,4 +248,23 @@ if(picotool_FOUND)
         VERBATIM)
     add_custom_target(partition_table ALL
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/partition_table.uf2)
+
+    # controller-factory.bin: what a blank board is first programmed with
+    # over SWD, written at 0x10000000 — the partition table and the firmware
+    # in image slot A as one file (tools/factory_image.py, README "First
+    # programming").
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/controller-factory.bin
+        COMMAND picotool partition create --quiet
+                ${PARTITION_TABLE_JSON} ${CMAKE_CURRENT_BINARY_DIR}/partition_table.bin
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/tools/factory_image.py
+                --layout ${PARTITION_TABLE_JSON}
+                --table ${CMAKE_CURRENT_BINARY_DIR}/partition_table.bin
+                --image ${CMAKE_CURRENT_BINARY_DIR}/controller.bin
+                --out ${CMAKE_CURRENT_BINARY_DIR}/controller-factory.bin
+        DEPENDS controller ${PARTITION_TABLE_JSON} ${CMAKE_CURRENT_LIST_DIR}/tools/factory_image.py
+        VERBATIM)
+    add_custom_target(factory_image ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/controller-factory.bin)
 endif()
