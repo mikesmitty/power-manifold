@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.11.0...controller-firmware-v0.12.0) (2026-10-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **controller:** a build without -DPICO_BOARD is now for the controller card, and a release's unsuffixed files (controller.uf2, controller.elf, controller.signed.bin, partition_table.uf2) are the card's. The Pico 2 W build is published as controller-pico2w.* and partition_table-pico2w.uf2; pass -DPICO_BOARD=pico2_w to build it.
+
+### Features
+
+* **controller:** build for the controller card by default ([68d33ae](https://github.com/mikesmitty/power-manifold/commit/68d33ae89d8687b93ae0ec7281221167c0ee9239))
+* **controller:** factory image for first programming over SWD ([660d443](https://github.com/mikesmitty/power-manifold/commit/660d443b65859c80ee5f6db1f425584c153d1e48))
+* **controller:** look for new releases and offer them ([e55e9a9](https://github.com/mikesmitty/power-manifold/commit/e55e9a941ff525c85c1ad35692481cc49ce3ce0e))
+* **controller:** trust a backup update key held on a YubiKey ([d14e544](https://github.com/mikesmitty/power-manifold/commit/d14e5445708a9a472e9639af2babecc91e0ff9be))
+
 ## [0.11.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.10.0...controller-firmware-v0.11.0) (2026-10-01)
 
 
