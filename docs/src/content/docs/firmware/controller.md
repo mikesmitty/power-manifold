@@ -373,7 +373,9 @@ keys.
 
 **Try-before-you-buy**: a TBYB-flagged image boots as a *trial* — `info`
 shows `slot B (TRIAL, uncommitted)` — and commits itself only after 10 s of
-continuous health (engine heartbeat, network up if one is configured). Until
+an unbroken engine heartbeat and, with WiFi configured, once the network
+has come up at least once since boot; a link that then flaps does not
+revert a good image. Until
 then any reboot, watchdog bite, or the 10-minute deadline reverts to the
 previous image, so a broken OTA push heals itself.
 

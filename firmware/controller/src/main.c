@@ -29,10 +29,13 @@
 
 #define WATCHDOG_TIMEOUT_MS 5000
 
-// Try-before-you-buy: a trial image commits itself only after this much
-// continuous health (engine heartbeat + network up when one is configured).
-// If it never gets there, reboot; the bootrom then falls back to the
-// previous image, since an uncommitted trial is skipped on a normal boot.
+// Try-before-you-buy: a trial image commits itself once the engine heartbeat
+// has been fresh for this long without a break and, when WiFi is configured,
+// the network has come up at least once since boot. A link that came up at
+// all proves the image's network stack works; one that flaps afterwards is
+// the environment's doing and must not revert a good image. If the trial
+// never gets there, reboot; the bootrom then falls back to the previous
+// image, since an uncommitted trial is skipped on a normal boot.
 #define UPDATE_HEALTH_MS   (10 * 1000)
 #define UPDATE_DEADLINE_MS (10 * 60 * 1000)
 
@@ -115,6 +118,7 @@ int main(void) {
     bool boot_logged = false; // one fault-log record per boot, once flash writes are safe
     bool trial = flash_map_update_pending();
     uint32_t healthy_since = 0;
+    bool net_seen = false; // the network has been up at some point since boot
     uint8_t led_flags_sent = 0; // engine's view starts with no chassis overlay
     uint8_t led_level_sent = g_settings.led_brightness; // what the engine applied at init
     uint8_t led_base_seen = g_settings.led_brightness;
@@ -279,8 +283,9 @@ int main(void) {
         }
 
         if (trial) {
+            if (net_up()) net_seen = true;
             bool healthy = ipc_engine_alive() &&
-                           (!g_settings.wifi_ssid[0] || net_up());
+                           (!g_settings.wifi_ssid[0] || net_seen);
             if (!healthy) {
                 healthy_since = 0;
             } else if (!healthy_since) {
