@@ -26512,7 +26512,7 @@
 				)
 			)
 		)
-		(property "Value" "6.49K"
+		(property "Value" "6.81K"
 			(at 0 1.43 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -26558,7 +26558,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2933249"
+		(property "LCSC" "C2930121"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")

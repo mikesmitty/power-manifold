@@ -23157,7 +23157,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "6.49K"
+		(property "Value" "6.81K"
 			(at 86.36 76.1999 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23201,7 +23201,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2933249"
+		(property "LCSC" "C2930121"
 			(at 88.9 74.93 0)
 			(hide yes)
 			(show_name no)
