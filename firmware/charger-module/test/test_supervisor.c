@@ -285,6 +285,87 @@ static void a_blind_sensor_is_a_fault(void) {
     MT_ASSERT(fake_board_alert());
 }
 
+static void armed_and_cool(void) {
+    boot();
+    en_high();
+    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    run_ms(200);
+    MT_ASSERT(stack_port_armed());
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 0);
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_NORMAL);
+}
+
+static void a_warm_converter_alerts_the_sink_once(void) {
+    armed_and_cool();
+
+    // Three samples at the warning level, then back: nothing is sent
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC, 250);
+    run_ms(30);
+    fake_board_set_temps_dc(250, 250);
+    run_ms(100);
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 0);
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_NORMAL);
+
+    // Held there: one Alert, the port keeps running, Status says warning
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC, 250);
+    run_ms(60);
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 1);
+    MT_ASSERT(stack_port_armed());
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_ALERTING, 0);
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_WARNING);
+
+    // Hotter, then hovering just above the clear level: still the one Alert
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC + 100, 250);
+    run_ms(500);
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC - TEMP_WARN_CLEAR_DC, 250);
+    run_ms(500);
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 1);
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_WARNING);
+
+    // Under the clear level it is normal again; warm once more is a new episode
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC - TEMP_WARN_CLEAR_DC - 1, 250);
+    run_ms(20);
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_NORMAL);
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC, 250);
+    run_ms(60);
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 2);
+}
+
+static void a_warm_receptacle_alerts_too(void) {
+    armed_and_cool();
+    fake_board_set_temps_dc(250, TEMP_WARN_PLUG_DC - 1);
+    run_ms(100);
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 0);
+    fake_board_set_temps_dc(250, TEMP_WARN_PLUG_DC);
+    run_ms(60);
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 1);
+    MT_ASSERT(stack_port_armed());
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_WARNING);
+}
+
+static void a_trip_reports_over_temperature(void) {
+    armed_and_cool();
+    fake_board_set_temps_dc(TEMP_LIMIT_CONV_DC + 1, 250); // straight past the trip
+    run_ms(60);
+    MT_ASSERT(!stack_port_armed());
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_OVER);
+
+    fake_board_set_temps_dc(250, 250);
+    ctl_command(BLADE_CMD_CLEAR_FAULTS);
+    run_ms(20);
+    MT_ASSERT(stack_port_armed());
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_NORMAL);
+}
+
+static void a_blind_sensor_is_a_trip_not_a_warning(void) {
+    armed_and_cool();
+    fake_board_set_temps_dc(SENSE_TEMP_OPEN_DC, 250);
+    run_ms(60);
+    MT_ASSERT_EQ(fake_stack_alerts_sent(), 0);
+    MT_ASSERT(!stack_port_armed());
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_OVER);
+}
+
 static void a_missing_part_is_a_fault(void) {
     fake_board_reset();
     fake_stack_reset();
@@ -434,6 +515,10 @@ void run_supervisor_tests(void) {
     mt_run("supervisor: a fault that persists comes back", a_fault_that_persists_comes_back);
     mt_run("supervisor: a hot reading has to hold", a_hot_reading_has_to_hold);
     mt_run("supervisor: a blind sensor is a fault", a_blind_sensor_is_a_fault);
+    mt_run("supervisor: a warm converter alerts the sink once", a_warm_converter_alerts_the_sink_once);
+    mt_run("supervisor: a warm receptacle alerts too", a_warm_receptacle_alerts_too);
+    mt_run("supervisor: a trip reports over temperature", a_trip_reports_over_temperature);
+    mt_run("supervisor: a blind sensor is a trip, not a warning", a_blind_sensor_is_a_trip_not_a_warning);
     mt_run("supervisor: a missing part is a fault", a_missing_part_is_a_fault);
     mt_run("supervisor: stack failures are faults", stack_failures_are_faults);
     mt_run("supervisor: telemetry reaches the controller", telemetry_reaches_the_controller);

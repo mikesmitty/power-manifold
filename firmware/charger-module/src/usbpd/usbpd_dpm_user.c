@@ -22,6 +22,7 @@
 
 static uint32_t received_rdo;
 static bool reset_wanted;
+static bool alert_wanted; // an over-temperature Alert the supervisor asked for
 
 // Requests to the policy engine are refused while it is busy, so they are
 // repeated until it takes them. New capabilities only need asking for inside
@@ -31,12 +32,25 @@ static void ask_the_engine(void) {
     if (!port_attached()) {
         blade_capabilities_stale = false;
         reset_wanted = false;
+        alert_wanted = false;
         return;
     }
     if (reset_wanted && USBPD_PE_Request_HardReset(USBPD_PORT_0) == USBPD_OK) reset_wanted = false;
-    if (blade_capabilities_stale &&
-        DPM_Params[USBPD_PORT_0].PE_Power == USBPD_POWER_EXPLICITCONTRACT)
+    if (DPM_Params[USBPD_PORT_0].PE_Power != USBPD_POWER_EXPLICITCONTRACT) return;
+    if (blade_capabilities_stale)
         (void)USBPD_PE_Request_DataMessage(USBPD_PORT_0, USBPD_DATAMSG_SRC_CAPABILITIES, NULL);
+    if (alert_wanted) {
+        // The Alert message exists from PD 3 on. The sink answers it with
+        // Get_Status, which USBPD_DPM_GetDataInfo fills in below.
+        if (DPM_Params[USBPD_PORT_0].PE_SpecRevision != USBPD_SPECIFICATION_REV3) {
+            alert_wanted = false;
+        } else {
+            USBPD_ADO_TypeDef ado = {0};
+            ado.b.TypeAlert = USBPD_ADO_TYPE_ALERT_OTP;
+            if (USBPD_PE_Request_DataMessage(USBPD_PORT_0, USBPD_DATAMSG_ALERT, &ado.d32) == USBPD_OK)
+                alert_wanted = false;
+        }
+    }
 }
 
 USBPD_StatusTypeDef USBPD_DPM_UserInit(void) {
@@ -144,7 +158,20 @@ void USBPD_DPM_GetDataInfo(uint8_t PortNum, USBPD_CORE_DataInfoType_TypeDef Data
         int16_t dc = meter_temp_conv_dc();
         // degrees; 1 = below 2 degC, 0 = no reading
         if (dc != SENSE_TEMP_OPEN_DC) st.InternalTemp = dc < 20 ? 1 : (uint8_t)(dc / 10);
-        st.PresentInput = 0x02; // external power, DC
+        st.PresentInput = USBPD_SDB_PRESENT_INPUT_EXT_PWR; // external power, DC
+        switch (supervisor_temperature()) {
+        case SUPERVISOR_TEMP_NORMAL:
+            st.TemperatureStatus = USBPD_SDB_EVENT_TEMP_STATUS_NORMAL;
+            break;
+        case SUPERVISOR_TEMP_WARNING:
+            st.TemperatureStatus = USBPD_SDB_EVENT_TEMP_STATUS_WARNING;
+            st.EventFlags = USBPD_SDB_EVENT_FLAGS_OTP;
+            break;
+        default:
+            st.TemperatureStatus = USBPD_SDB_EVENT_TEMP_STATUS_OVER_TEMP;
+            st.EventFlags = USBPD_SDB_EVENT_FLAGS_OTP;
+            break;
+        }
         *Size = sizeof st;
         memcpy(Ptr, &st, *Size);
         break;
@@ -209,6 +236,10 @@ USBPD_FunctionalState USBPD_DPM_IsPowerReady(uint8_t PortNum, USBPD_VSAFE_Status
 
 void stack_send_capabilities(void) {
     blade_capabilities_stale = true;
+}
+
+void stack_send_alert_otp(void) {
+    alert_wanted = true;
 }
 
 void stack_hard_reset(void) {

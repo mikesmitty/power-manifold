@@ -30,7 +30,9 @@ static bool en, conv_pending, line_up;
 static bool leaving; // the MCU is on its way to a reset (only ever seen off the board)
 static uint32_t en_ms, sample_ms, report_ms;
 static uint32_t seen_ms, seen_count; // the controller's last transaction
-static uint8_t hot_conv, hot_plug; // consecutive samples past the limit
+static uint8_t hot_conv, hot_plug;   // consecutive samples past the limit
+static uint8_t warm_conv_n, warm_plug_n; // consecutive samples at or above the warning level
+static bool    warm_conv, warm_plug;
 
 static void raise(uint16_t faults) {
     hw_backplane_lock();
@@ -156,13 +158,51 @@ static uint8_t hot_for(uint8_t samples, int16_t t_dc, int16_t limit_dc) {
     return samples < TEMP_TRIP_SAMPLES ? (uint8_t)(samples + 1) : samples;
 }
 
+// Follows whether one thermometer is warm. It becomes warm after
+// TEMP_TRIP_SAMPLES consecutive readings at or above the warning level, and
+// stops being warm as soon as one reading is TEMP_WARN_CLEAR_DC under that
+// level. Returns true on the sample that makes it warm, which is when the
+// sink is told. A sensor without a reading is a trip, not a warning.
+static bool warm_for(bool *warm, uint8_t *samples, int16_t t_dc, int16_t warn_dc) {
+    if (t_dc == SENSE_TEMP_OPEN_DC) {
+        *warm = false;
+        *samples = 0;
+        return false;
+    }
+    if (*warm) {
+        if (t_dc < warn_dc - TEMP_WARN_CLEAR_DC) {
+            *warm = false;
+            *samples = 0;
+        }
+        return false;
+    }
+    if (t_dc < warn_dc) {
+        *samples = 0;
+        return false;
+    }
+    if (*samples + 1 < TEMP_TRIP_SAMPLES) {
+        (*samples)++;
+        return false;
+    }
+    *warm = true;
+    return true;
+}
+
 static uint16_t temperature_faults(void) {
     hot_conv = hot_for(hot_conv, live.temp_conv_dc, TEMP_LIMIT_CONV_DC);
     hot_plug = hot_for(hot_plug, live.temp_plug_dc, TEMP_LIMIT_PLUG_DC);
+    bool conv_now_warm = warm_for(&warm_conv, &warm_conv_n, live.temp_conv_dc, TEMP_WARN_CONV_DC);
+    bool plug_now_warm = warm_for(&warm_plug, &warm_plug_n, live.temp_plug_dc, TEMP_WARN_PLUG_DC);
+    if (conv_now_warm || plug_now_warm) stack_send_alert_otp();
     uint16_t f = 0;
     if (hot_conv >= TEMP_TRIP_SAMPLES) f |= BLADE_FAULT_OT_CONV;
     if (hot_plug >= TEMP_TRIP_SAMPLES) f |= BLADE_FAULT_OT_PLUG;
     return f;
+}
+
+supervisor_temp_t supervisor_temperature(void) {
+    if (faults_now() & (BLADE_FAULT_OT_CONV | BLADE_FAULT_OT_PLUG)) return SUPERVISOR_TEMP_OVER;
+    return warm_conv || warm_plug ? SUPERVISOR_TEMP_WARNING : SUPERVISOR_TEMP_NORMAL;
 }
 
 static void sample(void) {
@@ -213,6 +253,8 @@ void supervisor_init(void) {
     conv_pending = false;
     leaving = false;
     hot_conv = hot_plug = 0;
+    warm_conv_n = warm_plug_n = 0;
+    warm_conv = warm_plug = false;
     sample_ms = report_ms = seen_ms = hw_ms();
     seen_count = regmap_transactions();
     sample();

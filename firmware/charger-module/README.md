@@ -78,6 +78,17 @@ Any of these latches a fault, takes the port down and pulls ALERT#:
 | `VBUS` | VBUS did not reach vSafe5V or vSafe0V in time |
 | `PD` | the stack did not start |
 
+Below the two temperature trips sit two warning levels, 85 °C at the
+converter and 60 °C at the receptacle. A reading that holds at or above one
+for 50 ms makes the blade send the sink one PD Alert with the
+over-temperature bit (PD 3 sinks only; PD 2 has no Alert message), and its
+answer to Get_Status then says *Warning* with the over-temperature event
+flag until the reading has fallen 5 °C under the level, *Over temperature*
+once a trip has latched, and *Normal* otherwise. The port keeps running on
+a warning; what a sink does with it is its own business, the specification
+only asks it to fetch Status. All four temperatures are provisional until
+the blade has been measured in the closed chassis.
+
 ## Pin map
 
 From the KiCad netlist of release 0.16.1; `src/board.h` carries the same
@@ -353,5 +364,9 @@ In this order. Steps 1 to 4 need no sink.
 1. **Bring-up** on the first gen-3 blade, per the checklist — the update
    path included: the ROM bootloader's answer on the backplane bus, a
    controller-programmed blank blade, and the option-byte trip.
-2. **Alert messages** to the sink (`Is_Alert_Supported`), so an
-   over-temperature shows at the sink before the port drops.
+2. **Alert and Status at a sink.** Written and host-tested, never seen by
+   a real sink: a PD analyser or a logging sink should show one Alert with
+   the over-temperature bit when a thermometer passes its warning level,
+   and Status answering *Warning*. The four temperatures (85 / 60 °C warn,
+   100 / 70 °C trip) are set from the same thermocouple session as the
+   controller's fan rule.

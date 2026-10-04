@@ -13,6 +13,16 @@
 void supervisor_init(void);
 void supervisor_run(void);
 
+// What the PD Status message says about temperature: over once an
+// over-temperature fault is latched, warning while either thermometer is
+// warm (blade.h), normal otherwise.
+typedef enum {
+    SUPERVISOR_TEMP_NORMAL,
+    SUPERVISOR_TEMP_WARNING,
+    SUPERVISOR_TEMP_OVER,
+} supervisor_temp_t;
+supervisor_temp_t supervisor_temperature(void);
+
 // The stack asked for VBUS and did not get it
 void supervisor_power_failed(void);
 // The stack did not start

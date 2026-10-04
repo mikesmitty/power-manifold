@@ -14,4 +14,7 @@ void stack_port_disarm(void); // everything off, the TCPP02 back in hibernate
 bool stack_port_armed(void);
 
 void stack_send_capabilities(void); // the table changed under an attached sink
+// One Alert message with the over-temperature bit, sent once the engine is
+// free. Only a sink in a PD 3 contract can receive one; otherwise it is dropped.
+void stack_send_alert_otp(void);
 void stack_hard_reset(void);
