@@ -8,7 +8,8 @@
 // Auto fan policy: the fixture's tick() runs fan_policy_tick after the port
 // FSMs, like engine_main. The sim reports measured draw as load_pct of the
 // contract current (80% by default), so a 20V/3A contract shows 48W.
-// Defaults from support_reset: on >= 80W, off <= 60W, any contract over 3A.
+// Defaults from support_reset: on >= 80W, off <= 60W, any contract over 3A,
+// any gen-3 blade's converter at or above 65.0 C (off again under 55.0 C).
 
 static void seat_and_attach(uint8_t slot, uint16_t mv, uint32_t ma) {
     sim_set_present(slot, true);
@@ -191,6 +192,84 @@ static void test_manual_override_and_auto_resume(void) {
     MT_ASSERT(tele.fan_auto);
 }
 
+// A gen-3 blade on a light load, so neither the power rule nor the current
+// rule can be what switches the fan.
+static void seat_gen3_lightly_loaded(uint8_t slot) {
+    sim_set_gen(slot, 3);
+    sim_set_load_pct(slot, 20);
+    seat_and_attach(slot, 5000, 1000); // 5W contract, 1W measured
+}
+
+static void test_hot_blade_turns_the_fan_on(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    MT_ASSERT(tele.port[0].temp_conv_dc != PORT_TEMP_NONE);
+    MT_ASSERT(!sim_fan());
+
+    sim_set_temps(0, 649, 300); // just under the on temperature
+    tick(2);
+    MT_ASSERT(!sim_fan());
+    sim_set_temps(0, 650, 300); // at it
+    tick(2);
+    MT_ASSERT(sim_fan());
+    MT_ASSERT(tele.total_mw < 60000);
+}
+
+static void test_stays_on_until_every_blade_is_cool(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    seat_gen3_lightly_loaded(1);
+    sim_set_temps(0, 700, 300);
+    sim_set_temps(1, 700, 300);
+    tick(2);
+    MT_ASSERT(sim_fan());
+
+    sim_set_temps(0, 400, 300); // one cool, one at 60.0: between the two temperatures
+    sim_set_temps(1, 600, 300);
+    tick_ms(FAN_MIN_HOLD_MS + 100);
+    MT_ASSERT(sim_fan());
+
+    sim_set_temps(1, 550, 300); // 55.0 still holds it
+    tick_ms(FAN_MIN_HOLD_MS + 100);
+    MT_ASSERT(sim_fan());
+
+    sim_set_temps(1, 549, 300); // under it: off
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
+static void test_hot_blade_holds_the_fan_after_the_power_rule_clears(void) {
+    support_reset(360000);
+    sim_set_load_pct(0, 100);
+    sim_set_load_pct(1, 100);
+    seat_and_attach(0, 20000, 2000); // 40W
+    seat_and_attach(1, 20000, 2000); // 80W total: the power rule
+    MT_ASSERT(sim_fan());
+    seat_gen3_lightly_loaded(2);
+    sim_set_temps(2, 600, 300); // warm, not hot: would not have started the fan
+
+    sim_detach(0); // 41W: the power rule clears, the warm blade keeps it on
+    tick_ms(FAN_MIN_HOLD_MS + 100);
+    MT_ASSERT(tele.total_mw < 60000);
+    MT_ASSERT(sim_fan());
+
+    sim_set_temps(2, 500, 300);
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
+static void test_blade_without_a_reading_does_not_count(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    sim_set_temps(0, PORT_TEMP_NONE, 300); // open converter thermistor
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, PORT_TEMP_NONE);
+    MT_ASSERT(!sim_fan());
+    sim_set_temps(0, 300, 900); // a hot receptacle is not a fan input
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
 void run_fan_tests(void) {
     mt_run("fan: contract current derivation", test_contract_ma_derivation);
     mt_run("fan: chassis power hysteresis", test_power_hysteresis);
@@ -211,4 +290,10 @@ void run_fan_tests(void) {
     mt_run("fan: hold blocks flapping", test_hold_blocks_flapping);
     mt_run("fan: manual override, then auto resumes",
            test_manual_override_and_auto_resume);
+    mt_run("fan: a hot blade turns it on at low load", test_hot_blade_turns_the_fan_on);
+    mt_run("fan: stays on until every blade is cool", test_stays_on_until_every_blade_is_cool);
+    mt_run("fan: a warm blade holds it after the power rule clears",
+           test_hot_blade_holds_the_fan_after_the_power_rule_clears);
+    mt_run("fan: a blade without a reading does not count",
+           test_blade_without_a_reading_does_not_count);
 }

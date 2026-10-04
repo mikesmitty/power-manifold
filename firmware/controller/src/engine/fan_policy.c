@@ -55,15 +55,27 @@ static bool any_high_current_contract(const telemetry_t *t) {
     return false;
 }
 
+// True when any blade's converter thermometer reads at or above `dc`. A port
+// without a reading does not count.
+static bool any_blade_at_or_above(const telemetry_t *t, int16_t dc) {
+    for (int i = 0; i < NUM_PORTS; i++) {
+        int16_t reading = t->port[i].temp_conv_dc;
+        if (reading != PORT_TEMP_NONE && reading >= dc) return true;
+    }
+    return false;
+}
+
 void fan_policy_tick(const telemetry_t *t, uint32_t now_ms) {
     if (!auto_mode) return;
 
     bool hot_port = any_high_current_contract(t);
     bool want;
     if (!fan_on)
-        want = hot_port || t->total_mw >= (uint32_t)g_settings.fan_on_w * 1000u;
-    else // stays on until both the power band and every contract are clear
-        want = hot_port || t->total_mw > (uint32_t)g_settings.fan_off_w * 1000u;
+        want = hot_port || any_blade_at_or_above(t, FAN_BLADE_ON_DC) ||
+               t->total_mw >= (uint32_t)g_settings.fan_on_w * 1000u;
+    else // stays on until the power band, every contract and every blade are clear
+        want = hot_port || any_blade_at_or_above(t, FAN_BLADE_OFF_DC) ||
+               t->total_mw > (uint32_t)g_settings.fan_off_w * 1000u;
 
     if (want == fan_on) return;
     if ((int32_t)(now_ms - hold_until_ms) < 0) return;

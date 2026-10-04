@@ -1111,9 +1111,14 @@ button: the card is unfabricated.
 [on_ma]]`, defaults 80/60 W, 30 s anti-flap hold) and also runs while any
 port holds a contract over `on_ma` (default 3000 mA, so the everyday
 5 V/3 A contract never trips it; 0 disables) — a 5 V/5 A contract is only
-25 W of chassis load but heats the blade as I²R. In auto the fan stays on
-until both rules are clear; `on`/`off` are manual overrides. A gen-3
-blade's temperature readings are not a fan input yet.
+25 W of chassis load but heats the blade as I²R. A third rule reads the
+gen-3 blades' thermometers: the fan runs while any blade's converter is
+at or above 65 °C and that rule clears once every blade is under 55 °C.
+Those two temperatures are fixed, sit well under the blade's own 100 °C
+trip, and are provisional until the blades have been measured in the
+closed chassis; a port without a reading (a gen-2 blade, an empty slot,
+an open thermistor) takes no part. In auto the fan stays on until all
+three rules are clear; `on`/`off` are manual overrides.
 
 ### Fault log
 
