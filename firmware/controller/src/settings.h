@@ -81,6 +81,8 @@ typedef struct {
     uint16_t payload_len;     // bytes the crc covers (= its offset): lets an older firmware read this record
     // -- added in layout version 15 --
     char     update_url[64];  // where to ask for the newest release, "" = never ask (update_latest.h)
+    // -- added in layout version 16 --
+    char     ntp_server[64];  // time server; "" = the one DHCP names, else NET_NTP_DEFAULT (net.h)
     uint32_t crc; // must remain last
 } settings_t;
 

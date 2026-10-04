@@ -13,7 +13,7 @@
 // this against a pair of sectors in RAM.
 
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    15
+#define SETTINGS_VERSION    16
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -34,6 +34,7 @@
 #define SETTINGS_V12_PAYLOAD ALIGN4(offsetof(settings_t, blade_auto_update))
 #define SETTINGS_V13_PAYLOAD ALIGN4(offsetof(settings_t, payload_len))
 #define SETTINGS_V14_PAYLOAD ALIGN4(offsetof(settings_t, update_url))
+#define SETTINGS_V15_PAYLOAD ALIGN4(offsetof(settings_t, ntp_server))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -52,7 +53,8 @@ _Static_assert(SETTINGS_V13_PAYLOAD == 664, "settings v13 layout moved");
 // keeps the field at this offset.
 _Static_assert(offsetof(settings_t, payload_len) == 662, "settings payload_len moved");
 _Static_assert(SETTINGS_V14_PAYLOAD == 664, "settings v14 layout moved");
-_Static_assert(offsetof(settings_t, crc) == 728, "settings v15 layout moved");
+_Static_assert(SETTINGS_V15_PAYLOAD == 728, "settings v15 layout moved");
+_Static_assert(offsetof(settings_t, crc) == 792, "settings v16 layout moved");
 _Static_assert(sizeof(settings_t) <= SETTINGS_SECTOR_SIZE, "settings record outgrew its sector");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
@@ -107,6 +109,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t record_payload_len(const settings_t *s) {
     switch (s->version) {
     case SETTINGS_VERSION: return payload_len();
+    case 15:               return SETTINGS_V15_PAYLOAD;
     case 14:               return SETTINGS_V14_PAYLOAD;
     case 13:               return SETTINGS_V13_PAYLOAD;
     case 12:               return SETTINGS_V12_PAYLOAD;
@@ -245,6 +248,8 @@ void settings_load(void) {
             memset(g_settings.update_url, 0, sizeof(g_settings.update_url));
             strcpy(g_settings.update_url, UPDATE_SOURCE_DEFAULT);
         }
+        // likewise a version 15 record's crc, or erased flash, sits here
+        if (g_settings.version < 16) memset(g_settings.ntp_server, 0, sizeof(g_settings.ntp_server));
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();

@@ -155,6 +155,8 @@ static const char INDEX_HTML[] =
     "<label>Gateway<input name='gw' placeholder='10.0.0.1'></label></div>"
     "<label>DNS server (blank = from DHCP, or the gateway when static; applies at once)"
     "<input name='dns' placeholder='10.0.0.1'></label>"
+    "<label>Time server (blank = the one DHCP names, else " NET_NTP_DEFAULT "; applies at once)"
+    "<input name='ntp' maxlength='63'></label>"
     "<label>Syslog host (blank = off; the console is mirrored there as RFC 5424 over UDP)"
     "<input name='slh' maxlength='63'></label>"
     "<label>Syslog port<input name='slp' type='number' min='1' max='65535'></label>"
@@ -282,7 +284,7 @@ static const char INDEX_HTML[] =
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',"
-    "gw:'gateway',dns:'dns',slh:'syslog_host',slp:'syslog_port',upd:'update_url',chmw:'charged_mw',"
+    "gw:'gateway',dns:'dns',ntp:'ntp_server',slh:'syslog_host',slp:'syslog_port',upd:'update_url',chmw:'charged_mw',"
     "chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},"
     "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1},"
     "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
@@ -828,7 +830,7 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
                            strcmp(g_settings.mqtt_pass, s.mqtt_pass) != 0 ||
                            g_settings.ip_static != s.ip_static ||
                            g_settings.ip_addr != s.ip_addr || g_settings.ip_mask != s.ip_mask ||
-                           g_settings.ip_gw != s.ip_gw; // dns and syslog apply live
+                           g_settings.ip_gw != s.ip_gw; // dns, ntp and syslog apply live
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
     bool led_changed = g_settings.led_brightness != s.led_brightness;
     bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;

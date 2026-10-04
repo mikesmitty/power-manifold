@@ -39,6 +39,7 @@ static void fill(settings_t *s) {
     s->ip_dns = ip("10.64.0.2");
     strcpy(s->syslog_host, "logs.example");
     strcpy(s->update_url, "http://updates.example:8080/fw");
+    strcpy(s->ntp_server, "ntp.example");
     s->syslog_port = 5514;
     s->charged_mw = 750;
     s->charged_min = 20;
@@ -80,6 +81,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"blade_auto_update\":false") != NULL);
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
+    MT_ASSERT(strstr(json, "\"ntp_server\":\"ntp.example\"") != NULL);
 
     memset(&dst, 0, sizeof(dst)); // a blank box importing the export
     settings_apply_t ap;
@@ -135,6 +137,8 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"update_url\":\"http://updates.example/\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"update_url\":\"updates.example\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"update_url\":\"\"}", false) == NULL); // empty = never ask
+    MT_ASSERT(apply_fresh("{\"ntp_server\":\"bad host\"}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"ntp_server\":\"\"}", false) == NULL); // empty = automatic
     MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_auto_off\":[2]}", false) != NULL);

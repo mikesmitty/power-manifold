@@ -16,11 +16,20 @@
 // static address goes on the wired link when a W6100 is fitted and on WiFi
 // otherwise (never both: WiFi behind a wired link stays on DHCP as the
 // standby). settings ip_dns, when set, is the resolver whatever the mode;
-// in static mode with none set the gateway is used. Changes apply at boot.
+// in static mode with none set the gateway is used. Addressing changes
+// apply at boot, the resolver and the time server at once.
+//
+// Time: SNTP polls settings ntp_server when set. Otherwise it polls the
+// server the DHCP lease named (option 42) with NET_NTP_DEFAULT behind it,
+// or that default alone. The default is Cloudflare's anycast service: free,
+// no leap-second smearing (so it mixes with a LAN server), and the NTP Pool
+// asks vendors not to ship its names as a default.
+#define NET_NTP_DEFAULT "time.cloudflare.com"
 void net_init(void);
 void net_poll(uint32_t now_ms);
 bool net_static_on_wifi(void); // the static address belongs to WiFi (net_init decided)
 const char *net_dns_str(void); // resolver in use, "none" when unset
+const char *net_ntp_str(void); // time server(s) polled and where they came from
 // Dotted-quad text <-> network-byte-order address; a valid netmask is a
 // contiguous run of ones.
 bool net_ip4_parse(const char *s, uint32_t *addr_nbo);

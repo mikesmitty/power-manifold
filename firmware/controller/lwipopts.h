@@ -83,8 +83,15 @@
 #define LWIP_HOOK_FILENAME          "lwip_hooks.h"
 #define LWIP_HOOK_IP4_ROUTE_SRC(src, dest) net_ip4_route_src(src, dest)
 
-// SNTP: wall-clock time for log/event timestamps
+// SNTP: wall-clock time for log and event timestamps, and for certificate
+// validity once TLS is built in. Two server slots, so the time server a DHCP
+// lease names (option 42, asked for with the lease) can sit in front of the
+// shipped default. The lease's servers go to net.c's own dhcp_set_ntp_servers
+// rather than lwIP's, which would clear every other slot. See net.c apply_ntp.
 #define SNTP_SERVER_DNS             1
+#define SNTP_MAX_SERVERS            2
+#define LWIP_DHCP_GET_NTP_SRV       1
+#define SNTP_GET_SERVERS_FROM_DHCP  0
 #define SNTP_SET_SYSTEM_TIME(sec)   sntp_report_time(sec)
 #include <stdint.h>
 #ifdef __cplusplus

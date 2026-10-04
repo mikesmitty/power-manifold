@@ -68,6 +68,7 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_ip(out, cap, off, "dns", s->ip_dns);
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
     off = put_str(out, cap, off, "update_url", s->update_url);
+    off = put_str(out, cap, off, "ntp_server", s->ntp_server);
     off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,"
                "\"vin_cal\":%u,\"blade_auto_update\":%s,\"blade_boot_via_loader\":%s,"
                "\"blade_watch_s\":%u,\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min,
@@ -178,6 +179,9 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         return err;
     if ((err = take_str(body, "syslog_host", s->syslog_host, sizeof(s->syslog_host), header_safe,
                         "syslog_host too long", "syslog_host: no spaces or control characters")))
+        return err;
+    if ((err = take_str(body, "ntp_server", s->ntp_server, sizeof(s->ntp_server), header_safe,
+                        "ntp_server too long", "ntp_server: no spaces or control characters")))
         return err;
     char source[sizeof(s->update_url) + 8];
     int got = json_get_str(body, "update_url", source, sizeof(source));

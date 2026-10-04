@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 #if PWRMAN_NET_WIFI
 #include "pico/cyw43_arch.h"
@@ -29,6 +30,10 @@ static bool services_started;
 static bool eth_mdns;
 static bool static_on_wifi; // settings ip_static and no W6100: WiFi carries the address
 static uint32_t epoch_at_boot; // unix time minus ms_since_boot/1000
+static ip4_addr_t dhcp_ntp;    // the time server the last DHCP lease named, 0 = none
+// What sntp was last given, so a changed setting or lease is noticed
+static char ntp_applied[sizeof(g_settings.ntp_server)];
+static ip4_addr_t ntp_applied_dhcp;
 
 #if PWRMAN_NET_WIFI
 static bool wifi_link;
@@ -112,14 +117,51 @@ static uint32_t wanted_dns(void) {
     return 0;
 }
 
+// lwIP's DHCP client calls this on every bind and renewal with the time
+// servers the lease named (lwipopts.h LWIP_DHCP_GET_NTP_SRV), none when it
+// named none. Both links may run DHCP; the lease that arrived last counts.
+void dhcp_set_ntp_servers(u8_t num, const ip4_addr_t *server) {
+    if (num) ip4_addr_copy(dhcp_ntp, server[0]);
+    else ip4_addr_set_zero(&dhcp_ntp);
+}
+
+// Point sntp at the servers net.h describes and start it over, so a change
+// is polled at once rather than at the next hourly poll. A configured
+// server stands alone. DHCP's server gets the default behind it, because a
+// router that advertises a time server it does not run would otherwise
+// leave the clock unset; sntp moves to the next slot when one times out.
+static void set_ntp_servers(void) {
+    sntp_stop();
+    if (g_settings.ntp_server[0]) {
+        sntp_setservername(0, g_settings.ntp_server);
+        sntp_setserver(1, NULL);
+    } else if (!ip4_addr_isany_val(dhcp_ntp)) {
+        ip_addr_t a;
+        ip_addr_copy_from_ip4(a, dhcp_ntp);
+        sntp_setserver(0, &a);
+        sntp_setservername(1, NET_NTP_DEFAULT);
+    } else {
+        sntp_setservername(0, NET_NTP_DEFAULT);
+        sntp_setserver(1, NULL);
+    }
+    sntp_init();
+    strcpy(ntp_applied, g_settings.ntp_server);
+    ip4_addr_copy(ntp_applied_dhcp, dhcp_ntp);
+}
+
+static void apply_ntp(void) {
+    if (!strcmp(ntp_applied, g_settings.ntp_server) && ip4_addr_eq(&ntp_applied_dhcp, &dhcp_ntp))
+        return;
+    set_ntp_servers();
+}
+
 // mDNS/SNTP once, plus each netif announced the first time it comes up
 static void announce(struct netif *n, bool *done) {
     if (*done) return;
     if (!services_started) {
         mdns_resp_init();
         sntp_setoperatingmode(SNTP_OPMODE_POLL);
-        sntp_setservername(0, "pool.ntp.org");
-        sntp_init();
+        set_ntp_servers();
         services_started = true;
     }
     mdns_resp_add_netif(n, g_settings.device_name);
@@ -177,6 +219,7 @@ void net_poll(uint32_t now_ms) {
         ip_addr_set_ip4_u32(&server, dns);
         dns_setserver(0, &server);
     }
+    if (services_started) apply_ntp();
     net_unlock();
 }
 
@@ -189,6 +232,21 @@ const char *net_dns_str(void) {
     const ip_addr_t *s = dns_getserver(0);
     if (ip_addr_isany(s)) return "none";
     return ipaddr_ntoa(s);
+}
+
+const char *net_ntp_str(void) {
+    static char buf[sizeof(g_settings.ntp_server) + 40];
+    if (!ctx) return "none";
+    if (g_settings.ntp_server[0]) {
+        snprintf(buf, sizeof(buf), "%s (configured)", g_settings.ntp_server);
+    } else if (!ip4_addr_isany_val(dhcp_ntp)) {
+        char a[16];
+        snprintf(buf, sizeof(buf), "%s (dhcp), then %s", ip4addr_ntoa_r(&dhcp_ntp, a, sizeof(a)),
+                 NET_NTP_DEFAULT);
+    } else {
+        snprintf(buf, sizeof(buf), "%s (default)", NET_NTP_DEFAULT);
+    }
+    return buf;
 }
 
 bool net_ip4_parse(const char *s, uint32_t *addr_nbo) {
@@ -296,9 +354,14 @@ async_context_t *net_async_context(void) {
     return ctx;
 }
 
-// called from lwIP via the SNTP_SET_SYSTEM_TIME hook in lwipopts.h
+// Called from lwIP via the SNTP_SET_SYSTEM_TIME hook in lwipopts.h. The C
+// library's clock is set as well, so time() agrees with net_epoch: mbedTLS
+// checks certificate validity against time() once TLS is built in, and a
+// clock left at 1970 would fail every certificate as not yet valid.
 void sntp_report_time(uint32_t sec) {
     epoch_at_boot = sec - to_ms_since_boot(get_absolute_time()) / 1000;
+    struct timeval tv = {.tv_sec = (time_t)sec, .tv_usec = 0};
+    settimeofday(&tv, NULL);
 }
 
 uint32_t net_epoch(void) {

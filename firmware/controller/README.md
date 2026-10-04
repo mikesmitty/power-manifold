@@ -465,7 +465,8 @@ so it starts when the page opens — Home Assistant keeps the long-term
 record). Further down: the *Fault log* panel, the *Console log* panel (the
 last 4 KB the firmware printed) and the *Settings* panel — device name,
 broker, API token, chassis budget, fan policy, status LEDs and their
-schedule, timezone offset, addressing, syslog host, charge-complete
+schedule, timezone offset, addressing, time server, syslog host,
+charge-complete
 thresholds, and per port a name (up to 23 characters; blank means `Port N`,
 and the label shows in the table, the console and Home Assistant), a
 current limit (500 to 5000 mA: the current field of every PDO the port
@@ -508,12 +509,14 @@ redirect while none is stored. The settings keys are `name`, `wifi_ssid`,
 `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`,
 `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`,
 `tz_offset_min`, `ip_mode`, `ip`, `netmask`, `gateway`, `dns`,
-`syslog_host`, `syslog_port`, `update_url`, `charged_mw`, `charged_min`,
+`syslog_host`, `syslog_port`, `update_url`, `ntp_server`, `charged_mw`,
+`charged_min`,
 `vin_cal`, and
 the six-element arrays `port_names`, `port_limits_ma`, `port_max_v` (5, 9,
 12, 15 or 20), `port_priorities`, `port_boot`, `port_auto_off` and
 `port_sleep_min`. Budget, fan, LEDs, names, limits, voltage caps,
-priorities, power-up policy, charge thresholds, DNS and syslog apply live;
+priorities, power-up policy, charge thresholds, DNS, the time server and
+syslog apply live;
 the name, WiFi, broker and addressing wait for
 `POST /api/v1/reboot`.
 
@@ -606,12 +609,13 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | Command | Purpose |
 | --- | --- |
 | `status` | port table (state — `upd NN%` while a blade is being written — contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged, a gen-3 blade's `conv` and `plug` temperatures) and chassis power |
-| `info` | firmware, slot and boot reason, links and addressing, UPS supply, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
+| `info` | firmware, slot and boot reason, links, addressing and time server, UPS supply, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
 | `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
 | `ip dhcp` / `ip static <addr> <mask> <gw>` | addressing: the wired link if a W6100 is fitted, else WiFi |
 | `dns <addr>\|auto` | resolver override |
+| `ntp <host>\|auto` | time server override |
 | `syslog <host> [port]` / `syslog off` | mirror the console to a UDP syslog host |
 | `name <device-name>` | hostname and topic id |
 | `token <t>\|clear` | API bearer token |
@@ -968,6 +972,25 @@ mode and always wins (DHCP rewrites the servers on every renewal, so the
 firmware puts the configured one back); with none set, static mode resolves
 through the gateway. Addressing applies at the next boot, DNS at once;
 `info` shows the mode, netmask, gateway and resolver in use.
+
+### Time
+
+The clock is SNTP's, polled hourly over whichever link holds the default
+route. `ntp <host>` (or the `ntp_server` key, or the page's *Time server*
+field) names the server to poll. With none set, the firmware polls the
+server the DHCP lease named (option 42) and falls back to
+`time.cloudflare.com` when that one does not answer, since a router that
+advertises a time server it does not run would otherwise leave the clock
+unset; a lease that named none means the default alone. The default is
+Cloudflare's anycast service: it is free, it steps leap seconds rather than
+smearing them (so it mixes with a LAN server), and the NTP Pool asks
+vendors not to ship its own names as a default. A Kiss-o'-Death reply
+retires a server, and a changed server applies at once. The same sync sets
+the C library clock, so a TLS stack's certificate-validity check will have
+a real date to work with. `info` shows the server in use and the sync
+state. A site that blocks outbound UDP port 123 needs a local server named
+here; until the clock has synced the LED night window is ignored and log
+and fault-log records carry no wall-clock time.
 
 ### Backup
 

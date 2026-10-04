@@ -64,6 +64,7 @@ static void print_help(void) {
            "  ip dhcp | ip static <addr> <mask> <gw>\n"
            "                               addressing (wired link if a W6100 is fitted, else WiFi)\n"
            "  dns <addr>|auto              resolver override (auto: DHCP's, or the gateway when static)\n"
+           "  ntp <host>|auto              time server (auto: DHCP's, else " NET_NTP_DEFAULT ")\n"
            "  syslog <host> [port] | syslog off\n"
            "                               mirror the console to a UDP syslog host (RFC 5424)\n"
            "  name <device-name>           hostname / topic id\n"
@@ -196,6 +197,7 @@ static void print_info(void) {
         printf(" via %s\n", net_ip4_str(g_settings.ip_gw));
     }
     printf("dns: %s%s\n", net_dns_str(), g_settings.ip_dns ? " (configured)" : "");
+    printf("ntp: %s\n", net_ntp_str());
     printf("syslog: %s", log_sink_status());
     if (g_settings.syslog_host[0])
         printf(" (%s:%u)", g_settings.syslog_host, g_settings.syslog_port);
@@ -591,6 +593,15 @@ static void run_line(char *l) {
         }
         g_settings.ip_dns = addr;
         printf("dns: %s ('save' to persist; applies at once)\n", addr ? a : "auto");
+    } else if (!strcmp(cmd, "ntp")) {
+        const char *h = strtok_r(NULL, " \t", &save);
+        if (!h || strlen(h) >= sizeof(g_settings.ntp_server)) {
+            printf("usage: ntp <host>|auto\n");
+            return;
+        }
+        if (!strcmp(h, "auto")) h = "";
+        snprintf(g_settings.ntp_server, sizeof(g_settings.ntp_server), "%s", h);
+        printf("ntp: %s ('save' to persist; applies at once)\n", h[0] ? h : "auto");
     } else if (!strcmp(cmd, "syslog")) {
         const char *host = strtok_r(NULL, " \t", &save);
         const char *port = strtok_r(NULL, " \t", &save);
