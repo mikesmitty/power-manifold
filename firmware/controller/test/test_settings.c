@@ -48,7 +48,8 @@ static uint32_t crc32(const uint8_t *data, size_t len) {
 
 #define V14_LEN 664u // a version 14 record: 0.11.0 wrote these
 #define V15_LEN 728u // a version 15 record: update_url was its last field
-#define V16_LEN 792u // offsetof(settings_t, crc), pinned in settings.c
+#define V16_LEN 792u // a version 16 record: ntp_server was its last field
+#define V17_LEN 2844u // offsetof(settings_t, crc), pinned in settings.c
 
 static void start(void) {
     memset(flash, 0xFF, sizeof(flash));
@@ -102,7 +103,7 @@ static void test_empty_flash_gives_defaults(void) {
     start();
     settings_load();
     MT_ASSERT(strcmp(g_settings.device_name, "pwrman") == 0);
-    MT_ASSERT_EQ(g_settings.version, 16);
+    MT_ASSERT_EQ(g_settings.version, 17);
     MT_ASSERT_EQ(g_settings.seq, 0);
     MT_ASSERT_EQ(g_settings.budget_mw, 360000);
     MT_ASSERT_EQ(g_settings.blade_watch_s, 120);
@@ -117,10 +118,10 @@ static void test_save_alternates_slots(void) {
     MT_ASSERT(settings_save());
     MT_ASSERT_EQ(writes, 1);
     MT_ASSERT_EQ(rec(SLOT(HOME, 0))->magic, SETTINGS_MAGIC);
-    MT_ASSERT_EQ(rec(SLOT(HOME, 0))->version, 16);
+    MT_ASSERT_EQ(rec(SLOT(HOME, 0))->version, 17);
     MT_ASSERT_EQ(rec(SLOT(HOME, 0))->seq, 1);
-    MT_ASSERT_EQ(rec(SLOT(HOME, 0))->payload_len, V16_LEN);
-    MT_ASSERT(crc_ok(SLOT(HOME, 0), V16_LEN));
+    MT_ASSERT_EQ(rec(SLOT(HOME, 0))->payload_len, V17_LEN);
+    MT_ASSERT(crc_ok(SLOT(HOME, 0), V17_LEN));
     MT_ASSERT(erased(SLOT(HOME, 1)));
 
     strcpy(g_settings.wifi_ssid, "home2");
@@ -141,7 +142,7 @@ static void test_corrupt_slot_falls_back(void) {
     start();
     settings_t s;
     sample(&s, "five", 5);
-    write_record(SLOT(HOME, 0), &s, 16, V16_LEN);
+    write_record(SLOT(HOME, 0), &s, 17, V17_LEN);
     sample(&s, "six", 6);
     write_record(SLOT(HOME, 1), &s, 15, V15_LEN);
     flash[SLOT(HOME, 1) + 100] ^= 0x01; // a bit lost in the newer copy
@@ -150,7 +151,7 @@ static void test_corrupt_slot_falls_back(void) {
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "five") == 0);
     MT_ASSERT(settings_save()); // over the corrupt one
     MT_ASSERT_EQ(rec(SLOT(HOME, 1))->seq, 6);
-    MT_ASSERT(crc_ok(SLOT(HOME, 1), V16_LEN));
+    MT_ASSERT(crc_ok(SLOT(HOME, 1), V17_LEN));
 }
 
 static void test_older_layout_upgrades(void) {
@@ -165,13 +166,13 @@ static void test_older_layout_upgrades(void) {
     MT_ASSERT_EQ(g_settings.vin_cal, 1010);
     MT_ASSERT_EQ(g_settings.blade_auto_update, 1); // v13's defaults
     MT_ASSERT_EQ(g_settings.blade_watch_s, 120);
-    MT_ASSERT_EQ(g_settings.version, 16);
+    MT_ASSERT_EQ(g_settings.version, 17);
     MT_ASSERT_EQ(g_settings.seq, 7);
     MT_ASSERT(settings_save());
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 16);
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 17);
     MT_ASSERT_EQ(rec(SLOT(HOME, 1))->seq, 8);
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V16_LEN);
-    MT_ASSERT(crc_ok(SLOT(HOME, 1), V16_LEN));
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V17_LEN);
+    MT_ASSERT(crc_ok(SLOT(HOME, 1), V17_LEN));
 }
 
 static void test_oldest_layout_upgrades(void) {
@@ -188,7 +189,7 @@ static void test_oldest_layout_upgrades(void) {
     MT_ASSERT_EQ(g_settings.port_max_mv[5], PORT_VOLT_MAX_MV);
     MT_ASSERT_EQ(g_settings.vin_cal, 1000);
     MT_ASSERT(strcmp(g_settings.update_url, "http://fw.powermanifold.io") == 0);
-    MT_ASSERT_EQ(g_settings.version, 16);
+    MT_ASSERT_EQ(g_settings.version, 17);
 }
 
 // 0.11.0 wrote version 14: as long as 13, its crc where update_url now starts
@@ -201,11 +202,11 @@ static void test_v14_record_upgrades(void) {
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "eleven") == 0);
     MT_ASSERT_EQ(g_settings.blade_watch_s, 120);
     MT_ASSERT(strcmp(g_settings.update_url, "http://fw.powermanifold.io") == 0); // not the old crc's bytes
-    MT_ASSERT_EQ(g_settings.version, 16);
+    MT_ASSERT_EQ(g_settings.version, 17);
     MT_ASSERT(settings_save());
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 16);
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V16_LEN);
-    MT_ASSERT(crc_ok(SLOT(HOME, 1), V16_LEN));
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 17);
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V17_LEN);
+    MT_ASSERT(crc_ok(SLOT(HOME, 1), V17_LEN));
     MT_ASSERT_EQ(rec(SLOT(HOME, 0))->version, 14); // what 0.11.0 would read after a revert stays
 }
 
@@ -221,11 +222,33 @@ static void test_v15_record_upgrades(void) {
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "fifteen") == 0);
     MT_ASSERT(strcmp(g_settings.update_url, "http://updates.example") == 0);
     MT_ASSERT_EQ(g_settings.ntp_server[0], 0); // automatic, not the old crc's bytes
-    MT_ASSERT_EQ(g_settings.version, 16);
+    MT_ASSERT_EQ(g_settings.version, 17);
     MT_ASSERT(settings_save());
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 16);
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V16_LEN);
-    MT_ASSERT(crc_ok(SLOT(HOME, 1), V16_LEN));
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 17);
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V17_LEN);
+    MT_ASSERT(crc_ok(SLOT(HOME, 1), V17_LEN));
+}
+
+// Version 16 added the time server; its crc sat where the broker TLS
+// fields now start
+static void test_v16_record_upgrades(void) {
+    start();
+    settings_t s;
+    sample(&s, "sixteen", 6);
+    strcpy(s.ntp_server, "ntp.example");
+    s.mqtt_tls = 1; // bytes a v16 record never carried: the upgrade must not read them
+    s.mqtt_ca_len = 9;
+    write_record(SLOT(HOME, 0), &s, 16, V16_LEN);
+    settings_load();
+    MT_ASSERT(strcmp(g_settings.wifi_ssid, "sixteen") == 0);
+    MT_ASSERT(strcmp(g_settings.ntp_server, "ntp.example") == 0);
+    MT_ASSERT_EQ(g_settings.mqtt_tls, 0); // plain MQTT, nothing installed
+    MT_ASSERT_EQ(g_settings.mqtt_ca_len, 0);
+    MT_ASSERT_EQ(g_settings.version, 17);
+    MT_ASSERT(settings_save());
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 17);
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V17_LEN);
+    MT_ASSERT(crc_ok(SLOT(HOME, 1), V17_LEN));
 }
 
 // A firmware reverted to after a trial of a newer one finds the trial's
@@ -234,20 +257,20 @@ static void test_newer_layout_is_read(void) {
     start();
     settings_t s;
     sample(&s, "future", 9);
-    write_record(SLOT(HOME, 0), &s, 99, V16_LEN + 40);
+    write_record(SLOT(HOME, 0), &s, 99, V17_LEN + 40);
     settings_load();
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "future") == 0);
     MT_ASSERT(strcmp(g_settings.api_token, "tok") == 0);
     MT_ASSERT_EQ(g_settings.vin_cal, 1010);
     MT_ASSERT_EQ(g_settings.blade_watch_s, 120);
-    MT_ASSERT_EQ(g_settings.version, 16);
+    MT_ASSERT_EQ(g_settings.version, 17);
     MT_ASSERT_EQ(g_settings.seq, 9);
     // the next save writes this layout, outranking the newer record
     MT_ASSERT(settings_save());
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 16);
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->version, 17);
     MT_ASSERT_EQ(rec(SLOT(HOME, 1))->seq, 10);
-    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V16_LEN);
-    MT_ASSERT(crc_ok(SLOT(HOME, 1), V16_LEN));
+    MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V17_LEN);
+    MT_ASSERT(crc_ok(SLOT(HOME, 1), V17_LEN));
     memset(&g_settings, 0, sizeof(g_settings));
     settings_load();
     MT_ASSERT_EQ(g_settings.seq, 10);
@@ -260,8 +283,8 @@ static void test_newer_layout_needs_a_sane_length(void) {
     settings_t s;
     sample(&s, "future", 9);
 
-    write_record(SLOT(HOME, 0), &s, 99, V16_LEN + 40);
-    flash[SLOT(HOME, 0) + V16_LEN + 20] ^= 0x10; // one of its own fields corrupt
+    write_record(SLOT(HOME, 0), &s, 99, V17_LEN + 40);
+    flash[SLOT(HOME, 0) + V17_LEN + 20] ^= 0x10; // one of its own fields corrupt
     settings_load();
     MT_ASSERT(on_defaults());
 
@@ -279,7 +302,7 @@ static void test_newer_layout_needs_a_sane_length(void) {
     MT_ASSERT_EQ(g_settings.seq, 9);
 
     // a version this firmware has no table for and that predates the field
-    write_record(SLOT(HOME, 0), &s, 0, V16_LEN);
+    write_record(SLOT(HOME, 0), &s, 0, V17_LEN);
     settings_load();
     MT_ASSERT(on_defaults());
 }
@@ -290,7 +313,7 @@ static void test_trial_keeps_to_one_slot(void) {
     start();
     settings_t s;
     sample(&s, "before", 3);
-    write_record(SLOT(HOME, 0), &s, 16, V16_LEN);
+    write_record(SLOT(HOME, 0), &s, 17, V17_LEN);
 
     trial = true;
     settings_load();
@@ -334,7 +357,7 @@ static void test_home_record_outranks_legacy(void) {
     sample(&s, "legacy", 50);
     write_record(SLOT(LEGACY, 0), &s, 15, V15_LEN);
     sample(&s, "home", 2);
-    write_record(SLOT(HOME, 0), &s, 16, V16_LEN);
+    write_record(SLOT(HOME, 0), &s, 17, V17_LEN);
     settings_load();
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "home") == 0); // whatever the seq says
     MT_ASSERT(!settings_migration_pending());
@@ -358,7 +381,7 @@ static void test_defaults_keep_seq(void) {
     start();
     settings_t s;
     sample(&s, "x", 30);
-    write_record(SLOT(HOME, 0), &s, 16, V16_LEN);
+    write_record(SLOT(HOME, 0), &s, 17, V17_LEN);
     settings_load();
     settings_defaults(); // a factory reset...
     MT_ASSERT_EQ(g_settings.wifi_ssid[0], 0);
@@ -400,6 +423,7 @@ void run_settings_tests(void) {
     mt_run("settings: the oldest layout upgrades in place", test_oldest_layout_upgrades);
     mt_run("settings: a version 14 record gains the update source", test_v14_record_upgrades);
     mt_run("settings: a version 15 record gains the time server", test_v15_record_upgrades);
+    mt_run("settings: a version 16 record gains the broker TLS fields", test_v16_record_upgrades);
     mt_run("settings: a newer layout is read by its stated length", test_newer_layout_is_read);
     mt_run("settings: a newer layout needs a sane length and crc", test_newer_layout_needs_a_sane_length);
     mt_run("settings: a trial image keeps to one slot", test_trial_keeps_to_one_slot);

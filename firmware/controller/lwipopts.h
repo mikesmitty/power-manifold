@@ -78,6 +78,18 @@
 // port samples every second (seen on the bench 2026-09-04).
 #define MQTT_REQ_MAX_IN_FLIGHT      16
 
+// TLS for the broker link (src/net/mqtt_tls.c): lwIP's application-layer
+// TCP abstraction with its mbedTLS adapter. Every MQTT connection, plain or
+// not, and every HTTP client connection then goes through altcp, and a TLS
+// connection takes two of its control blocks. The compiled-in verification
+// mode is "required"; the unverified state relaxes it on its own
+// configuration object.
+#define LWIP_ALTCP                  1
+#define LWIP_ALTCP_TLS              1
+#define LWIP_ALTCP_TLS_MBEDTLS      1
+#define MEMP_NUM_ALTCP_PCB          6
+#define ALTCP_MBEDTLS_AUTHMODE      MBEDTLS_SSL_VERIFY_REQUIRED
+
 // Source-based routing (lwip_hooks.h): with WiFi and Ethernet on one
 // subnet, replies leave via the netif that owns their source address
 #define LWIP_HOOK_FILENAME          "lwip_hooks.h"

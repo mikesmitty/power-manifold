@@ -112,3 +112,12 @@ const engine_evt_t *evt_last(uint8_t type, uint8_t port) {
 void evt_clear(void) {
     n_evts = 0;
 }
+
+// The device parses a broker certificate with mbedTLS before storing it; the
+// host tests have no mbedTLS and take whatever passed pem.c's shape check.
+#include "net/mqtt_tls.h"
+const char *mqtt_ca_check(const uint8_t *der, size_t len) {
+    (void)der;
+    (void)len;
+    return NULL;
+}

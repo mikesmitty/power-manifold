@@ -37,7 +37,7 @@
 
 #define HTTP_PORT       80
 #define MAX_CONNS       4
-#define REQ_MAX         3072 // browser headers + a full settings export posted back
+#define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
 #define STATUS_JSON_MAX 3456 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block and the bus voltage, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
@@ -106,8 +106,9 @@ static const char INDEX_HTML[] =
     "#hint{font-size:.8em;color:#666;margin-top:.8em;max-width:44em}"
     "details{margin-top:1.2em;max-width:44em}summary{cursor:pointer;color:#888}"
     "label{display:block;margin:.55em 0;font-size:.8em;color:#888}"
-    "input,select{display:block;width:100%;box-sizing:border-box;margin-top:.2em;padding:.4em;"
+    "input,select,textarea{display:block;width:100%;box-sizing:border-box;margin-top:.2em;padding:.4em;"
     "background:#1a1a1a;color:#eee;border:1px solid #333;border-radius:3px;font:inherit}"
+    "textarea{font-family:monospace;font-size:.75em;resize:vertical}"
     "button{padding:.45em 1em;margin:.6em .6em 0 0;background:#1c2430;color:#eee;"
     "border:1px solid #345;border-radius:3px;cursor:pointer;font:inherit}"
     "#msg,#flm,#lgm{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
@@ -147,6 +148,11 @@ static const char INDEX_HTML[] =
     "<label>MQTT port<input name='mport' type='number' min='1' max='65535'></label>"
     "<label>MQTT user<input name='muser' maxlength='32'></label>"
     "<label>MQTT password<input name='mpass' type='password' maxlength='64'></label>"
+    "<label>MQTT connection (TLS verifies the broker only once a certificate is installed below)"
+    "<select name='mtls'><option value='plain'>plain</option><option value='tls'>TLS</option></select></label>"
+    "<label>Broker certificate (PEM, one certificate up to 2 KB: the CA that issued the broker's, or"
+    " the broker's own self-signed one; blank = TLS verifies nothing)"
+    "<textarea name='mca' rows='4' spellcheck='false'></textarea></label>"
     "<label>Addressing (wired link if a W6100 is fitted, else WiFi; applies at reboot)"
     "<select name='ipmode'><option value='dhcp'>DHCP</option>"
     "<option value='static'>static</option></select></label>"
@@ -284,7 +290,8 @@ static const char INDEX_HTML[] =
     "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
     "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
     "led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',"
-    "gw:'gateway',dns:'dns',ntp:'ntp_server',slh:'syslog_host',slp:'syslog_port',upd:'update_url',chmw:'charged_mw',"
+    "gw:'gateway',dns:'dns',ntp:'ntp_server',mca:'mqtt_ca',slh:'syslog_host',slp:'syslog_port',upd:'update_url',"
+    "chmw:'charged_mw',"
     "chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},"
     "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1},"
     "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
@@ -295,7 +302,8 @@ static const char INDEX_HTML[] =
     "M.textContent=(sessionStorage.tok?'Token rejected. ':'')+"
     "'Enter the API token to edit settings.';return;}"
     "const d=await r.json();LK.hidden=true;F.hidden=false;"
-    "for(const k in KEYS)F[k].value=d[KEYS[k]];PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
+    "for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=d.mqtt_tls?'tls':'plain';"
+    "PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
     "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);"
     "PV.forEach((e,i)=>e.value=d.port_max_v[i]);"
     "PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);"
@@ -306,6 +314,7 @@ static const char INDEX_HTML[] =
     " the API and this panel, so keep a copy.';}"
     "F.onsubmit=async e=>{e.preventDefault();const b={};"
     "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
+    "b.mqtt_tls=F.mtls.value=='tls';"
     "b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);"
     "b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);"
     "b.port_auto_off=PA.map(e=>e.checked?1:0);"
@@ -628,6 +637,16 @@ static bool log_busy(void) {
     return false;
 }
 
+// GET /api/v1/settings and its export: with a broker certificate installed
+// the object outgrows resp[], so it streams from here the same way
+static char settings_buf[SETTINGS_JSON_MAX];
+
+static bool settings_busy(void) {
+    for (int i = 0; i < MAX_CONNS; i++)
+        if (conns[i].pcb && conns[i].static_body == settings_buf) return true;
+    return false;
+}
+
 // Prometheus label value: backslash, quote and newline are escaped
 static void prom_label(char *out, size_t cap, const char *in) {
     size_t n = 0;
@@ -834,6 +853,8 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
     bool led_changed = g_settings.led_brightness != s.led_brightness;
     bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;
+    bool link_changed = g_settings.mqtt_tls != s.mqtt_tls || g_settings.mqtt_ca_len != s.mqtt_ca_len ||
+                        memcmp(g_settings.mqtt_ca, s.mqtt_ca, sizeof(s.mqtt_ca)) != 0;
     uint32_t old_limit[NUM_PORTS];
     uint16_t old_volt[NUM_PORTS];
     memcpy(old_limit, g_settings.port_limit_ma, sizeof(old_limit));
@@ -851,6 +872,7 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         }
     }
     if (names_changed) mqtt_names_changed();
+    if (link_changed) mqtt_reconnect();
 
     if (budget_changed) {
         engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = s.budget_mw};
@@ -1040,8 +1062,12 @@ static void handle_request(conn_t *c) {
             return;
         }
         bool secrets = !strncmp(c->req + 27, "?secrets=1 ", 11);
-        build_settings_json(json, sizeof(json), via_setup, secrets, true);
-        respond(c, 200, "OK", "application/json", json);
+        if (settings_busy()) {
+            respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
+            return;
+        }
+        build_settings_json(settings_buf, sizeof(settings_buf), via_setup, secrets, true);
+        respond_static(c, 200, "OK", "application/json", settings_buf, strlen(settings_buf), true);
     } else if (!strncmp(c->req, "GET /api/v1/settings", 20) ||
                !strncmp(c->req, "POST /api/v1/settings", 21)) {
         bool via_setup;
@@ -1051,8 +1077,12 @@ static void handle_request(conn_t *c) {
             return;
         }
         if (c->req[0] == 'G') {
-            build_settings_json(json, sizeof(json), via_setup, false, false);
-            respond(c, 200, "OK", "application/json", json);
+            if (settings_busy()) {
+                respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
+                return;
+            }
+            build_settings_json(settings_buf, sizeof(settings_buf), via_setup, false, false);
+            respond_static(c, 200, "OK", "application/json", settings_buf, strlen(settings_buf), true);
         } else {
             const char *body = strstr(c->req, "\r\n\r\n");
             settings_post(c, body ? body + 4 : "", via_setup);

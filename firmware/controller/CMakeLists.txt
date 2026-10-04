@@ -11,6 +11,9 @@ include(pico_sdk_import.cmake)
 project(power_manifold_controller C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 
+# mbedTLS options for the broker link (src/net/mqtt_tls.c); the SDK reads
+# this variable while it sets up, so it comes first
+set(PICO_MBEDTLS_CONFIG_FILE "pwrman_mbedtls_config.h")
 pico_sdk_init()
 
 option(FAKE_BLADES "Simulate the backplane and blades; runs on a bare board" OFF)
@@ -97,6 +100,7 @@ add_executable(controller
     src/engine/led_pattern.c
     src/net/net.c
     src/net/mqtt.c
+    src/net/mqtt_tls.c
     src/net/http.c
     src/net/jsonlite.c
     src/net/ota_pull.c
@@ -205,6 +209,8 @@ target_link_libraries(controller
     hardware_watchdog
     hardware_adc
     pico_lwip_mqtt
+    pico_lwip_mbedtls # TLS on the broker link
+    pico_mbedtls
     pico_lwip_mdns
     pico_lwip_sntp
     pico_lwip_http # http_client for OTA pull (httpd side goes unused)

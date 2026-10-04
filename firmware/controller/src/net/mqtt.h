@@ -32,6 +32,11 @@
 
 void mqtt_poll(uint32_t now_ms);
 bool mqtt_is_connected(void);
+// The TLS mode or certificate changed: drop the connection so the next one,
+// made right away, reads the new settings. Safe from any core 0 context.
+void mqtt_reconnect(void);
+// A verified TLS link is held back until SNTP has set the clock
+bool mqtt_waiting_for_clock(void);
 
 // Publish one engine event to base/event; dropped when the broker is down.
 // Called from the main loop's event drain (see main.c), which also feeds the

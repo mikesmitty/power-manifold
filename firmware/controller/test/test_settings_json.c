@@ -14,9 +14,23 @@ static uint32_t ip(const char *s) {
     return a;
 }
 
+// DER-shaped bytes standing in for a broker certificate: a SEQUENCE of 125
+// bytes (the host build's mqtt_ca_check accepts anything with the shape)
+static uint8_t FAKE_CA[128];
+static void fake_ca_init(void) {
+    FAKE_CA[0] = 0x30;
+    FAKE_CA[1] = 0x81;
+    FAKE_CA[2] = 0x7d;
+    for (int i = 3; i < 128; i++) FAKE_CA[i] = (uint8_t)(i * 37);
+}
+
 // a fully populated record, nothing at its default
 static void fill(settings_t *s) {
     memset(s, 0, sizeof(*s));
+    fake_ca_init();
+    s->mqtt_tls = 1;
+    s->mqtt_ca_len = sizeof(FAKE_CA);
+    memcpy(s->mqtt_ca, FAKE_CA, sizeof(FAKE_CA));
     strcpy(s->device_name, "bench-2");
     strcpy(s->wifi_ssid, "lab \"net\"");
     strcpy(s->wifi_pass, "hunter\\2");
@@ -82,6 +96,8 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
     MT_ASSERT(strstr(json, "\"ntp_server\":\"ntp.example\"") != NULL);
+    MT_ASSERT(strstr(json, "\"mqtt_tls\":true") != NULL);
+    MT_ASSERT(strstr(json, "\"mqtt_ca\":\"-----BEGIN CERTIFICATE-----\\n") != NULL);
 
     memset(&dst, 0, sizeof(dst)); // a blank box importing the export
     settings_apply_t ap;
@@ -139,6 +155,10 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"update_url\":\"\"}", false) == NULL); // empty = never ask
     MT_ASSERT(apply_fresh("{\"ntp_server\":\"bad host\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"ntp_server\":\"\"}", false) == NULL); // empty = automatic
+    MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"not base64!\"}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"MIIB\"}", false) != NULL); // base64, but no certificate shape
+    MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"\"}", false) == NULL);     // empty = none installed
+    MT_ASSERT(apply_fresh("{\"mqtt_tls\":true}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_auto_off\":[2]}", false) != NULL);
@@ -161,6 +181,31 @@ static void test_rejects(void) {
     MT_ASSERT(settings_json_apply("{\"fw\":\"9.9.9\",\"format\":1,\"dns\":\"\"}", &s, false, &ap) == NULL);
     MT_ASSERT(!strcmp(s.mqtt_host, "keep"));
     MT_ASSERT_EQ(s.ip_dns, 0); // an empty quad clears
+}
+
+// The biggest certificate the record holds still leaves the whole object
+// within the buffer the HTTP server and the console use for it
+static void test_largest_certificate_fits(void) {
+    static char big[SETTINGS_JSON_MAX];
+    settings_t src, dst;
+    fill(&src);
+    src.mqtt_ca_len = MQTT_CA_MAX;
+    src.mqtt_ca[0] = 0x30;
+    src.mqtt_ca[1] = 0x82;
+    src.mqtt_ca[2] = (uint8_t)((MQTT_CA_MAX - 4) >> 8);
+    src.mqtt_ca[3] = (uint8_t)(MQTT_CA_MAX - 4);
+    for (int i = 4; i < MQTT_CA_MAX; i++) src.mqtt_ca[i] = (uint8_t)(i * 131 + 7);
+    settings_json_opts_t o = {.fan_on = true, .secrets = true, .export = true};
+    size_t n = settings_json_build(big, sizeof(big), &src, &o);
+    MT_ASSERT(n > 0);
+    MT_ASSERT(n < sizeof(big) - 512); // headroom for longer names than the sample's
+    memset(&dst, 0, sizeof(dst));
+    settings_apply_t ap;
+    MT_ASSERT(settings_json_apply(big, &dst, false, &ap) == NULL);
+    MT_ASSERT_EQ(dst.mqtt_ca_len, MQTT_CA_MAX);
+    MT_ASSERT(!memcmp(dst.mqtt_ca, src.mqtt_ca, MQTT_CA_MAX));
+    // and the smaller buffer the status JSON uses is reported as too small rather than torn
+    MT_ASSERT_EQ(settings_json_build(json, sizeof(json), &src, &o), 0);
 }
 
 static void test_ip4_text(void) {
@@ -195,6 +240,7 @@ void run_settings_json_tests(void) {
     mt_run("settings json: export -> import round trip", test_round_trip);
     mt_run("settings json: secrets only on request, kept on import", test_secrets_off_by_default);
     mt_run("settings json: bad bodies are refused whole", test_rejects);
+    mt_run("settings json: the largest certificate fits the buffer", test_largest_certificate_fits);
     mt_run("settings json: dotted quads", test_ip4_text);
     mt_run("settings json: a buffer too small yields nothing", test_truncation_is_clean);
 }

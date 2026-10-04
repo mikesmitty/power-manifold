@@ -19,6 +19,7 @@
 
 #define SETTINGS_MAGIC 0x504D4643u // "PMFC"
 #define PORT_NAME_MAX  23          // bytes, excluding the NUL
+#define MQTT_CA_MAX    2048        // bytes of DER: room for any public root, with a margin
 
 typedef struct {
     uint32_t magic;
@@ -83,6 +84,10 @@ typedef struct {
     char     update_url[64];  // where to ask for the newest release, "" = never ask (update_latest.h)
     // -- added in layout version 16 --
     char     ntp_server[64];  // time server; "" = the one DHCP names, else NET_NTP_DEFAULT (net.h)
+    // -- added in layout version 17 --
+    uint8_t  mqtt_tls;        // 1: TLS to the broker, verified once mqtt_ca is installed (net/mqtt_tls.h)
+    uint16_t mqtt_ca_len;     // bytes of mqtt_ca in use, 0 = none installed
+    uint8_t  mqtt_ca[MQTT_CA_MAX]; // one DER certificate: the broker's CA, or the broker's own self-signed one
     uint32_t crc; // must remain last
 } settings_t;
 

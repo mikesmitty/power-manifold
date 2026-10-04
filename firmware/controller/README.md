@@ -34,7 +34,8 @@ Two cores, one rule: **only core 1 touches the backplane.**
   in the CLI (0 = highest, default = port number).
 - **Core 0 — management** (`src/net/`, `src/cli.c`): lwIP over CYW43 WiFi
   and/or a WIZnet W6100 wired Ethernet controller (DHCP or a static
-  address), MQTT with Home Assistant discovery, embedded web UI + JSON API
+  address), MQTT (optionally over TLS) with Home Assistant discovery,
+  embedded web UI + JSON API
   and a Prometheus endpoint, USB CDC maintenance console mirrored to a log
   ring and optionally a syslog host, Improv Wi-Fi provisioning over BLE
   (BTstack on the same CYW43).
@@ -333,8 +334,8 @@ until it is asked for, there or with `update latest`. The update source is
 `update_url` in the settings, or the page), and `update source off` stops
 the controller asking; `update check` asks at once. That host is a small
 proxy in front of this repository's GitHub releases
-(`firmware/update-proxy`), there because the controller speaks no TLS and
-GitHub nothing else. The same pointer can instead be published, retained, to
+(`firmware/update-proxy`), there because the update client speaks plain HTTP
+only (TLS is kept for the broker link) and GitHub nothing else. The same pointer can instead be published, retained, to
 `pwrman/<name>/update/latest` by something on the LAN; the newer of the two
 is the one that counts. Neither needs to be trusted, as the next paragraph
 explains.
@@ -464,7 +465,7 @@ W / A / V, sampled from the page's own 1 Hz poll (history lives in the tab,
 so it starts when the page opens — Home Assistant keeps the long-term
 record). Further down: the *Fault log* panel, the *Console log* panel (the
 last 4 KB the firmware printed) and the *Settings* panel — device name,
-broker, API token, chassis budget, fan policy, status LEDs and their
+broker with its TLS mode and certificate, API token, chassis budget, fan policy, status LEDs and their
 schedule, timezone offset, addressing, time server, syslog host,
 charge-complete
 thresholds, and per port a name (up to 23 characters; blank means `Port N`,
@@ -505,7 +506,8 @@ Improv redirect while no token exists yet.
 *Token* means a Bearer token once `token` is set and nothing before that;
 `/settings` always wants one — the token, or the setup secret from an Improv
 redirect while none is stored. The settings keys are `name`, `wifi_ssid`,
-`wifi_pass`, `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `token`,
+`wifi_pass`, `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`,
+`mqtt_ca` (PEM), `token`,
 `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`,
 `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`,
 `tz_offset_min`, `ip_mode`, `ip`, `netmask`, `gateway`, `dns`,
@@ -516,7 +518,8 @@ the six-element arrays `port_names`, `port_limits_ma`, `port_max_v` (5, 9,
 12, 15 or 20), `port_priorities`, `port_boot`, `port_auto_off` and
 `port_sleep_min`. Budget, fan, LEDs, names, limits, voltage caps,
 priorities, power-up policy, charge thresholds, DNS, the time server and
-syslog apply live;
+syslog apply live, and the broker's TLS mode and certificate reconnect at
+once;
 the name, WiFi, broker and addressing wait for
 `POST /api/v1/reboot`.
 
@@ -549,6 +552,26 @@ settings panel. Everything lives under `pwrman/<name>/`:
 
 Settings changed over MQTT persist automatically a few seconds after the
 last change.
+
+**TLS.** The link is plain MQTT until `mqtt tls on` (or `mqtt_tls`, or the
+page's *MQTT connection* field). With TLS on and no certificate installed
+the link is encrypted but verifies nothing: a passive listener learns
+nothing, anyone who can stand in for the broker still can, and `info` says
+`unverified`. Installing a certificate makes it `verified`. Paste the PEM of
+the CA that issued the broker's certificate, or the broker's own self-signed
+certificate, into the page's *Broker certificate* field (or the `mqtt_ca`
+key; one certificate, up to 2 KB of DER). The console cannot take a PEM:
+`mqtt ca` shows the installed one's subject, expiry and SHA-256 fingerprint
+and `mqtt ca clear` removes it. The broker's chain must lead to the
+installed certificate and, when the broker is configured by name, carry that
+name; a broker configured by address has its chain checked and its name
+not. Certificate dates need the clock, so a verified link waits for the
+first SNTP sync (see [Time](#time)); an unverified one does not. Brokers
+usually listen for TLS on 8883, which `mqtt <host> 8883` sets. A refused
+certificate is explained on the console. The TLS mode and certificate apply
+at once by reconnecting, and the certificate rides in the settings export.
+Firmware updates stay on plain HTTP by design: their authenticity rests on
+the image signature, not on the transport.
 
 ### Home Assistant
 
@@ -613,6 +636,8 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
 | `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
+| `mqtt tls on\|off` | TLS to the broker: unverified until a certificate is installed |
+| `mqtt ca` / `mqtt ca clear` | the installed broker certificate (install one from the page or the API) |
 | `ip dhcp` / `ip static <addr> <mask> <gw>` | addressing: the wired link if a W6100 is fitted, else WiFi |
 | `dns <addr>\|auto` | resolver override |
 | `ntp <host>\|auto` | time server override |
@@ -989,8 +1014,9 @@ retires a server, and a changed server applies at once. The same sync sets
 the C library clock, so a TLS stack's certificate-validity check will have
 a real date to work with. `info` shows the server in use and the sync
 state. A site that blocks outbound UDP port 123 needs a local server named
-here; until the clock has synced the LED night window is ignored and log
-and fault-log records carry no wall-clock time.
+here; until the clock has synced the LED night window is ignored, log and
+fault-log records carry no wall-clock time, and a verified TLS link to the
+broker waits (see [MQTT](#mqtt)).
 
 ### Backup
 

@@ -31,6 +31,7 @@
 #include "net/eth.h"
 #include "net/improv.h"
 #include "net/mqtt.h"
+#include "net/mqtt_tls.h"
 #include "net/net.h"
 #include "net/ota_pull.h"
 #include "net/update_check.h"
@@ -61,6 +62,8 @@ static void print_help(void) {
            "  wifi <ssid> [pass]           set WiFi credentials\n"
            "  improv [on|off]              BLE provisioning window (Improv Wi-Fi)\n"
            "  mqtt <host> [port user pass] set MQTT broker (empty host disables)\n"
+           "  mqtt tls on|off              TLS to the broker; unverified until a certificate is installed\n"
+           "  mqtt ca [clear]              the installed broker certificate (install one from the web UI)\n"
            "  ip dhcp | ip static <addr> <mask> <gw>\n"
            "                               addressing (wired link if a W6100 is fitted, else WiFi)\n"
            "  dns <addr>|auto              resolver override (auto: DHCP's, or the gateway when static)\n"
@@ -202,9 +205,10 @@ static void print_info(void) {
     if (g_settings.syslog_host[0])
         printf(" (%s:%u)", g_settings.syslog_host, g_settings.syslog_port);
     printf("\n");
-    printf("mqtt: %s:%u (%s)\n",
+    printf("mqtt: %s:%u (%s, %s%s)\n",
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
-           g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down");
+           g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down", mqtt_tls_mode_str(),
+           mqtt_waiting_for_clock() ? ", waiting for the clock" : "");
     char night[16], tz[8];
     night_format(night, sizeof(night), g_settings.led_night_start, g_settings.led_night_end);
     printf("leds: brightness %u, boot %s, dim %u; night %s; idle %s", g_settings.led_brightness,
@@ -554,6 +558,30 @@ static void run_line(char *l) {
         }
     } else if (!strcmp(cmd, "mqtt")) {
         const char *host = strtok_r(NULL, " \t", &save);
+        if (host && !strcmp(host, "tls")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (!v || (strcmp(v, "on") && strcmp(v, "off"))) { printf("usage: mqtt tls on|off\n"); return; }
+            g_settings.mqtt_tls = v[1] == 'n';
+            mqtt_reconnect();
+            printf("mqtt: tls %s, link %s ('save' to persist; reconnects now)\n", v, mqtt_tls_mode_str());
+            return;
+        }
+        if (host && !strcmp(host, "ca")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (v && !strcmp(v, "clear")) {
+                g_settings.mqtt_ca_len = 0;
+                memset(g_settings.mqtt_ca, 0, sizeof(g_settings.mqtt_ca));
+                mqtt_reconnect();
+                printf("mqtt: certificate removed, link %s ('save' to persist)\n", mqtt_tls_mode_str());
+            } else if (v) {
+                printf("usage: mqtt ca [clear]  (a certificate is installed from the web UI or POST /api/v1/settings)\n");
+            } else {
+                char d[224];
+                if (mqtt_ca_describe(d, sizeof(d))) printf("mqtt ca: %s\n", d);
+                else printf("mqtt ca: none installed (TLS, when on, verifies nothing)\n");
+            }
+            return;
+        }
         const char *port = strtok_r(NULL, " \t", &save);
         const char *user = strtok_r(NULL, " \t", &save);
         const char *pass = strtok_r(NULL, " \t", &save);
@@ -973,7 +1001,7 @@ static void run_line(char *l) {
                        (unsigned long)r.contract_mw, when);
         }
     } else if (!strcmp(cmd, "export")) {
-        static char json[2560]; // static: the console runs on core 0's small stack
+        static char json[SETTINGS_JSON_MAX]; // static: the console runs on core 0's small stack
         telemetry_t t;
         ipc_snapshot_read(&t);
         settings_json_opts_t o = {.fan_on = t.fan_on, .export = true};

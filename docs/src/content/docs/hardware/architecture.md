@@ -159,7 +159,7 @@ The two cores split along one rule: **only core 1 touches the backplane.**
 >   * Services GLOBAL_ALERT# (edge interrupt + level check every tick): sweeps powered ports, kills offenders via EN.
 >   * Renders the WS2812C chain via PIO and publishes a seqlock telemetry snapshot plus a heartbeat.
 > * **Core 0 — Management plane:**
->   * lwIP over CYW43 WiFi and/or the W6100 wired netif (DHCP or static addressing; the wired link holds the default route when both are up): MQTT client with Home Assistant discovery and LWT availability, mDNS, SNTP, embedded web UI + JSON REST API, Prometheus `/metrics`, a console log ring with UDP syslog forwarding, USB CDC (and RTT) maintenance CLI, Improv Wi-Fi provisioning over BLE (BTstack on the same CYW43).
+>   * lwIP over CYW43 WiFi and/or the W6100 wired netif (DHCP or static addressing; the wired link holds the default route when both are up): MQTT client (optionally over TLS) with Home Assistant discovery and LWT availability, mDNS, SNTP, embedded web UI + JSON REST API, Prometheus `/metrics`, a console log ring with UDP syslog forwarding, USB CDC (and RTT) maintenance CLI, Improv Wi-Fi provisioning over BLE (BTstack on the same CYW43).
 >   * Owns settings (ping-pong flash sectors, CRC-protected) and feeds the hardware watchdog — but only while the core-1 heartbeat stays fresh, so either core stalling reboots the system.
 > * **Between them:** a command queue (core 0 → 1), an event queue (1 → 0), and the telemetry seqlock. Every management surface is a thin transport over the same command/telemetry interface.
 

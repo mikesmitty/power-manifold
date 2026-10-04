@@ -20,6 +20,7 @@
 #include "ipc.h"
 #include "led_sched.h"
 #include "manifold.h"
+#include "mqtt_tls.h"
 #include "net.h"
 #include "ota_pull.h"
 #include "settings.h"
@@ -58,6 +59,9 @@ typedef enum {
 
 static mqtt_client_t *client;
 static mqtt_state_t state = ST_IDLE;
+static bool reconnect_wanted;  // mqtt_reconnect: drop the link at the next poll
+static bool waiting_clock;     // verified TLS, and SNTP has not set the clock yet
+static bool clock_wait_logged;
 static ip_addr_t broker_ip;
 static uint32_t backoff_until_ms;
 static uint32_t last_telemetry_ms;
@@ -327,7 +331,7 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         sub_idx = 0; // command topics follow, one per SUBACK (subscribe_step)
         sub_inflight = false;
         publish_update_state();
-        printf("mqtt: connected to %s\n", g_settings.mqtt_host);
+        printf("mqtt: connected to %s (%s)\n", g_settings.mqtt_host, mqtt_tls_mode_str());
     } else {
         state = ST_BACKOFF;
         printf("mqtt: disconnected (%d)\n", status);
@@ -351,10 +355,22 @@ static void try_connect(void) {
     ci.will_qos = 1;
     ci.will_retain = 1;
 
+    if (g_settings.mqtt_tls) {
+        ci.tls_config = mqtt_tls_config();
+        if (!ci.tls_config) {
+            printf("mqtt: tls configuration failed; not connecting\n");
+            state = ST_BACKOFF;
+            return;
+        }
+    }
+
     state = ST_CONNECTING;
     if (mqtt_client_connect(client, &broker_ip, g_settings.mqtt_port,
-                            connection_cb, NULL, &ci) != ERR_OK)
+                            connection_cb, NULL, &ci) != ERR_OK) {
         state = ST_BACKOFF;
+        return;
+    }
+    if (g_settings.mqtt_tls) mqtt_tls_set_hostname(client);
 }
 
 static void dns_cb(const char *name, const ip_addr_t *ipaddr, void *arg) {
@@ -858,6 +874,14 @@ static void discovery_publish(int i) {
     }
 }
 
+void mqtt_reconnect(void) {
+    reconnect_wanted = true;
+}
+
+bool mqtt_waiting_for_clock(void) {
+    return waiting_clock && g_settings.mqtt_host[0];
+}
+
 void mqtt_names_changed(void) {
     if (state != ST_UP) return; // the next connect does it
     discovery_idx = 0;
@@ -1025,6 +1049,14 @@ void mqtt_poll(uint32_t now_ms) {
 
     switch (state) {
     case ST_IDLE:
+        reconnect_wanted = false; // the connection about to be made reads the settings
+        waiting_clock = mqtt_tls_wants_clock() && !net_epoch();
+        if (waiting_clock) {
+            if (!clock_wait_logged) printf("mqtt: a verified TLS link waits for the clock (see 'ntp')\n");
+            clock_wait_logged = true;
+            break;
+        }
+        clock_wait_logged = false;
         if (net_up()) {
             err_t err = dns_gethostbyname(g_settings.mqtt_host, &broker_ip,
                                           dns_cb, NULL);
@@ -1043,6 +1075,13 @@ void mqtt_poll(uint32_t now_ms) {
         if (!mqtt_client_is_connected(client)) {
             state = ST_BACKOFF;
             backoff_until_ms = now_ms + BACKOFF_MS;
+            break;
+        }
+        if (reconnect_wanted) {
+            reconnect_wanted = false;
+            printf("mqtt: link settings changed, reconnecting\n");
+            mqtt_disconnect(client);
+            state = ST_BACKOFF;
             break;
         }
         subscribe_step();

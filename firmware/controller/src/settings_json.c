@@ -7,6 +7,8 @@
 #include "ip4_text.h"
 #include "led_sched.h"
 #include "net/jsonlite.h"
+#include "net/mqtt_tls.h"
+#include "pem.h"
 #include "manifold.h"
 #include "vin.h"
 #include "update_latest.h"
@@ -69,6 +71,13 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
     off = put_str(out, cap, off, "update_url", s->update_url);
     off = put_str(out, cap, off, "ntp_server", s->ntp_server);
+    // the certificate goes out as PEM, its line ends already escaped
+    off = putf(out, cap, off, "\"mqtt_tls\":%s,\"mqtt_ca\":\"", s->mqtt_tls ? "true" : "false");
+    if (off < cap && s->mqtt_ca_len) {
+        size_t n = der_to_pem(s->mqtt_ca, s->mqtt_ca_len, out + off, cap - off, "\\n");
+        off = n ? off + n : cap; // 0 = it did not fit: the check at the end reports that
+    }
+    off = putf(out, cap, off, "\",");
     off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,"
                "\"vin_cal\":%u,\"blade_auto_update\":%s,\"blade_boot_via_loader\":%s,"
                "\"blade_watch_s\":%u,\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min,
@@ -183,6 +192,25 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
     if ((err = take_str(body, "ntp_server", s->ntp_server, sizeof(s->ntp_server), header_safe,
                         "ntp_server too long", "ntp_server: no spaces or control characters")))
         return err;
+    // The certificate arrives as PEM text (or bare base64) and is stored as
+    // DER; empty removes it. The text buffer is static because the HTTP
+    // server runs this on the IRQ stack.
+    static char ca_text[4096];
+    int got_ca = json_get_str(body, "mqtt_ca", ca_text, sizeof(ca_text));
+    if (got_ca < 0) return "mqtt_ca too long";
+    if (got_ca > 0) {
+        if (!ca_text[0]) {
+            s->mqtt_ca_len = 0;
+            memset(s->mqtt_ca, 0, sizeof(s->mqtt_ca));
+        } else {
+            size_t n = pem_to_der(ca_text, s->mqtt_ca, sizeof(s->mqtt_ca));
+            if (!n) return "mqtt_ca: PEM or base64 of one certificate, up to " STR(MQTT_CA_MAX) " bytes of DER, or empty";
+            if (!der_cert_shape_ok(s->mqtt_ca, n)) return "mqtt_ca: not a DER certificate";
+            if ((err = mqtt_ca_check(s->mqtt_ca, n))) return err;
+            memset(s->mqtt_ca + n, 0, sizeof(s->mqtt_ca) - n);
+            s->mqtt_ca_len = (uint16_t)n;
+        }
+    }
     char source[sizeof(s->update_url) + 8];
     int got = json_get_str(body, "update_url", source, sizeof(source));
     if (got) {
@@ -211,6 +239,7 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         s->vin_cal = (uint16_t)v;
     }
     bool b;
+    if (json_get_bool(body, "mqtt_tls", &b)) s->mqtt_tls = b;
     if (json_get_bool(body, "blade_auto_update", &b)) s->blade_auto_update = b;
     if (json_get_bool(body, "blade_boot_via_loader", &b)) s->blade_boot_via_loader = b;
     if (json_get_int(body, "blade_watch_s", &v)) {

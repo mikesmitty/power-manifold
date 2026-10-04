@@ -18,6 +18,11 @@ typedef struct {
     bool export;  // add "format" and "fw"
 } settings_json_opts_t;
 
+// Room for the whole object with a broker certificate installed, PEM and
+// JSON escaping included; the HTTP server and the console size their
+// buffers by it, and the host tests check the biggest object fits.
+#define SETTINGS_JSON_MAX 6144
+
 size_t settings_json_build(char *out, size_t cap, const settings_t *s,
                            const settings_json_opts_t *o);
 
