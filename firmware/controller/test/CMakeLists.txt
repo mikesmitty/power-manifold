@@ -22,6 +22,7 @@ add_executable(engine_tests
     ../src/ip4_text.c
     ../src/led_sched.c
     ../src/log_ring.c
+    ../src/pem.c
     ../src/settings.c
     ../src/settings_json.c
     ../src/settings_util.c
@@ -59,6 +60,7 @@ add_executable(engine_tests
     test_led_sched.c
     test_leds.c
     test_log_ring.c
+    test_pem.c
     test_port_fsm.c
     test_blade3.c
     test_blade_update.c

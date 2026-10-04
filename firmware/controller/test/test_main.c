@@ -13,6 +13,7 @@ void run_jsonlite_tests(void);
 void run_led_sched_tests(void);
 void run_led_tests(void);
 void run_log_ring_tests(void);
+void run_pem_tests(void);
 void run_port_fsm_tests(void);
 void run_blade3_tests(void);
 void run_blade_update_tests(void);
@@ -41,6 +42,7 @@ int main(void) {
     run_led_sched_tests();
     run_led_tests();
     run_log_ring_tests();
+    run_pem_tests();
     run_port_fsm_tests();
     run_blade3_tests();
     run_blade_update_tests();

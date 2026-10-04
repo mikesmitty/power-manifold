@@ -74,6 +74,7 @@ add_executable(controller
     src/log_ring.c
     src/log_sink.c
     src/settings_json.c
+    src/pem.c
     src/settings_util.c
     src/settings.c
     src/settings_hw_pico.c
