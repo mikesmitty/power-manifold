@@ -28,7 +28,7 @@ static void fake_ca_init(void) {
 static void fill(settings_t *s) {
     memset(s, 0, sizeof(*s));
     fake_ca_init();
-    s->mqtt_tls = 1;
+    s->mqtt_tls = MQTT_TLS_UNVERIFIED; // the one state the export has to spell out
     s->mqtt_ca_len = sizeof(FAKE_CA);
     memcpy(s->mqtt_ca, FAKE_CA, sizeof(FAKE_CA));
     strcpy(s->device_name, "bench-2");
@@ -96,7 +96,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
     MT_ASSERT(strstr(json, "\"ntp_server\":\"ntp.example\"") != NULL);
-    MT_ASSERT(strstr(json, "\"mqtt_tls\":true") != NULL);
+    MT_ASSERT(strstr(json, "\"mqtt_tls\":true,\"mqtt_tls_verify\":false") != NULL);
     MT_ASSERT(strstr(json, "\"mqtt_ca\":\"-----BEGIN CERTIFICATE-----\\n") != NULL);
 
     memset(&dst, 0, sizeof(dst)); // a blank box importing the export
@@ -159,6 +159,7 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"MIIB\"}", false) != NULL); // base64, but no certificate shape
     MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"\"}", false) == NULL);     // empty = none installed
     MT_ASSERT(apply_fresh("{\"mqtt_tls\":true}", false) == NULL);
+    MT_ASSERT(apply_fresh("{\"mqtt_tls\":true,\"mqtt_tls_verify\":false}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_auto_off\":[2]}", false) != NULL);
@@ -181,6 +182,26 @@ static void test_rejects(void) {
     MT_ASSERT(settings_json_apply("{\"fw\":\"9.9.9\",\"format\":1,\"dns\":\"\"}", &s, false, &ap) == NULL);
     MT_ASSERT(!strcmp(s.mqtt_host, "keep"));
     MT_ASSERT_EQ(s.ip_dns, 0); // an empty quad clears
+}
+
+// Two booleans spell the three link states; a file that names only one
+// keeps the other half of the state
+static void test_tls_states(void) {
+    settings_t s;
+    settings_apply_t ap;
+    memset(&s, 0, sizeof(s));
+    MT_ASSERT(settings_json_apply("{\"mqtt_tls\":true}", &s, false, &ap) == NULL);
+    MT_ASSERT_EQ(s.mqtt_tls, MQTT_TLS_VERIFIED); // verified unless the file opts out
+    MT_ASSERT(settings_json_apply("{\"mqtt_tls_verify\":false}", &s, false, &ap) == NULL);
+    MT_ASSERT_EQ(s.mqtt_tls, MQTT_TLS_UNVERIFIED);
+    MT_ASSERT(settings_json_apply("{\"name\":\"other\"}", &s, false, &ap) == NULL);
+    MT_ASSERT_EQ(s.mqtt_tls, MQTT_TLS_UNVERIFIED); // a file without the keys changes nothing
+    MT_ASSERT(settings_json_apply("{\"mqtt_tls\":false}", &s, false, &ap) == NULL);
+    MT_ASSERT_EQ(s.mqtt_tls, MQTT_TLS_OFF);
+    MT_ASSERT(settings_json_apply("{\"mqtt_tls_verify\":false}", &s, false, &ap) == NULL);
+    MT_ASSERT_EQ(s.mqtt_tls, MQTT_TLS_OFF); // verification is moot while TLS is off
+    MT_ASSERT(settings_json_apply("{\"mqtt_tls\":true,\"mqtt_tls_verify\":true}", &s, false, &ap) == NULL);
+    MT_ASSERT_EQ(s.mqtt_tls, MQTT_TLS_VERIFIED);
 }
 
 // The biggest certificate the record holds still leaves the whole object
@@ -241,6 +262,7 @@ void run_settings_json_tests(void) {
     mt_run("settings json: secrets only on request, kept on import", test_secrets_off_by_default);
     mt_run("settings json: bad bodies are refused whole", test_rejects);
     mt_run("settings json: the largest certificate fits the buffer", test_largest_certificate_fits);
+    mt_run("settings json: two booleans spell the three TLS states", test_tls_states);
     mt_run("settings json: dotted quads", test_ip4_text);
     mt_run("settings json: a buffer too small yields nothing", test_truncation_is_clean);
 }

@@ -507,7 +507,7 @@ Improv redirect while no token exists yet.
 `/settings` always wants one — the token, or the setup secret from an Improv
 redirect while none is stored. The settings keys are `name`, `wifi_ssid`,
 `wifi_pass`, `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`,
-`mqtt_ca` (PEM), `token`,
+`mqtt_tls_verify`, `mqtt_ca` (PEM), `token`,
 `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`,
 `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`,
 `tz_offset_min`, `ip_mode`, `ip`, `netmask`, `gateway`, `dns`,
@@ -554,24 +554,32 @@ Settings changed over MQTT persist automatically a few seconds after the
 last change.
 
 **TLS.** The link is plain MQTT until `mqtt tls on` (or `mqtt_tls`, or the
-page's *MQTT connection* field). With TLS on and no certificate installed
-the link is encrypted but verifies nothing: a passive listener learns
-nothing, anyone who can stand in for the broker still can, and `info` says
-`unverified`. Installing a certificate makes it `verified`. Paste the PEM of
-the CA that issued the broker's certificate, or the broker's own self-signed
-certificate, into the page's *Broker certificate* field (or the `mqtt_ca`
-key; one certificate, up to 2 KB of DER). The console cannot take a PEM:
-`mqtt ca` shows the installed one's subject, expiry and SHA-256 fingerprint
-and `mqtt ca clear` removes it. The broker's chain must lead to the
-installed certificate and, when the broker is configured by name, carry that
-name; a broker configured by address has its chain checked and its name
-not. Certificate dates need the clock, so a verified link waits for the
-first SNTP sync (see [Time](#time)); an unverified one does not. Brokers
-usually listen for TLS on 8883, which `mqtt <host> 8883` sets. A refused
-certificate is explained on the console. The TLS mode and certificate apply
-at once by reconnecting, and the certificate rides in the settings export.
-Firmware updates stay on plain HTTP by design: their authenticity rests on
-the image signature, not on the transport.
+page's *MQTT connection* field). With TLS on, the broker's certificate chain
+must lead to a certificate the controller trusts and must carry the broker's
+name when the broker is configured by name. The trusted certificate is the
+one installed through the page's *Broker certificate* field (or the
+`mqtt_ca` key; one certificate, up to 2 KB of DER): the CA that issued the
+broker's certificate, or the broker's own self-signed one. With none
+installed, the controller trusts the Let's Encrypt roots built into the
+image (`roots/`: the two current ISRG roots and the two of the next
+generation), so a broker with a Let's Encrypt certificate needs nothing
+pasted. Anyone can get a Let's Encrypt certificate for a name they control,
+so that built-in trust applies only to a broker configured by name; a
+broker configured by address needs its certificate installed, and `info`
+says so while the link waits. `mqtt tls unverified` (or `mqtt_tls_verify`
+false, or the page's *TLS, unverified* choice) is the opt-out: the link is
+encrypted but checks nothing, so a passive listener learns nothing while
+anyone who can stand in for the broker still can, and `info` says
+`unverified`. The console cannot take a PEM: `mqtt ca` shows the installed
+certificate's subject, expiry and SHA-256 fingerprint and `mqtt ca clear`
+removes it. Certificate dates need the clock, so a verified link waits for
+the first SNTP sync (see [Time](#time)); an unverified one does not.
+Brokers usually listen for TLS on 8883, which `mqtt <host> 8883` sets. A
+refused certificate is explained on the console. The TLS mode and
+certificate apply at once by reconnecting, and the certificate rides in the
+settings export. New or replaced roots ride a signed firmware update.
+Firmware updates themselves stay on plain HTTP by design: their
+authenticity rests on the image signature, not on the transport.
 
 ### Home Assistant
 
@@ -636,7 +644,7 @@ commands described [above](#fake-blade-mode-no-backplane-needed).
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | BLE provisioning window |
 | `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
-| `mqtt tls on\|off` | TLS to the broker: unverified until a certificate is installed |
+| `mqtt tls on\|off\|unverified` | TLS to the broker, verified against the installed certificate or the built-in Let's Encrypt roots |
 | `mqtt ca` / `mqtt ca clear` | the installed broker certificate (install one from the page or the API) |
 | `ip dhcp` / `ip static <addr> <mask> <gw>` | addressing: the wired link if a W6100 is fitted, else WiFi |
 | `dns <addr>\|auto` | resolver override |

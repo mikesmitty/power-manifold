@@ -62,6 +62,7 @@ static mqtt_state_t state = ST_IDLE;
 static bool reconnect_wanted;  // mqtt_reconnect: drop the link at the next poll
 static bool waiting_clock;     // verified TLS, and SNTP has not set the clock yet
 static bool clock_wait_logged;
+static bool blocker_logged;    // the settings allow no attempt (mqtt_tls_blocker)
 static ip_addr_t broker_ip;
 static uint32_t backoff_until_ms;
 static uint32_t last_telemetry_ms;
@@ -355,7 +356,7 @@ static void try_connect(void) {
     ci.will_qos = 1;
     ci.will_retain = 1;
 
-    if (g_settings.mqtt_tls) {
+    if (g_settings.mqtt_tls != MQTT_TLS_OFF) {
         ci.tls_config = mqtt_tls_config();
         if (!ci.tls_config) {
             printf("mqtt: tls configuration failed; not connecting\n");
@@ -370,7 +371,7 @@ static void try_connect(void) {
         state = ST_BACKOFF;
         return;
     }
-    if (g_settings.mqtt_tls) mqtt_tls_set_hostname(client);
+    if (g_settings.mqtt_tls != MQTT_TLS_OFF) mqtt_tls_set_hostname(client);
 }
 
 static void dns_cb(const char *name, const ip_addr_t *ipaddr, void *arg) {
@@ -1057,6 +1058,13 @@ void mqtt_poll(uint32_t now_ms) {
             break;
         }
         clock_wait_logged = false;
+        const char *blocked = mqtt_tls_blocker();
+        if (blocked) {
+            if (!blocker_logged) printf("mqtt: %s\n", blocked);
+            blocker_logged = true;
+            break;
+        }
+        blocker_logged = false;
         if (net_up()) {
             err_t err = dns_gethostbyname(g_settings.mqtt_host, &broker_ip,
                                           dns_cb, NULL);

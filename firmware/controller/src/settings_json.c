@@ -72,7 +72,8 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_str(out, cap, off, "update_url", s->update_url);
     off = put_str(out, cap, off, "ntp_server", s->ntp_server);
     // the certificate goes out as PEM, its line ends already escaped
-    off = putf(out, cap, off, "\"mqtt_tls\":%s,\"mqtt_ca\":\"", s->mqtt_tls ? "true" : "false");
+    off = putf(out, cap, off, "\"mqtt_tls\":%s,\"mqtt_tls_verify\":%s,\"mqtt_ca\":\"",
+               s->mqtt_tls != MQTT_TLS_OFF ? "true" : "false", s->mqtt_tls != MQTT_TLS_UNVERIFIED ? "true" : "false");
     if (off < cap && s->mqtt_ca_len) {
         size_t n = der_to_pem(s->mqtt_ca, s->mqtt_ca_len, out + off, cap - off, "\\n");
         off = n ? off + n : cap; // 0 = it did not fit: the check at the end reports that
@@ -239,7 +240,17 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         s->vin_cal = (uint16_t)v;
     }
     bool b;
-    if (json_get_bool(body, "mqtt_tls", &b)) s->mqtt_tls = b;
+    // Two booleans spell the three link states. A file that names only one
+    // keeps the other half of the state; mqtt_tls_verify is true unless the
+    // file says otherwise and is moot while TLS is off.
+    bool tls, verify;
+    bool got_tls = json_get_bool(body, "mqtt_tls", &tls);
+    bool got_verify = json_get_bool(body, "mqtt_tls_verify", &verify);
+    if (got_tls || got_verify) {
+        if (!got_tls) tls = s->mqtt_tls != MQTT_TLS_OFF;
+        if (!got_verify) verify = s->mqtt_tls != MQTT_TLS_UNVERIFIED;
+        s->mqtt_tls = !tls ? MQTT_TLS_OFF : verify ? MQTT_TLS_VERIFIED : MQTT_TLS_UNVERIFIED;
+    }
     if (json_get_bool(body, "blade_auto_update", &b)) s->blade_auto_update = b;
     if (json_get_bool(body, "blade_boot_via_loader", &b)) s->blade_boot_via_loader = b;
     if (json_get_int(body, "blade_watch_s", &v)) {

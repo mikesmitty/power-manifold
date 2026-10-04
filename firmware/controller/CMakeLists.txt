@@ -144,6 +144,11 @@ endif()
 include(${CMAKE_CURRENT_LIST_DIR}/tools/update_keys.cmake)
 pwrman_update_keys(controller ${CMAKE_CURRENT_LIST_DIR})
 
+# The Let's Encrypt roots in roots/*.pem are built in: a verified TLS link to
+# a broker by name trusts them when no certificate is installed.
+include(${CMAKE_CURRENT_LIST_DIR}/tools/letsencrypt_roots.cmake)
+pwrman_letsencrypt_roots(controller ${CMAKE_CURRENT_LIST_DIR})
+
 pico_generate_pio_header(controller ${CMAKE_CURRENT_LIST_DIR}/src/engine/ws2812.pio)
 
 if(NET_WIFI)

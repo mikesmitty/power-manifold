@@ -20,6 +20,10 @@
 #define SETTINGS_MAGIC 0x504D4643u // "PMFC"
 #define PORT_NAME_MAX  23          // bytes, excluding the NUL
 #define MQTT_CA_MAX    2048        // bytes of DER: room for any public root, with a margin
+// settings mqtt_tls, the broker link's transport (net/mqtt_tls.h)
+#define MQTT_TLS_OFF        0 // plain MQTT
+#define MQTT_TLS_VERIFIED   1 // TLS; the broker's chain must lead to mqtt_ca, or to a built-in Let's Encrypt root when none is installed
+#define MQTT_TLS_UNVERIFIED 2 // TLS that checks nothing
 
 typedef struct {
     uint32_t magic;
@@ -85,7 +89,7 @@ typedef struct {
     // -- added in layout version 16 --
     char     ntp_server[64];  // time server; "" = the one DHCP names, else NET_NTP_DEFAULT (net.h)
     // -- added in layout version 17 --
-    uint8_t  mqtt_tls;        // 1: TLS to the broker, verified once mqtt_ca is installed (net/mqtt_tls.h)
+    uint8_t  mqtt_tls;        // MQTT_TLS_OFF, _VERIFIED or _UNVERIFIED (above; net/mqtt_tls.h)
     uint16_t mqtt_ca_len;     // bytes of mqtt_ca in use, 0 = none installed
     uint8_t  mqtt_ca[MQTT_CA_MAX]; // one DER certificate: the broker's CA, or the broker's own self-signed one
     uint32_t crc; // must remain last

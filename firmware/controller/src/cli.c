@@ -62,7 +62,7 @@ static void print_help(void) {
            "  wifi <ssid> [pass]           set WiFi credentials\n"
            "  improv [on|off]              BLE provisioning window (Improv Wi-Fi)\n"
            "  mqtt <host> [port user pass] set MQTT broker (empty host disables)\n"
-           "  mqtt tls on|off              TLS to the broker; unverified until a certificate is installed\n"
+           "  mqtt tls on|off|unverified   TLS to the broker: verified against the installed certificate, else Let's Encrypt\n"
            "  mqtt ca [clear]              the installed broker certificate (install one from the web UI)\n"
            "  ip dhcp | ip static <addr> <mask> <gw>\n"
            "                               addressing (wired link if a W6100 is fitted, else WiFi)\n"
@@ -209,6 +209,7 @@ static void print_info(void) {
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down", mqtt_tls_mode_str(),
            mqtt_waiting_for_clock() ? ", waiting for the clock" : "");
+    if (g_settings.mqtt_host[0] && mqtt_tls_blocker()) printf("  not connecting: %s\n", mqtt_tls_blocker());
     char night[16], tz[8];
     night_format(night, sizeof(night), g_settings.led_night_start, g_settings.led_night_end);
     printf("leds: brightness %u, boot %s, dim %u; night %s; idle %s", g_settings.led_brightness,
@@ -560,10 +561,13 @@ static void run_line(char *l) {
         const char *host = strtok_r(NULL, " \t", &save);
         if (host && !strcmp(host, "tls")) {
             const char *v = strtok_r(NULL, " \t", &save);
-            if (!v || (strcmp(v, "on") && strcmp(v, "off"))) { printf("usage: mqtt tls on|off\n"); return; }
-            g_settings.mqtt_tls = v[1] == 'n';
+            if (v && !strcmp(v, "on")) g_settings.mqtt_tls = MQTT_TLS_VERIFIED;
+            else if (v && !strcmp(v, "off")) g_settings.mqtt_tls = MQTT_TLS_OFF;
+            else if (v && !strcmp(v, "unverified")) g_settings.mqtt_tls = MQTT_TLS_UNVERIFIED;
+            else { printf("usage: mqtt tls on|off|unverified\n"); return; }
             mqtt_reconnect();
-            printf("mqtt: tls %s, link %s ('save' to persist; reconnects now)\n", v, mqtt_tls_mode_str());
+            printf("mqtt: link %s ('save' to persist; reconnects now)\n", mqtt_tls_mode_str());
+            if (mqtt_tls_blocker()) printf("mqtt: %s\n", mqtt_tls_blocker());
             return;
         }
         if (host && !strcmp(host, "ca")) {
@@ -578,7 +582,7 @@ static void run_line(char *l) {
             } else {
                 char d[224];
                 if (mqtt_ca_describe(d, sizeof(d))) printf("mqtt ca: %s\n", d);
-                else printf("mqtt ca: none installed (TLS, when on, verifies nothing)\n");
+                else printf("mqtt ca: none installed (a verified link trusts the built-in Let's Encrypt roots; a broker by address needs one)\n");
             }
             return;
         }

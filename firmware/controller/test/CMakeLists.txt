@@ -107,6 +107,8 @@ add_executable(verify_image
 target_include_directories(verify_image PRIVATE ../src ../lib/monocypher)
 include(../tools/update_keys.cmake)
 pwrman_update_keys(verify_image ${CMAKE_CURRENT_LIST_DIR}/..)
+include(../tools/letsencrypt_roots.cmake)
+pwrman_letsencrypt_roots(engine_tests ${CMAKE_CURRENT_LIST_DIR}/..)
 
 # tools/sign_image.py against that verifier, with a throwaway key
 find_package(Python3 REQUIRED COMPONENTS Interpreter)

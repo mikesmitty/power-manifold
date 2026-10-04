@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "microtest.h"
+#include "letsencrypt_roots.h"
 #include "pem.h"
 
 static char pem[4096];
@@ -94,10 +95,25 @@ static void test_der_shape(void) {
     MT_ASSERT(!der_cert_shape_ok(short_form, 3)); // shorter than any certificate
 }
 
+// The roots built into the image are each one DER certificate, as the
+// generator promised, and together stay small. The count is pinned so a
+// change to roots/ is a deliberate one.
+static void test_builtin_roots(void) {
+    MT_ASSERT_EQ(LETSENCRYPT_ROOT_COUNT, 4);
+    size_t total = 0;
+    for (size_t i = 0; i < LETSENCRYPT_ROOT_COUNT; i++) {
+        MT_ASSERT(letsencrypt_roots[i].name && letsencrypt_roots[i].name[0]);
+        MT_ASSERT(der_cert_shape_ok(letsencrypt_roots[i].der, letsencrypt_roots[i].len));
+        total += letsencrypt_roots[i].len;
+    }
+    MT_ASSERT(total < 4096);
+}
+
 void run_pem_tests(void) {
     mt_run("pem: RFC 4648 vectors through the armour", test_base64_vectors);
     mt_run("pem: a 2 KB certificate round-trips with 64-column lines", test_round_trip_wraps_at_64);
     mt_run("pem: JSON line ends", test_json_line_ends);
     mt_run("pem: the decoder takes bare base64, CRLF and chains", test_decoder_tolerance);
     mt_run("pem: DER certificate shape", test_der_shape);
+    mt_run("pem: the built-in Let's Encrypt roots are DER certificates", test_builtin_roots);
 }
