@@ -94,7 +94,7 @@ static void ensure_ids(void) {
     snprintf(will_topic, sizeof(will_topic), "%s/availability", base);
     snprintf(device_json, sizeof(device_json),
              "{\"ids\":[\"pwrman_%s\"],\"name\":\"%s\",\"mf\":\"Power Manifold\","
-             "\"mdl\":\"USB-PD chassis\",\"sw\":\"%s\"}",
+             "\"mdl\":\"PM6\",\"sw\":\"%s\"}",
              uid, g_settings.device_name, FW_VERSION);
 }
 
