@@ -25,6 +25,11 @@ uint8_t port_fsm_boot_inventory(const bool *present, uint8_t powered, uint32_t n
 // still started (it has no other way back), and the update command still
 // works.
 void port_fsm_hold_updates(bool hold);
+// A current limit that applies to every port on top of its own setting:
+// each port advertises the lower of the two. 0 removes it. Core 0 sets it
+// to 3 A while the DC bus sags (bus_cap.h); ports that are powered
+// re-advertise on their next tick.
+void port_fsm_set_ceiling(uint32_t ma);
 void port_fsm_tick(uint8_t port, bool present, uint32_t now_ms,
                    port_telemetry_t *out);
 void port_fsm_cmd(uint8_t port, const engine_cmd_t *cmd);

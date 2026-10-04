@@ -69,6 +69,12 @@ size_t fault_text(const fault_rec_t *r, char *buf, size_t cap) {
             n = put(buf, cap, n, ")");
         }
         return n;
+    case EVT_BUS: {
+        char v[16];
+        snprintf(v, sizeof(v), "%lu.%02lu V", (unsigned long)r->arg / 1000, (unsigned long)(r->arg % 1000) / 10);
+        n = put(buf, cap, n, r->code == BUS_LOW ? "bus low: " : "bus recovered: ");
+        return put(buf, cap, n, v);
+    }
     case EVT_BOOT: {
         boot_cause_t b = {.reason = (boot_reason_t)(r->code & 0xFF),
                          .core = (uint8_t)(r->code >> 8),

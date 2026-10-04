@@ -5,6 +5,7 @@
 #include "pico/stdlib.h"
 
 #include "boot_reason_hw.h"
+#include "bus_cap.h"
 #include "button.h"
 #include "cli.h"
 #include "engine/engine.h"
@@ -75,6 +76,19 @@ int main(void) {
     fault_log_init();
     ipc_init();
 
+    // The bus voltage is read once before the engine starts: a chassis that
+    // powers up on a sagging bus then brings its first blade up under the
+    // 3 A cap (bus_cap.h). The command waits in the queue for the engine's
+    // first pass, which dispatches commands before it touches a port.
+    vin_init(); // the bus-voltage divider, where the board has one
+    vin_poll(to_ms_since_boot(get_absolute_time()));
+    bus_cap_init();
+    if (bus_cap_poll(to_ms_since_boot(get_absolute_time()), vin_mv())) {
+        engine_cmd_t c = {.op = CMD_SET_CEILING, .arg = bus_cap_ma()};
+        ipc_cmd_push(&c);
+        printf("bus: %s at power-up, ports capped at %u A\n", vin_status_str(), BUS_CAP_MA / 1000);
+    }
+
     // Core 1: charger management engine (sole owner of I2C/expander/LEDs).
     // Launched before any networking so power supervision never waits on it.
     multicore_launch_core1(engine_main);
@@ -83,7 +97,6 @@ int main(void) {
     net_init();
     http_init();
     ups_init(); // probes the UPS header; harmless with nothing plugged in
-    vin_init(); // the bus-voltage divider, where the board has one
     button_init(); // the front-panel button (GP22)
 
     if (!update_key_count())
@@ -106,6 +119,7 @@ int main(void) {
     uint8_t led_level_sent = g_settings.led_brightness; // what the engine applied at init
     uint8_t led_base_seen = g_settings.led_brightness;
     bool ups_seen = false; // Home Assistant learns about the UPS when it shows up
+    bool bus_low_seen = false; // the bus low flag as last recorded in the fault log
     uint8_t hold_sent = 0; // button hold progress the chain is showing
 
     for (;;) {
@@ -119,6 +133,12 @@ int main(void) {
         log_sink_poll(now_ms);
         ups_poll(now_ms);
         vin_poll(now_ms);
+        if (bus_cap_poll(now_ms, vin_mv())) {
+            engine_cmd_t c = {.op = CMD_SET_CEILING, .arg = bus_cap_ma()};
+            ipc_cmd_push(&c);
+            if (bus_cap_on()) printf("bus: %s, ports capped at %u A\n", vin_status_str(), BUS_CAP_MA / 1000);
+            else printf("bus: %s for %u s, port cap lifted\n", vin_status_str(), BUS_CAP_HOLD_MS / 1000);
+        }
         if (ups_present() != ups_seen) {
             ups_seen = ups_present();
             mqtt_names_changed(); // re-run discovery: the UPS entities come and go with it
@@ -230,6 +250,19 @@ int main(void) {
                 ipc_snapshot_read(&t); // the heartbeat follows the first snapshot
                 health_start_text(&t, start, sizeof(start));
                 printf("engine: %s\n", start);
+            }
+
+            // The bus crossing its low flag goes into the fault log: the
+            // backplane's under-voltage cut, a volt further down, restarts
+            // the controller, so this record is what a brown-out leaves
+            // behind. Written here, with the engine up, because flash
+            // writes need core 1 parked.
+            if (vin_low() != bus_low_seen) {
+                bus_low_seen = vin_low();
+                engine_evt_t e = {.type = EVT_BUS, .port = CHASSIS_EVT_PORT,
+                                  .code = bus_low_seen ? BUS_LOW : BUS_RECOVERED, .arg = vin_mv()};
+                fault_log_event(&e);
+                mqtt_event(&e);
             }
 
             if (settings_migration_pending()) {

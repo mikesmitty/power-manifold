@@ -19,7 +19,7 @@ typedef struct {
     uint32_t epoch;       // unix time at the event, 0 before SNTP sync
     uint32_t uptime_s;
     uint8_t  port;        // 0-based; 0xFF = chassis-level
-    uint8_t  type;        // evt_type_t (EVT_FAULT / EVT_PROBE_FAIL)
+    uint8_t  type;        // evt_type_t (EVT_FAULT / EVT_PROBE_FAIL / EVT_BOOT / EVT_BUS)
     uint16_t code;
     uint32_t arg;
     uint32_t power_mw;    // port telemetry snapshotted at the event
@@ -30,8 +30,9 @@ typedef struct {
 void fault_log_init(void); // core 0, after flash_map_init(); scan only
 bool fault_log_available(void);
 
-// Filters for fault-class events and appends (rate-limited). Anything else
-// is ignored, so the main loop can hand it every engine event.
+// Filters for fault-class events (port faults, probe failures, the bus
+// crossing its low flag) and appends (rate-limited). Anything else is
+// ignored, so the main loop can hand it every engine event.
 void fault_log_event(const engine_evt_t *e);
 
 // One record per boot with what boot_reason worked out; core 0, engine up.

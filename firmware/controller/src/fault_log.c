@@ -143,7 +143,7 @@ static bool commit(fault_rec_t *rec) {
 }
 
 void fault_log_event(const engine_evt_t *e) {
-    if (e->type != EVT_FAULT && e->type != EVT_PROBE_FAIL) return;
+    if (e->type != EVT_FAULT && e->type != EVT_PROBE_FAIL && e->type != EVT_BUS) return;
 
     fault_rec_t rec;
     record_init(&rec, e->port, e->type, e->code, e->arg);

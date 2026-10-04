@@ -26,6 +26,7 @@
 #include "update_latest.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
+#include "bus_cap.h"
 #include "vin.h"
 
 #define KEEP_ALIVE_S     30
@@ -901,7 +902,7 @@ static void publish_telemetry(void) {
              "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\","
              "\"ups\":%s,\"ups_ac\":\"%s\",\"ups_on_battery\":\"%s\",\"ups_charging\":\"%s\","
              "\"ups_batt_v\":%.2f,\"ups_mains_v\":%.1f,\"ups_load_a\":%.2f,"
-             "\"vin\":%s,\"vin_v\":%.2f}",
+             "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_ma\":%lu}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -914,7 +915,7 @@ static void publish_telemetry(void) {
              (u->status_l & LAD_ST_ON_BATTERY) ? "ON" : "OFF",
              (u->status_l & LAD_ST_CHARGING) ? "ON" : "OFF", u->batt_cv / 100.0,
              u->mains_dv / 10.0, u->load_ca / 100.0, vin_fitted() ? "true" : "false",
-             vin_mv() / 1000.0);
+             vin_mv() / 1000.0, (unsigned long)bus_cap_ma());
     publish(topic_buf, payload_buf, 0, 1);
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {
@@ -984,6 +985,7 @@ static const char *evt_name(evt_type_t t) {
     case EVT_THROTTLE:     return "throttle";
     case EVT_BOOT:         return "boot";
     case EVT_UPDATE:       return "update";
+    case EVT_BUS:          return "bus";
     default:               return "?";
     }
 }
@@ -991,7 +993,7 @@ static const char *evt_name(evt_type_t t) {
 void mqtt_event(const engine_evt_t *e) {
     if (!mqtt_is_connected()) return; // transient events aren't queued
     char text[48] = "";
-    if (e->type == EVT_FAULT || e->type == EVT_PROBE_FAIL) {
+    if (e->type == EVT_FAULT || e->type == EVT_PROBE_FAIL || e->type == EVT_BUS) {
         fault_rec_t r = {.port = e->port, .type = e->type, .code = e->code, .arg = e->arg};
         fault_text(&r, text, sizeof(text)); // plain words: no escaping needed
     } else if (e->type == EVT_CHARGE && e->code == CHARGE_AUTO_OFF) {
@@ -1007,7 +1009,7 @@ void mqtt_event(const engine_evt_t *e) {
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"port\":%u,\"event\":\"%s\",\"kind\":\"%s\",\"code\":%u,\"arg\":%lu,"
              "\"text\":\"%s\",\"ts\":%lu}",
-             e->port + 1, evt_name((evt_type_t)e->type), event_kind(e), e->code,
+             e->port < NUM_PORTS ? e->port + 1 : 0, evt_name((evt_type_t)e->type), event_kind(e), e->code,
              (unsigned long)e->arg, text, (unsigned long)net_epoch());
     publish(topic_buf, payload_buf, 1, 0);
     net_unlock();

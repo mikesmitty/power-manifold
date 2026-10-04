@@ -485,7 +485,7 @@ Improv redirect while no token exists yet.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)), `t_conv` / `t_plug` / `t_mcu` (a gen-3 blade's thermometers in °C, `null` without a reading), `progress` (how much of a firmware image has been written while the state is `updating`, 0–100), `update_due` (the blade's firmware will be updated once the port is empty), `silent` (the port is powered and its blade is not answering; the readings are its last); chassis `blade_fw` (the gen-3 blade firmware this build carries, `null` without one), `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
+| `GET /api/v1/status` | none | Everything the page shows: per port `name`, `state`, `gen` (the blade generation, 0 until probed), `v` / `i` / `p` / `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`, `fault` (the port fault bits, see [Blade generations](#blade-generations)), `t_conv` / `t_plug` / `t_mcu` (a gen-3 blade's thermometers in °C, `null` without a reading), `progress` (how much of a firmware image has been written while the state is `updating`, 0–100), `update_due` (the blade's firmware will be updated once the port is empty), `silent` (the port is powered and its blade is not answering; the readings are its last); chassis `blade_fw` (the gen-3 blade firmware this build carries, `null` without one), `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan` / `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`, `fw`, `slot`, `trial`, `boot` (the reason for the last boot), `warm_start` (the ports kept their power through it), `vin_v` (the DC bus voltage, `null` on a board without the divider), `ceiling_ma` (3000 while the [bus-sag cap](#bus-voltage) holds every port to 3 A, else 0), `problem` / `problems`, `led_mode` / `led_now`, and a `ups` object (`present`, and with a supply answering `ac`, `on_battery`, `charging`, `full`, `fault`, `mains_v`, `batt_v`, `load_a`, `uvp_v`, `cells`, `status`) |
 | `GET /metrics` | none | Prometheus text exposition: the chassis gauges, a `pwrman_info` line with firmware, slot and boot reason, `pwrman_bus_volts` / `pwrman_bus_voltage_ok` on the controller card, the `pwrman_ups_*` gauges while a UPS answers, every port metric labelled `port` and `name`, and `pwrman_port_temperature_celsius` with a `sensor` label (`converter`, `plug`, `mcu`) for each reading a gen-3 blade gives |
 | `GET /api/v1/faults[?offset=N]` | none | The fault log newest first, eight records a page, each with a human `text` |
 | `GET /api/v1/log` | token | The console's last 4 KB as text; gated like the mutations because it names networks and hosts |
@@ -523,9 +523,9 @@ settings panel. Everything lives under `pwrman/<name>/`:
 | Topic | Direction | Payload |
 | --- | --- | --- |
 | `availability` | published, retained | `online`, and `offline` by LWT |
-| `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`, and the bus voltage `vin` (fitted), `vin_v` |
+| `status` | published at 1 Hz, retained | chassis `total_w`, `reserved_w`, `budget_w`, `headroom_w`, `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`, `fw`, `boot`, `problem`, `problems`, `charged_mw`, `charged_min`, `led_mode`, and the UPS supply's `ups` (present), `ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`, and the bus voltage `vin` (fitted), `vin_v`, `ceiling_ma` (3000 while the bus-sag cap is on, else 0) |
 | `port/<n>/telemetry` | published at 1 Hz | `state`, `gen`, `v`, `i`, `p`, `e`, `pdo`, `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, `t_conv` / `t_plug` / `t_mcu` (°C, `null` without a reading), `progress` (0–100 while `updating`), `update_due`, `silent` |
-| `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures and auto-off |
+| `event` | published as they happen | `{"port","event","kind","code","arg","text","ts"}` — `kind` is the Home Assistant vocabulary listed below, `text` is filled for faults, probe failures, auto-off and the bus crossing its low flag (`event` `bus`, `port` 0) |
 | `update/state` | published, retained | `installed_version` and `latest_version` |
 | `update/latest` | subscribed, retained | a release pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}`, for sites that publish their own; taken when it names a newer release than the controller's own check found |
 | `port/<n>/set` | subscribed | `ON`, `OFF`, `hard_reset` or `src_cap` |
@@ -910,6 +910,8 @@ What does not, and what the firmware does instead:
   port ([Blade firmware updates](#blade-firmware-updates)).
 - **A controller update that does not stick**: a trial image changes
   nothing about a blade.
+- **A sagging DC bus**: the ports are capped at 3 A, never cut
+  ([Bus voltage](#bus-voltage)).
 - **One bad read.** A presence read that says a seated blade has left is
   taken again before it is believed; an expander whose configuration word
   cannot be read is not treated as one that lost it; an expander that does
@@ -1048,11 +1050,32 @@ that makes them agree, in the `vin_cal` setting (permille, 900 to 1100;
 the MQTT status, a *Bus voltage* sensor in Home Assistant,
 `pwrman_bus_volts` on `/metrics`, part of the chassis line on the page,
 `vin` and a line in `info` and `status` on the console. The hardware is
-rated for 20 to 28 V and the backplane opens the bus near 18.6 V,
-so a bus under 19 V or over 29 V (half a volt of hysteresis either way)
-raises the problem indicator and logs a line; nothing derates the budget
-from it yet. The Pico 2 W carrier has no path from VIN to an ADC pin, so
-there the monitor reports *not fitted* and every surface leaves it out.
+rated for 20 to 28 V and the backplane opens the bus near 17.7 V (and
+closes it again near 19.3 V), so a bus under 19 V or over 29 V (half a
+volt of hysteresis either way) raises the problem indicator and logs a
+line; the crossing of the 19 V flag, either way, also goes into the fault
+log, since the cut a volt further down restarts the controller and would
+otherwise leave no trace. The Pico 2 W carrier has no path from VIN to an
+ADC pin, so there the monitor reports *not fitted* and every surface
+leaves it out.
+
+**Bus-sag cap.** Before the bus gets near that cut, the firmware takes
+load off it: while the bus reads under 20.0 V every port's advertised
+current is capped at 3 A, chassis-wide, under whatever the port's own
+limit is. No sink can then hold a 5 A PDO or APDO and no port delivers
+more than 60 W; sinks that are attached are sent the new table and
+renegotiate within it, and nothing is switched off. The cap comes off
+once the bus has held 20.5 V for 30 s without a dip. At power-up the
+first reading is judged against 20.5 V rather than 20.0 V, so a chassis
+that has just been cut by the backplane and comes back on a marginal
+supply brings its blades up under the cap and earns its way out, instead
+of putting the same load straight back. The numbers are fixed, not
+settings: this is a safety cut-off (`src/bus_cap.c`). While it is on, the
+problem indicator says so (`bus voltage sagging, 19.80 V, ports capped at
+3 A`), `ceiling_ma` in the status JSON and MQTT status is 3000 (0
+otherwise), the page's chassis line and the console's `status` and
+`info` note it, and a line is logged each way. A board without the
+divider never caps.
 
 ### Front-panel button
 
@@ -1098,14 +1121,16 @@ Faults and probe failures persist in the data partition (~256 records,
 oldest dropped); `faults` lists them with power/contract at the moment of
 the event and wall-clock time once SNTP has synced, and the same records
 come out of `GET /api/v1/faults` and the page's *Fault log* panel. Every
-boot adds a record saying why it happened.
+boot adds a record saying why it happened, and the DC bus crossing its
+19 V low flag adds one each way (`bus low: 18.70 V`), with the voltage.
 
 ### Problem indicator
 
 One aggregate "needs attention" flag — any port in `fault`, the engine
 stalled, a trial firmware image not yet committed, the wired link down
-while WiFi carries the traffic, or the UPS supply running on its battery
-or reporting a battery fault — with a short description naming the ports
+while WiFi carries the traffic, the UPS supply running on its battery
+or reporting a battery fault, or the DC bus out of range or sagging
+enough to cap the ports — with a short description naming the ports
 (`faults: Port 2, Desk; trial firmware uncommitted`). It is the `problem` /
 `problems` pair in the status JSON and MQTT status, a line in `info`, a red
 line on the page, and a diagnostic *Problem* binary sensor in Home
@@ -1149,6 +1174,13 @@ a board. To check when one arrives, in this order:
 7. **The release assets.** The first release built this way carries
    `controller-factory.bin`, the signed images for both boards, and the
    `-pico2w` files; `fw.powermanifold.io` serves the signed ones.
+8. **The bus-sag cap.** On a bench supply wound down slowly with a 100 W
+   sink attached: the cap at 20.0 V (the sink's contract drops to 60 W,
+   `status` says `ports capped at 3 A`), the release 30 s after the
+   supply is back at 20.5 V, and the power-up case (the chassis started
+   with the supply at 20.3 V comes up capped). Worth measuring while
+   there: how far a loaded LRS-350 actually sags at the XT60 before the
+   backplane cuts, which says how much margin the 20 V knee has.
 
 ## Not yet implemented
 

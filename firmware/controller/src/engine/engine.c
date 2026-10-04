@@ -30,9 +30,6 @@
 #define TICK_MS 10 // 100 Hz supervisory rate
 #define PRESENCE_REFRESH_TICKS 10 // full presence re-read every 100ms
 
-// EVT_PROBE_FAIL port value for chassis-level (non-port) problems
-#define CHASSIS_EVT_PORT 0xFF
-
 static volatile bool alert_irq;
 static volatile bool exp_irq;
 
@@ -128,6 +125,9 @@ static void dispatch_cmd(const engine_cmd_t *cmd, uint32_t now_ms) {
     switch ((cmd_op_t)cmd->op) {
     case CMD_SET_BUDGET:
         budget_set_total(cmd->arg);
+        break;
+    case CMD_SET_CEILING:
+        port_fsm_set_ceiling(cmd->arg);
         break;
     case CMD_FAN:
         fan_policy_set_manual(cmd->arg != 0);

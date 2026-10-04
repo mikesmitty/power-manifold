@@ -4,6 +4,7 @@
 
 void run_boot_tests(void);
 void run_budget_tests(void);
+void run_bus_cap_tests(void);
 void run_button_tests(void);
 void run_event_tests(void);
 void run_fan_tests(void);
@@ -31,6 +32,7 @@ int main(void) {
     printf("controller engine tests\n");
     run_boot_tests();
     run_budget_tests();
+    run_bus_cap_tests();
     run_button_tests();
     run_event_tests();
     run_fan_tests();

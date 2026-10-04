@@ -126,6 +126,7 @@ typedef enum {
     CMD_PORT_UPDATE,     // port: write the bundled firmware to a gen-3 blade, whatever it runs (blade_update.h)
     CMD_SIM,             // FAKE_BLADES only: fault injection, arg packed per engine/sim/sim_inject.h
     CMD_I2C_DIAG,        // real builds only: bench bus access, arg packed per engine/i2c_diag.h
+    CMD_SET_CEILING,     // arg = mA: a current limit applied to every port on top of its own setting; 0 removes it (bus_cap.h)
 } cmd_op_t;
 
 // Per-port advertised current ceiling (settings port_limit_ma). It is the
@@ -179,7 +180,18 @@ typedef enum {
     EVT_BOOT,         // core 0 only, fault-log record: code = boot_reason_t | core << 8, arg = pc
     EVT_CHARGE,       // code = CHARGE_*, arg: minutes since attach (DONE/RESUMED) or AUTO_OFF_*
     EVT_UPDATE,       // code = UPDATE_*, arg = the blade firmware version now running, major << 16 | minor << 8 | patch
+    EVT_BUS,          // core 0 only, fault-log record: the DC bus crossed the low flag; code = BUS_*, arg = bus mV
 } evt_type_t;
+
+// EVT_BUS codes. The low flag is VIN_LOW_MV in vin.h (19 V). About a volt
+// below that the backplane switches the whole bus off, controller included,
+// so a fault-log record written at the flag is the only evidence of a
+// brown-out that survives one.
+#define BUS_LOW       1 // the bus fell under the flag
+#define BUS_RECOVERED 0 // the bus came back over it
+// Port number used in an event or fault-log record that is about the whole
+// chassis rather than one port
+#define CHASSIS_EVT_PORT 0xFF
 
 // EVT_CHARGE codes
 #define CHARGE_DONE     0 // draw stayed under settings charged_mw for charged_min: charged

@@ -19,11 +19,12 @@
 
 // The bus is rated for 20-28 V (the hardware tolerates 32 V: the SMCJ33CA's
 // 33 V stand-off and the LM74800's ~34 V cut-off set that ceiling); the same
-// part opens the bus below ~18.6 V and its 5 V buck drops out near 15 V. The
-// flags sit a volt outside the rated range and come with half a volt of
-// hysteresis so a sagging supply does not flap the problem indicator. Both
-// flags sit inside the hardware window so the controller can report the
-// excursion before the bus is cut.
+// part opens the bus below ~17.7 V (closing it again near 19.3 V) and its
+// 5 V buck drops out near 15 V. The flags sit a volt outside the rated
+// range and come with half a volt of hysteresis so a sagging supply does
+// not flap the problem indicator. Both flags sit inside the hardware window
+// so the controller can report the excursion before the bus is cut. The
+// bus-sag cap (bus_cap.h) acts earlier still, at 20 V.
 #define VIN_LOW_MV      19000
 #define VIN_HIGH_MV     29000
 #define VIN_HYST_MV     500

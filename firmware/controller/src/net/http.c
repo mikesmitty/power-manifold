@@ -12,6 +12,7 @@
 #include "pico/rand.h"
 
 #include "boot_reason_hw.h"
+#include "bus_cap.h"
 #include "engine/blade_bundle.h"
 #include "fault_log.h"
 #include "fault_text.h"
@@ -261,6 +262,7 @@ static const char INDEX_HTML[] =
     " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}"
     " \\u2014 last boot ${d.boot}${d.led_mode!='normal'?' \\u2014 LEDs dimmed ('+d.led_mode+')':''}"
     "${d.vin_v!=null?' \\u2014 bus '+d.vin_v.toFixed(2)+' V':''}"
+    "${d.ceiling_ma?' (ports capped at '+(d.ceiling_ma/1000)+' A)':''}"
     "${d.ups&&d.ups.present?' \\u2014 UPS '+d.ups.status:''}`;"
     "document.getElementById('prob').textContent=d.problems?'\\u26a0 '+d.problems:'';"
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
@@ -531,7 +533,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
-        "\"vin_v\":%s,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
+        "\"vin_v\":%s,\"ceiling_ma\":%lu,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
         "\"blade_fw\":%s,%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
@@ -541,7 +543,7 @@ static void build_status_json(char *out, size_t cap) {
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
-        t.warm_start ? "true" : "false", vinf,
+        t.warm_start ? "true" : "false", vinf, (unsigned long)bus_cap_ma(),
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
         led_sched_level(&g_settings, led_sched_current()), bladef, upsf);
 
@@ -586,7 +588,8 @@ static void build_faults_json(char *out, size_t cap, int offset) {
         fault_text(&r, text, sizeof(text));
         const char *type = r.type == EVT_FAULT ? "fault"
                          : r.type == EVT_PROBE_FAIL ? "probe_fail"
-                         : r.type == EVT_BOOT ? "boot" : "?";
+                         : r.type == EVT_BOOT ? "boot"
+                         : r.type == EVT_BUS ? "bus" : "?";
         bool port_rec = r.type != EVT_BOOT; // boot records reuse the mW fields
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"seq\":%lu,\"epoch\":%lu,\"uptime_s\":%lu,\"port\":%u,"

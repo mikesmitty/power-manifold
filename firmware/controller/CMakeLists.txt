@@ -104,6 +104,7 @@ add_executable(controller
     src/ups/lad_proto.c
     src/ups/ups.c
     src/ups/lad_hw_pico.c
+    src/bus_cap.c
     src/vin.c
     src/vin_hw_pico.c
     src/button.c

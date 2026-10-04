@@ -41,6 +41,7 @@
 #include "update_latest.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
+#include "bus_cap.h"
 #include "vin.h"
 
 #define CLI_LINE_MAX 160
@@ -138,7 +139,7 @@ static void print_status(void) {
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
            (unsigned long)t.budget_mw, t.fan_on ? "on" : "off",
            t.fan_auto ? " (auto)" : "", t.alert_active ? "ACTIVE" : "clear");
-    if (vin_fitted()) printf(" bus %s", vin_status_str());
+    if (vin_fitted()) printf(" bus %s%s", vin_status_str(), bus_cap_on() ? " (ports capped at 3 A)" : "");
     printf("\n");
     printf("charged: under %umW for %umin", g_settings.charged_mw, g_settings.charged_min);
     if (!g_settings.charged_mw) printf(" (detection off)");
@@ -183,6 +184,8 @@ static void print_info(void) {
     printf("ups: %s\n", ups_status_str());
     printf("bus: %s", vin_status_str());
     if (vin_fitted()) printf(" (cal %u.%03u)", g_settings.vin_cal / 1000, g_settings.vin_cal % 1000);
+    if (bus_cap_on()) printf(", ports capped at %u A until it holds %u.%u V for %u s", BUS_CAP_MA / 1000,
+                             BUS_CAP_OFF_MV / 1000, (BUS_CAP_OFF_MV % 1000) / 100, BUS_CAP_HOLD_MS / 1000);
     printf("\n");
     printf("ip: %s (%s)\n", net_up() ? net_ip_str() : "none",
            g_settings.ip_static ? "static" : "dhcp");
