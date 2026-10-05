@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.13.1...backplane-v0.13.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **backplane:** adjust UVLO for 62368-1 B.2.3 ([9934627](https://github.com/mikesmitty/power-manifold/commit/99346279432e7640dbb34df166729f7528380e78))
+
 ## [0.13.1](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.13.0...backplane-v0.13.1) (2026-09-29)
 
 
