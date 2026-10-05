@@ -1,0 +1,228 @@
+---
+// Before and after: six devices on six adapters and a power strip, then the
+// same six on one supply and Power Manifold. Line art in the page's greys,
+// like the front panel drawing.
+
+// The six devices along the top, bottoms on one line: left edge, width, kind
+const BOTTOM = 130;
+const DEVICES = [
+	{ x: 20, w: 48, kind: 'pi' },
+	{ x: 114, w: 48, kind: 'pi' },
+	{ x: 208, w: 26, kind: 'phone' },
+	{ x: 280, w: 52, kind: 'tablet' },
+	{ x: 378, w: 96, kind: 'laptop' },
+	{ x: 520, w: 60, kind: 'minipc' },
+];
+const centre = (d: (typeof DEVICES)[number]) => d.x + d.w / 2;
+
+// Before: the strip's outlets left to right, the adapter in each and the
+// device it feeds, in no particular order, as these things end up.
+const STRIP = { x: 40, y: 368, w: 520, h: 24 };
+const ADAPTERS = [
+	{ x: 80, w: 22, h: 18, to: 4, brick: { x: 22, y: 236, w: 74, h: 28 } }, // the laptop's, a plug and a brick on its cord
+	{ x: 160, w: 54, h: 44, to: 5 },
+	{ x: 240, w: 44, h: 36, to: 0 },
+	{ x: 320, w: 36, h: 30, to: 2 },
+	{ x: 396, w: 46, h: 38, to: 1 },
+	{ x: 476, w: 50, h: 42, to: 3 },
+];
+// Each cord leaves its adapter, wanders through one point and swings up to
+// its device; the bends are exaggerated on purpose.
+const WANDER = [
+	{ via: [300, 196], bend: 160 },
+	{ via: [250, 270], bend: -140 },
+	{ via: [180, 250], bend: 150 },
+	{ via: [360, 236], bend: -170 },
+	{ via: [200, 210], bend: 120 },
+	{ via: [420, 262], bend: -150 },
+];
+const cords = ADAPTERS.map((a, i) => {
+	const start = a.brick ? [a.brick.x + a.brick.w, a.brick.y + a.brick.h / 2] : [a.x, STRIP.y - a.h];
+	const end = [centre(DEVICES[a.to]), BOTTOM];
+	const { via, bend } = WANDER[i];
+	return `M${start[0]} ${start[1]} C${start[0] + bend} ${start[1] - 40} ${via[0] - bend} ${via[1] + 60} ${via[0]} ${via[1]} S${end[0] + bend / 2} ${end[1] + 70} ${end[0]} ${end[1]}`;
+});
+
+// After: Power Manifold's front, its ports under the devices' middle, and
+// one supply beside it.
+const PM = { x: 150, y: 286, w: 300, h: 69 };
+const s = PM.w / 2000; // the front panel drawing's units to these
+const PORT_X = [617, 784, 950, 1117, 1284, 1451].map((x) => PM.x + x * s);
+const LIGHT_X = [450, 617, 784, 950, 1117, 1284, 1451].map((x) => PM.x + x * s);
+// The chassis light, then blue for the Pis and the phone at 5 or 9 V, green
+// for the tablet, laptop and mini PC at 12 V or more
+const LIGHTS = ['#22c55e', '#3b82f6', '#3b82f6', '#3b82f6', '#22c55e', '#22c55e', '#22c55e'];
+const cables = DEVICES.map((d, i) => {
+	const px = PORT_X[i];
+	const top = PM.y + 186 * s;
+	return `M${px} ${top} C${px} ${top - 70} ${centre(d)} ${BOTTOM + 90} ${centre(d)} ${BOTTOM}`;
+});
+const PSU = { x: 400, y: 368, w: 150, h: 36 };
+
+// The devices, the same in both drawings, as SVG markup
+function device(d: (typeof DEVICES)[number]): string {
+	const { x, w } = d;
+	const b = BOTTOM;
+	switch (d.kind) {
+		case 'pi': // a bare board: the header along the top, ports on the right
+			return `<rect class="cl-dev" x="${x}" y="${b - 34}" width="${w}" height="34" rx="3"/>
+				<line class="cl-detail cl-dots" x1="${x + 5}" y1="${b - 29}" x2="${x + w - 12}" y2="${b - 29}"/>
+				<rect class="cl-detail" x="${x + 16}" y="${b - 22}" width="12" height="12" rx="1"/>
+				<rect class="cl-detail" x="${x + w - 9}" y="${b - 24}" width="9" height="8"/>
+				<rect class="cl-detail" x="${x + w - 9}" y="${b - 13}" width="9" height="8"/>`;
+		case 'phone':
+			return `<rect class="cl-dev" x="${x}" y="${b - 48}" width="${w}" height="48" rx="5"/>
+				<line class="cl-detail" x1="${x + 9}" y1="${b - 43}" x2="${x + w - 9}" y2="${b - 43}"/>`;
+		case 'tablet':
+			return `<rect class="cl-dev" x="${x}" y="${b - 68}" width="${w}" height="68" rx="5"/>
+				<rect class="cl-detail" x="${x + 4}" y="${b - 64}" width="${w - 8}" height="60" rx="2"/>`;
+		case 'laptop':
+			return `<rect class="cl-dev" x="${x + 9}" y="${b - 58}" width="${w - 18}" height="52" rx="3"/>
+				<rect class="cl-detail" x="${x + 13}" y="${b - 54}" width="${w - 26}" height="44" rx="1"/>
+				<path class="cl-dev" d="M${x} ${b} L${x + w} ${b} L${x + w - 7} ${b - 6} L${x + 7} ${b - 6} Z"/>`;
+		default: // a mini PC
+			return `<rect class="cl-dev" x="${x}" y="${b - 28}" width="${w}" height="28" rx="4"/>
+				<line class="cl-detail" x1="${x + 8}" y1="${b - 14}" x2="${x + 24}" y2="${b - 14}"/>
+				<circle class="cl-detail" cx="${x + w - 10}" cy="${b - 14}" r="2.5"/>`;
+	}
+}
+const devicesSvg = () => DEVICES.map(device).join('');
+---
+
+<div class="clutter not-content">
+	<figure>
+		<svg viewBox="0 0 600 430" role="img" aria-label="Before: six devices, each on its own power adapter, plugged into a power strip with their cords tangled">
+			<g class="cl-cord">
+				{cords.map((d) => <path d={d} />)}
+				{ADAPTERS.filter((a) => a.brick).map((a) => (
+					<path d={`M${a.x} ${STRIP.y - a.h} C${a.x} ${STRIP.y - 70} ${a.brick!.x + 10} ${a.brick!.y + 90} ${a.brick!.x} ${a.brick!.y + a.brick!.h / 2}`} />
+				))}
+				<path d={`M${STRIP.x + STRIP.w} ${STRIP.y + STRIP.h / 2} C${STRIP.x + STRIP.w + 30} ${STRIP.y + 12} 580 420 610 404`} />
+			</g>
+
+			<rect class="cl-body" x={STRIP.x} y={STRIP.y} width={STRIP.w} height={STRIP.h} rx="6" />
+			<rect class="cl-switch" x={STRIP.x + 10} y={STRIP.y + 6} width="14" height="12" rx="2" />
+			{ADAPTERS.map((a) => (
+				<rect class="cl-body" x={a.x - a.w / 2} y={STRIP.y - a.h} width={a.w} height={a.h + 4} rx="4" />
+			))}
+			{ADAPTERS.filter((a) => a.brick).map((a) => (
+				<g>
+					<rect class="cl-body" x={a.brick!.x} y={a.brick!.y} width={a.brick!.w} height={a.brick!.h} rx="5" />
+					<line class="cl-detail" x1={a.brick!.x + 12} y1={a.brick!.y + 14} x2={a.brick!.x + a.brick!.w - 12} y2={a.brick!.y + 14} />
+				</g>
+			))}
+
+			<Fragment set:html={devicesSvg()} />
+		</svg>
+		<figcaption><strong>Before:</strong> six adapters, a power strip and six cords to untangle.</figcaption>
+	</figure>
+
+	<figure>
+		<svg viewBox="0 0 600 430" role="img" aria-label="With Power Manifold: one power supply feeding Power Manifold, with six short cables up to the same devices">
+			<g class="cl-cord">
+				{cables.map((d) => <path d={d} />)}
+				<path d={`M${PSU.x} ${PSU.y + PSU.h / 2} C${PSU.x - 40} ${PSU.y + 20} ${PM.x + PM.w - 10} ${PM.y + PM.h + 40} ${PM.x + PM.w - 24} ${PM.y + PM.h}`} />
+				<path d={`M${PSU.x + PSU.w} ${PSU.y + PSU.h / 2} C${PSU.x + PSU.w + 30} ${PSU.y + 16} 580 420 610 404`} />
+			</g>
+
+			<rect class="cl-body" x={PSU.x} y={PSU.y} width={PSU.w} height={PSU.h} rx="3" />
+			{Array.from({ length: 9 }, (_, i) => (
+				<line class="cl-detail" x1={PSU.x + 16 + i * 14} y1={PSU.y + 10} x2={PSU.x + 16 + i * 14} y2={PSU.y + PSU.h - 10} />
+			))}
+			<text class="cl-label" x={PSU.x + PSU.w / 2} y={PSU.y + PSU.h + 20}>24 V supply</text>
+
+			<rect class="cl-face" x={PM.x} y={PM.y} width={PM.w} height={PM.h} rx="2" />
+			{LIGHT_X.map((x, i) => (
+				<g>
+					<circle class="cl-glow" cx={x} cy={PM.y + 87 * s} r="4.5" fill={LIGHTS[i]} />
+					<circle cx={x} cy={PM.y + 87 * s} r="1.8" fill={LIGHTS[i]} />
+				</g>
+			))}
+			{PORT_X.map((x) => (
+				<rect class="cl-port" x={x - 2.6} y={PM.y + 186 * s} width="5.2" height={86 * s} rx="2.6" />
+			))}
+			<rect class="cl-port" x={PM.x + 128 * s} y={PM.y + 183 * s} width={158 * s} height={132 * s} rx="1" />
+			<text class="cl-label" x={PM.x + PM.w / 2} y={PM.y + PM.h + 22}>Power Manifold</text>
+
+			<Fragment set:html={devicesSvg()} />
+		</svg>
+		<figcaption><strong>With Power Manifold:</strong> one supply, one box, six cables.</figcaption>
+	</figure>
+</div>
+
+<style is:global>
+	/* Global, under .clutter: the devices are inserted as markup, which
+	   Astro's scoped styles would not reach. */
+	.clutter {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+		gap: 1rem;
+		margin: 1.5rem 0;
+	}
+	.clutter figure {
+		margin: 0;
+		padding: 0.75rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	}
+	.clutter svg {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.clutter figcaption {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+		text-align: center;
+	}
+	.clutter figcaption strong {
+		color: var(--sl-color-white);
+	}
+	.clutter .cl-cord path {
+		fill: none;
+		stroke: var(--sl-color-gray-3);
+		stroke-width: 2.25;
+		stroke-linecap: round;
+	}
+	.clutter .cl-body,
+	.clutter .cl-dev {
+		fill: var(--sl-color-gray-6);
+		stroke: var(--sl-color-gray-2);
+		stroke-width: 1.5;
+	}
+	.clutter .cl-switch {
+		fill: #ef4444;
+		opacity: 0.8;
+	}
+	.clutter .cl-detail {
+		fill: none;
+		stroke: var(--sl-color-gray-3);
+		stroke-width: 1.25;
+	}
+	.clutter .cl-dots {
+		stroke-width: 3;
+		stroke-dasharray: 1.5 2.5;
+	}
+	/* Power Manifold's black anodised front, as in the front panel drawing */
+	.clutter .cl-face {
+		fill: #141517;
+		stroke: #4a4d54;
+		stroke-width: 1.5;
+	}
+	.clutter .cl-port {
+		fill: #000;
+		stroke: #8c9098;
+		stroke-width: 1;
+	}
+	.clutter .cl-glow {
+		opacity: 0.5;
+		filter: blur(2px);
+	}
+	.clutter .cl-label {
+		fill: var(--sl-color-gray-2);
+		font: 500 14px var(--sl-font, sans-serif);
+		text-anchor: middle;
+	}
+</style>
