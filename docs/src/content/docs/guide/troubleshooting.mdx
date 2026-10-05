@@ -15,8 +15,9 @@ When something needs attention, Power Manifold says so in several places:
   port table;
 - the **Problem** sensor in Home Assistant, whose `detail` attribute says
   what is wrong;
-- the lights: a red, fast-blinking light for a port that faulted, and the
-  chassis light breathing white when there's no network.
+- the lights: a red, fast-blinking light for a port that faulted, the
+  chassis light (left of port 1) blinking red when the input voltage is out
+  of range, and the chassis light breathing white when there's no network.
 
 The web page's **Fault log** keeps a history, so you can see what happened
 while you weren't looking.
@@ -73,6 +74,14 @@ If the voltage keeps falling, Power Manifold disconnects all ports at
 about 17.7 V and reconnects them when the voltage returns. The fault log
 records the low voltage, so a restart like this leaves a trace.
 
+## Bus voltage out of range
+
+The chassis light, left of port 1, blinks red, and the problem line says
+*bus voltage low* or *bus voltage high*. The input voltage from your power
+supply is under 19 V or over 29 V. Power Manifold is rated for 20 to 28 V.
+The ports keep their power, but check the power supply and its cable. The
+light goes back to dim green once the voltage is back in range.
+
 ## A port shows *silent* or *not answering*
 
 The blade stopped responding to the controller. The port keeps its power
@@ -115,7 +124,7 @@ settings export that includes secrets, you can import it after the reset.
 | *trial firmware uncommitted* | A firmware update is on trial. It clears within a few seconds when the update succeeds. See [Updates](/power-manifold/guide/updates/). |
 | *wired link down* | The Ethernet cable is unplugged or the switch is off. Wi-Fi is carrying traffic for now. |
 | *on battery* / UPS battery fault | Your [UPS power supply](/power-manifold/integrations/ups/) lost mains power or reports a battery problem. |
-| *bus voltage* out of range | The input voltage is under 19 V or over 29 V. Check the power supply. |
+| *bus voltage* out of range | The input voltage is under 19 V or over 29 V. See [Bus voltage out of range](#bus-voltage-out-of-range). |
 
 <Aside type="tip" title="Still stuck?">
 [Open an issue](https://github.com/mikesmitty/power-manifold/issues) with a

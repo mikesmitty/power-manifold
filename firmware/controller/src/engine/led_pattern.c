@@ -161,20 +161,33 @@ static bool render_boot(led_view_t *v, uint32_t now_ms, led_rgb_t out[LED_PIXELS
     return true;
 }
 
-// The chassis light, ahead of port 1: it breathes in the colour of the most
-// pressing management-plane condition and stays dark with nothing to report.
+// The chassis light, ahead of port 1. A bus fault blinks red like a faulted
+// port, down to the fault floor on a dark chain. Otherwise the light breathes
+// in the colour of the most pressing management-plane condition, and glows
+// dim green with nothing to report: the glow is capped at LED_CHASSIS_OK_MAX
+// rather than scaled down, so on a dimmed chain it is as bright as the
+// other lights instead of going out first.
 static void render_chassis(const led_view_t *v, uint32_t now_ms, led_rgb_t out[LED_PIXELS]) {
-    out[LED_CHASSIS_PIXEL] = COL_OFF;
-    if (v->brightness == 0) return;
     led_rgb_t c;
-    // The actionable conditions come first: Bluetooth open, then settings
-    // open for first-time setup, then the plain fact of having no network.
-    if (v->chassis & LED_CHASSIS_BLE_OPEN) c = COL_BLUE;
-    else if (v->chassis & LED_CHASSIS_SETUP_OPEN) c = COL_MAGENTA;
-    else if (v->chassis & LED_CHASSIS_NET_DOWN) c = COL_WHITE;
-    else return;
-    uint32_t level = pulse(now_ms, LED_CHASSIS_PERIOD_MS);
-    out[LED_CHASSIS_PIXEL] = scale(scale(c, level, 255), v->brightness, 255);
+    uint32_t level;
+    uint32_t bright = v->brightness;
+    if (v->chassis & LED_CHASSIS_BUS_FAULT) {
+        c = COL_RED;
+        level = blink(now_ms, 200); // 5 Hz, as a port fault
+        if (bright == 0) bright = LED_FAULT_FLOOR;
+    } else if (v->chassis & (LED_CHASSIS_BLE_OPEN | LED_CHASSIS_SETUP_OPEN | LED_CHASSIS_NET_DOWN)) {
+        // The actionable conditions come first: Bluetooth open, then settings
+        // open for first-time setup, then the plain fact of having no network.
+        if (v->chassis & LED_CHASSIS_BLE_OPEN) c = COL_BLUE;
+        else if (v->chassis & LED_CHASSIS_SETUP_OPEN) c = COL_MAGENTA;
+        else c = COL_WHITE;
+        level = pulse(now_ms, LED_CHASSIS_PERIOD_MS);
+    } else {
+        c = COL_GREEN;
+        level = 255;
+        if (bright > LED_CHASSIS_OK_MAX) bright = LED_CHASSIS_OK_MAX;
+    }
+    out[LED_CHASSIS_PIXEL] = scale(scale(c, level, 255), bright, 255);
 }
 
 void led_pattern_render(led_view_t *v, const telemetry_t *t, uint32_t now_ms,

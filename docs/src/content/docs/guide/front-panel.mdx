@@ -36,16 +36,16 @@ something when the slot is empty.
 
 ## The chassis light
 
-The chassis light is off while the controller has nothing to report. When
-it does, the light breathes slowly in one colour. If more than one applies,
-it shows the first in this table:
+The chassis light glows dim green while all is well. If more than one of
+these applies, it shows the first in this table:
 
 | Light | Meaning |
 | --- | --- |
+| <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The input voltage from your power supply is under 19 V or over 29 V. See [Troubleshooting](/power-manifold/guide/troubleshooting/#bus-voltage-out-of-range). |
 | <span class="led pulse" style="--led:#3b82f6;animation-duration:2s"></span>Blue, breathing | The controller is waiting for [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/). |
 | <span class="led pulse" style="--led:#d946ef;animation-duration:2s"></span>Magenta, breathing | The controller has no API token yet and its settings are open for [first-time setup](/power-manifold/setup/first-time-setup/). It stops when you save a token. |
 | <span class="led pulse" style="--led:#e8e8e8;animation-duration:2s"></span>White, breathing | The controller has no network connection. |
-| Off | Nothing to report. |
+| <span class="led" style="--led:#22c55e;opacity:.45"></span>Dim green | All is well. |
 
 ## Lights across the whole row
 
@@ -59,8 +59,8 @@ Some patterns run across all seven lights:
 ## Brightness and dimming
 
 You can set the light brightness in the web page's **Settings** or in Home
-Assistant. At 0 the lights are off, except that a faulted port still
-blinks dimly.
+Assistant. At 0 the lights are off, except that a faulted port, or the
+chassis light during an input voltage fault, still blinks dimly.
 
 Two schedules can dim the lights to a low level. The default low level is
 just visible in a dark room:

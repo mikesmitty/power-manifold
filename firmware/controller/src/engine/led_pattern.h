@@ -20,15 +20,20 @@
 //   boot       one-shot sweep along the chain at power-up (white or
 //              rainbow), the chassis light first — doubles as a
 //              chain-order check on a fresh chassis
-//   chassis    the chassis light breathes blue while the BLE provisioning
-//              window is open, magenta while settings are open for
-//              first-time setup (no API token yet), white while no link has
-//              an address; dark with nothing to report
+//   chassis    the chassis light blinks red like a faulted port while the
+//              DC bus is past its low or high flag; otherwise it breathes
+//              blue while the BLE provisioning window is open, magenta while
+//              settings are open for first-time setup (no API token yet),
+//              white while no link has an address; with nothing to report
+//              it glows green at the master brightness, capped at
+//              LED_CHASSIS_OK_MAX, so it stays dim on a bright chain and
+//              dims no further than the other lights on a dimmed one
 //   ports      per-slot state colours (spec §6.1); a sink that has finished
 //              charging shows solid magenta whatever its contract state
 //
-// Master brightness 0 blanks everything except a faulted port, which keeps
-// blinking at LED_FAULT_FLOOR so a dark rack still shows a trip.
+// Master brightness 0 blanks everything except a faulted port or a bus
+// fault, which keep blinking at LED_FAULT_FLOOR so a dark rack still shows
+// a trip.
 
 typedef struct { uint8_t r, g, b; } led_rgb_t;
 
@@ -54,6 +59,7 @@ typedef struct {
 #define LED_BOOT_HOLD_MS     300                          // all lit, then release
 #define LED_BOOT_SWEEP_MS    (LED_PIXELS * LED_BOOT_STEP_MS + LED_BOOT_HOLD_MS)
 #define LED_CHASSIS_PERIOD_MS 2000                        // one breath of the chassis light
+#define LED_CHASSIS_OK_MAX   32                           // brightness ceiling of the all-clear glow
 #define LED_FAULT_FLOOR      16                           // brightness used for faults at 0
 #define LED_IDENTIFY_FLOOR   32
 

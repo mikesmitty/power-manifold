@@ -32,6 +32,9 @@ static void render(uint32_t now_ms) {
 static bool dark(led_rgb_t c) { return !c.r && !c.g && !c.b; }
 static bool same(led_rgb_t a, led_rgb_t b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
 
+// The chassis light's all-clear: a dim green glow
+static bool all_clear(led_rgb_t c) { return c.r == 0 && c.g > c.b && c.g < 40; }
+
 static void test_port_state_colours(void) {
     reset(255);
     set_port(0, PORT_STATE_ABSENT, 0);
@@ -72,7 +75,7 @@ static void test_hold_fill(void) {
     view.hold = 0;
     render(0);
     MT_ASSERT(PX(0).g == 220); // ports back
-    MT_ASSERT(dark(CH));
+    MT_ASSERT(all_clear(CH));
     // shown on a blanked chain, at the identify floor
     view.brightness = 0;
     view.hold = 254;
@@ -170,7 +173,7 @@ static void test_boot_sweep_white(void) {
     render(1000 + LED_BOOT_SWEEP_MS); // over: ports show through
     MT_ASSERT(!view.boot_pending);
     MT_ASSERT(PX(0).r == 255 && PX(0).g == 120 && PX(0).b == 0);
-    MT_ASSERT(dark(CH)); // nothing to report
+    MT_ASSERT(all_clear(CH)); // nothing to report
 }
 
 static void test_boot_sweep_rainbow(void) {
@@ -203,7 +206,7 @@ static void test_chassis_light_breathes_blue_for_ble(void) {
     reset(255);
     all_idle();
     render(0);
-    MT_ASSERT(dark(CH)); // nothing to report
+    MT_ASSERT(all_clear(CH)); // nothing to report
     view.chassis = LED_CHASSIS_BLE_OPEN;
     render(LED_CHASSIS_PERIOD_MS / 2); // peak of the breath
     MT_ASSERT(CH.r == 0 && CH.g == 60 && CH.b == 255);
@@ -225,7 +228,7 @@ static void test_net_down_is_white_and_ble_wins(void) {
     MT_ASSERT(CH.r == 0 && CH.b == 255);
     view.chassis = 0;
     render(peak);
-    MT_ASSERT(dark(CH));
+    MT_ASSERT(all_clear(CH));
     MT_ASSERT(PX(0).r == 255 && PX(0).g == 120);
 }
 
@@ -251,6 +254,48 @@ static void test_chassis_light_dark_at_zero_brightness(void) {
     view.chassis = LED_CHASSIS_BLE_OPEN;
     render(LED_CHASSIS_PERIOD_MS / 2);
     for (int i = 0; i < LED_PIXELS; i++) MT_ASSERT(dark(px[i]));
+}
+
+static void test_chassis_light_glows_dim_green(void) {
+    reset(255);
+    all_idle();
+    render(0);
+    MT_ASSERT(all_clear(CH));
+    MT_ASSERT_EQ(CH.g, 220 * LED_CHASSIS_OK_MAX / 255); // capped on a bright chain
+    render(LED_CHASSIS_PERIOD_MS / 2); // steady, no breath
+    MT_ASSERT_EQ(CH.g, 220 * LED_CHASSIS_OK_MAX / 255);
+    reset(48); // the default brightness: still capped
+    all_idle();
+    render(0);
+    MT_ASSERT_EQ(CH.g, 220 * LED_CHASSIS_OK_MAX / 255);
+    reset(4); // dimmed for the night: as bright as a port, not dark
+    set_port(0, PORT_STATE_ACTIVE, 20000);
+    render(0);
+    MT_ASSERT(!dark(CH));
+    MT_ASSERT(same(CH, PX(0)));
+    reset(0); // dark at brightness 0
+    render(0);
+    MT_ASSERT(dark(CH));
+}
+
+static void test_bus_fault_blinks_red_over_everything(void) {
+    reset(255);
+    all_idle();
+    view.chassis = LED_CHASSIS_BUS_FAULT | LED_CHASSIS_BLE_OPEN | LED_CHASSIS_NET_DOWN;
+    render(0);
+    MT_ASSERT(CH.r == 255 && CH.g == 0 && CH.b == 0); // red, blink on
+    MT_ASSERT_EQ(PX(0).r, 255);                       // ports untouched
+    render(100);                                      // 5 Hz, like a port fault
+    MT_ASSERT(dark(CH));
+    view.chassis = LED_CHASSIS_BLE_OPEN; // the bus came back: Bluetooth shows again
+    render(LED_CHASSIS_PERIOD_MS / 2);
+    MT_ASSERT(CH.r == 0 && CH.b == 255);
+    // a dark chain still shows it, at the fault floor
+    view.brightness = 0;
+    view.chassis = LED_CHASSIS_BUS_FAULT;
+    render(0);
+    MT_ASSERT(CH.r == LED_FAULT_FLOOR && CH.g == 0 && CH.b == 0);
+    MT_ASSERT(dark(PX(0)));
 }
 
 static void test_identify_overrides_everything(void) {
@@ -323,6 +368,8 @@ void run_led_tests(void) {
     mt_run("leds: chassis light magenta for setup, between BLE and net down",
            test_setup_is_magenta_between_ble_and_net_down);
     mt_run("leds: chassis light dark at brightness 0", test_chassis_light_dark_at_zero_brightness);
+    mt_run("leds: chassis light glows dim green when all is well", test_chassis_light_glows_dim_green);
+    mt_run("leds: bus fault blinks red over everything", test_bus_fault_blinks_red_over_everything);
     mt_run("leds: identify overrides everything", test_identify_overrides_everything);
     mt_run("leds: identify visible at brightness 0", test_identify_visible_when_dimmed_to_zero);
     mt_run("leds: acknowledge flash", test_ack_flash);
