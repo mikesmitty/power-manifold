@@ -108,9 +108,10 @@ of its port; the power-up sweep runs left to right.
 ## Building
 
 Requires the [pico-sdk](https://github.com/raspberrypi/pico-sdk) (2.x) with
-its `lib/btstack` submodule checked out (BLE provisioning), an
-`arm-none-eabi` toolchain, and Python 3 (BTstack's `compile_gatt.py` turns
-`src/net/improv_profile.gatt` into a header at build time).
+its `lib/btstack` (BLE provisioning) and `lib/mbedtls` (MQTT TLS) submodules
+checked out, an `arm-none-eabi` toolchain, and Python 3 (BTstack's
+`compile_gatt.py` turns `src/net/improv_profile.gatt` into a header at build
+time).
 
 ```sh
 export PICO_SDK_PATH=~/.pico-sdk/sdk/2.2.0   # or wherever the SDK lives
