@@ -237,7 +237,7 @@ rewrite that is interrupted at any point just starts over. Without it the
 way into the bootloader is the flash's empty flag, and the bootloader
 clears that flag when it starts (AN2606, 48.3.1): a reset halfway through
 a rewrite then boots a flash with no first page, and the blade stays dead
-until it is reseated. That is why the option is set before the first
+until the chassis is switched off and on. That is why the option is set before the first
 rewrite, and why the controller puts off its own restarts (an OTA reboot,
 a trial revert) while a blade is mid-trip — the bootloader resets the
 blade if the controller goes quiet for a second in the middle of a
@@ -251,13 +251,14 @@ that is rebooting, updating or gone leaves EN where it was, and the ports
 run on. `port <n> update` on a silent port is what uses it: EN goes low,
 the blade finds its own way to the bootloader within the watch time, and
 the retry after each cooldown picks it up there. Switching the port off
-and on does the same, slower. `blades watch off` leaves only a reseat.
+and on does the same, slower. `blades watch off` leaves only switching the
+chassis off and on.
 
 **What can go wrong.** Each trip that ends with a blade back in its
 bootloader without its firmware having come up as wanted counts; after
 three the port is held in FAULT (`probe: update (crash loop)`) and stays
-there — no retry every cooldown — until the blade is reseated, the port
-re-enabled, or `port <n> update` is given. A blade that *does* run but
+there — no retry every cooldown — until the chassis is switched off and on,
+the port is re-enabled, or `port <n> update` is given. A blade that *does* run but
 cannot be brought to what was wanted (an option that will not take) is
 not faulted for it: after three tries the controller logs `probe: update
 (not taking)` once, leaves the port in service and stops asking until one
