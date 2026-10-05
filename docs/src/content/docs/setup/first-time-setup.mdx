@@ -32,9 +32,9 @@ supply off before you unplug it.
 
 <Aside type="note" title="Nothing can be changed until you set a token">
 A new controller refuses every change that arrives over the network until
-it has an API token. Its settings open only as described in step 2, and a
-magenta light runs across the ports every few seconds for as long as they
-are open. Saving a token closes them and stops the light.
+it has an API token. Its settings open only as described in step 2, and the chassis light, left
+of port 1, breathes amber for as long as they are open. Saving a token
+closes them and stops the light.
 </Aside>
 
 ## Steps
@@ -59,7 +59,7 @@ are open. Saving a token closes them and stops the light.
      has Wi-Fi details. Follow
      [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/), either from
      that page in your browser or with the Home Assistant app. While it
-     waits, a blue light runs across the ports every few seconds. When
+     waits, the chassis light breathes blue. When
      Wi-Fi setup finishes, press **Next** on the same phone or computer. It
      opens the controller's web page with settings unlocked for ten
      minutes.
@@ -72,7 +72,7 @@ are open. Saving a token closes them and stops the light.
 4. **Choose an API token.** In **Settings**, set an **API token** and press
    **Save**. This is the password for changing anything from the web page or
    the API. You'll need it on any other device, so keep it somewhere safe.
-   Once the token is saved, setup is closed and the magenta light stops.
+   Once the token is saved, setup is closed and the amber light stops.
 
 5. **Set the power budget.** Still in **Settings**, set the **Chassis budget**
    to your supply's rating in watts, or a little under it. See

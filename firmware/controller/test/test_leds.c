@@ -110,14 +110,14 @@ static void test_throttled_pulses_active_colour(void) {
     MT_ASSERT_EQ(PX(0).g, trough);
 }
 
-static void test_charged_shows_magenta(void) {
+static void test_charged_shows_white(void) {
     reset(255);
     set_port(0, PORT_STATE_ACTIVE, 20000);
     set_port(1, PORT_STATE_THROTTLED, 9000);
     set_port(2, PORT_STATE_ACTIVE, 5000);
     tele.port[0].charged = tele.port[1].charged = true;
     render(0);
-    MT_ASSERT(PX(0).r == 255 && PX(0).g == 0 && PX(0).b == 200); // not the 20 V green
+    MT_ASSERT(PX(0).r == 255 && PX(0).g == 255 && PX(0).b == 255); // white, not the 20 V green
     MT_ASSERT(same(PX(1), PX(0)));                                // and no throttle pulse
     MT_ASSERT(PX(2).b == 255 && PX(2).r == 0);                    // still charging: blue
     render(500);
@@ -232,17 +232,17 @@ static void test_net_down_is_white_and_ble_wins(void) {
     MT_ASSERT(PX(0).r == 255 && PX(0).g == 255);
 }
 
-static void test_setup_is_magenta_between_ble_and_net_down(void) {
+static void test_setup_is_amber_between_ble_and_net_down(void) {
     reset(255);
     all_idle();
     uint32_t peak = LED_CHASSIS_PERIOD_MS / 2;
     view.chassis = LED_CHASSIS_SETUP_OPEN;
     render(peak);
-    MT_ASSERT(CH.r == 255 && CH.g == 0 && CH.b == 200); // magenta
+    MT_ASSERT(CH.r == 255 && CH.g == 120 && CH.b == 0); // amber
     MT_ASSERT_EQ(PX(0).r, 255);                          // port 1 still white
     view.chassis = LED_CHASSIS_SETUP_OPEN | LED_CHASSIS_NET_DOWN;
     render(peak);
-    MT_ASSERT(CH.r == 255 && CH.g == 0 && CH.b == 200); // setup beats net down
+    MT_ASSERT(CH.r == 255 && CH.g == 120 && CH.b == 0); // setup beats net down
     view.chassis = LED_CHASSIS_SETUP_OPEN | LED_CHASSIS_BLE_OPEN;
     render(peak);
     MT_ASSERT(CH.r == 0 && CH.b == 255);                // Bluetooth beats setup
@@ -357,7 +357,7 @@ void run_led_tests(void) {
     mt_run("leds: button hold fills the chain", test_hold_fill);
     mt_run("leds: probe blinks cyan", test_probe_blinks_cyan);
     mt_run("leds: throttled pulses the active colour", test_throttled_pulses_active_colour);
-    mt_run("leds: a charged sink shows magenta", test_charged_shows_magenta);
+    mt_run("leds: a charged sink shows white, like idle", test_charged_shows_white);
     mt_run("leds: master brightness scales", test_master_brightness_scales);
     mt_run("leds: brightness 0 keeps faults", test_brightness_zero_keeps_faults);
     mt_run("leds: boot sweep white", test_boot_sweep_white);
@@ -365,8 +365,8 @@ void run_led_tests(void) {
     mt_run("leds: boot sweep dark at brightness 0", test_boot_sweep_dark_at_zero_brightness);
     mt_run("leds: chassis light breathes blue for BLE", test_chassis_light_breathes_blue_for_ble);
     mt_run("leds: chassis light white for no network, BLE wins", test_net_down_is_white_and_ble_wins);
-    mt_run("leds: chassis light magenta for setup, between BLE and net down",
-           test_setup_is_magenta_between_ble_and_net_down);
+    mt_run("leds: chassis light amber for setup, between BLE and net down",
+           test_setup_is_amber_between_ble_and_net_down);
     mt_run("leds: chassis light dark at brightness 0", test_chassis_light_dark_at_zero_brightness);
     mt_run("leds: chassis light glows dim green when all is well", test_chassis_light_glows_dim_green);
     mt_run("leds: bus fault blinks red over everything", test_bus_fault_blinks_red_over_everything);

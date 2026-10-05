@@ -9,7 +9,6 @@ static const led_rgb_t COL_AMBER   = {255, 120, 0};
 static const led_rgb_t COL_BLUE    = {0, 60, 255};
 static const led_rgb_t COL_GREEN   = {0, 220, 40};
 static const led_rgb_t COL_RED     = {255, 0, 0};
-static const led_rgb_t COL_MAGENTA = {255, 0, 200};
 
 // Boot sweep hues, one per pixel, so the rainbow reads left to right
 static const led_rgb_t RAINBOW[LED_PIXELS] = {
@@ -63,10 +62,10 @@ static led_rgb_t port_colour(const port_telemetry_t *p, uint32_t now_ms, uint32_
     case PORT_STATE_IDLE:
         return COL_WHITE; // ready, nothing plugged in
     case PORT_STATE_ACTIVE:
-        if (p->charged) return COL_MAGENTA; // sink finished: nothing left to deliver
+        if (p->charged) return COL_WHITE; // sink finished: nothing left to deliver, so it looks idle
         return active_colour(p);
     case PORT_STATE_THROTTLED:
-        if (p->charged) return COL_MAGENTA; // a clamp on a finished sink is moot
+        if (p->charged) return COL_WHITE; // a clamp on a finished sink is moot
         *level = pulse(now_ms, 1000); // 1 Hz: delivering, but clamped
         return active_colour(p);
     case PORT_STATE_FAULT:
@@ -179,7 +178,7 @@ static void render_chassis(const led_view_t *v, uint32_t now_ms, led_rgb_t out[L
         // The actionable conditions come first: Bluetooth open, then settings
         // open for first-time setup, then the plain fact of having no network.
         if (v->chassis & LED_CHASSIS_BLE_OPEN) c = COL_BLUE;
-        else if (v->chassis & LED_CHASSIS_SETUP_OPEN) c = COL_MAGENTA;
+        else if (v->chassis & LED_CHASSIS_SETUP_OPEN) c = COL_AMBER;
         else c = COL_WHITE;
         level = pulse(now_ms, LED_CHASSIS_PERIOD_MS);
     } else {
