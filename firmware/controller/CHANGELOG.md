@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.12.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.11.0...controller-firmware-v0.12.0) (2026-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **controller:** a build without -DPICO_BOARD is now for the controller card, and a release's unsuffixed files (controller.uf2, controller.elf, controller.signed.bin, partition_table.uf2) are the card's. The Pico 2 W build is published as controller-pico2w.* and partition_table-pico2w.uf2; pass -DPICO_BOARD=pico2_w to build it.
+
+### Features
+
+* **controller:** add a PEM and DER codec for certificates ([48bfead](https://github.com/mikesmitty/power-manifold/commit/48bfead85a7f3cd7f83e5443b0d9e7aa084e5231))
+* **controller:** build for the controller card by default ([68d33ae](https://github.com/mikesmitty/power-manifold/commit/68d33ae89d8687b93ae0ec7281221167c0ee9239))
+* **controller:** cap ports at 3 A while the DC bus sags ([fff3f2d](https://github.com/mikesmitty/power-manifold/commit/fff3f2d301bb3d766a57f761ea39d6756d44d5ab))
+* **controller:** factory image for first programming over SWD ([660d443](https://github.com/mikesmitty/power-manifold/commit/660d443b65859c80ee5f6db1f425584c153d1e48))
+* **controller:** look for new releases and offer them ([e55e9a9](https://github.com/mikesmitty/power-manifold/commit/e55e9a941ff525c85c1ad35692481cc49ce3ce0e))
+* **controller:** poll a shipped time server behind the one DHCP names ([304f1b6](https://github.com/mikesmitty/power-manifold/commit/304f1b6f00d47af4a33ff74f41d1d9d14cc94d7b))
+* **controller:** report the model as PM6 to Home Assistant ([caa6d55](https://github.com/mikesmitty/power-manifold/commit/caa6d557f18f4256b92f99b4bbe33aa46701f90d))
+* **controller:** run the fan from the gen-3 blade thermometers ([b18cbe1](https://github.com/mikesmitty/power-manifold/commit/b18cbe16500606244c3252fb7f5434d6fa92a4be))
+* **controller:** TLS on the broker link with an optional certificate ([eb6c3b5](https://github.com/mikesmitty/power-manifold/commit/eb6c3b5f1f09f434a5243cb732108beefca174e4))
+* **controller:** trust a backup update key held on a YubiKey ([d14e544](https://github.com/mikesmitty/power-manifold/commit/d14e5445708a9a472e9639af2babecc91e0ff9be))
+* **controller:** trust the Let's Encrypt roots on the broker link ([e5f97e4](https://github.com/mikesmitty/power-manifold/commit/e5f97e4e47c71999f5699c436545408ea5d02f1c))
+
+
+### Bug Fixes
+
+* **controller:** let a trial image commit on a flapping WiFi link ([bfaa83c](https://github.com/mikesmitty/power-manifold/commit/bfaa83ca154b14b3c67d6dd8644ae010250d4129))
+
 ## [0.11.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.10.0...controller-firmware-v0.11.0) (2026-10-01)
 
 
