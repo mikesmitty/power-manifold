@@ -410,7 +410,7 @@ void improv_poll(uint32_t now_ms) {
     // automatic windows (a wired link counts as being on the network: no
     // point advertising WiFi provisioning to a box already reachable)
     if (!window_open && !auto_inhibit) {
-        if (unprovisioned && !up)
+        if (unprovisioned && !up && now_ms >= NET_START_GRACE_MS)
             open_locked(0, OPEN_UNPROVISIONED, "no WiFi credentials", now_ms);
         else if (!up && now_ms - down_since_ms >= IMPROV_DOWN_OPEN_MS)
             open_locked(0, OPEN_DOWN, "network down", now_ms);

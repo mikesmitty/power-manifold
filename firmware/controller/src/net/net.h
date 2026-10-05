@@ -37,6 +37,11 @@ const char *net_ip4_str(uint32_t addr_nbo); // "" for 0; static buffer
 bool net_ip4_mask_valid(uint32_t mask_nbo);
 bool net_available(void);      // lwIP running
 bool net_up(void);             // some link up with an address
+// The links get this long after power-up to come up before the controller
+// treats having no address as a problem. Ethernet waits for DHCP and Wi-Fi
+// has to join first, so without it every boot would flash the no-network
+// light and could open Bluetooth on a unit that is about to be online.
+#define NET_START_GRACE_MS (15 * 1000)
 const char *net_ip_str(void);  // address of the preferred link, "0.0.0.0" when down
 const char *net_mask_str(void); // its netmask and gateway, "" when down
 const char *net_gw_str(void);

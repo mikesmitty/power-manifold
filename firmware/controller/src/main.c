@@ -151,7 +151,7 @@ int main(void) {
         // chassis conditions shown on the chassis light (led_pattern.h)
         uint8_t led_flags = (uint8_t)((improv_active() ? LED_CHASSIS_BLE_OPEN : 0) |
                                       (http_setup_open(now_ms) ? LED_CHASSIS_SETUP_OPEN : 0) |
-                                      (net_up() ? 0 : LED_CHASSIS_NET_DOWN) |
+                                      (net_up() || now_ms < NET_START_GRACE_MS ? 0 : LED_CHASSIS_NET_DOWN) |
                                       (vin_low() || vin_high() ? LED_CHASSIS_BUS_FAULT : 0));
         if (led_flags != led_flags_sent) {
             engine_cmd_t c = {.op = CMD_LED_CHASSIS, .arg = led_flags};

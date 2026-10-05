@@ -10,7 +10,8 @@
 //
 // BLE carries only SSID + password. The GATT service is advertised only
 // inside a provisioning window, which opens by itself while the device has
-// no WiFi credentials or has been off the network for IMPROV_DOWN_OPEN_MS,
+// no WiFi credentials and no address NET_START_GRACE_MS after power-up, or
+// has been off the network for IMPROV_DOWN_OPEN_MS,
 // and on request (CLI `improv on`, the Home Assistant button) for
 // IMPROV_WINDOW_MS. It closes on success (the client is handed
 // http://<ip>/ to continue in the web UI — with a ?s=<setup secret> that
