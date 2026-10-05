@@ -22,6 +22,12 @@ something when the slot is empty.
 
 ## Port lights
 
+<FrontPanel
+	lights={['green dim', 'green', 'blue', 'white', 'green pulse', 'red fast', 'amber dim']}
+	title="Front panel with ports showing different states"
+	caption="For example: port 1 powering a laptop, port 2 a phone, port 3 idle, port 4 turned down for the budget, port 5 faulted and no port fitted at 6."
+/>
+
 | Light | Meaning |
 | --- | --- |
 | <span class="led" style="--led:#22c55e"></span>Green | Powering a device at 12 V or more, such as a monitor, a game console or a laptop. |
@@ -30,7 +36,7 @@ something when the slot is empty.
 | <span class="led blink" style="--led:#22d3ee"></span>Cyan, blinking | The blade is starting up. |
 | <span class="led pulse" style="--led:#3b82f6"></span>Slow pulse (blue or green) | Powering a device, but turned down because the chassis is at its power budget. See [Sharing power](/power-manifold/guide/sharing-power/). |
 | <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The port shut itself off because of a fault. It tries again after 5 seconds. See [Troubleshooting](/power-manifold/guide/troubleshooting/#a-port-blinks-red). |
-| <span class="led" style="--led:#f59e0b;opacity:.45"></span>Dim amber | No port fitted in this position. |
+| <span class="led" style="--led:#f59e0b;--lvl:.4"></span>Dim amber | No port fitted in this position. |
 | Off | The port is switched off. |
 
 ## The chassis light
@@ -40,7 +46,7 @@ these applies, it shows the first in this table:
 
 | Light | Meaning |
 | --- | --- |
-| <span class="led" style="--led:#22c55e;opacity:.45"></span>Dim green | All is well. |
+| <span class="led" style="--led:#22c55e;--lvl:.4"></span>Dim green | All is well. |
 | <span class="led pulse" style="--led:#3b82f6;animation-duration:2s"></span>Blue, breathing | The controller is waiting for [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/). |
 | <span class="led pulse" style="--led:#f59e0b;animation-duration:2s"></span>Amber, breathing | The controller has no API token yet and its settings are open for [first-time setup](/power-manifold/setup/first-time-setup/). It stops when you save a token. |
 | <span class="led pulse" style="--led:#ef4444;animation-duration:2s"></span>Red, breathing | The controller has no network connection. See [Troubleshooting](/power-manifold/guide/troubleshooting/#no-network). |
@@ -48,12 +54,21 @@ these applies, it shows the first in this table:
 
 ## Lights across the whole row
 
-Some patterns run across all seven lights:
+Some patterns run across all seven lights.
 
-- **A sweep from left to right** at power-up, starting with the chassis
-  light. It also confirms that every light is working.
-- **Every other light flashing blue**: someone pressed **Identify** during
-  Wi-Fi setup to find this unit.
+**A sweep from left to right** at power-up, starting with the chassis
+light. It also confirms that every light is working.
+
+<FrontPanel
+	sequence="boot"
+	lights={['green dim', 'white', 'white', 'white', 'white', 'white', 'white']}
+	title="Power-up sweep across the front panel lights"
+/>
+
+**Every other light flashing blue**: someone pressed **Identify** during
+Wi-Fi setup to find this unit. It lasts ten seconds.
+
+<FrontPanel sequence="identify" title="Identify pattern: every other light flashing blue" />
 
 ## Brightness and dimming
 
@@ -84,6 +99,12 @@ you hold it:
 | **Short press** (under 3 seconds) | Flashes all lights white, then shows them at full brightness for 30 seconds. Useful when the lights are dimmed or off. On a controller with no API token yet, it also gives you another hour to [set one over Ethernet](/power-manifold/setup/first-time-setup/#steps). |
 | **Hold 3 seconds**, then let go | Opens Bluetooth for ten minutes so you can [change Wi-Fi](/power-manifold/setup/wifi-provisioning/#changing-wi-fi-later). |
 | **Hold 10 seconds** | **Factory reset.** Erases all settings and the fault log, then restarts. |
+
+<FrontPanel
+	sequence="hold"
+	lights={['green dim', 'green', 'blue', 'white', 'white', 'white', 'white']}
+	title="Holding the button down to a factory reset"
+/>
 
 From 3 seconds on, the lights fill up in blue from left to right, one
 light at a time, as a warning. If you let go while they are filling, you

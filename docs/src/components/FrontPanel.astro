@@ -3,14 +3,23 @@
 //
 // lights: up to seven entries, left to right: the chassis light, then ports
 // 1 to 6. Each entry is a colour name from COLOURS, optionally followed by
-// "blink" or "pulse" (for example "red blink"), or null for an unlit light.
+// one of "dim", "blink" (2 Hz), "fast" (5 Hz), "pulse" (1 s) or "breathe"
+// (2 s), for example "red fast", or null for an unlit light. The rates are
+// the firmware's (firmware/controller/src/engine/led_pattern.c).
+// sequence: play a pattern that runs across the whole row instead, at the
+// firmware's timing: "boot" (the power-up sweep), "identify" or "hold" (the
+// button held to a factory reset, with a timeline under the panel). Where a
+// sequence leaves the row to its normal state, the lights above are shown,
+// without their blink or pulse.
 // labels: draw the callouts for the Ethernet port, the button and the lights.
 interface Props {
 	lights?: (string | null)[];
+	sequence?: 'boot' | 'identify' | 'hold';
 	labels?: boolean;
 	title?: string;
+	caption?: string;
 }
-const { lights = [], labels = true, title = 'Power Manifold front panel' } = Astro.props;
+const { lights = [], sequence, labels = !sequence && lights.length === 0, title = 'Power Manifold front panel', caption } = Astro.props;
 
 const COLOURS: Record<string, string> = {
 	white: '#e8e8e8',
@@ -20,28 +29,111 @@ const COLOURS: Record<string, string> = {
 	green: '#22c55e',
 	red: '#ef4444',
 };
+// How bright a "dim" light is drawn: the firmware's dim amber and dim green
+// are a few percent of full drive, which an LED shows as a faint glow.
+const DIM = 0.4;
 
 // x centres of the chassis light and ports 1 to 6
 const LIGHT_X = [450, 617, 784, 950, 1117, 1284, 1451];
 const PORT_X = LIGHT_X.slice(1);
 const pins = Array.from({ length: 8 }, (_, i) => 172 + i * 10);
 
-const lit = LIGHT_X.map((x, i) => {
+// Several panels can share a page, so their filter and animation names must not collide.
+const uid = 'fp' + Math.random().toString(36).slice(2, 8);
+
+type Frame = Record<string, number>[]; // per light: colour name -> level 0 to 1
+
+const base = LIGHT_X.map((_, i) => {
 	const spec = lights[i];
-	if (!spec) return { x, colour: null, mode: '' };
-	const [name, mode = ''] = spec.split(' ');
-	return { x, colour: COLOURS[name] ?? name, mode };
+	if (!spec) return null;
+	const [name, ...mods] = spec.split(' ');
+	return { name, dim: mods.includes('dim'), mode: mods.filter((m) => m !== 'dim').join(' ') };
+});
+const baseFrame: Frame = base.map((b) => (b ? { [b.name]: b.dim ? DIM : 1 } : {}));
+const none = (): Frame => LIGHT_X.map(() => ({}));
+
+// Each sequence: its loop length, the moment to show still when the reader
+// prefers reduced motion, and the row at time t (ms) within the loop.
+const HOLD_LONG = 3000;
+const HOLD_RESET = 10000;
+const SEQUENCES: Record<string, { period: number; still: number; at: (t: number) => Frame }> = {
+	// 150 ms per light from the chassis light on, all seven held for 300 ms
+	boot: {
+		period: 3000,
+		still: 1300,
+		at: (t) => (t < 1350 ? LIGHT_X.map((_, i) => (i <= Math.floor(t / 150) ? { white: 1 } : {})) : baseFrame),
+	},
+	// every other light blue, swapping every 250 ms
+	identify: {
+		period: 500,
+		still: 0,
+		at: (t) => LIGHT_X.map((_, i) => ((Math.floor(t / 250) + i) & 1 ? { blue: 1 } : {})),
+	},
+	// normal until 3 s, then filling in blue one light at a time, all red as
+	// the reset fires at 10 s, then dark while the controller restarts
+	hold: {
+		period: 14000,
+		still: 7000,
+		at: (t) => {
+			if (t < HOLD_LONG) return baseFrame;
+			if (t < HOLD_RESET) {
+				const span = ((t - HOLD_LONG) / (HOLD_RESET - HOLD_LONG)) * LIGHT_X.length;
+				return LIGHT_X.map((_, i) => ({ blue: Math.min(1, Math.max(0, span - i)) }));
+			}
+			if (t < 11500) return LIGHT_X.map(() => ({ red: 1 }));
+			return none();
+		},
+	},
+};
+
+// One layer per light and colour. A sequence animates each layer's opacity
+// through keyframes sampled from its function; a run of samples on one
+// straight line collapses to its two ends.
+const pct = (t: number, period: number) => +((t / period) * 100).toFixed(3);
+let css = '';
+const layers = LIGHT_X.map((x, i) => {
+	if (!sequence) {
+		const b = base[i];
+		if (!b) return [];
+		return [{ colour: COLOURS[b.name] ?? b.name, cls: `fp-lit ${b.mode}`, level: b.dim ? DIM : 1 }];
+	}
+	const seq = SEQUENCES[sequence];
+	const step = 10;
+	const frames: Frame = [];
+	for (let t = 0; t <= seq.period; t += step) frames.push(seq.at(t === seq.period ? 0 : t)[i]);
+	const names = [...new Set(frames.flatMap((f) => Object.keys(f)))];
+	return names.map((name) => {
+		const v = frames.map((f) => f[name] ?? 0);
+		const keep = v.map((_, k) => k === 0 || k === v.length - 1 || Math.abs(v[k] - v[k - 1] - (v[k + 1] - v[k])) > 1e-6);
+		const stops = v.flatMap((level, k) => (keep[k] ? [`${pct(k * step, seq.period)}%{opacity:${+level.toFixed(3)}}`] : []));
+		const cls = `${uid}-${i}-${name}`;
+		css += `@keyframes ${cls}{${stops.join('')}}.${cls}{animation:${cls} ${seq.period}ms linear infinite}`;
+		css += `@media (prefers-reduced-motion:reduce){.${cls}{animation-play-state:paused;animation-delay:-${seq.still}ms}}`;
+		return { colour: COLOURS[name] ?? name, cls: `fp-lit ${cls}`, level: v[0] };
+	});
 });
 
+// The hold sequence gets a timeline under the panel, so the reader can see
+// how long the button has been held.
+const timeline = sequence === 'hold';
+const TL = { x0: 100, x1: 1900, y: 540 };
+const tlx = (ms: number) => TL.x0 + ((TL.x1 - TL.x0) * ms) / SEQUENCES.hold.period;
+if (timeline) {
+	const n = `${uid}-marker`;
+	css += `@keyframes ${n}{from{transform:translateX(0)}to{transform:translateX(${TL.x1 - TL.x0}px)}}.${n}{animation:${n} ${SEQUENCES.hold.period}ms linear infinite}`;
+	css += `@media (prefers-reduced-motion:reduce){.${n}{animation-play-state:paused;animation-delay:-${SEQUENCES.hold.still}ms}}`;
+}
+
 const top = labels ? -80 : 0;
-const height = labels ? 80 + 610 : 458;
+const height = labels ? 80 + 610 : timeline ? 640 : 458;
 ---
 
 <figure class="front-panel not-content">
+	{css && <style is:inline set:html={css} />}
 	<svg viewBox={`0 ${top} 2000 ${height}`} role="img" aria-label={title}>
 		<title>{title}</title>
 		<defs>
-			<filter id="fp-glow" x="-200%" y="-200%" width="500%" height="500%">
+			<filter id={`${uid}-glow`} x="-200%" y="-200%" width="500%" height="500%">
 				<feGaussianBlur stdDeviation="9" />
 			</filter>
 		</defs>
@@ -63,17 +155,18 @@ const height = labels ? 80 + 610 : 458;
 		<!-- button -->
 		<rect class="fp-line fp-button" x="308" y="299" width="20" height="13" rx="2" />
 
-		<!-- lights -->
-		{lit.map(({ x, colour, mode }) =>
-			colour ? (
-				<g class={`fp-lit ${mode}`} style={`--led:${colour}`}>
-					<circle cx={x} cy="87" r="20" filter="url(#fp-glow)" />
-					<circle cx={x} cy="87" r="10" />
-				</g>
-			) : (
+		<!-- lights: the hole, with any lit layers over it -->
+		{LIGHT_X.map((x, i) => (
+			<g>
 				<circle class="fp-line fp-hole" cx={x} cy="87" r="10" />
-			),
-		)}
+				{layers[i].map(({ colour, cls, level }) => (
+					<g class={cls} style={`--led:${colour};opacity:${level}`}>
+						<circle cx={x} cy="87" r="20" filter={`url(#${uid}-glow)`} />
+						<circle cx={x} cy="87" r="10" />
+					</g>
+				))}
+			</g>
+		))}
 
 		<!-- port numbers and USB-C receptacles -->
 		{PORT_X.map((x, i) => (
@@ -107,7 +200,19 @@ const height = labels ? 80 + 610 : 458;
 				<text x="1034" y="534">USB-C ports 1 to 6</text>
 			</g>
 		)}
+		{timeline && (
+			<g class="fp-timeline">
+				<line class="fp-axis" x1={TL.x0} y1={TL.y} x2={TL.x1} y2={TL.y} />
+				<line class="fp-span" x1={tlx(HOLD_LONG)} y1={TL.y} x2={tlx(HOLD_RESET)} y2={TL.y} />
+				{[0, HOLD_LONG, HOLD_RESET].map((ms) => <line class="fp-axis" x1={tlx(ms)} y1={TL.y - 18} x2={tlx(ms)} y2={TL.y + 18} />)}
+				<text class="fp-start" x={tlx(0) - 16} y={TL.y + 70}>Press</text>
+				<text x={tlx(HOLD_LONG)} y={TL.y + 70}>3 s</text>
+				<text x={tlx(HOLD_RESET)} y={TL.y + 70}>10 s: reset</text>
+				<circle class={`fp-marker ${uid}-marker`} cx={TL.x0} cy={TL.y} r="16" />
+			</g>
+		)}
 	</svg>
+	{caption && <figcaption>{caption}</figcaption>}
 </figure>
 
 <style>
@@ -159,21 +264,59 @@ const height = labels ? 80 + 610 : 458;
 	.fp-lit circle:first-child {
 		opacity: 0.6;
 	}
+	/* The firmware's rates: a blink is on half the time and fully off the
+	   other half, a pulse is a triangle between about 12 % and full. */
 	.fp-lit.blink {
-		animation: fp-blink 0.5s steps(1) infinite;
+		animation: fp-blink 500ms steps(1) infinite;
+	}
+	.fp-lit.fast {
+		animation: fp-blink 200ms steps(1) infinite;
 	}
 	.fp-lit.pulse {
-		animation: fp-pulse 2s ease-in-out infinite;
+		animation: fp-pulse 1s linear infinite;
+	}
+	.fp-lit.breathe {
+		animation: fp-pulse 2s linear infinite;
 	}
 	@keyframes fp-blink {
-		50% { opacity: 0.1; }
+		50% { opacity: 0; }
 	}
 	@keyframes fp-pulse {
-		50% { opacity: 0.35; }
+		0%, 100% { opacity: 0.12; }
+		50% { opacity: 1; }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.fp-lit.blink,
-		.fp-lit.pulse { animation: none; }
+		.fp-lit.fast,
+		.fp-lit.pulse,
+		.fp-lit.breathe { animation: none; }
+	}
+	.fp-timeline text {
+		fill: var(--sl-color-gray-2);
+		font: 500 40px var(--sl-font, sans-serif);
+		text-anchor: middle;
+	}
+	.fp-timeline .fp-start {
+		text-anchor: start;
+	}
+	.fp-axis {
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 1.5;
+		vector-effect: non-scaling-stroke;
+	}
+	.fp-span {
+		stroke: var(--sl-color-accent);
+		stroke-width: 4;
+		vector-effect: non-scaling-stroke;
+	}
+	.fp-marker {
+		fill: var(--sl-color-white);
+	}
+	.front-panel figcaption {
+		margin-top: 0.5rem;
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+		text-align: center;
 	}
 	.fp-callouts line,
 	.fp-callouts path {

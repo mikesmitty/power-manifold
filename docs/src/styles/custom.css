@@ -55,23 +55,39 @@
 	font-size: var(--sl-text-sm);
 }
 
-/* A port-light swatch: <span class="led" style="--led: #2f7cf6"></span> */
+/* A port-light swatch, drawn as the light in a patch of the dark faceplate:
+   <span class="led" style="--led: #2f7cf6"></span>. --lvl dims the light
+   alone, for the dim states. */
 .led {
+	position: relative;
 	display: inline-block;
-	width: 0.8em;
-	height: 0.8em;
+	width: 1.5em;
+	height: 1.1em;
+	border-radius: 0.25em;
+	background: #2a2c31;
+	border: 1px solid #3d4048;
+	vertical-align: -0.2em;
+	margin-inline-end: 0.5em;
+}
+.led::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 0.5em;
+	height: 0.5em;
 	border-radius: 50%;
 	background: var(--led);
-	box-shadow: 0 0 0.35em var(--led);
-	vertical-align: -0.05em;
-	margin-inline-end: 0.35em;
+	box-shadow: 0 0 0.3em 0.05em var(--led);
+	opacity: var(--lvl, 1);
 }
 /* Slower and shallower than the real lights, so the table stays readable:
-   a blink dims to 40 % once a second, a pulse breathes to 50 % over two. */
-.led.blink {
+   a blink dims to 40 % once a second, a pulse breathes to 50 % over two.
+   The drawings of the whole panel show the real rates. */
+.led.blink::after {
 	animation: led-blink 1s steps(1) infinite;
 }
-.led.pulse {
+.led.pulse::after {
 	animation: led-pulse 2s ease-in-out infinite;
 }
 @keyframes led-blink {
@@ -81,7 +97,7 @@
 	50% { opacity: 0.5; }
 }
 @media (prefers-reduced-motion: reduce) {
-	.led.blink, .led.pulse { animation: none; }
+	.led.blink::after, .led.pulse::after { animation: none; }
 }
 
 /* Let wide reference tables keep their first column readable. */
