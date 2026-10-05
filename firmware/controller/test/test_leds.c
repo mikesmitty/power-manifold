@@ -44,11 +44,11 @@ static void test_port_state_colours(void) {
     set_port(4, PORT_STATE_DISABLED, 0);
     set_port(5, PORT_STATE_FAULT, 0);
     render(0);
-    MT_ASSERT(PX(0).r == PX(0).g && PX(0).g == PX(0).b); // dim white
+    MT_ASSERT(PX(0).r > PX(0).g && PX(0).g > 0 && PX(0).b == 0); // dim amber
     MT_ASSERT(PX(0).r > 0 && PX(0).r < 16);
-    MT_ASSERT_EQ(PX(1).r, 255); // amber
-    MT_ASSERT_EQ(PX(1).g, 120);
-    MT_ASSERT_EQ(PX(1).b, 0);
+    MT_ASSERT_EQ(PX(1).r, 255); // white
+    MT_ASSERT_EQ(PX(1).g, 255);
+    MT_ASSERT_EQ(PX(1).b, 255);
     MT_ASSERT(PX(2).b == 255 && PX(2).r == 0); // blue below 19 V
     MT_ASSERT(PX(3).g == 220 && PX(3).r == 0 && PX(3).b < PX(3).g); // green at 20 V
     MT_ASSERT(dark(PX(4)));
@@ -133,9 +133,9 @@ static void test_master_brightness_scales(void) {
     reset(51); // 20%
     set_port(0, PORT_STATE_IDLE, 0);
     render(0);
-    MT_ASSERT_EQ(PX(0).r, 51);
-    MT_ASSERT_EQ(PX(0).g, 24); // 120 * 51 / 255
-    MT_ASSERT_EQ(PX(0).b, 0);
+    MT_ASSERT_EQ(PX(0).r, 51); // white at 20 %
+    MT_ASSERT_EQ(PX(0).g, 51);
+    MT_ASSERT_EQ(PX(0).b, 51);
 }
 
 static void test_brightness_zero_keeps_faults(void) {
@@ -172,7 +172,7 @@ static void test_boot_sweep_white(void) {
     MT_ASSERT(view.boot_pending);
     render(1000 + LED_BOOT_SWEEP_MS); // over: ports show through
     MT_ASSERT(!view.boot_pending);
-    MT_ASSERT(PX(0).r == 255 && PX(0).g == 120 && PX(0).b == 0);
+    MT_ASSERT(PX(0).r == 255 && PX(0).g == 255 && PX(0).b == 255);
     MT_ASSERT(all_clear(CH)); // nothing to report
 }
 
@@ -229,7 +229,7 @@ static void test_net_down_is_white_and_ble_wins(void) {
     view.chassis = 0;
     render(peak);
     MT_ASSERT(all_clear(CH));
-    MT_ASSERT(PX(0).r == 255 && PX(0).g == 120);
+    MT_ASSERT(PX(0).r == 255 && PX(0).g == 255);
 }
 
 static void test_setup_is_magenta_between_ble_and_net_down(void) {
@@ -239,7 +239,7 @@ static void test_setup_is_magenta_between_ble_and_net_down(void) {
     view.chassis = LED_CHASSIS_SETUP_OPEN;
     render(peak);
     MT_ASSERT(CH.r == 255 && CH.g == 0 && CH.b == 200); // magenta
-    MT_ASSERT_EQ(PX(0).r, 255);                          // port 1 still amber
+    MT_ASSERT_EQ(PX(0).r, 255);                          // port 1 still white
     view.chassis = LED_CHASSIS_SETUP_OPEN | LED_CHASSIS_NET_DOWN;
     render(peak);
     MT_ASSERT(CH.r == 255 && CH.g == 0 && CH.b == 200); // setup beats net down
@@ -316,7 +316,7 @@ static void test_identify_overrides_everything(void) {
     render(5000); // expired: boot has long finished, ports show
     MT_ASSERT(!view.identify_pending);
     MT_ASSERT(!view.boot_pending);
-    MT_ASSERT(PX(0).r == 255 && PX(0).g == 120);
+    MT_ASSERT(PX(0).r == 255 && PX(0).g == 255);
 }
 
 static void test_ack_flash(void) {

@@ -56,12 +56,12 @@ static led_rgb_t port_colour(const port_telemetry_t *p, uint32_t now_ms, uint32_
     switch ((port_state_t)p->state) {
     case PORT_STATE_ABSENT:
         *level = 5;
-        return COL_WHITE; // dim white: slot empty, chain alive
+        return COL_AMBER; // dim amber: slot empty, chain alive
     case PORT_STATE_PROBE:
         *level = blink(now_ms, 500); // 2 Hz
         return COL_CYAN;
     case PORT_STATE_IDLE:
-        return COL_AMBER;
+        return COL_WHITE; // ready, nothing plugged in
     case PORT_STATE_ACTIVE:
         if (p->charged) return COL_MAGENTA; // sink finished: nothing left to deliver
         return active_colour(p);
