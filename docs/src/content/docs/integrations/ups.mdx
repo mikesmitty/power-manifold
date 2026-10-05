@@ -12,10 +12,10 @@ import { Aside } from '@astrojs/starlight/components';
 import Flow from '../../../components/Flow.astro';
 
 <Aside type="caution" title="Unofficial">
-The firmware supports a UPS supply, but the chassis has no way to bring
-the supply's serial lead in to the controller card. Connecting one means
-opening the case, which isn't supported. UPS support has also only been
-tested against a simulated supply, not a real LAD unit.
+UPS monitoring is not an officially supported configuration. The enclosure
+provides no external access to the controller's UPS header, so connecting
+the supply's serial lead requires opening the chassis. Support has been
+verified only against a simulated supply.
 </Aside>
 
 Power Manifold can run from a Mean Well **LAD-xxxU** security power supply,
