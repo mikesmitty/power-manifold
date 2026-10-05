@@ -1,0 +1,76 @@
+---
+title: MQTT
+description: The MQTT topics Power Manifold publishes and the commands it accepts, for brokers and tools other than Home Assistant.
+sidebar:
+  order: 1
+---
+
+If you use Home Assistant, you don't need this page: see
+[Home Assistant](/power-manifold/guide/home-assistant/). This page is for
+Node-RED, scripts and other MQTT tools.
+
+Set the broker in the web page's **Settings**. Every topic starts with
+`pwrman/<name>/`, where `<name>` is the device name (`pwrman` by default).
+Ports are numbered 1 to 6.
+
+## What it publishes
+
+| Topic | When | Contents |
+| --- | --- | --- |
+| `availability` | retained | `online`, or `offline` when the controller drops off |
+| `status` | every second, retained | the whole chassis, see below |
+| `port/<n>/telemetry` | every second | one port, see below |
+| `event` | as things happen | `{"port", "event", "kind", "code", "arg", "text", "ts"}` |
+| `update/state` | retained | `installed_version` and `latest_version` |
+
+**`status` fields:** `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
+`energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`,
+`led_mode`, `fw`, `boot` (why it last started), `problem` and `problems`,
+`charged_mw`, `charged_min`, the input voltage `vin_v`, `ceiling_ma` (3000
+while [low input voltage caps the ports](/power-manifold/guide/troubleshooting/#ports-capped-at-3-a),
+else 0), and with a [UPS](/power-manifold/integrations/ups/) connected
+`ups_ac`, `ups_on_battery`, `ups_charging`, `ups_batt_v`, `ups_mains_v`,
+`ups_load_a`.
+
+**`port/<n>/telemetry` fields:** `state`, `v`, `i`, `p`, `e` (kWh),
+`contract_w`, `pdo`, `prio`, `limit_ma`, `max_v`, `boot`, `charged`,
+`auto_off`, `sleep_min`, `fault`, `last_fault`, `last_fault_at`, the blade
+temperatures `t_conv`, `t_plug` and `t_mcu` in °C (`null` when there's no
+reading), `progress` (0–100 during a blade update), `update_due` and
+`silent`.
+
+**Events:** `kind` is one of the
+[Home Assistant event types](/power-manifold/guide/home-assistant/#automations).
+`text` explains faults, auto-off and blade updates. Chassis events, such as
+the input voltage crossing its low warning, use port 0.
+
+## Commands
+
+Publish to these topics to change things. Settings changed over MQTT are
+saved a few seconds after the last change.
+
+| Topic | Payload |
+| --- | --- |
+| `port/<n>/set` | `ON`, `OFF`, `hard_reset` or `src_cap` (re-announce) |
+| `port/<n>/priority/set` | 0–255, 0 = most important |
+| `port/<n>/limit/set` | current limit in mA, 500–5000 |
+| `port/<n>/volt/set` | voltage cap: `5`, `9`, `12`, `15` or `20` |
+| `port/<n>/boot/set` | power-up state: `on`, `off` or `last` |
+| `port/<n>/autooff/set` | switch off once charged: `ON` or `OFF` |
+| `port/<n>/sleep/set` | sleep timer in minutes, 0 = off |
+| `budget/set` | chassis budget in watts |
+| `fan/set` | `auto`, `on` or `off` |
+| `led/set` | light brightness, 0–255 |
+| `charged_mw/set`, `charged_min/set` | when a device counts as charged |
+| `improv/set` | `open`: open Bluetooth setup for ten minutes |
+| `update/set` | `install`: install the newest known release |
+| `update/latest` | retained pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}` to offer your own release source; the newer of this and the daily check wins |
+
+Example, with Mosquitto's command-line client:
+
+```sh
+mosquitto_pub -h broker.lan -t pwrman/pwrman/port/3/set -m OFF
+```
+
+The broker is trusted: anyone who can publish to these topics can control
+the ports. Use your broker's access control to limit who can.

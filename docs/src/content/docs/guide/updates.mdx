@@ -1,0 +1,71 @@
+---
+title: Firmware updates
+description: How Power Manifold finds new firmware, how to install it, and what happens to your ports while it updates.
+sidebar:
+  order: 6
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Power Manifold checks for new firmware once a day. It never installs an
+update on its own. You decide when.
+
+## Installing an update
+
+When a new release is out, Home Assistant's **Firmware update** entity
+shows *update available*. Press **Install**.
+
+Without Home Assistant, you can push the update file yourself with the
+[HTTP API](/power-manifold/integrations/http-api/#installing-an-update).
+
+## What happens during an update
+
+<Steps>
+
+1. **The new firmware downloads** next to the one that's running. The
+   running firmware is kept.
+
+2. **The controller restarts** into the new firmware. **Your ports stay
+   on.** Devices keep their power while the controller restarts.
+
+3. **The new firmware is on trial.** It must run properly for ten seconds
+   and connect to the network. Then it becomes the installed version.
+
+4. **If it doesn't,** the controller goes back to the previous firmware by
+   itself, with your settings as they were. If it fails within ten minutes
+   or restarts unexpectedly, it reverts too.
+
+</Steps>
+
+While the controller restarts, the blades keep running with the limits they
+had and their own protection. Power sharing and fault handling resume once
+the controller is back, after a few seconds.
+
+## Blade firmware
+
+The blades have their own firmware, and the controller carries the version
+that goes with it. You don't need to do anything. After a controller update
+the controller brings each blade up to date by itself, but only when it
+costs nothing:
+
+- when the blade is seated or the chassis is switched on, before its port
+  powers up;
+- when its port has had nothing plugged in for ten seconds.
+
+**A port that is powering a device is never interrupted for a blade
+update.** It waits until the device is unplugged, which could be days for a
+Raspberry Pi. Updating a blade takes a few seconds. Its light is off while
+it happens, and its state shows `updating` with a percentage.
+
+## Is it safe?
+
+Every release is signed. The controller only installs firmware that is
+signed by this project, built for this hardware, and not older than what
+it is running. Because of that, the download doesn't need to be encrypted.
+Updates come from `fw.powermanifold.io`, which serves the project's GitHub
+releases.
+
+<Aside type="note">
+To stop the daily check, clear **Update source** in the web page's
+**Settings**. You can still install updates yourself with the HTTP API.
+</Aside>

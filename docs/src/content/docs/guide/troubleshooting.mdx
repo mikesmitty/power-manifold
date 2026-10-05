@@ -1,0 +1,123 @@
+---
+title: Troubleshooting
+description: What a red light, a problem warning or a port that won't power a device means, and what to do about it.
+sidebar:
+  order: 7
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Where problems show up
+
+When something needs attention, Power Manifold says so in several places:
+
+- a red line on the [web page](/power-manifold/guide/web-page/), under the
+  port table;
+- the **Problem** sensor in Home Assistant, whose `detail` attribute says
+  what is wrong;
+- the port lights: a red, fast-blinking light for a port that faulted, and a
+  white streak across all ports when there's no network.
+
+The web page's **Fault log** keeps a history, so you can see what happened
+while you weren't looking.
+
+## A port blinks red
+
+The port shut itself off to protect your device or the blade. The usual
+causes are a device drawing more current than the port offers, a short
+in the cable or device, or a blade that got too hot. The fault log entry
+says which one.
+
+The port tries again by itself after 5 seconds. If the cause is still there,
+it faults again, and the light keeps blinking.
+
+What to try:
+
+1. Unplug the device, wait for the light to turn amber, and plug it back in.
+2. Try a different cable. A damaged cable is a common cause.
+3. If the log says *plug-hot* or *converter-hot*, check that nothing blocks
+   the vents and that the fan is on **auto**. Let it cool down.
+4. If the same device faults on every port, the device is the problem.
+
+## A device doesn't charge, or charges slowly
+
+- **Light amber with the device plugged in:** the port doesn't see the
+  device. Reseat the cable at both ends, or try another cable. Some cheap
+  USB-A to USB-C adapters and cables don't work with USB-C chargers.
+- **Light off:** the port is switched off. Switch it on in Home Assistant.
+  If you didn't switch it off, check whether
+  [switch off once charged or the sleep timer](/power-manifold/guide/port-settings/#switching-off-when-charged)
+  is on, or whether the port is set to stay **off** at power-up.
+- **Light pulsing slowly:** the port is turned down because the chassis is
+  at its budget. See [Sharing power](/power-manifold/guide/sharing-power/).
+- **Laptop charges slower than expected:** check the port's
+  [voltage cap and current limit](/power-manifold/guide/port-settings/#voltage-cap).
+  Laptops need 20 V, and more than 60 W needs a 5 A cable.
+
+## Ports capped at 3 A
+
+The problem line says *bus voltage sagging, ports capped at 3 A*. The input
+voltage from your power supply fell below 20 V, so every port was limited
+to 60 W to take load off it. It lifts by itself 30 seconds after the
+voltage recovers.
+
+If it happens often:
+
+- your supply is too small for your devices, so lower the
+  [budget](/power-manifold/guide/sharing-power/#the-budget) to match it, or
+  use a bigger supply;
+- or the cable from the supply is too long or too thin, so use a shorter,
+  thicker one.
+
+If the voltage keeps falling, Power Manifold disconnects all ports at
+about 17.7 V and reconnects them when the voltage returns. The fault log
+records the low voltage, so a restart like this leaves a trace.
+
+## A port shows *silent* or *not answering*
+
+The blade stopped responding to the controller. The port keeps its power
+and the controller keeps asking. The readings you see are the last ones it
+got. This usually clears by itself. If it doesn't, switch the port off and
+on again. If that doesn't help, power the chassis off and reseat the blade.
+
+## No network
+
+A white streak crossing the port lights means the controller has no network
+address.
+
+- **Wi-Fi:** check that the network is up. After five minutes off the
+  network the controller opens Bluetooth, so you can
+  [enter new Wi-Fi details](/power-manifold/setup/wifi-provisioning/) if
+  your network changed.
+- **Ethernet:** check the cable and that your router hands out addresses.
+  If you set a fixed address, check that it is still free and correct.
+
+The ports keep working with no network. Only the web page, Home Assistant
+and the API are unavailable.
+
+## Can't find the web page
+
+- Try the IP address from your router instead of `pwrman.local`. Some
+  networks and older Android phones don't resolve `.local` names.
+- If you renamed the device, the address is `http://<new-name>.local/`.
+
+## Forgot the API token
+
+You can't recover the token. To set a new one, do a
+[factory reset](/power-manifold/guide/front-panel/#the-button) and repeat
+[first-time setup](/power-manifold/setup/first-time-setup/). If you have a
+settings export that includes secrets, you can import it after the reset.
+
+## Other problems the controller reports
+
+| Message | What it means |
+| --- | --- |
+| *trial firmware uncommitted* | A firmware update is on trial. It clears within a few seconds when the update succeeds. See [Updates](/power-manifold/guide/updates/). |
+| *wired link down* | The Ethernet cable is unplugged or the switch is off. Wi-Fi is carrying traffic for now. |
+| *on battery* / UPS battery fault | Your [UPS power supply](/power-manifold/integrations/ups/) lost mains power or reports a battery problem. |
+| *bus voltage* out of range | The input voltage is under 19 V or over 29 V. Check the power supply. |
+
+<Aside type="tip" title="Still stuck?">
+[Open an issue](https://github.com/mikesmitty/power-manifold/issues) with a
+settings export (without secrets) and the fault log.
+</Aside>

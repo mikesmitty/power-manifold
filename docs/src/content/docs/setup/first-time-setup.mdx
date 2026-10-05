@@ -1,0 +1,96 @@
+---
+title: First-time setup
+description: Connect a power supply, put the blades in, get Power Manifold on your network and choose an API token.
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Setup takes about ten minutes. You'll connect power, get the controller onto
+your Wi-Fi and choose a password for its settings. You can add Home
+Assistant afterwards.
+
+## What you need
+
+- **A 24 V DC power supply** with an XT60 lead. Anything from 20 to 28 V
+  works. Choose its size by how much your devices draw in total, not by six
+  times 100 W. The default power budget is 360 W (15 A at 24 V). If your
+  supply is smaller, you'll lower the budget to match in step 6 below.
+- **USB-C cables.** An ordinary cable carries up to 3 A (60 W). For more
+  than 60 W at 20 V a device needs a 5 A cable with an e-marker chip, which
+  is usually sold as a "100 W" or "240 W" cable.
+- **A phone or computer with Bluetooth** for Wi-Fi setup: Chrome or Edge
+  on a desktop or Android device, or the Home Assistant app on an iPhone or
+  iPad.
+
+<Aside type="caution" title="Power off before you touch the blades">
+The blades are not hot-swappable. Turn the power supply off before you
+insert or remove a blade. Connect the XT60 lead before you switch the supply
+on, and switch the supply off before you unplug it.
+</Aside>
+
+## Steps
+
+<Steps>
+
+1. **Put the blades in.** With the power off, slide each charger blade into
+   its slot until it is fully seated. Ports are numbered 1 to 6 from left to
+   right when you face the front panel. You can leave slots empty.
+
+2. **Connect power.** Plug the power supply's XT60 lead into the back of
+   the chassis, then switch the supply on. The port lights sweep from left
+   to right. Each port with a blade then glows amber, which means it is
+   ready and waiting for a device. An empty slot glows dim white.
+
+3. **Get it on your network.** A new controller advertises itself over
+   Bluetooth until it has Wi-Fi details. Follow
+   [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/), either from that
+   page in your browser or with the Home Assistant app. While the controller
+   is waiting for setup, a blue light runs across the ports every few
+   seconds.
+
+4. **Open the web page.** When Wi-Fi setup finishes, press **Next** on the
+   same phone or computer. This opens the controller's web page with
+   settings unlocked for ten minutes. Later you can find the page at
+   `http://pwrman.local/`, or at the new name if you change it.
+
+5. **Choose an API token.** Open **Settings** near the bottom of the page
+   and set an **API token**.
+   This is the password for changing anything from the web page or the API.
+   You'll need it on any other device, so keep it somewhere safe. Once the
+   token is saved, the ten-minute setup window closes.
+
+6. **Set the power budget.** Still in **Settings**, set the **Chassis budget**
+   to your supply's rating in watts, or a little under it. See
+   [Sharing power between ports](/power-manifold/guide/sharing-power/) for
+   how the budget is used.
+
+7. **Optional: give it a name and connect Home Assistant.** Set a device
+   name if you have more than one Power Manifold. Fill in your MQTT broker
+   if you use Home Assistant; see
+   [Home Assistant](/power-manifold/guide/home-assistant/). Press **Reboot**
+   to apply a new name or broker.
+
+</Steps>
+
+That's it. Plug in a device and its port light turns blue or green.
+
+## Using wired Ethernet
+
+The controller card has an Ethernet port. Plug in a cable and the controller
+gets an address from your router automatically. When both Ethernet and
+Wi-Fi are connected, it uses Ethernet and keeps Wi-Fi as a backup.
+
+You still need to do Wi-Fi setup once, because that is how the settings
+get unlocked the first time. After that, set a fixed address if you want
+one. See [Network settings](/power-manifold/integrations/network/).
+
+## Next steps
+
+- [Front panel and lights](/power-manifold/guide/front-panel/): what each
+  light colour means and what the button does.
+- [Port settings](/power-manifold/guide/port-settings/): name your ports
+  and decide which come on at power-up.
+- [Sharing power between ports](/power-manifold/guide/sharing-power/):
+  pick which ports should be turned down first.

@@ -1,0 +1,42 @@
+---
+title: UPS power supply
+description: Run Power Manifold from a Mean Well LAD-U battery-backed supply and see mains and battery status in Home Assistant.
+sidebar:
+  order: 4
+---
+
+Power Manifold can run from a Mean Well **LAD-xxxU** security power supply,
+which charges a battery and switches to it when mains power fails. Only
+the models ending in **U** have the serial port Power Manifold needs.
+
+## Connecting it
+
+Connect the supply's 24 V output to the chassis XT60 input as usual. Then
+connect the supply's serial port (on its CN2 header) to the controller
+card's 3-pin **UPS** header. The controller finds the supply by itself
+within a few seconds.
+
+## What you get
+
+Once the supply answers, the controller shows:
+
+- whether mains power is on, whether it's running on battery and whether
+  the battery is charging;
+- battery voltage, mains voltage and load current.
+
+These appear on the web page's chassis line, in Home Assistant as *UPS AC
+input*, *UPS on battery* and *UPS charging* plus three sensors, in the
+[MQTT status](/power-manifold/integrations/mqtt/) and in the
+[status JSON](/power-manifold/integrations/http-api/).
+
+Running on battery, or a battery problem such as a missing, reversed or
+failing battery, raises the **Problem** warning. You can use it to shut
+down your Raspberry Pis gracefully before the battery runs out.
+
+The UPS entities appear only once a supply answers. A chassis without one
+shows none.
+
+:::note
+UPS support has been tested against a simulated supply only, not yet a real
+LAD unit.
+:::

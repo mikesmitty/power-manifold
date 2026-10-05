@@ -1,67 +1,69 @@
 ---
-title: Wi-Fi provisioning
-description: Hand the controller its Wi-Fi credentials over Bluetooth, straight from this page, using the Improv Wi-Fi standard and Web Bluetooth.
+title: Wi-Fi setup
+description: Give Power Manifold your Wi-Fi details over Bluetooth, straight from this page or from the Home Assistant app.
+sidebar:
+  order: 2
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 import ImprovProvisioner from '../../../components/ImprovProvisioner.astro';
 
-A controller with no Wi-Fi credentials advertises the standard
-[Improv Wi-Fi](https://www.improv-wifi.com/ble/) Bluetooth service. This page
-is a hosted copy of the Improv web provisioner: it runs entirely in your
-browser and talks to the controller over Web Bluetooth. Your network password
-goes to the controller and nowhere else.
+Power Manifold gets its Wi-Fi details over Bluetooth, using the
+[Improv Wi-Fi](https://www.improv-wifi.com/) standard. You can do it from
+this page or from the Home Assistant app. The setup runs in your browser and
+talks straight to the controller, so your Wi-Fi password goes only to the
+controller.
 
 <ImprovProvisioner />
 
-<Aside type="note" title="Browser support">
-Web Bluetooth is available in Chrome and Edge on desktop and Android. It is not
-available in Safari or Firefox, and not on iPhones or iPads at all. On iOS, use
-the Home Assistant companion app instead: **Settings → Devices & services →
-Add integration → Improv via BLE**. The app also raises a notification on its
-own when it spots an unprovisioned controller nearby.
+<Aside type="note" title="Which browser?">
+This page needs Web Bluetooth, which works in Chrome and Edge on desktop and
+Android. It does not work in Safari or Firefox, or in any browser on an
+iPhone or iPad. On those, use the Home Assistant app: go to **Settings →
+Devices & services → Add integration → Improv via BLE**. The app also shows a
+notification by itself when it finds a Power Manifold waiting for setup.
 </Aside>
 
-## What happens
+## Steps
 
 <Steps>
 
-1. **Power the controller.** While it has no credentials it advertises
-   automatically, so nothing else needs to be plugged in.
+1. **Turn it on.** A controller with no Wi-Fi details starts waiting for
+   setup by itself. A blue light runs across the ports every few seconds
+   while it waits.
 
-2. **Connect.** Press the button above. The browser shows a chooser listing
-   nearby Improv devices. Pick the controller.
+2. **Connect.** Press the button above. Your browser lists nearby devices
+   waiting for setup. Pick Power Manifold.
 
-3. **Identify (optional).** Flashes the chassis status LEDs so you know which
-   box you are talking to.
+3. **Identify it (optional).** If you have more than one, press
+   **Identify**. The port lights on that one flash blue.
 
-4. **Enter the SSID and password.** The controller joins the network. A join
-   that is rejected, or that gets no address within 30 seconds, reports
-   *unable to connect* and the previous credentials come back.
+4. **Enter your Wi-Fi name and password.** The controller joins your
+   network. If the password is wrong, or the controller gets no address
+   within 30 seconds, you'll see *unable to connect* and can try again.
 
-5. **Finish in the web UI.** On success the dialog says *Provisioned!* and
-   offers a **Next** button that opens the controller's web page. It does not
-   open on its own. Press it from the same device: the link carries a
-   one-shot setup secret that unlocks the *Settings* panel for ten minutes, so
-   you can set the MQTT broker, the device name, and an API token. Choosing a
-   token locks the API and retires the secret. *Reboot* in the same panel
-   applies the name and broker.
+5. **Press Next.** When it says *Provisioned!*, press **Next**. Use the same
+   phone or computer for this step. It opens the controller's web page with
+   the settings unlocked for ten minutes, so you can finish
+   [first-time setup](/power-manifold/setup/first-time-setup/#steps) by
+   choosing an API token.
 
 </Steps>
 
-## When the controller is listening
+## Changing Wi-Fi later
 
-Bluetooth only carries the Wi-Fi credentials, and only while a provisioning
-window is open. A window opens automatically while the controller has no
-credentials or has been off the network for five minutes. To re-provision a
-working controller, open a ten-minute window on demand with `improv on` on the
-USB console, or with the *Open BLE provisioning* button in Home Assistant.
-`improv off` closes it and holds the automatic windows until the next
-`improv on` or reboot. Outside a window the Bluetooth radio is powered down.
+The controller listens over Bluetooth only while it is waiting for setup.
+It starts waiting by itself when it has no Wi-Fi details, or when it has
+been off the network for five minutes. To change networks on a controller
+that is working, open a ten-minute setup window in either of these ways:
 
-The traffic is plaintext, the same trust posture as the rest of the management
-plane: a trusted LAN, and now radio range of a box you can press buttons on.
+- Hold the front-panel button for 3 seconds, then let go before 10 seconds.
+  See [the button](/power-manifold/guide/front-panel/#the-button).
+- Press **Open BLE provisioning** in Home Assistant.
 
-For the USB console route, wired-only controllers, and the rest of the
-management surfaces, see [First-time setup](../../firmware/controller/#first-time-setup)
-in the firmware guide.
+Then follow the steps above. Bluetooth is off at all other times.
+
+<Aside type="caution">
+The Bluetooth link is not encrypted. Do the setup when nobody you don't
+trust is within Bluetooth range.
+</Aside>

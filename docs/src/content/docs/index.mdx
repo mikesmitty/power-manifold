@@ -1,20 +1,16 @@
 ---
 title: Power Manifold
-description: A modular six-port USB-C smart PDU for single-board computers, with a managed RP2350 controller and MQTT and Home Assistant integration.
+description: A six-port USB-C power supply for single-board computers and other USB-C devices, with per-port control, sensible power sharing and Home Assistant support.
 template: splash
 hero:
-  tagline: A modular, managed USB-C power supply for single-board computers.
+  tagline: Six USB-C ports up to 100 W each, from one 24 V supply. Switch, name, limit and watch every port from your browser or Home Assistant.
   actions:
-    - text: Set up Wi-Fi over Bluetooth
-      link: setup/wifi-provisioning/
+    - text: Get started
+      link: /power-manifold/setup/first-time-setup/
       icon: right-arrow
-    - text: Hardware architecture
-      link: hardware/architecture/
+    - text: Front panel and lights
+      link: /power-manifold/guide/front-panel/
       icon: open-book
-      variant: minimal
-    - text: Controller firmware
-      link: firmware/controller/
-      icon: rocket
       variant: minimal
     - text: Source on GitHub
       link: https://github.com/mikesmitty/power-manifold
@@ -22,38 +18,54 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Power Manifold is a managed USB Power Delivery supply for racks of SBCs such
-as Raspberry Pi. Six hot-swappable charger blades sit in a backplane behind a
-single RP2350 management controller that budgets power across the chassis,
-drives a status LED per port, and exposes everything over MQTT, HTTP, and a
-serial console. Front-panel light pipes show each port's state even when its
-blade is unseated.
+Power Manifold powers a stack of Raspberry Pis, mini PCs, phones and
+laptops from one DC power supply. Each of its six USB-C ports talks USB
+Power Delivery, so every device gets the voltage it asks for, and a
+controller inside keeps track of all of them.
 
 <CardGrid stagger>
-	<Card title="Six 100 W USB-C ports" icon="puzzle">
-		Each blade is a USB-PD source on a PCIe x1 card edge, swapped without
-		tools: the gen-2 blade an MPQ4242 buck-boost with an INA226 monitor, the
-		gen-3 blade an STM32G071 running ST's PD stack over a TPS55288 and a
-		TCPP02 port protector, with its own thermometers and protection.
-		Either generation, or a mix, fits the same chassis.
+	<Card title="Six ports, up to 100 W each" icon="puzzle">
+		Each port offers 5, 9, 12, 15 and 20 V plus PPS, and up to 5 A with a
+		5 A cable. Each port is a removable blade.
 	</Card>
-	<Card title="Centralized control" icon="setting">
-		One dual-core RP2350 supervises all ports through an I2C mux, enforces a
-		chassis power budget with per-port priorities, and steps ports down
-		before the input supply is oversubscribed.
+	<Card title="Shares power sensibly" icon="random">
+		Tell it how big your power supply is and which ports matter most. When
+		devices ask for more than the supply can give, the least important
+		ports are turned down. Nothing is switched off.
 	</Card>
-	<Card title="Home Assistant native" icon="star">
-		MQTT discovery publishes every port with its switch, limits, charging
-		state and events, plus the fan, the budget, a problem sensor, and
-		energy counters. Firmware updates show up as a Home Assistant update
-		entity.
+	<Card title="Works with Home Assistant" icon="star">
+		Every port shows up with its power, an on/off switch and its settings,
+		ready for dashboards, the energy panel and automations.
 	</Card>
-	<Card title="Wired or wireless" icon="information">
-		Develop on a Pico 2 W over WiFi; ship on the custom controller with a
-		W6100 wired-Ethernet controller, DHCP or static on either.
-		[Improv BLE](setup/wifi-provisioning/) handles first-time provisioning
-		either way.
+	<Card title="Status at a glance" icon="information">
+		A light under each port shows what it is doing, and the built-in web
+		page shows live power for every port.
 	</Card>
+</CardGrid>
+
+## Where to go next
+
+<CardGrid>
+	<LinkCard
+		title="Set it up"
+		description="Connect power, get it on your network and choose a password."
+		href="/power-manifold/setup/first-time-setup/"
+	/>
+	<LinkCard
+		title="Set up your ports"
+		description="Names, on/off at power-up, voltage and current limits, auto-off when charged."
+		href="/power-manifold/guide/port-settings/"
+	/>
+	<LinkCard
+		title="Add it to Home Assistant"
+		description="Connect it to your MQTT broker and every port appears automatically."
+		href="/power-manifold/guide/home-assistant/"
+	/>
+	<LinkCard
+		title="Something's not right"
+		description="What a red light or a problem warning means, and what to do about it."
+		href="/power-manifold/guide/troubleshooting/"
+	/>
 </CardGrid>

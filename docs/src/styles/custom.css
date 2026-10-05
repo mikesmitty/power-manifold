@@ -1,0 +1,43 @@
+/* Accent: a warm amber that echoes the idle port light. */
+:root {
+	--sl-color-accent-low: #3b2606;
+	--sl-color-accent: #c77a12;
+	--sl-color-accent-high: #f6d39b;
+}
+:root[data-theme='light'] {
+	--sl-color-accent-low: #fbe7c6;
+	--sl-color-accent: #a35f00;
+	--sl-color-accent-high: #4a2c02;
+}
+
+/* A port-light swatch: <span class="led" style="--led: #2f7cf6"></span> */
+.led {
+	display: inline-block;
+	width: 0.8em;
+	height: 0.8em;
+	border-radius: 50%;
+	background: var(--led);
+	box-shadow: 0 0 0.35em var(--led);
+	vertical-align: -0.05em;
+	margin-inline-end: 0.35em;
+}
+.led.blink {
+	animation: led-blink 0.5s steps(1) infinite;
+}
+.led.pulse {
+	animation: led-pulse 1s ease-in-out infinite;
+}
+@keyframes led-blink {
+	50% { opacity: 0.15; }
+}
+@keyframes led-pulse {
+	50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.led.blink, .led.pulse { animation: none; }
+}
+
+/* Let wide reference tables keep their first column readable. */
+.sl-markdown-content table td:first-child {
+	white-space: nowrap;
+}

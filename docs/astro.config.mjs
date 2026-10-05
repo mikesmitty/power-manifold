@@ -9,17 +9,23 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Power Manifold',
-			description: 'A modular six-port USB-C smart PDU for single-board computers.',
+			description: 'A six-port USB-C power supply with per-port control, power sharing and Home Assistant support.',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/mikesmitty/power-manifold' },
 			],
 			editLink: {
 				baseUrl: 'https://github.com/mikesmitty/power-manifold/edit/main/docs/',
 			},
+			customCss: ['./src/styles/custom.css'],
 			sidebar: [
-				{ label: 'Setup', items: [{ autogenerate: { directory: 'setup' } }] },
-				{ label: 'Hardware', items: [{ autogenerate: { directory: 'hardware' } }] },
-				{ label: 'Firmware', items: [{ autogenerate: { directory: 'firmware' } }] },
+				{ label: 'Getting started', items: [{ autogenerate: { directory: 'setup' } }] },
+				{ label: 'Using Power Manifold', items: [{ autogenerate: { directory: 'guide' } }] },
+				{ label: 'Integrations', items: [{ autogenerate: { directory: 'integrations' } }] },
+				{
+					label: 'For developers',
+					collapsed: true,
+					items: [{ autogenerate: { directory: 'developers' } }],
+				},
 			],
 		}),
 	],

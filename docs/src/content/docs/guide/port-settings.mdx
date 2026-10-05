@@ -1,0 +1,95 @@
+---
+title: Port settings
+description: Name your ports, choose which come on at power-up, limit voltage and current, and switch ports off when a device has finished charging.
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Each port has its own settings. You can change them in the web page's
+**Settings**, in [Home Assistant](/power-manifold/guide/home-assistant/), over
+[MQTT](/power-manifold/integrations/mqtt/) or with the
+[HTTP API](/power-manifold/integrations/http-api/). Changes apply at once,
+even to a device that is already plugged in.
+
+## Name
+
+Give each port a name, such as `pi-cluster-1` or `Desk phone`, up to 23
+characters. The name shows on the web page and in Home Assistant, where
+the entities are renamed to match: *Port 3 power* becomes *Desk phone
+power*. Renaming doesn't change any entity IDs, so your automations keep
+working.
+
+Leave the name blank to go back to `Port 1`, `Port 2` and so on.
+
+## On or off at power-up
+
+Choose what each port does when Power Manifold is switched on, for example
+after a power cut:
+
+- **on** (the default): the port powers up.
+- **off**: the port stays off until you switch it on.
+- **last**: the port comes back the way you last left it.
+
+When the chassis powers up, the ports come on one at a time, a quarter of a
+second apart, in [priority](/power-manifold/guide/sharing-power/#priorities)
+order. This stops six devices from starting all at once.
+
+## Voltage cap
+
+The voltage cap is the highest voltage a port offers. Choose 5, 9, 12, 15
+or 20 V. The default is 20 V, which offers everything.
+
+Use a lower cap to protect a device that shouldn't get a high voltage. For
+example:
+
+- **5 V** for a device with a USB-C trigger board or adapter that you don't
+  fully trust.
+- **9 V** for a phone you'd rather charge gently.
+
+## Current limit
+
+The current limit is the most current a port offers at any voltage, from
+500 to 5000 mA. Power scales with the voltage the device picks: a 3000 mA
+limit means 15 W at 5 V and 60 W at 20 V.
+
+The limit only sets what the port offers. A device that wants more simply
+gets less. It isn't cut off.
+
+<Aside type="note" title="Cables limit current too">
+Above 3 A the cable must have a 5 A e-marker chip. The port checks the cable
+and offers 5 A only on a cable that can carry it. With an ordinary cable a
+port stops at 3 A (60 W at 20 V), whatever the limit says.
+</Aside>
+
+## Switching off when charged
+
+The controller notices when a device has finished charging. That happens
+when the device draws less than **500 mW** for **10 minutes**. The port
+light turns magenta and the port shows *charged*. If the device starts
+drawing again for that long, it counts as charging again. You can change
+both numbers in **Settings**, or set the power to 0 to turn detection off.
+
+Two per-port options build on this:
+
+- **Switch off once charged** turns the port off as soon as the device is
+  charged. Use it to stop phones and tablets from sitting at 100 % all
+  night.
+- **Sleep timer** turns the port off a set number of minutes after you plug
+  a device in, whether it has finished charging or not, up to 24 hours.
+
+When either one switches a port off, it stays off until you switch it on
+again. A port set to **last** at power-up remembers that it was off.
+
+<Aside type="tip">
+**Switch off once charged** and the sleep timer are meant for devices with a
+battery. Leave them off on ports that power a Raspberry Pi or another
+computer that should stay on.
+</Aside>
+
+## Priority
+
+Each port also has a priority, which decides which ports are turned down
+first when devices ask for more power than the supply can give. See
+[Sharing power between ports](/power-manifold/guide/sharing-power/).

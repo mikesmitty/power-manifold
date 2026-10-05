@@ -1,0 +1,98 @@
+---
+title: Sharing power between ports
+description: How the power budget and port priorities decide which devices get full power when the supply can't cover everyone.
+sidebar:
+  order: 4
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Six ports at 100 W would need a 600 W supply. Most setups never draw that
+much at once, so Power Manifold lets you use a smaller supply and shares it
+out. You tell it how much power the supply has (the **budget**) and which
+ports matter most (their **priority**).
+
+## The budget
+
+Set the **Chassis budget** in the web page's **Settings** or in Home
+Assistant. Use your power supply's rating in watts, or a little less. The
+default is 360 W.
+
+When a device plugs in, it agrees on a voltage and current with its port,
+for example 20 V at 3 A. Power Manifold sets that much power aside, 60 W in
+this example, even if the device draws less at the moment. Laptops and other
+devices can jump to their full power at any time, so setting aside the full
+amount is what keeps the supply from being overloaded.
+
+A port with a blade but nothing plugged in sets aside 15 W, enough for a
+device to plug in and start at 5 V.
+
+The web page shows both numbers for each port: **Draw W** is what the
+device uses right now and **Res W** is what is set aside for it.
+
+## When there isn't enough
+
+If a newly plugged-in device would take the total over the budget, Power
+Manifold makes room:
+
+1. It turns down lower-priority ports, starting with the lowest. It never
+   takes a port below 15 W.
+2. If that isn't enough, it gives the new device whatever is left.
+
+A port that has been turned down keeps powering its device, only with less
+power. Its light pulses slowly, and its state shows `throttled`. The
+device sees a new, smaller offer and switches to it without disconnecting.
+
+Nothing is switched off to save power.
+
+When power frees up, for example when another device is unplugged or
+finishes charging, the turned-down ports get it back, highest priority
+first.
+
+## Priorities
+
+Each port has a priority from 0 to 255, where **0 is the most important**.
+By default a port's priority is its port number, so port 1 is the most
+important and port 6 the least.
+
+Ports with the same priority never take power from each other. The one
+that plugged in first keeps what it has.
+
+Set priorities in Home Assistant (a number for each port), over
+[MQTT](/power-manifold/integrations/mqtt/) or with the
+[HTTP API](/power-manifold/integrations/http-api/).
+
+**Example:** a 150 W supply powers four Raspberry Pi 5s on ports 1 to 4,
+which take 25 W each, and a 100 W laptop on port 6. Give the Pis priority 0
+so they always get what they ask for, and leave the laptop at 6. The Pis
+take 100 W of the budget, so the laptop is offered the rest and charges more
+slowly. If a Pi is unplugged, the laptop gets its share.
+
+## When the input voltage drops
+
+If the power supply struggles and its voltage falls below 20 V, every port
+is limited to 3 A (60 W at most) until the voltage has been back above
+20.5 V for 30 seconds. Devices are offered less, but nothing is switched
+off. While this is happening the web page and Home Assistant show a
+problem saying the ports are capped.
+
+If you see this often, your supply is too small for your devices, or its
+cable is too thin. Lower the budget or use a bigger supply. See
+[Troubleshooting](/power-manifold/guide/troubleshooting/#ports-capped-at-3-a).
+
+## The fan
+
+The fan switches on by itself when the chassis is busy:
+
+- when the total power reaches 80 W, staying on until it falls to 60 W;
+- while any port delivers more than 3 A;
+- while any blade's converter is at 65 °C or hotter, staying on until all
+  of them have cooled to 55 °C.
+
+You can change the first two rules in **Settings**, or force the fan on or
+off from the web page or Home Assistant.
+
+<Aside type="caution">
+Forcing the fan off disables the temperature rule too. Leave it on
+**auto** unless you are testing.
+</Aside>

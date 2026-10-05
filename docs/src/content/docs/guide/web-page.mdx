@@ -1,0 +1,90 @@
+---
+title: The web page
+description: Watch live power for every port, read the fault log, change settings, and back up or restore your configuration.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Every Power Manifold serves its own web page. Open `http://pwrman.local/`, or
+`http://<name>.local/` if you changed the device name. If `.local` names
+don't work on your network, use the IP address your router gave it.
+
+The page works without Home Assistant and without internet access.
+
+## The port table
+
+The table has one row per port and refreshes every second:
+
+| Column | What it shows |
+| --- | --- |
+| **State** | What the port is doing: `absent`, `idle`, `active`, `throttled`, `fault`, `disabled`. It also shows *charged* once a device has finished charging. |
+| **V / A** | The voltage and current the device is drawing right now. |
+| **Draw W** | The power the device is drawing right now. |
+| **Res W** | The power set aside for this port in the [power budget](/power-manifold/guide/sharing-power/). A port with nothing plugged in still holds 15 W. |
+| **kWh** | Energy delivered since the controller last started. |
+
+Click a port's row to see graphs of its power, current and voltage. The
+graphs start when you open the page and cover the last ten minutes. Home
+Assistant keeps the long-term history.
+
+Below the table, a line shows the chassis total, the budget, the fan and
+the network link. If something needs attention, a red line under it says
+what. See [Troubleshooting](/power-manifold/guide/troubleshooting/).
+
+## Fault log and console log
+
+**Fault log** lists the most recent faults, newest first, with the time and
+how much power the port was drawing at that moment. It also records each
+restart and why it happened. It keeps about 256 entries.
+
+**Console log** shows the controller's recent messages. It needs your API
+token because it names your networks and servers.
+
+## Settings
+
+Open **Settings** at the bottom of the page and enter your API token to
+unlock it. Change what you need and press **Save**.
+
+Most changes apply at once. The device name, Wi-Fi, MQTT broker and
+addressing apply after you press **Reboot**. A reboot does not interrupt
+power to any port.
+
+What you'll find there:
+
+- **Device name** and **MQTT broker**: see
+  [Home Assistant](/power-manifold/guide/home-assistant/).
+- **Chassis budget** and **fan**: see
+  [Sharing power](/power-manifold/guide/sharing-power/).
+- **Port names, current limits, voltage caps, state at power-up, switch off
+  once charged, sleep timer**: see
+  [Port settings](/power-manifold/guide/port-settings/).
+- **Status light brightness, night window, idle dimming, UTC offset**: see
+  [Front panel and lights](/power-manifold/guide/front-panel/#brightness-and-dimming).
+- **Addressing, DNS, time server, syslog, MQTT security, update source**:
+  see [Network settings](/power-manifold/integrations/network/).
+
+The page does not have on/off buttons for ports. Switch ports from
+[Home Assistant](/power-manifold/guide/home-assistant/), over
+[MQTT](/power-manifold/integrations/mqtt/) or with the
+[HTTP API](/power-manifold/integrations/http-api/).
+
+## Backing up your settings
+
+At the bottom of **Settings**:
+
+- **Export** downloads every setting as a JSON file. Your Wi-Fi password,
+  MQTT password and API token are left out unless you tick the box to
+  include them.
+- **Import…** loads a file you exported earlier.
+
+If the file leaves out the passwords, importing it keeps the passwords
+already on the controller. You can import a file exported from an older or
+newer firmware: settings it doesn't recognise are skipped. If any value in
+the file is invalid, nothing is imported.
+
+<Aside type="tip">
+Export your settings before a factory reset or before moving the controller
+card to another chassis.
+</Aside>

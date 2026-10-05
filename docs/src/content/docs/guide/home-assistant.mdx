@@ -1,0 +1,116 @@
+---
+title: Home Assistant
+description: Connect Power Manifold to Home Assistant through MQTT. Every port appears automatically with its power, a switch and its settings.
+sidebar:
+  order: 5
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Power Manifold connects to Home Assistant through an MQTT broker. Once it
+is connected, it appears as one device with every port and setting on it,
+with nothing to write in YAML.
+
+## Connect it
+
+<Steps>
+
+1. **Have an MQTT broker.** If you don't have one, install the **Mosquitto
+   broker** add-on in Home Assistant, then add the **MQTT** integration.
+   Create a Home Assistant user for Power Manifold to log in with.
+
+2. **Point Power Manifold at it.** In the web page's **Settings**, fill in
+   the **MQTT broker** (your Home Assistant's address), the port (usually
+   1883) and the user and password. Press **Save**, then **Reboot**.
+
+3. **Find the device.** In Home Assistant, go to **Settings → Devices &
+   services → MQTT**. Power Manifold appears as a device named after it.
+
+</Steps>
+
+If you use more than one Power Manifold, give each a different device name
+before connecting it.
+
+To encrypt the connection to the broker, see
+[MQTT security](/power-manifold/integrations/network/#mqtt-security).
+
+## What you get
+
+### For each port
+
+Entities are named after the port, so renaming a port renames them. Their
+entity IDs don't change.
+
+| Entity | What it does |
+| --- | --- |
+| **Switch** | Turns the port on or off. |
+| **Power**, **voltage**, **current** | Live readings, once a second. |
+| **Energy** | Energy delivered since the controller started. Works with the Energy dashboard. |
+| **State** | `idle`, `active`, `throttled`, `fault` and so on. Its attributes include the most recent fault and when it happened. |
+| **Charging** | On while a device is plugged in and still charging. |
+| **Converter temperature**, **plug temperature** | Blade temperatures. They read *unknown* while the port is off. |
+| **Priority**, **current limit**, **voltage cap**, **power-up state**, **switch off when charged**, **sleep timer** | The [port settings](/power-manifold/guide/port-settings/). |
+| **Hard reset** | Briefly cuts the port so the device starts its connection over. |
+| **Re-announce** | Sends the device the port's offer again. |
+| **Events** | Fires on plug-in, unplug, charged, faults and more. See below. |
+
+### For the whole chassis
+
+| Entity | What it does |
+| --- | --- |
+| **Total power**, **budget headroom**, **total energy** | How much is being used and how much room is left. |
+| **Power budget** | The [chassis budget](/power-manifold/guide/sharing-power/). |
+| **Fan** | `auto`, `on` or `off`. |
+| **LED brightness** | Port light brightness. |
+| **Charged below**, **charged after** | When a device counts as [charged](/power-manifold/guide/port-settings/#switching-off-when-charged). |
+| **Problem** | On when something needs attention. Its `detail` attribute says what. |
+| **Bus voltage** | The input voltage from your power supply. |
+| **Open BLE provisioning** | Opens Bluetooth for ten minutes to [change Wi-Fi](/power-manifold/setup/wifi-provisioning/#changing-wi-fi-later). |
+| **Firmware update** | Shows when a new release is out. Press **Install** to update. See [Updates](/power-manifold/guide/updates/). |
+| **UPS** sensors | Only with a [UPS power supply](/power-manifold/integrations/ups/) connected. |
+
+## Automations
+
+The **events** entity for each port is the easiest thing to trigger on.
+Its event types are:
+
+| Event | When |
+| --- | --- |
+| `attached` / `detached` | A device is plugged in or unplugged. |
+| `charged` / `charging` | A device finished charging, or started again. |
+| `enabled` / `disabled` | The port was switched on or off. |
+| `auto_off` | *Switch off once charged* or the sleep timer turned the port off. |
+| `throttled` / `restored` | The port was turned down for the budget, or got its power back. |
+| `fault` | The port shut itself off. The `text` attribute says why. |
+| `inserted` / `removed` / `ready` | A blade was seated, removed, or finished starting up. |
+| `contract` | The device switched to a different voltage or current. |
+| `probe_failed` | A blade didn't respond while starting up. |
+| `updated` | The blade's firmware was updated. |
+
+**Example: get a notification when a port faults.**
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: event.desk_phone_events
+    not_from: unavailable
+conditions:
+  - condition: state
+    entity_id: event.desk_phone_events
+    attribute: event_type
+    state: fault
+actions:
+  - action: notify.notify
+    data:
+      message: "Desk phone port: {{ trigger.to_state.attributes.text }}"
+```
+
+**Example: power-cycle a stuck Raspberry Pi** by turning its port's switch
+off, waiting ten seconds, and turning it back on. That's the same switch as
+in the table above, so a script or a dashboard button does it.
+
+<Aside type="tip">
+For a phone or tablet that lives on a port, turn on **switch off when
+charged** and let a time-based automation turn the port back on in the
+morning.
+</Aside>
