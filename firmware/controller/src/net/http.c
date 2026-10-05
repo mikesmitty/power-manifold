@@ -113,7 +113,8 @@ static const char INDEX_HTML[] =
     "textarea{font-family:monospace;font-size:.75em;resize:vertical}"
     "button{padding:.45em 1em;margin:.6em .6em 0 0;background:#1c2430;color:#eee;"
     "border:1px solid #345;border-radius:3px;cursor:pointer;font:inherit}"
-    "#msg,#flm,#lgm{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
+    "#msg,#flm,#lgm,#pm{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
+    "td button{margin:0;padding:.15em .6em;font-size:.85em}"
     "pre{white-space:pre-wrap;word-break:break-all;font-size:.75em;background:#0d0d0d;"
     "border:1px solid #333;padding:.6em;max-height:24em;overflow:auto;margin:.4em 0}"
     "#lock input{display:inline-block;width:14em;margin-right:.5em}"
@@ -127,7 +128,7 @@ static const char INDEX_HTML[] =
     "<table><thead><tr><th>Port</th><th>State</th><th>V</th><th>A</th>"
     "<th title='measured by the INA226'>Draw W</th>"
     "<th title='PD contract wattage held against the chassis budget'>Res W</th>"
-    "<th>kWh</th></tr></thead><tbody id='ports'></tbody></table>"
+    "<th>kWh</th><th>Power</th></tr></thead><tbody id='ports'></tbody></table><div id='pm'></div>"
     "<div id='hint'>Click a port for its last 10 minutes of W / A / V, sampled"
     " once a second while this page is open.</div>"
     // Persistent fault log (data partition): newest first, refreshed while open.
@@ -247,7 +248,10 @@ static const char INDEX_HTML[] =
     // inline SVG — the device is LAN-only, so no chart library from a CDN.
     "const N=600,H=[],ports=document.getElementById('ports'),"
     "esc=s=>s.replace(/[&<>]/g,c=>'&#'+c.charCodeAt(0)+';');let sel=-1,last;"
-    "ports.onclick=e=>{const r=e.target.closest('tr.p');"
+    // A port's power button: the API's enable/disable, the same switch Home
+    // Assistant has. Switching off asks first because the device loses power.
+    "ports.onclick=e=>{const b=e.target.closest('button.pw');if(b){pw(+b.dataset.i);return;}"
+    "const r=e.target.closest('tr.p');"
     "if(r){const i=+r.dataset.i;sel=sel==i?-1:i;draw();}};"
     // Samples fill the strip's width until the ring is full, then scroll;
     // the caption states the span actually covered so the scale is explicit.
@@ -264,8 +268,10 @@ static const char INDEX_HTML[] =
     "`<tr class='p${i==sel?' sel':''}' data-i='${i}'><td title='Port ${i+1}'>${esc(p.name)}</td>"
     "<td class='s-${p.state}'>${p.state}${p.charged?' &middot; charged':''}</td>"
     "<td>${p.v.toFixed(2)}</td><td>${p.i.toFixed(2)}</td><td>${p.p.toFixed(1)}</td>"
-    "<td>${p.contract_w.toFixed(0)}</td><td>${p.e.toFixed(3)}</td></tr>`+"
-    "(i==sel?`<tr class='d'><td colspan='7'><div class='g'>${line('p','W',1)}"
+    "<td>${p.contract_w.toFixed(0)}</td><td>${p.e.toFixed(3)}</td><td>${p.state=='absent'?'':"
+    "`<button type='button' class='pw' data-i='${i}'>${p.state=='disabled'?'Turn on':'Turn off'}</button>`}"
+    "</td></tr>`+"
+    "(i==sel?`<tr class='d'><td colspan='8'><div class='g'>${line('p','W',1)}"
     "${line('i','A',2)}${line('v','V',2)}</div></td></tr>`:'')).join('');}"
     "async function tick(){try{"
     "const r=await fetch('/api/v1/status');const d=await r.json();last=d;"
@@ -281,6 +287,15 @@ static const char INDEX_HTML[] =
     "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
     "if(H[i].length>N)H[i].shift();});"
     "draw();}catch(e){}}tick();setInterval(tick,1000);"
+    "async function pw(i){const p=last.ports[i],on=p.state=='disabled',PM=document.getElementById('pm');"
+    "if(!on&&!confirm(`Turn off port ${i+1} (${p.name})? Its device loses power.`))return;"
+    "let r;try{r=await fetch('/api/v1/port/'+(i+1),{method:'POST',"
+    "headers:{...hdr(),'Content-Type':'application/json'},"
+    "body:JSON.stringify({action:on?'enable':'disable'})});}catch(e){}"
+    "if(r&&r.ok){PM.textContent=`Port ${i+1} turned ${on?'on':'off'}.`;tick();return;}"
+    "if(r&&r.status==401){const w=await why(r);PM.textContent=w==BT?"
+    "'Unlock Settings with the API token first.':cap(w);return;}"
+    "PM.textContent=r?'The controller is busy; try again.':'No response from the device.';}"
     // Settings panel. The bearer lives in sessionStorage for this tab only;
     // a ?s=<secret> from Improv's redirect seeds it and is scrubbed from the
     // address bar. Without one the page asks the controller once at load:
@@ -1186,7 +1201,8 @@ static void handle_request(conn_t *c) {
             if (queued && (cmd.op == CMD_PORT_ENABLE || cmd.op == CMD_PORT_DISABLE) &&
                 settings_port_admin_note(port - 1, cmd.op == CMD_PORT_ENABLE))
                 settings_save_later(); // the "last" boot policy keeps it
-            respond(c, queued ? 200 : 503, "OK", "application/json", "{\"ok\":true}");
+            if (queued) respond(c, 200, "OK", "application/json", "{\"ok\":true}");
+            else respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
         } else if (!strncmp(c->req, "POST /api/v1/faults/clear", 25)) {
             if (!fault_log_available()) {
                 respond(c, 503, "Service Unavailable", "application/json",

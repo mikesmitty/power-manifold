@@ -24,10 +24,18 @@ The table has one row per port and refreshes every second:
 | **Draw W** | The power the device is drawing right now. |
 | **Res W** | The power set aside for this port in the [power budget](/power-manifold/guide/sharing-power/). A port with nothing plugged in still holds 15 W. |
 | **kWh** | Energy delivered since the controller last started. |
+| **Power** | A button that turns the port off or on. |
 
 Click a port's row to see graphs of its power, current and voltage. The
 graphs start when you open the page and cover the last ten minutes. Home
 Assistant keeps the long-term history.
+
+**Turn off** cuts the port's power and asks you first, because the device
+plugged into it loses power. **Turn on** brings it back. Both need your API
+token: unlock **Settings** once and the buttons work for as long as the tab
+is open. A port you turn off stays off until you turn it on again. After a
+restart it follows its
+[power-up setting](/power-manifold/guide/port-settings/#on-or-off-at-power-up).
 
 Below the table, a line shows the chassis total, the budget, the fan and
 the network link. If something needs attention, a red line under it says
@@ -69,11 +77,6 @@ What you'll find there:
   [Front panel and lights](/power-manifold/guide/front-panel/#brightness-and-dimming).
 - **Addressing, DNS, time server, syslog, MQTT security, update source**:
   see [Network settings](/power-manifold/integrations/network/).
-
-The page does not have on/off buttons for ports. Switch ports from
-[Home Assistant](/power-manifold/guide/home-assistant/), over
-[MQTT](/power-manifold/integrations/mqtt/) or with the
-[HTTP API](/power-manifold/integrations/http-api/).
 
 ## Backing up your settings
 
