@@ -3,7 +3,7 @@ title: Power Manifold
 description: A six-port USB-C power supply for single-board computers and other USB-C devices, with per-port control, sensible power sharing and Home Assistant support.
 template: splash
 hero:
-  tagline: Six USB-C ports up to 100 W each, from one 24 V supply. Switch, name, limit and watch every port from your browser or Home Assistant.
+  tagline: Six USB-C ports up to 100 W each, from one 24 V supply instead of a pile of power adapters. Switch, name, limit and watch every port from your browser or Home Assistant.
   actions:
     - text: Get started
       link: /power-manifold/setup/first-time-setup/
@@ -21,9 +21,11 @@ hero:
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Power Manifold powers a stack of Raspberry Pis, mini PCs, phones and
-laptops from one DC power supply. Each of its six USB-C ports talks USB
-Power Delivery, so every device gets the voltage it asks for, and a
-controller inside keeps track of all of them.
+laptops from one DC power supply. That replaces a power adapter for every
+device, along with the power strip they hang off and the tangle of cords
+between them. Each of its six USB-C ports talks USB Power Delivery, so
+every device gets the voltage it asks for, and a controller inside keeps
+track of all of them.
 
 <div class="features">
 	<div class="feature">
