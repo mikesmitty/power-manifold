@@ -163,7 +163,10 @@ static bool render_boot(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]
 static void overlay_comet(const led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]) {
     if (v->brightness == 0) return;
     led_rgb_t c;
-    if (v->chassis & LED_CHASSIS_BLE_OPEN) c = COL_BLUE;       // actionable: shown first
+    // The actionable conditions come first: Bluetooth open, then settings
+    // open for first-time setup, then the plain fact of having no network.
+    if (v->chassis & LED_CHASSIS_BLE_OPEN) c = COL_BLUE;
+    else if (v->chassis & LED_CHASSIS_SETUP_OPEN) c = COL_MAGENTA;
     else if (v->chassis & LED_CHASSIS_NET_DOWN) c = COL_WHITE;
     else return;
     uint32_t ph = now_ms % LED_COMET_PERIOD_MS;

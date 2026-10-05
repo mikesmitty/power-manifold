@@ -157,8 +157,9 @@ typedef enum {
 
 // CMD_LED_CHASSIS flags: core 0's view of the management plane, shown as a
 // comet crossing the chain (see engine/led_pattern.h)
-#define LED_CHASSIS_BLE_OPEN  (1u << 0) // Improv provisioning window open: blue
-#define LED_CHASSIS_NET_DOWN  (1u << 1) // no link holds an address: white
+#define LED_CHASSIS_BLE_OPEN   (1u << 0) // Improv provisioning window open: blue
+#define LED_CHASSIS_NET_DOWN   (1u << 1) // no link holds an address: white
+#define LED_CHASSIS_SETUP_OPEN (1u << 2) // settings open for first-time setup, no API token yet: magenta
 
 // Power-up LED sweep style (settings.led_boot)
 #define LED_BOOT_WHITE   0

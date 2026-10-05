@@ -150,6 +150,7 @@ int main(void) {
 
         // chassis conditions the LED chain overlays as a comet (led_pattern.h)
         uint8_t led_flags = (uint8_t)((improv_active() ? LED_CHASSIS_BLE_OPEN : 0) |
+                                      (http_setup_open(now_ms) ? LED_CHASSIS_SETUP_OPEN : 0) |
                                       (net_up() ? 0 : LED_CHASSIS_NET_DOWN));
         if (led_flags != led_flags_sent) {
             engine_cmd_t c = {.op = CMD_LED_CHASSIS, .arg = led_flags};
@@ -170,12 +171,15 @@ int main(void) {
         }
 
         // front-panel button: a short press wakes a dimmed chain (and is
-        // answered with a flash), a long press opens the BLE provisioning
+        // answered with a flash) and restarts the Ethernet setup hour while
+        // no API token is stored, a long press opens the BLE provisioning
         // window, holding it until the chain has filled and turned red
         // restores factory settings (button.h)
         switch (button_poll(now_ms)) {
         case BUTTON_SHORT: {
             printf("button: wake\n");
+            http_setup_window_restart(now_ms);
+            if (!g_settings.api_token[0]) printf("setup: settings open over Ethernet for an hour\n");
             led_sched_wake(now_ms); // the schedule block above pushes the level next pass
             engine_cmd_t c = {.op = CMD_LED_ACK, .arg = 200};
             ipc_cmd_push(&c);

@@ -223,6 +223,21 @@ static void test_net_down_comet_is_white_and_ble_wins(void) {
     MT_ASSERT(px[0].r == 255 && px[0].g == 120);
 }
 
+static void test_setup_comet_is_magenta_between_ble_and_net_down(void) {
+    reset(255);
+    all_idle();
+    view.chassis = LED_CHASSIS_SETUP_OPEN;
+    render(0);
+    MT_ASSERT(px[0].r == 255 && px[0].g == 0 && px[0].b == 200); // magenta head
+    MT_ASSERT_EQ(px[1].r, 255);                                   // amber beneath
+    view.chassis = LED_CHASSIS_SETUP_OPEN | LED_CHASSIS_NET_DOWN;
+    render(0);
+    MT_ASSERT(px[0].r == 255 && px[0].g == 0 && px[0].b == 200); // setup beats net down
+    view.chassis = LED_CHASSIS_SETUP_OPEN | LED_CHASSIS_BLE_OPEN;
+    render(0);
+    MT_ASSERT(px[0].r == 0 && px[0].b == 255);                    // Bluetooth beats setup
+}
+
 static void test_comet_hidden_at_zero_brightness(void) {
     reset(0);
     all_idle();
@@ -297,6 +312,8 @@ void run_led_tests(void) {
     mt_run("leds: boot sweep dark at brightness 0", test_boot_sweep_dark_at_zero_brightness);
     mt_run("leds: BLE comet crosses the chain", test_ble_comet_crosses_the_chain);
     mt_run("leds: net-down comet white, BLE wins", test_net_down_comet_is_white_and_ble_wins);
+    mt_run("leds: setup comet magenta, between BLE and net down",
+           test_setup_comet_is_magenta_between_ble_and_net_down);
     mt_run("leds: comet hidden at brightness 0", test_comet_hidden_at_zero_brightness);
     mt_run("leds: identify overrides everything", test_identify_overrides_everything);
     mt_run("leds: identify visible at brightness 0", test_identify_visible_when_dimmed_to_zero);

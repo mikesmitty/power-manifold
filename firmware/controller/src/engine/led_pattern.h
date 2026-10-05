@@ -19,8 +19,9 @@
 //              as a chain-order check on a fresh chassis
 //   comet      chassis condition overlay: a two-pixel comet crosses the
 //              chain once every LED_COMET_PERIOD_MS, blue while the BLE
-//              provisioning window is open, white while no link has an
-//              address; port colours stay visible underneath
+//              provisioning window is open, magenta while settings are open
+//              for first-time setup (no API token yet), white while no link
+//              has an address; port colours stay visible underneath
 //   ports      per-slot state colours (spec §6.1); a sink that has finished
 //              charging shows solid magenta whatever its contract state
 //

@@ -38,6 +38,10 @@ Some patterns run across the whole row of lights:
   light is working.
 - **A blue streak** crossing the row every few seconds: the controller is
   waiting for [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/).
+- **A magenta streak** crossing the row every few seconds: the controller
+  has no API token yet and its settings are open for
+  [first-time setup](/power-manifold/setup/first-time-setup/). It stops
+  when you save a token.
 - **A white streak** crossing the row every few seconds: the controller has
   no network connection.
 - **The two halves flashing blue**: someone pressed **Identify** during
@@ -69,7 +73,7 @@ you hold it:
 
 | Press | What happens |
 | --- | --- |
-| **Short press** (under 3 seconds) | Flashes all lights white, then shows them at full brightness for 30 seconds. Useful when the lights are dimmed or off. |
+| **Short press** (under 3 seconds) | Flashes all lights white, then shows them at full brightness for 30 seconds. Useful when the lights are dimmed or off. On a controller with no API token yet, it also gives you another hour to [set one over Ethernet](/power-manifold/setup/first-time-setup/#steps). |
 | **Hold 3 seconds**, then let go | Opens Bluetooth for ten minutes so you can [change Wi-Fi](/power-manifold/setup/wifi-provisioning/#changing-wi-fi-later). |
 | **Hold 10 seconds** | **Factory reset.** Erases all settings and the fault log, then restarts. |
 

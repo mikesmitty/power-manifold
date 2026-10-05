@@ -42,7 +42,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `ntp <host>\|auto` | time server override |
 | `syslog <host> [port]` / `syslog off` | mirror the console to a UDP syslog host |
 | `name <device-name>` | hostname and topic id |
-| `token <t>\|clear` | API bearer token |
+| `token <t>\|clear` | API bearer token; with none stored the network API refuses every change until one is set here, through Improv, or in the first hour on Ethernet |
 | `budget <watts>` | chassis power budget |
 | `port <n> on\|off\|reset\|srccap\|update` | port control; `update` writes the bundled gen-3 blade firmware over whatever the blade runs |
 | `port <n> priority <0-255>` | 0 = highest; sheds from the bottom |

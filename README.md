@@ -51,12 +51,12 @@ serial console.
   event entities, the chassis budget, fan control, an aggregate problem
   sensor, the boot reason, and a firmware update entity.
 - Web UI with live per-port sparklines, the fault log, the console log, and
-  a settings panel with export and import, backed by a JSON API with
-  optional bearer-token auth and a Prometheus `/metrics` endpoint.
+  a settings panel with export and import, backed by a JSON API behind a
+  bearer token and a Prometheus `/metrics` endpoint.
 - First-time setup over Bluetooth using the Improv Wi-Fi standard, from the
   [hosted provisioner](https://mikesmitty.github.io/power-manifold/setup/wifi-provisioning/),
-  the Home Assistant app, or any Improv client. A USB serial console covers
-  everything else.
+  the Home Assistant app, or any Improv client, or over Ethernet in the
+  first hour after power-up. A USB serial console covers everything else.
 - DHCP or static addressing on WiFi or wired Ethernet, a DNS override, and
   console mirroring to a UDP syslog host.
 - Status LEDs with a night window and idle dimming.

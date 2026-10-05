@@ -8,6 +8,7 @@
 #include <ctype.h>
 
 
+#include "lwip/netif.h"
 #include "lwip/tcp.h"
 #include "pico/rand.h"
 
@@ -44,7 +45,8 @@
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
 #define IDLE_POLLS      20   // drop a connection that sends no request in ~10s
 #define REBOOT_DELAY_MS 300  // API reboot: let the response leave first
-#define SETUP_SECRET_TTL_MS (10 * 60 * 1000)
+#define SETUP_SECRET_TTL_MS (10 * 60 * 1000) // Improv redirect secret
+#define SETUP_ETH_WINDOW_MS (60 * 60 * 1000) // first hour on Ethernet with no token stored
 #define STR_(x) #x
 #define STR(x) STR_(x)
 
@@ -136,8 +138,9 @@ static const char INDEX_HTML[] =
     // Console ring (last 4 KB of what the firmware printed); needs the token.
     "<details id='lg'><summary>Console log</summary><div id='lgm'></div><pre id='lgp'></pre>"
     "<button type='button' id='lgr'>Refresh</button></details>"
-    // Connection-level settings. Unlocked by the API token, or by the setup
-    // secret Improv passes in the redirect URL while no token exists yet.
+    // Connection-level settings. Unlocked by the API token, or, while no token
+    // exists yet, by the setup secret Improv passes in the redirect URL or by
+    // the first hour on Ethernet (see "First-time setup" below).
     "<details id='cfg'><summary>Settings</summary><div id='msg'></div>"
     "<div id='lock' hidden><input id='tok' type='password' placeholder='API token'>"
     "<button id='ul'>Unlock</button></div>"
@@ -280,7 +283,10 @@ static const char INDEX_HTML[] =
     "draw();}catch(e){}}tick();setInterval(tick,1000);"
     // Settings panel. The bearer lives in sessionStorage for this tab only;
     // a ?s=<secret> from Improv's redirect seeds it and is scrubbed from the
-    // address bar. Blank password/token fields mean "unchanged".
+    // address bar. Without one the page asks the controller once at load:
+    // if settings answer with no token stored (the Ethernet setup hour), the
+    // panel opens by itself. A 401 is shown with the controller's own reason.
+    // Blank password/token fields mean "unchanged".
     "const CFG=document.getElementById('cfg'),F=document.getElementById('f'),"
     "M=document.getElementById('msg'),LK=document.getElementById('lock'),"
     "PN=[...document.querySelectorAll('input[name^=pn]')],"
@@ -296,13 +302,15 @@ static const char INDEX_HTML[] =
     "chmw:'charged_mw',"
     "chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},"
     "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1},"
-    "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{};"
+    "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{},"
+    "BT='bearer token required',cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1)+'.':'Not allowed.';"
+    "async function why(r){try{return (await r.json()).error||'';}catch(e){return '';}}"
     "async function cfgLoad(){let r;"
     "try{r=await fetch('/api/v1/settings',{headers:hdr()});}"
-    "catch(e){M.textContent='No response from the device.';return;}"
-    "if(r.status==401){LK.hidden=false;F.hidden=true;"
-    "M.textContent=(sessionStorage.tok?'Token rejected. ':'')+"
-    "'Enter the API token to edit settings.';return;}"
+    "catch(e){M.textContent='No response from the device.';return null;}"
+    "if(r.status==401){const w=await why(r);F.hidden=true;LK.hidden=w!=BT;"
+    "M.textContent=w==BT?(sessionStorage.tok?'Token rejected. ':'')+"
+    "'Enter the API token to edit settings.':cap(w);return null;}"
     "const d=await r.json();LK.hidden=true;F.hidden=false;"
     "for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';"
     "PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
@@ -313,7 +321,7 @@ static const char INDEX_HTML[] =
     "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
     "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
     "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
-    " the API and this panel, so keep a copy.';}"
+    " the API and this panel, so keep a copy.';return d;}"
     "F.onsubmit=async e=>{e.preventDefault();const b={};"
     "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
     "b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';"
@@ -330,8 +338,9 @@ static const char INDEX_HTML[] =
     "if(b.token)sessionStorage.tok=b.token;F.mpass.value=F.atok.value='';"
     "await cfgLoad();M.textContent=d.reboot_required?"
     "'Saved. Reboot to apply the name, broker and addressing.':'Saved and applied.';};"
-    "document.getElementById('rb').onclick=async()=>{"
-    "try{await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}"
+    "document.getElementById('rb').onclick=async()=>{let r;"
+    "try{r=await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}"
+    "if(r&&r.status==401){M.textContent=cap(await why(r));return;}"
     "M.textContent='Rebooting; this page reloads in a few seconds.';"
     "setTimeout(()=>location.reload(),6000);};"
     "document.getElementById('xpb').onclick=async()=>{let r;"
@@ -355,13 +364,14 @@ static const char INDEX_HTML[] =
     "const U=new URL(location),S=U.searchParams.get('s');"
     "if(S){sessionStorage.tok=S;U.searchParams.delete('s');"
     "history.replaceState(null,'',U);CFG.open=true;}"
+    "else cfgLoad().then(d=>{if(d&&!d.token_set)CFG.open=true;});"
     // Console log panel: the ring as text, bottom = newest.
     "const LG=document.getElementById('lg'),LGP=document.getElementById('lgp'),"
     "LGM=document.getElementById('lgm');"
     "async function lgLoad(){let r;try{r=await fetch('/api/v1/log',{headers:hdr()});}"
     "catch(e){LGM.textContent='No response from the device.';return;}"
-    "if(r.status==401){LGM.textContent='Unlock the Settings panel with the API token first.';"
-    "LGP.textContent='';return;}"
+    "if(r.status==401){const w=await why(r);LGM.textContent=w==BT?"
+    "'Unlock the Settings panel with the API token first.':cap(w);LGP.textContent='';return;}"
     "LGP.textContent=await r.text();LGM.textContent='';LGP.scrollTop=LGP.scrollHeight;}"
     "LG.ontoggle=()=>{if(LG.open)lgLoad();};document.getElementById('lgr').onclick=lgLoad;"
     // Fault log panel: newest page of records, human text from the firmware.
@@ -380,8 +390,10 @@ static const char INDEX_HTML[] =
     "FL.ontoggle=()=>{if(FL.open)flLoad();};setInterval(()=>{if(FL.open)flLoad();},10000);"
     "document.getElementById('flc').onclick=async()=>{let r;"
     "try{r=await fetch('/api/v1/faults/clear',{method:'POST',headers:hdr()});}catch(e){}"
-    "FLM.textContent=r&&r.ok?'Cleared.':r&&r.status==401?"
-    "'Unlock Settings with the API token first.':'Clear failed.';if(r&&r.ok)flLoad();};"
+    "if(r&&r.ok){FLM.textContent='Cleared.';flLoad();return;}"
+    "if(r&&r.status==401){const w=await why(r);FLM.textContent=w==BT?"
+    "'Unlock Settings with the API token first.':cap(w);return;}"
+    "FLM.textContent='Clear failed.';};"
     "</script></body></html>";
 _Static_assert(sizeof(INDEX_HTML) - 1 <= UINT16_MAX, "conn_t.static_len is 16-bit");
 
@@ -767,21 +779,38 @@ static bool bearer_present(const conn_t *c, const char *token) {
            (p[n] == '\r' || p[n] == '\n' || p[n] == ' ' || p[n] == '\0');
 }
 
-// Everything under POST /api/v1/: open until an API token is set.
+// Every change over the network, the console log and the OTA push need the
+// API token. A controller with no token stored refuses them all; the only
+// thing it accepts is the settings save that sets the first token, through
+// one of the setup doors below.
 static bool authorized(const conn_t *c) {
-    if (!g_settings.api_token[0]) return true;
-    return bearer_present(c, g_settings.api_token);
+    return g_settings.api_token[0] && bearer_present(c, g_settings.api_token);
 }
 
-// ---- Setup secret: Improv hands the provisioning client http://<ip>/?s=<secret>
-// so the same phone can finish first-time setup (broker, name, token) in the
-// web UI without a serial cable. It stands in for the API token on /settings
-// only, only while no token is stored, and only for SETUP_SECRET_TTL_MS;
-// the token a setup request must set retires it. Written from improv_poll
-// under the network lock, read here in lwIP's context.
+static void respond_unauthorized(conn_t *c) {
+    respond(c, 401, "Unauthorized", "application/json",
+            g_settings.api_token[0]
+                ? "{\"error\":\"bearer token required\"}"
+                : "{\"error\":\"no API token set yet: finish first-time setup first\"}");
+}
+
+// ---- First-time setup: how the first API token gets in without a serial
+// cable. Two doors, both open only while no token is stored, both closed by
+// the settings save that sets one:
+//   * Over Wi-Fi, Improv hands the provisioning client http://<ip>/?s=<secret>,
+//     so the same phone can finish setup in the web UI for SETUP_SECRET_TTL_MS.
+//   * Over Ethernet, a request arriving on the wired link's address is let in
+//     for SETUP_ETH_WINDOW_MS after power-up. A short press of the front-panel
+//     button restarts that hour (main.c), so a missed window costs a power
+//     cycle or a press, not a factory reset.
+// Either stands in for the token on /settings only, and a request let in this
+// way must set a token (settings_json_apply). The secret is written from
+// improv_poll under the network lock and read here in lwIP's context; the
+// window timer is written from the main loop.
 
 static char setup_secret[9];
-static uint32_t setup_until_ms; // 0 = none issued
+static uint32_t setup_until_ms;      // 0 = no secret issued
+static uint32_t eth_window_until_ms; // 0 = closed
 
 const char *http_setup_secret_issue(uint32_t now_ms) {
     snprintf(setup_secret, sizeof(setup_secret), "%08lx", (unsigned long)get_rand_32());
@@ -790,21 +819,63 @@ const char *http_setup_secret_issue(uint32_t now_ms) {
     return setup_secret;
 }
 
-static bool setup_secret_live(void) {
-    if (!setup_until_ms || g_settings.api_token[0]) return false;
-    uint32_t now = to_ms_since_boot(get_absolute_time());
-    return (int32_t)(now - setup_until_ms) < 0;
+void http_setup_window_restart(uint32_t now_ms) {
+    eth_window_until_ms = now_ms + SETUP_ETH_WINDOW_MS;
+    if (!eth_window_until_ms) eth_window_until_ms = 1;
 }
 
-// /settings always needs a bearer: the token, or the live setup secret.
+static bool setup_secret_live(uint32_t now_ms) {
+    if (!setup_until_ms || g_settings.api_token[0]) return false;
+    return (int32_t)(now_ms - setup_until_ms) < 0;
+}
+
+static bool eth_window_live(uint32_t now_ms) {
+    if (!eth_window_until_ms || g_settings.api_token[0]) return false;
+    return (int32_t)(now_ms - eth_window_until_ms) < 0;
+}
+
+// The request came in on the wired link's own address.
+static bool request_on_wired(const conn_t *c) {
+#if PWRMAN_NET_ETH
+    if (!eth_up() || !c->pcb) return false;
+    return ip4_addr_eq(ip_2_ip4(&c->pcb->local_ip), netif_ip4_addr(eth_netif_ptr()));
+#else
+    (void)c;
+    return false;
+#endif
+}
+
+bool http_setup_open(uint32_t now_ms) {
+    return setup_secret_live(now_ms) || (eth_window_live(now_ms) && eth_up());
+}
+
+// /settings always needs a bearer, or an open setup door.
 static bool settings_authorized(const conn_t *c, bool *via_setup) {
     *via_setup = false;
     if (g_settings.api_token[0]) return bearer_present(c, g_settings.api_token);
-    if (setup_secret_live() && bearer_present(c, setup_secret)) {
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+    if ((setup_secret_live(now) && bearer_present(c, setup_secret)) ||
+        (eth_window_live(now) && request_on_wired(c))) {
         *via_setup = true;
         return true;
     }
     return false;
+}
+
+// Why /settings said no, in words the page shows as they are.
+static void respond_settings_locked(conn_t *c) {
+    const char *why;
+    if (g_settings.api_token[0])
+        why = "bearer token required";
+    else if (request_on_wired(c))
+        why = "setup window closed: power-cycle the controller or press its button once, "
+              "then set an API token within an hour";
+    else
+        why = "no API token yet: finish Wi-Fi setup over Bluetooth to unlock settings, "
+              "or connect Ethernet";
+    char b[192];
+    snprintf(b, sizeof(b), "{\"error\":\"%s\"}", why);
+    respond(c, 401, "Unauthorized", "application/json", b);
 }
 
 static uint32_t reboot_at_ms; // 0 = none requested
@@ -894,7 +965,7 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     }
 
     bool saved = settings_save(); // flash_safe_execute, as the OTA path does from here
-    setup_until_ms = 0;           // a token now exists (or the caller had one)
+    setup_until_ms = eth_window_until_ms = 0; // a token now exists (or the caller had one)
     printf("settings: %s via web%s\n", saved ? "saved" : "save FAILED",
            via_setup ? " (first-time setup)" : "");
     if (saved) {
@@ -975,8 +1046,7 @@ static void update_feed(conn_t *c, struct pbuf *p, uint16_t skip) {
 
 static void update_post_start(conn_t *c, const char *body_start) {
     if (!authorized(c)) {
-        respond(c, 401, "Unauthorized", "application/json",
-                "{\"error\":\"bearer token required\"}");
+        respond_unauthorized(c);
         return;
     }
     if (strstr(c->req, "Transfer-Encoding")) {
@@ -1042,8 +1112,7 @@ static void handle_request(conn_t *c) {
                        metrics_buf, len, true);
     } else if (!strncmp(c->req, "GET /api/v1/log", 15)) {
         if (!authorized(c)) {
-            respond(c, 401, "Unauthorized", "application/json",
-                    "{\"error\":\"bearer token required\"}");
+            respond_unauthorized(c);
         } else if (log_busy()) {
             respond(c, 503, "Service Unavailable", "text/plain", "log busy, retry\n");
         } else {
@@ -1059,11 +1128,15 @@ static void handle_request(conn_t *c) {
     } else if (!strncmp(c->req, "GET /api/v1/settings/export", 27)) {
         bool via_setup;
         if (!settings_authorized(c, &via_setup)) {
-            respond(c, 401, "Unauthorized", "application/json",
-                    "{\"error\":\"bearer token required\"}");
+            respond_settings_locked(c);
             return;
         }
         bool secrets = !strncmp(c->req + 27, "?secrets=1 ", 11);
+        if (secrets && via_setup) { // the setup doors never give out stored passwords
+            respond(c, 401, "Unauthorized", "application/json",
+                    "{\"error\":\"the export with secrets needs the API token\"}");
+            return;
+        }
         if (settings_busy()) {
             respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
             return;
@@ -1074,8 +1147,7 @@ static void handle_request(conn_t *c) {
                !strncmp(c->req, "POST /api/v1/settings", 21)) {
         bool via_setup;
         if (!settings_authorized(c, &via_setup)) {
-            respond(c, 401, "Unauthorized", "application/json",
-                    "{\"error\":\"bearer token required\"}");
+            respond_settings_locked(c);
             return;
         }
         if (c->req[0] == 'G') {
@@ -1091,8 +1163,7 @@ static void handle_request(conn_t *c) {
         }
     } else if (!strncmp(c->req, "POST /api/v1/", 13)) {
         if (!authorized(c)) {
-            respond(c, 401, "Unauthorized", "application/json",
-                    "{\"error\":\"bearer token required\"}");
+            respond_unauthorized(c);
             return;
         }
         const char *body = strstr(c->req, "\r\n\r\n");
@@ -1266,6 +1337,7 @@ static err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
 }
 
 void http_init(void) {
+    http_setup_window_restart(to_ms_since_boot(get_absolute_time()));
     if (!net_available()) return;
     net_lock();
     struct tcp_pcb *pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);

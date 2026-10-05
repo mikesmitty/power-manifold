@@ -660,7 +660,10 @@ static void run_line(char *l) {
         if (!t) { printf("usage: token <t>|clear\n"); return; }
         snprintf(g_settings.api_token, sizeof(g_settings.api_token), "%s",
                  strcmp(t, "clear") ? t : "");
-        printf("token %s\n", g_settings.api_token[0] ? "set" : "cleared");
+        printf("token %s\n", g_settings.api_token[0]
+                                  ? "set"
+                                  : "cleared: the network API refuses changes until a token is "
+                                    "set again (console, Improv, or the first hour on Ethernet)");
     } else if (!strcmp(cmd, "budget")) {
         const char *w = strtok_r(NULL, " \t", &save);
         if (!w) { printf("usage: budget <watts>\n"); return; }

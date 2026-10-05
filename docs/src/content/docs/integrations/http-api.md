@@ -7,7 +7,10 @@ sidebar:
 
 Everything on the web page is also available as JSON at
 `http://<name>.local/api/v1/`. Reading status needs no password. Anything
-that changes something needs your API token:
+that changes something needs your API token. A new controller has none and
+refuses every change until one is set;
+[first-time setup](/power-manifold/setup/first-time-setup/) explains how the
+first one gets in.
 
 ```sh
 curl -H "Authorization: Bearer $TOKEN" ...

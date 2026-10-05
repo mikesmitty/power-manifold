@@ -1,6 +1,6 @@
 ---
 title: First-time setup
-description: Connect a power supply, get Power Manifold on your network and choose an API token.
+description: Connect a power supply, get Power Manifold on your network over Ethernet or Wi-Fi, and choose an API token.
 sidebar:
   order: 1
 ---
@@ -8,8 +8,8 @@ sidebar:
 import { Aside, Steps } from '@astrojs/starlight/components';
 
 Setup takes about ten minutes. You'll connect power, get the controller onto
-your Wi-Fi and choose a password for its settings. You can add Home
-Assistant afterwards.
+your network over Ethernet or Wi-Fi, and choose a password for its settings.
+You can add Home Assistant afterwards.
 
 ## What you need
 
@@ -20,13 +20,21 @@ Assistant afterwards.
 - **USB-C cables.** An ordinary cable carries up to 3 A (60 W). For more
   than 60 W at 20 V a device needs a 5 A cable with an e-marker chip, which
   is usually sold as a "100 W" or "240 W" cable.
-- **A phone or computer with Bluetooth** for Wi-Fi setup: Chrome or Edge
-  on a desktop or Android device, or the Home Assistant app on an iPhone or
-  iPad.
+- **A way onto your network.** Either an Ethernet cable from the controller
+  card to your router, or a phone or computer with Bluetooth for Wi-Fi
+  setup: Chrome or Edge on a desktop or Android device, or the Home
+  Assistant app on an iPhone or iPad.
 
 <Aside type="caution">
 Connect the XT60 lead before you switch the supply on, and switch the
 supply off before you unplug it.
+</Aside>
+
+<Aside type="note" title="Nothing can be changed until you set a token">
+A new controller refuses every change that arrives over the network until
+it has an API token. Its settings open only as described in step 2, and a
+magenta light runs across the ports every few seconds for as long as they
+are open. Saving a token closes them and stops the light.
 </Aside>
 
 ## Steps
@@ -39,23 +47,32 @@ supply off before you unplug it.
    waiting for a device. Ports are numbered 1 to 6 from left to right when
    you face the front panel.
 
-2. **Get it on your network.** A new controller advertises itself over
-   Bluetooth until it has Wi-Fi details. Follow
-   [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/), either from that
-   page in your browser or with the Home Assistant app. While the controller
-   is waiting for setup, a blue light runs across the ports every few
-   seconds.
+2. **Get it on your network.** Use whichever you have:
 
-3. **Open the web page.** When Wi-Fi setup finishes, press **Next** on the
-   same phone or computer. This opens the controller's web page with
-   settings unlocked for ten minutes. Later you can find the page at
-   `http://pwrman.local/`, or at the new name if you change it.
+   - **Ethernet.** Plug a cable from the controller card's port into your
+     router. The controller gets an address by itself, and for the first
+     hour after power-up its settings are open to anyone on your network.
+     That hour is how you get in. If it runs out, switch the supply off and
+     on again, or press the button on the controller card once, and you
+     have another hour.
+   - **Wi-Fi.** A new controller advertises itself over Bluetooth until it
+     has Wi-Fi details. Follow
+     [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/), either from
+     that page in your browser or with the Home Assistant app. While it
+     waits, a blue light runs across the ports every few seconds. When
+     Wi-Fi setup finishes, press **Next** on the same phone or computer. It
+     opens the controller's web page with settings unlocked for ten
+     minutes.
 
-4. **Choose an API token.** Open **Settings** near the bottom of the page
-   and set an **API token**.
-   This is the password for changing anything from the web page or the API.
-   You'll need it on any other device, so keep it somewhere safe. Once the
-   token is saved, the ten-minute setup window closes.
+3. **Open the web page.** On Ethernet, go to `http://pwrman.local/`. On
+   Wi-Fi, **Next** took you there already. While setup is open, the
+   **Settings** panel near the bottom opens by itself. Later you can find
+   the page at the same address, or at the new name if you change it.
+
+4. **Choose an API token.** In **Settings**, set an **API token** and press
+   **Save**. This is the password for changing anything from the web page or
+   the API. You'll need it on any other device, so keep it somewhere safe.
+   Once the token is saved, setup is closed and the magenta light stops.
 
 5. **Set the power budget.** Still in **Settings**, set the **Chassis budget**
    to your supply's rating in watts, or a little under it. See
@@ -72,15 +89,23 @@ supply off before you unplug it.
 
 That's it. Plug in a device and its port light turns blue or green.
 
-## Using wired Ethernet
+## If setup closed before you saved a token
 
-The controller card has an Ethernet port. Plug in a cable and the controller
-gets an address from your router automatically. When both Ethernet and
-Wi-Fi are connected, it uses Ethernet and keeps Wi-Fi as a backup.
+The **Settings** panel tells you which case you are in:
 
-You still need to do Wi-Fi setup once, because that is how the settings
-get unlocked the first time. After that, set a fixed address if you want
-one. See [Network settings](/power-manifold/integrations/network/).
+- **On Ethernet**, the hour is over. Switch the power supply off and on
+  again, or press the button on the controller card once, then reload the
+  page. You have another hour.
+- **On Wi-Fi**, the ten minutes are over.
+  [Open Bluetooth again](/power-manifold/setup/wifi-provisioning/#changing-wi-fi-later)
+  and redo Wi-Fi setup, or plug in an Ethernet cable and restart the
+  controller to use the Ethernet route instead.
+
+## Ethernet and Wi-Fi together
+
+When both are connected, the controller uses Ethernet and keeps Wi-Fi as a
+backup. Set a fixed address if you want one. See
+[Network settings](/power-manifold/integrations/network/).
 
 ## Next steps
 
