@@ -78,9 +78,10 @@ records the low voltage, so a restart like this leaves a trace.
 
 The chassis light, left of port 1, blinks red, and the problem line says
 *bus voltage low* or *bus voltage high*. The input voltage from your power
-supply is under 19 V or over 29 V. Power Manifold is rated for 20 to 28 V.
-The ports keep their power, but check the power supply and its cable. The
-light goes back to dim green once the voltage is back in range.
+supply is well outside the range Power Manifold is rated for: 24 V nominal,
+within the 15 % under and 20 % over that IEC 62368-1 allows. The ports keep
+their power, but check the power supply, its output setting and its cable.
+The light goes back to dim green once the voltage is back in range.
 
 ## A port shows *silent* or *not answering*
 
@@ -124,7 +125,7 @@ settings export that includes secrets, you can import it after the reset.
 | *trial firmware uncommitted* | A firmware update is on trial. It clears within a few seconds when the update succeeds. See [Updates](/power-manifold/guide/updates/). |
 | *wired link down* | The Ethernet cable is unplugged or the switch is off. Wi-Fi is carrying traffic for now. |
 | *on battery* / UPS battery fault | Your [UPS power supply](/power-manifold/integrations/ups/) lost mains power or reports a battery problem. |
-| *bus voltage* out of range | The input voltage is under 19 V or over 29 V. See [Bus voltage out of range](#bus-voltage-out-of-range). |
+| *bus voltage* out of range | The input voltage is outside the rated range. See [Bus voltage out of range](#bus-voltage-out-of-range). |
 
 <Aside type="tip" title="Still stuck?">
 [Open an issue](https://github.com/mikesmitty/power-manifold/issues) with a
