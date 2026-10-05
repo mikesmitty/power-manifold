@@ -56,16 +56,16 @@
 }
 
 /* A port-light swatch, drawn as the light in a patch of the dark faceplate:
-   <span class="led" style="--led: #2f7cf6"></span>. --lvl dims the light
-   alone, for the dim states. */
+   <span class="led" style="--led: #2f7cf6"></span>. The faceplate is black
+   anodised, in either theme. --lvl dims the light alone, for the dim states. */
 .led {
 	position: relative;
 	display: inline-block;
 	width: 1.5em;
 	height: 1.1em;
 	border-radius: 0.25em;
-	background: #2a2c31;
-	border: 1px solid #3d4048;
+	background: #141517;
+	border: 1px solid #4a4d54;
 	vertical-align: -0.2em;
 	margin-inline-end: 0.5em;
 }

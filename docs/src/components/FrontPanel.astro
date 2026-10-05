@@ -224,38 +224,46 @@ const height = labels ? 80 + 610 : timeline ? 640 : 458;
 		width: 100%;
 		height: auto;
 	}
+	/* The faceplate is black hard-anodised aluminium with laser-marked text,
+	   so it is drawn the same in light and dark mode. */
+	.front-panel {
+		--fp-face: #141517;
+		--fp-edge: #4a4d54;
+		--fp-line: #8c9098;
+		--fp-mark: #c4c7cc;
+	}
 	.fp-face {
-		fill: var(--sl-color-gray-6);
-		stroke: var(--sl-color-gray-3);
+		fill: var(--fp-face);
+		stroke: var(--fp-edge);
 		stroke-width: 2;
 		vector-effect: non-scaling-stroke;
 	}
 	.fp-line,
 	.fp-line * {
 		fill: none;
-		stroke: var(--sl-color-gray-2);
+		stroke: var(--fp-line);
 		stroke-width: 1.75;
 		vector-effect: non-scaling-stroke;
 	}
 	.fp-port {
-		fill: var(--sl-color-black);
+		fill: #000;
 	}
 	.fp-tongue {
-		fill: var(--sl-color-gray-3);
+		fill: #5a5d63;
 	}
 	.fp-hole {
-		fill: var(--sl-color-black);
+		fill: #000;
 	}
 	.fp-button {
-		fill: var(--sl-color-gray-4);
+		fill: #2a2c30;
 	}
 	.fp-num {
-		fill: var(--sl-color-gray-2);
+		fill: var(--fp-mark);
 		font: 600 36px var(--sl-font, sans-serif);
 		text-anchor: middle;
 	}
 	.fp-mark {
-		fill: var(--sl-color-gray-3);
+		fill: var(--fp-mark);
 		fill-rule: evenodd;
 	}
 	.fp-lit circle {
