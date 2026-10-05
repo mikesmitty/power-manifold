@@ -1,0 +1,338 @@
+---
+// A worked example of power sharing: six port columns and the chassis
+// budget as one bar, stepping through a scenario. The numbers follow the
+// controller's rules (firmware/controller/src/engine/port_fsm.c): a port
+// with a blade and nothing plugged in holds 15 W; a new contract that does
+// not fit turns down strictly lower-priority ports, lowest first, to no
+// less than 15 W; if that is still not enough, the new port takes what is
+// left; freed power goes back to turned-down ports, highest priority first.
+// Priorities are the defaults, each port's own number.
+
+const BUDGET = 180;
+const IDLE = 15;
+
+// Per port: device (null for nothing plugged in), its light, what it asked
+// for, and what it was given.
+type Port = { device: string | null; light: string; ask: number; got: number };
+const pi = (): Port => ({ device: 'Pi 5', light: '#3b82f6', ask: 25, got: 25 });
+const idle = (): Port => ({ device: null, light: '#e8e8e8', ask: IDLE, got: IDLE });
+const tablet = (got = 45): Port => ({ device: 'Tablet', light: '#22c55e', ask: 45, got });
+
+const STEPS = [
+	{
+		title: 'Everything fits',
+		text: 'A 180 W supply. Two Raspberry Pis, a tablet and three free ports add up to 140 W, so every device gets what it asked for.',
+		ports: [pi(), pi(), idle(), idle(), tablet(), idle()],
+	},
+	{
+		title: 'A laptop plugs in',
+		text: 'A 100 W laptop plugs into port 3, which would take the total to 225 W. Port 5 has a lower priority, so the tablet is turned down to 15 W. The laptop is still 30 W short, so it gets the 85 W that is left. Both keep charging.',
+		ports: [pi(), pi(), { device: 'Laptop', light: '#22c55e', ask: 100, got: 85 }, idle(), tablet(IDLE), idle()],
+	},
+	{
+		title: 'The laptop is unplugged',
+		text: 'Port 3 goes back to holding 15 W, which frees 70 W. The tablet gets its 45 W back.',
+		ports: [pi(), pi(), idle(), idle(), tablet(), idle()],
+	},
+];
+
+// Shown before the script runs, and without it
+const FIRST = 1;
+const step = STEPS[FIRST];
+const total = (s: (typeof STEPS)[number]) => s.ports.reduce((n, p) => n + p.got, 0);
+---
+
+<figure class="sharing not-content" data-steps={JSON.stringify(STEPS)} data-budget={BUDGET} data-step={FIRST}>
+	<div class="sh-tabs" role="tablist" aria-label="Steps of the example">
+		{STEPS.map((s, i) => (
+			<button type="button" role="tab" aria-selected={i === FIRST ? 'true' : 'false'} data-go={i}>
+				<span class="sh-n">{i + 1}</span>{s.title}
+			</button>
+		))}
+	</div>
+
+	<p class="sh-text" aria-live="polite">{step.text}</p>
+
+	<div class="sh-cols">
+		{step.ports.map((p, i) => (
+			<div class={`sh-col${p.got < p.ask ? ' cut' : ''}${p.device ? '' : ' free'}`}>
+				<div class="sh-well">
+					<div class="sh-ask" style={`height:${p.ask}%`} />
+					<div class="sh-got" style={`height:${p.got}%`} />
+					<div class="sh-amount" style={`bottom:${p.ask}%`}>{p.got < p.ask ? `${p.got} of ${p.ask} W` : `${p.got} W`}</div>
+				</div>
+				<div class="sh-port">
+					<span class={`led${p.got < p.ask ? ' pulse' : ''}`} style={`--led:${p.light}`} /><span class="sh-word">Port </span>{i + 1}
+				</div>
+				<div class="sh-device">{p.device ?? 'Nothing plugged in'}</div>
+			</div>
+		))}
+	</div>
+
+	<div class="sh-budget">
+		<div class="sh-bar">
+			{step.ports.map((p, i) => (
+				<div class={`sh-seg${p.got < p.ask ? ' cut' : ''}${p.device ? '' : ' free'}`} style={`width:${(p.got / BUDGET) * 100}%`}>
+					<span>{i + 1}</span>
+				</div>
+			))}
+		</div>
+		<div class="sh-total"><span>{total(step)}</span> W of the {BUDGET} W budget set aside</div>
+	</div>
+
+	<figcaption class="sh-key">
+		<span><i class="k-got" />Set aside for a device</span>
+		<span><i class="k-free" />Held for a free port</span>
+		<span><i class="k-cut" />Turned down</span>
+		<span><i class="k-ask" />What the device asked for</span>
+	</figcaption>
+</figure>
+
+<script>
+	// Steps through the example: on its own every few seconds until the
+	// reader picks a step, and not at all for readers who prefer less motion.
+	type Port = { device: string | null; light: string; ask: number; got: number };
+	type Step = { title: string; text: string; ports: Port[] };
+
+	for (const fig of document.querySelectorAll<HTMLElement>('.sharing')) {
+		const steps: Step[] = JSON.parse(fig.dataset.steps!);
+		const budget = Number(fig.dataset.budget);
+		const tabs = [...fig.querySelectorAll<HTMLButtonElement>('[data-go]')];
+		const cols = [...fig.querySelectorAll<HTMLElement>('.sh-col')];
+		const segs = [...fig.querySelectorAll<HTMLElement>('.sh-seg')];
+		const text = fig.querySelector<HTMLElement>('.sh-text')!;
+		const totalEl = fig.querySelector<HTMLElement>('.sh-total span')!;
+
+		const show = (n: number) => {
+			const s = steps[n];
+			fig.dataset.step = String(n);
+			tabs.forEach((t, i) => t.setAttribute('aria-selected', String(i === n)));
+			text.textContent = s.text;
+			s.ports.forEach((p, i) => {
+				const cut = p.got < p.ask;
+				const col = cols[i];
+				col.classList.toggle('cut', cut);
+				col.classList.toggle('free', !p.device);
+				const amount = col.querySelector<HTMLElement>('.sh-amount')!;
+				amount.textContent = cut ? `${p.got} of ${p.ask} W` : `${p.got} W`;
+				amount.style.bottom = `${p.ask}%`;
+				col.querySelector<HTMLElement>('.sh-ask')!.style.height = `${p.ask}%`;
+				col.querySelector<HTMLElement>('.sh-got')!.style.height = `${p.got}%`;
+				const led = col.querySelector<HTMLElement>('.led')!;
+				led.classList.toggle('pulse', cut);
+				led.style.setProperty('--led', p.light);
+				col.querySelector<HTMLElement>('.sh-device')!.textContent = p.device ?? 'Nothing plugged in';
+				segs[i].classList.toggle('cut', cut);
+				segs[i].classList.toggle('free', !p.device);
+				segs[i].style.width = `${(p.got / budget) * 100}%`;
+			});
+			totalEl.textContent = String(s.ports.reduce((a, p) => a + p.got, 0));
+		};
+
+		let timer: number | undefined;
+		const stop = () => clearInterval(timer);
+		tabs.forEach((t, i) => t.addEventListener('click', () => { stop(); show(i); }));
+
+		show(0);
+		if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			let n = 0;
+			timer = window.setInterval(() => show((n = (n + 1) % steps.length)), 6000);
+		}
+	}
+</script>
+
+<style>
+	.sharing {
+		--sh-got: var(--sl-color-accent);
+		--sh-cut: var(--sl-color-orange);
+		--sh-free: var(--sl-color-gray-4);
+		margin: 1.5rem 0;
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	}
+	.sh-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.sh-tabs button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 999px;
+		background: transparent;
+		color: var(--sl-color-gray-2);
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		cursor: pointer;
+	}
+	.sh-tabs button[aria-selected='true'] {
+		border-color: var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	.sh-n {
+		display: inline-grid;
+		place-items: center;
+		width: 1.4em;
+		height: 1.4em;
+		border-radius: 50%;
+		background: var(--sl-color-gray-5);
+		color: var(--sl-color-white);
+		font-size: 0.85em;
+		font-weight: 600;
+	}
+	[aria-selected='true'] .sh-n {
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	.sh-text {
+		min-height: 4.5em;
+		margin: 0.75rem 0 1rem;
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-sm);
+	}
+	.sh-cols {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 0.5rem;
+	}
+	.sh-col {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		min-width: 0;
+		text-align: center;
+	}
+	/* sits on top of the taller of the two bars, which is always the ask */
+	.sh-amount {
+		position: absolute;
+		inset-inline: -1rem;
+		padding-bottom: 0.2rem;
+		transition: bottom 0.6s ease;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		color: var(--sl-color-white);
+		white-space: nowrap;
+	}
+	.cut .sh-amount {
+		color: var(--sh-cut);
+	}
+	/* 0 to 100 W, the most one port can take */
+	.sh-well {
+		position: relative;
+		width: 100%;
+		max-width: 3.5rem;
+		height: 9rem;
+		margin: 1.5rem 0 0.4rem;
+		border-bottom: 1px solid var(--sl-color-gray-4);
+	}
+	.sh-ask,
+	.sh-got {
+		position: absolute;
+		inset-inline: 0;
+		bottom: 0;
+		border-radius: 0.25rem 0.25rem 0 0;
+		transition: height 0.6s ease;
+	}
+	.sh-ask {
+		border: 1.5px dashed var(--sl-color-gray-3);
+		border-bottom: 0;
+	}
+	.sh-got {
+		background: var(--sh-got);
+		transition: height 0.6s ease, background-color 0.6s;
+	}
+	.free .sh-got {
+		background: var(--sh-free);
+	}
+	.cut .sh-got {
+		background: var(--sh-cut);
+	}
+	.sh-port {
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		color: var(--sl-color-white);
+		white-space: nowrap;
+	}
+	.sh-port .led {
+		margin-inline-end: 0.3em;
+	}
+	.sh-device {
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		line-height: 1.3;
+	}
+	.sh-budget {
+		margin-top: 1.25rem;
+	}
+	.sh-bar {
+		display: flex;
+		height: 1.75rem;
+		border: 1px solid var(--sl-color-gray-3);
+		border-radius: 0.3rem;
+		overflow: hidden;
+		background: repeating-linear-gradient(-45deg, transparent 0 6px, var(--sl-color-gray-6) 6px 12px);
+	}
+	.sh-seg {
+		display: grid;
+		place-items: center;
+		min-width: 0;
+		background: var(--sh-got);
+		border-inline-end: 2px solid var(--sl-color-gray-7, var(--sl-color-black));
+		color: var(--sl-color-black);
+		font-size: var(--sl-text-xs);
+		font-weight: 700;
+		overflow: hidden;
+		transition: width 0.6s ease, background-color 0.6s;
+	}
+	.sh-seg.free {
+		background: var(--sh-free);
+		color: var(--sl-color-white);
+	}
+	.sh-seg.cut {
+		background: var(--sh-cut);
+	}
+	.sh-total {
+		margin-top: 0.35rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sh-total span {
+		font-weight: 700;
+		color: var(--sl-color-white);
+	}
+	.sh-key {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 1rem;
+		margin-top: 0.75rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	.sh-key i {
+		display: inline-block;
+		width: 0.8em;
+		height: 0.8em;
+		margin-inline-end: 0.35em;
+		vertical-align: -0.05em;
+		border-radius: 0.15em;
+	}
+	.k-got { background: var(--sh-got); }
+	.k-free { background: var(--sh-free); }
+	.k-cut { background: var(--sh-cut); }
+	.k-ask { border: 1.5px dashed var(--sl-color-gray-3); }
+	@media (max-width: 30rem) {
+		.sh-cols { gap: 0.25rem; }
+		.sh-amount { white-space: normal; }
+		.sh-word { display: none; }
+		.sh-port .led { margin-inline-end: 0.15em; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.sh-ask, .sh-got, .sh-seg, .sh-amount { transition: none; }
+	}
+</style>

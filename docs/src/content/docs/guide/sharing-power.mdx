@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import PowerSharing from '../../../components/PowerSharing.astro';
 
 Six ports at 100 W would need a 600 W supply. Most setups never draw that
 much at once, so Power Manifold lets you use a smaller supply and shares it
@@ -45,9 +46,13 @@ device sees a new, smaller offer and switches to it without disconnecting.
 
 Nothing is switched off to save power.
 
-When power frees up, for example when another device is unplugged or
-finishes charging, the turned-down ports get it back, highest priority
-first.
+When power frees up, for example when another device is unplugged or a
+port with [switch off when charged](/power-manifold/guide/port-settings/#switching-off-when-charged)
+turns itself off, the turned-down ports get it back, highest priority
+first. A device that has finished charging but stays plugged in keeps its
+share, because it can start drawing again at any time.
+
+<PowerSharing />
 
 ## Priorities
 
