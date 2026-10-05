@@ -82,7 +82,7 @@ Its event types are:
 | `auto_off` | *Switch off once charged* or the sleep timer turned the port off. |
 | `throttled` / `restored` | The port was turned down for the budget, or got its power back. |
 | `fault` | The port shut itself off. The `text` attribute says why. |
-| `inserted` / `removed` / `ready` | A blade was seated, removed, or finished starting up. |
+| `inserted` / `removed` / `ready` | The controller found a port, lost contact with it, or the port finished starting up. |
 | `contract` | The device switched to a different voltage or current. |
 | `probe_failed` | A blade didn't respond while starting up. |
 | `updated` | The blade's firmware was updated. |
