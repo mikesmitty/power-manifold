@@ -6,12 +6,22 @@ sidebar:
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
+import Flow from '../../../components/Flow.astro';
 
 Power Manifold connects to Home Assistant through an MQTT broker. Once it
 is connected, it appears as one device with every port and setting on it,
 with nothing to write in YAML.
 
 ## Connect it
+
+<Flow
+	nodes={[
+		{ title: 'Power Manifold', detail: 'Reports every port', highlight: true },
+		{ title: 'MQTT broker', detail: 'Mosquitto add-on or any other' },
+		{ title: 'Home Assistant', detail: 'One device, every port' },
+	]}
+	links={[{ label: ['MQTT', '1883, or 8883 with TLS'], dir: 'both' }, { label: 'MQTT', dir: 'both' }]}
+/>
 
 <Steps>
 

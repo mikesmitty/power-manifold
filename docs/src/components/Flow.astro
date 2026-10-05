@@ -1,0 +1,194 @@
+---
+// A small connection diagram: boxes in a row joined by labelled arrows,
+// stacked top to bottom on a narrow screen.
+//
+// nodes: the boxes, left to right, each a title and an optional detail line.
+// links: one fewer than nodes, the arrow between each pair: a label (an
+// array for several lines) and its direction: "right" (the default),
+// "left" or "both".
+interface Node {
+	title: string;
+	detail?: string;
+	highlight?: boolean;
+}
+interface Link {
+	label: string | string[];
+	dir?: 'right' | 'left' | 'both';
+}
+interface Props {
+	nodes: Node[];
+	links: Link[];
+	caption?: string;
+}
+const { nodes, links, caption } = Astro.props;
+---
+
+<figure class="flow not-content">
+	<div class="fl-row">
+		{nodes.map((n, i) => (
+			<Fragment>
+				<div class:list={['fl-node', { 'fl-us': n.highlight }]}>
+					<strong>{n.title}</strong>
+					{n.detail && <span>{n.detail}</span>}
+				</div>
+				{i < links.length && (
+					<div class={`fl-link fl-${links[i].dir ?? 'right'}`}>
+						<span class="fl-label">
+							{[links[i].label].flat().map((l) => <span>{l}</span>)}
+						</span>
+						<span class="fl-arrow" aria-hidden="true" />
+					</div>
+				)}
+			</Fragment>
+		))}
+	</div>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+	.flow {
+		margin: 1.5rem 0;
+		container-type: inline-size;
+	}
+	.fl-row {
+		display: flex;
+		align-items: stretch;
+	}
+	.fl-node {
+		flex: 1 1 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.2rem;
+		min-width: 0;
+		padding: 0.75rem 0.85rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+		text-align: center;
+	}
+	.fl-node strong {
+		color: var(--sl-color-white);
+		font-size: var(--sl-text-sm);
+	}
+	.fl-node span {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-xs);
+		line-height: 1.4;
+	}
+	/* Power Manifold itself: its black anodised face */
+	.fl-us {
+		background: #141517;
+		border-color: #4a4d54;
+	}
+	.fl-us strong {
+		color: #f4f4f2;
+	}
+	.fl-us span {
+		color: #a9adb4;
+	}
+	.fl-link {
+		flex: 0 1 7rem;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.3rem;
+		padding: 0 0.4rem;
+	}
+	.fl-label {
+		display: flex;
+		flex-direction: column;
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-xs);
+		line-height: 1.35;
+		text-align: center;
+	}
+	/* a line with a head at one or both ends */
+	.fl-arrow {
+		position: relative;
+		height: 2px;
+		margin: 0 0.15rem;
+		background: var(--sl-color-accent);
+	}
+	.fl-arrow::before,
+	.fl-arrow::after {
+		content: '';
+		position: absolute;
+		top: 50%;
+		width: 0;
+		height: 0;
+		border-block: 5px solid transparent;
+		translate: 0 -50%;
+	}
+	.fl-right .fl-arrow::after,
+	.fl-both .fl-arrow::after {
+		right: -2px;
+		border-left: 8px solid var(--sl-color-accent);
+	}
+	.fl-left .fl-arrow::before,
+	.fl-both .fl-arrow::before {
+		left: -2px;
+		border-right: 8px solid var(--sl-color-accent);
+	}
+	.flow figcaption {
+		margin-top: 0.5rem;
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+		text-align: center;
+	}
+
+	/* A box with no detail needs only the room its title takes */
+	.fl-node:not(:has(span)) {
+		flex: 0 0 auto;
+	}
+
+	/* Narrow: boxes top to bottom, arrows turned to point down (or up) */
+	@container (max-width: 30rem) {
+		.fl-row {
+			flex-direction: column;
+		}
+		.fl-node:not(:has(span)) {
+			padding-block: 0.5rem;
+		}
+		.fl-link {
+			flex: none;
+			flex-direction: row-reverse;
+			justify-content: center;
+			align-items: center;
+			gap: 0.75rem;
+			padding: 0.4rem 0;
+		}
+		.fl-label {
+			flex: 1;
+			text-align: start;
+		}
+		.fl-arrow {
+			flex: none;
+			width: 2px;
+			height: 2.25rem;
+			margin: 0.15rem 0;
+			margin-inline-start: calc(50% - 1px);
+		}
+		.fl-arrow::before,
+		.fl-arrow::after {
+			top: auto;
+			left: 50%;
+			right: auto;
+			border-block: 0;
+			border-inline: 5px solid transparent;
+			translate: -50% 0;
+		}
+		.fl-right .fl-arrow::after,
+		.fl-both .fl-arrow::after {
+			bottom: -2px;
+			border-left: 5px solid transparent;
+			border-top: 8px solid var(--sl-color-accent);
+		}
+		.fl-left .fl-arrow::before,
+		.fl-both .fl-arrow::before {
+			top: -2px;
+			border-right: 5px solid transparent;
+			border-bottom: 8px solid var(--sl-color-accent);
+		}
+	}
+</style>

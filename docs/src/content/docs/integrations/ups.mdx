@@ -5,11 +5,22 @@ sidebar:
   order: 4
 ---
 
+import Flow from '../../../components/Flow.astro';
+
 Power Manifold can run from a Mean Well **LAD-xxxU** security power supply,
 which charges a battery and switches to it when mains power fails. Only
 the models ending in **U** have the serial port Power Manifold needs.
 
 ## Connecting it
+
+<Flow
+	nodes={[
+		{ title: 'Mains' },
+		{ title: 'Mean Well LAD-xxxU', detail: 'Runs from its battery when mains fails' },
+		{ title: 'Power Manifold', detail: 'Shows mains and battery', highlight: true },
+	]}
+	links={[{ label: 'AC' }, { label: ['24 V to the XT60', 'CN2 to the UPS header'] }]}
+/>
 
 Connect the supply's 24 V output to the chassis XT60 input as usual. Then
 connect the supply's serial port (on its CN2 header) to the controller

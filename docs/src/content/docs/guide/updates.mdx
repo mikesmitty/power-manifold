@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
+import Flow from '../../../components/Flow.astro';
 
 Power Manifold checks for new firmware once a day. It never installs an
 update on its own. You decide when.
@@ -63,6 +64,15 @@ signed by this project, built for this hardware, and not older than what
 it is running. Because of that, the download doesn't need to be encrypted.
 Updates come from `fw.powermanifold.io`, which serves the project's GitHub
 releases.
+
+<Flow
+	nodes={[
+		{ title: 'GitHub releases', detail: 'Signed by the project' },
+		{ title: 'fw.powermanifold.io', detail: 'Passes them on' },
+		{ title: 'Power Manifold', detail: 'Checks daily, installs when you say', highlight: true },
+	]}
+	links={[{ label: 'HTTPS' }, { label: ['HTTP', 'signature checked'] }]}
+/>
 
 <Aside type="note">
 To stop the daily check, clear **Update source** in the web page's
