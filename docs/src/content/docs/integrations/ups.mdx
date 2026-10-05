@@ -1,11 +1,22 @@
 ---
 title: UPS power supply
-description: Run Power Manifold from a Mean Well LAD-U battery-backed supply and see mains and battery status in Home Assistant.
+description: Unofficial support for running Power Manifold from a Mean Well LAD-U battery-backed supply and seeing mains and battery status in Home Assistant.
 sidebar:
   order: 4
+  badge:
+    text: Unofficial
+    variant: caution
 ---
 
+import { Aside } from '@astrojs/starlight/components';
 import Flow from '../../../components/Flow.astro';
+
+<Aside type="caution" title="Unofficial">
+The firmware supports a UPS supply, but the chassis has no way to bring
+the supply's serial lead in to the controller card. Connecting one means
+opening the case, which isn't supported. UPS support has also only been
+tested against a simulated supply, not a real LAD unit.
+</Aside>
 
 Power Manifold can run from a Mean Well **LAD-xxxU** security power supply,
 which charges a battery and switches to it when mains power fails. Only
@@ -46,8 +57,3 @@ down your Raspberry Pis gracefully before the battery runs out.
 
 The UPS entities appear only once a supply answers. A chassis without one
 shows none.
-
-:::note
-UPS support has been tested against a simulated supply only, not yet a real
-LAD unit.
-:::
