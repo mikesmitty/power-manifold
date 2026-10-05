@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.2.0...charger-module-firmware-v0.3.0) (2026-10-05)
+
+
+### Features
+
+* **charger-module:** warn the sink before an over-temperature trip ([5422a0c](https://github.com/mikesmitty/power-manifold/commit/5422a0c8a16bb47b572f93d634629f14ef0e0f2d))
+
 ## [0.2.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.1.0...charger-module-firmware-v0.2.0) (2026-10-01)
 
 
