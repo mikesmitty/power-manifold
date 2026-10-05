@@ -44,8 +44,10 @@ static uint32_t pulse(uint32_t now_ms, uint32_t period_ms) {
     return 30 + (225 * v) / half;
 }
 
+// A 5 or 9 V contract shows blue, 12 V and up green. The line sits at 11 V,
+// halfway between the two fixed PDOs either side of it.
 static led_rgb_t active_colour(const port_telemetry_t *p) {
-    return p->bus_mv >= 19000 ? COL_GREEN : COL_BLUE;
+    return p->bus_mv >= 11000 ? COL_GREEN : COL_BLUE;
 }
 
 // Per-slot state colour at full brightness; *level is the 0-255 modulation

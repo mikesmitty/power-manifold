@@ -39,8 +39,8 @@ static void test_port_state_colours(void) {
     reset(255);
     set_port(0, PORT_STATE_ABSENT, 0);
     set_port(1, PORT_STATE_IDLE, 0);
-    set_port(2, PORT_STATE_ACTIVE, 5000);
-    set_port(3, PORT_STATE_ACTIVE, 20000);
+    set_port(2, PORT_STATE_ACTIVE, 9000);
+    set_port(3, PORT_STATE_ACTIVE, 12000);
     set_port(4, PORT_STATE_DISABLED, 0);
     set_port(5, PORT_STATE_FAULT, 0);
     render(0);
@@ -49,8 +49,8 @@ static void test_port_state_colours(void) {
     MT_ASSERT_EQ(PX(1).r, 255); // white
     MT_ASSERT_EQ(PX(1).g, 255);
     MT_ASSERT_EQ(PX(1).b, 255);
-    MT_ASSERT(PX(2).b == 255 && PX(2).r == 0); // blue below 19 V
-    MT_ASSERT(PX(3).g == 220 && PX(3).r == 0 && PX(3).b < PX(3).g); // green at 20 V
+    MT_ASSERT(PX(2).b == 255 && PX(2).r == 0); // blue at 9 V, the last PDO under the 11 V line
+    MT_ASSERT(PX(3).g == 220 && PX(3).r == 0 && PX(3).b < PX(3).g); // green at 12 V, the first above it
     MT_ASSERT(dark(PX(4)));
     MT_ASSERT(PX(5).r == 255 && PX(5).g == 0 && PX(5).b == 0); // fault, blink on
     render(100); // 5 Hz: off in the second half of each 200 ms
