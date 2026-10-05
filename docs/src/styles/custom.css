@@ -66,17 +66,19 @@
 	vertical-align: -0.05em;
 	margin-inline-end: 0.35em;
 }
+/* Slower and shallower than the real lights, so the table stays readable:
+   a blink dims to 40 % once a second, a pulse breathes to 50 % over two. */
 .led.blink {
-	animation: led-blink 0.5s steps(1) infinite;
+	animation: led-blink 1s steps(1) infinite;
 }
 .led.pulse {
-	animation: led-pulse 1s ease-in-out infinite;
+	animation: led-pulse 2s ease-in-out infinite;
 }
 @keyframes led-blink {
-	50% { opacity: 0.15; }
+	50% { opacity: 0.4; }
 }
 @keyframes led-pulse {
-	50% { opacity: 0.35; }
+	50% { opacity: 0.5; }
 }
 @media (prefers-reduced-motion: reduce) {
 	.led.blink, .led.pulse { animation: none; }
