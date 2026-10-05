@@ -92,7 +92,7 @@ jobs:
             lib/cyw43-driver lib/lwip lib/mbedtls lib/tinyusb lib/btstack
 
       # The gen-3 blade firmware first: the controller carries its image and
-      # programs blades with it (firmware/controller/README.md, "Blade
+      # programs blades with it (firmware/controller/docs/flash-and-updates.md, "Blade
       # firmware updates"). Same cross toolchain; CMSIS and ST's USB-PD stack
       # are fetched by its CMake at pinned tags.
       - name: Build blade firmware

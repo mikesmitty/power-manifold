@@ -3,11 +3,12 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
+    "dev": "npm run sync && astro dev",
+    "start": "npm run sync && astro dev",
+    "build": "npm run sync && astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "sync": "node scripts/sync-firmware-docs.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.0",

@@ -1,0 +1,73 @@
+# Serial console
+
+The controller's maintenance console: every setting and action the web page,
+the API and MQTT offer, plus bench tools for the backplane bus.
+
+## Reaching it
+
+USB CDC at 115200 from any serial terminal, or RTT through a debug probe.
+On the controller card the USB connection is an unpopulated header, so the
+console is a bench and development tool rather than something an owner
+reaches for; everything an owner needs is on the
+[web page](https://mikesmitty.github.io/power-manifold/guide/web-page/) and over
+[Home Assistant](https://mikesmitty.github.io/power-manifold/guide/home-assistant/).
+
+A console-only first setup looks like this:
+
+```
+wifi <ssid> <password>
+mqtt <broker-host> [port user pass]
+name pwrman
+token <t>
+save
+reboot
+```
+
+## Commands
+
+`help` prints the list; on a fake-blade build `sim` adds the fault injection
+commands described in [Building](building.md#fake-blade-mode-no-backplane-needed).
+
+| Command | Purpose |
+| --- | --- |
+| `status` | port table (state — `upd NN%` while a blade is being written — contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged, a gen-3 blade's `conv` and `plug` temperatures) and chassis power |
+| `info` | firmware, slot and boot reason, links, addressing and time server, UPS supply, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
+| `wifi <ssid> [pass]` | WiFi credentials |
+| `improv [on\|off]` | BLE provisioning window |
+| `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
+| `mqtt tls on\|off\|unverified` | TLS to the broker, verified against the installed certificate or the built-in Let's Encrypt roots |
+| `mqtt ca` / `mqtt ca clear` | the installed broker certificate (install one from the page or the API) |
+| `ip dhcp` / `ip static <addr> <mask> <gw>` | addressing: the wired link if a W6100 is fitted, else WiFi |
+| `dns <addr>\|auto` | resolver override |
+| `ntp <host>\|auto` | time server override |
+| `syslog <host> [port]` / `syslog off` | mirror the console to a UDP syslog host |
+| `name <device-name>` | hostname and topic id |
+| `token <t>\|clear` | API bearer token |
+| `budget <watts>` | chassis power budget |
+| `port <n> on\|off\|reset\|srccap\|update` | port control; `update` writes the bundled gen-3 blade firmware over whatever the blade runs |
+| `port <n> priority <0-255>` | 0 = highest; sheds from the bottom |
+| `port <n> name <text>\|clear` | label for the web UI and Home Assistant |
+| `port <n> limit <500-5000>` | advertised current ceiling in mA, every PDO |
+| `port <n> volt 5\|9\|12\|15\|20` | voltage cap: the highest PDO advertised (20 = the whole table) |
+| `port <n> boot on\|off\|last` | state at power-up |
+| `port <n> autooff on\|off` | switch off once the sink is charged |
+| `port <n> sleep <min>\|off` | switch off this long after a sink attaches |
+| `charged <mW> <minutes>` | charge-complete thresholds; 0 mW switches detection off |
+| `blades [auto on\|off \| bootopt on\|off \| watch <s>\|off]` | the bundled gen-3 blade firmware and the update policy (see [Blade firmware updates](flash-and-updates.md#blade-firmware-updates)) |
+| `fan on\|off\|auto [on_w off_w [on_ma]]` | fan policy |
+| `led <0-255>`, `led boot white\|rainbow` | LED brightness and power-up sweep |
+| `led dim <0-255>`, `led night <HH:MM> <HH:MM>\|off`, `led idle <minutes>\|off` | dimmed level, night window, idle dimming |
+| `tz <+HH:MM\|-HH:MM>` | local time offset for the night window |
+| `faults [clear]` | persistent fault log |
+| `ups [buzzer on\|off]` | UPS supply readings, status bits, per-block voltages and link counters; `buzzer off` silences its alarm until the supply restarts |
+| `vin [cal <volts>\|cal reset]` | DC bus voltage with the raw count and gain trim; `cal 24.13` trims the reading to a meter's (then `save`) |
+| `button [short\|long]` | front-panel button input and state; `short` (wake the chain) / `long` (open BLE) act as if it had been pressed |
+| `export` | every setting as JSON, without passwords |
+| `update [--unsigned] [--downgrade] <http-url>\|latest` | OTA pull into the inactive slot, `latest` being the newest release the controller knows of; the flags let in an unsigned or an older image, which only this console can do |
+| `update check`, `update source <http-url>\|default\|off` | ask the update source for the newest release now; set where the daily check asks, or stop it asking (then `save`) |
+| `stack` | per-core stack high-water marks |
+| `i2c scan <ch\|none>`, `i2c read <ch> <addr> <reg> [n]`, `i2c write <ch> <addr> <reg> <val>`, `i2c en <port> on\|off` | bench access to the backplane bus, run on the engine core: scan a mux channel (`none` = the upstream side), read or write a register, drive a blade's EN; a healthy blade segment answers `0x40 0x61 0x70 0x74` |
+| `save`, `defaults`, `reboot`, `bootsel` | settings and lifecycle |
+
+What is typed at the console is never mirrored to the log ring or a syslog
+host, so a `wifi` or `mqtt` line's password stays off the wire.

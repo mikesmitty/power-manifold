@@ -14,9 +14,9 @@
 //
 // Nothing here has to be trusted: the controller installs an image only when
 // its signature checks out and it is no older than what it runs
-// (firmware/controller/README.md, "Signed updates"). The Worker serves these
-// assets of this one repository and nothing else, so it is no use as a
-// general proxy.
+// (firmware/controller/docs/flash-and-updates.md, "Signed updates"). The
+// Worker serves these assets of this one repository and nothing else, so it
+// is no use as a general proxy.
 
 const REPO = "mikesmitty/power-manifold";
 const TAG_PREFIX = "controller-firmware-v";
