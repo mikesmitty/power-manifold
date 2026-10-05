@@ -18,32 +18,31 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Power Manifold powers a stack of Raspberry Pis, mini PCs, phones and
 laptops from one DC power supply. Each of its six USB-C ports talks USB
 Power Delivery, so every device gets the voltage it asks for, and a
 controller inside keeps track of all of them.
 
-<CardGrid stagger>
-	<Card title="Six ports, up to 100 W each" icon="puzzle">
-		Each port offers 5, 9, 12, 15 and 20 V plus PPS, and up to 5 A with a
-		5 A cable.
-	</Card>
-	<Card title="Shares power sensibly" icon="random">
-		Tell it how big your power supply is and which ports matter most. When
-		devices ask for more than the supply can give, the least important
-		ports are turned down. Nothing is switched off.
-	</Card>
-	<Card title="Works with Home Assistant" icon="star">
-		Every port shows up with its power, an on/off switch and its settings,
-		ready for dashboards, the energy panel and automations.
-	</Card>
-	<Card title="Status at a glance" icon="information">
-		A light under each port shows what it is doing, and the built-in web
-		page shows live power for every port.
-	</Card>
-</CardGrid>
+<div class="features">
+	<div class="feature">
+		<h3>Six ports, up to 100 W each</h3>
+		<p>Each port offers 5, 9, 12, 15 and 20 V plus PPS, and up to 5 A with a 5 A cable.</p>
+	</div>
+	<div class="feature">
+		<h3>Shares power sensibly</h3>
+		<p>Tell it how big your power supply is and which ports matter most. When devices ask for more than the supply can give, the least important ports are turned down. Nothing is switched off.</p>
+	</div>
+	<div class="feature">
+		<h3>Works with Home Assistant</h3>
+		<p>Every port shows up with its power, an on/off switch and its settings, ready for dashboards, the energy panel and automations.</p>
+	</div>
+	<div class="feature">
+		<h3>Status at a glance</h3>
+		<p>A light under each port shows what it is doing, and the built-in web page shows live power for every port.</p>
+	</div>
+</div>
 
 ## Where to go next
 

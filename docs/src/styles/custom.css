@@ -1,13 +1,58 @@
-/* Accent: a warm amber that echoes the idle port light. */
+/* Accent: a calm blue on Starlight's neutral greys. */
 :root {
-	--sl-color-accent-low: #3b2606;
-	--sl-color-accent: #c77a12;
-	--sl-color-accent-high: #f6d39b;
+	--sl-color-accent-low: #1a2a44;
+	--sl-color-accent: #5b9cf5;
+	--sl-color-accent-high: #8dbbf8;
 }
 :root[data-theme='light'] {
-	--sl-color-accent-low: #fbe7c6;
-	--sl-color-accent: #a35f00;
-	--sl-color-accent-high: #4a2c02;
+	--sl-color-accent-low: #e3edfc;
+	--sl-color-accent: #2563c9;
+	--sl-color-accent-high: #163d7c;
+}
+
+/* The current sidebar page: a soft tint rather than a solid block. */
+.sidebar-content a[aria-current='page'] {
+	background: var(--sl-color-accent-low);
+	color: var(--sl-color-accent-high);
+}
+
+/* Home page feature tiles: an even grid, all alike. */
+.features {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 1rem;
+}
+@media (max-width: 40rem) {
+	.features { grid-template-columns: 1fr; }
+}
+.sl-markdown-content .features > * {
+	margin: 0;
+}
+.feature {
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.5rem;
+	padding: 1rem 1.25rem;
+	background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+}
+.sl-markdown-content .feature h3 {
+	margin: 0 0 0.35rem;
+	font-size: var(--sl-text-lg);
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+.feature h3::before {
+	content: '';
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 50%;
+	background: var(--sl-color-accent);
+	flex: none;
+}
+.sl-markdown-content .feature p {
+	margin: 0;
+	color: var(--sl-color-gray-2);
+	font-size: var(--sl-text-sm);
 }
 
 /* A port-light swatch: <span class="led" style="--led: #2f7cf6"></span> */
