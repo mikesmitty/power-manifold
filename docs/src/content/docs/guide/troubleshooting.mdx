@@ -15,8 +15,8 @@ When something needs attention, Power Manifold says so in several places:
   port table;
 - the **Problem** sensor in Home Assistant, whose `detail` attribute says
   what is wrong;
-- the port lights: a red, fast-blinking light for a port that faulted, and a
-  white streak across all ports when there's no network.
+- the lights: a red, fast-blinking light for a port that faulted, and the
+  chassis light breathing white when there's no network.
 
 The web page's **Fault log** keeps a history, so you can see what happened
 while you weren't looking.
@@ -82,8 +82,8 @@ on again. If that doesn't help, switch the power supply off and on again.
 
 ## No network
 
-A white streak crossing the port lights means the controller has no network
-address.
+The chassis light, left of port 1, breathing white means the controller has
+no network address.
 
 - **Wi-Fi:** check that the network is up. After five minutes off the
   network the controller opens Bluetooth, so you can

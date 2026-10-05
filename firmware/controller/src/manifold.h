@@ -118,7 +118,7 @@ typedef enum {
     CMD_FAN_AUTO,        // hand the fan back to the engine's auto policy
     CMD_LED_BRIGHTNESS,  // arg = 0-255
     CMD_LED_IDENTIFY,    // arg = ms: flash the whole chain (Improv identify)
-    CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags overlaid on the chain
+    CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags shown on the chassis light
     CMD_PORT_LIMIT,      // port, arg = mA: new advertised current ceiling (g_settings already holds it)
     CMD_PORT_VOLT,       // port, arg = mV: new voltage cap (g_settings already holds it)
     CMD_LED_HOLD,        // arg = 0-255: front-button hold progress shown on the chain (led_pattern.h)
@@ -155,8 +155,8 @@ typedef enum {
 #define PORT_BOOT_OFF  1 // disabled until switched on
 #define PORT_BOOT_LAST 2 // whatever it was last switched to
 
-// CMD_LED_CHASSIS flags: core 0's view of the management plane, shown as a
-// comet crossing the chain (see engine/led_pattern.h)
+// CMD_LED_CHASSIS flags: core 0's view of the management plane, shown on the
+// chassis light at the head of the chain (see engine/led_pattern.h)
 #define LED_CHASSIS_BLE_OPEN   (1u << 0) // Improv provisioning window open: blue
 #define LED_CHASSIS_NET_DOWN   (1u << 1) // no link holds an address: white
 #define LED_CHASSIS_SETUP_OPEN (1u << 2) // settings open for first-time setup, no API token yet: magenta

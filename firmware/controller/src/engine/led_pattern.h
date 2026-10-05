@@ -5,23 +5,25 @@
 
 #include "manifold.h"
 
-// Status LED patterns for the backplane chain, one pixel per slot. This is
-// the whole colour policy, kept free of hardware so the host suite can pin
-// it; leds.c owns the PIO and just pushes what this renders.
+// Status LED patterns for the front-panel light bar: the chassis light
+// first in the chain, then one pixel per slot. This is the whole colour
+// policy, kept free of hardware so the host suite can pin it; leds.c owns
+// the PIO and just pushes what this renders.
 //
 // Layers, highest priority first:
 //   hold       the front-panel button held past its long-press point: the
 //              chain fills in blue toward the factory reset, all red as it
 //              fires (button.h); above everything, the user is at the box
 //   ack        a short press registered: the whole chain white for a moment
-//   identify   Improv "which box is this": blue halves alternating at 2 Hz
-//   boot       one-shot sweep 1..6 at power-up (white or rainbow) — doubles
-//              as a chain-order check on a fresh chassis
-//   comet      chassis condition overlay: a two-pixel comet crosses the
-//              chain once every LED_COMET_PERIOD_MS, blue while the BLE
-//              provisioning window is open, magenta while settings are open
-//              for first-time setup (no API token yet), white while no link
-//              has an address; port colours stay visible underneath
+//   identify   Improv "which box is this": alternate pixels blue, swapping
+//              at 2 Hz
+//   boot       one-shot sweep along the chain at power-up (white or
+//              rainbow), the chassis light first — doubles as a
+//              chain-order check on a fresh chassis
+//   chassis    the chassis light breathes blue while the BLE provisioning
+//              window is open, magenta while settings are open for
+//              first-time setup (no API token yet), white while no link has
+//              an address; dark with nothing to report
 //   ports      per-slot state colours (spec §6.1); a sink that has finished
 //              charging shows solid magenta whatever its contract state
 //
@@ -43,11 +45,15 @@ typedef struct {
     uint32_t ack_until_ms;
 } led_view_t;
 
+// Chain order: the chassis light, then ports 1 to 6
+#define LED_PIXELS           (NUM_PORTS + 1)
+#define LED_CHASSIS_PIXEL    0
+#define LED_PORT_PIXEL(i)    ((i) + 1)                    // port index 0-5
+
 #define LED_BOOT_STEP_MS     150                          // per pixel
 #define LED_BOOT_HOLD_MS     300                          // all lit, then release
-#define LED_BOOT_SWEEP_MS    (NUM_PORTS * LED_BOOT_STEP_MS + LED_BOOT_HOLD_MS)
-#define LED_COMET_PERIOD_MS  3000
-#define LED_COMET_STEP_MS    60                           // per pixel
+#define LED_BOOT_SWEEP_MS    (LED_PIXELS * LED_BOOT_STEP_MS + LED_BOOT_HOLD_MS)
+#define LED_CHASSIS_PERIOD_MS 2000                        // one breath of the chassis light
 #define LED_FAULT_FLOOR      16                           // brightness used for faults at 0
 #define LED_IDENTIFY_FLOOR   32
 
@@ -55,4 +61,4 @@ void led_view_init(led_view_t *v, uint8_t brightness, uint8_t boot_style);
 
 // Render the chain for now_ms. Clears the view's one-shots once they expire.
 void led_pattern_render(led_view_t *v, const telemetry_t *t, uint32_t now_ms,
-                        led_rgb_t out[NUM_PORTS]);
+                        led_rgb_t out[LED_PIXELS]);

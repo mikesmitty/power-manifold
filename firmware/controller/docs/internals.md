@@ -77,14 +77,16 @@ expander itself reset and its EN pattern written straight back — see
 
 Behind the mux and the expander, port *n* (1-based wherever the firmware
 talks to a person) is mux channel *n*−1, EN on P0(*n*−1), PRSNT# on
-P1(*n*−1) and pixel *n*−1 of the chain, and the backplane wires all four
+P1(*n*−1) and pixel *n* of the light-bar chain (pixel 0 is the chassis
+light, ahead of port 1), and the backplane wires all four
 to one socket, in silkscreen order from the management socket toward the
 power input (sockets J3, J5, J7, J4, J6, J8 after the re-annotation; the
 [architecture](https://mikesmitty.github.io/power-manifold/developers/architecture/#31-slot-numbering-verified-against-the-netlist-2026-09-09)
 page has the table). Verified against the backplane netlist and layout on
 2026-09-09. Facing the front panel, port 1 is on the left next to the
-management card and port 6 on the right, each pixel below and to the right
-of its port; the power-up sweep runs left to right.
+management card and port 6 on the right, each light above its port with the
+chassis light left of port 1; the power-up sweep runs left to right from the
+chassis light.
 
 ## Blade generations
 

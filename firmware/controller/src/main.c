@@ -148,7 +148,7 @@ int main(void) {
             mqtt_names_changed(); // re-run discovery: the UPS entities come and go with it
         }
 
-        // chassis conditions the LED chain overlays as a comet (led_pattern.h)
+        // chassis conditions shown on the chassis light (led_pattern.h)
         uint8_t led_flags = (uint8_t)((improv_active() ? LED_CHASSIS_BLE_OPEN : 0) |
                                       (http_setup_open(now_ms) ? LED_CHASSIS_SETUP_OPEN : 0) |
                                       (net_up() ? 0 : LED_CHASSIS_NET_DOWN));

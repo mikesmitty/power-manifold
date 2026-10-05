@@ -14,7 +14,8 @@ import FrontPanel from '../../../components/FrontPanel.astro';
 
 Facing the front, the Ethernet port and the button are on the far left. The
 six USB-C ports follow, numbered **1 to 6 from left to right**. Each port
-has a status light above its number.
+has a status light above its number, and the chassis light to the left of
+port 1 speaks for the controller as a whole.
 
 The light belongs to the slot, not the blade, so it still tells you
 something when the slot is empty.
@@ -33,21 +34,26 @@ something when the slot is empty.
 | <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The port shut itself off because of a fault. It tries again after 5 seconds. See [Troubleshooting](/power-manifold/guide/troubleshooting/#a-port-blinks-red). |
 | Off | The port is switched off. |
 
-## Lights across all ports
+## The chassis light
 
-Some patterns run across the whole row of lights:
+The chassis light is off while the controller has nothing to report. When
+it does, the light breathes slowly in one colour. If more than one applies,
+it shows the first in this table:
 
-- **A sweep from left to right** at power-up. It also confirms that every
-  light is working.
-- **A blue streak** crossing the row every few seconds: the controller is
-  waiting for [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/).
-- **A magenta streak** crossing the row every few seconds: the controller
-  has no API token yet and its settings are open for
-  [first-time setup](/power-manifold/setup/first-time-setup/). It stops
-  when you save a token.
-- **A white streak** crossing the row every few seconds: the controller has
-  no network connection.
-- **The two halves flashing blue**: someone pressed **Identify** during
+| Light | Meaning |
+| --- | --- |
+| <span class="led pulse" style="--led:#3b82f6;animation-duration:2s"></span>Blue, breathing | The controller is waiting for [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/). |
+| <span class="led pulse" style="--led:#d946ef;animation-duration:2s"></span>Magenta, breathing | The controller has no API token yet and its settings are open for [first-time setup](/power-manifold/setup/first-time-setup/). It stops when you save a token. |
+| <span class="led pulse" style="--led:#e8e8e8;animation-duration:2s"></span>White, breathing | The controller has no network connection. |
+| Off | Nothing to report. |
+
+## Lights across the whole row
+
+Some patterns run across all seven lights:
+
+- **A sweep from left to right** at power-up, starting with the chassis
+  light. It also confirms that every light is working.
+- **Every other light flashing blue**: someone pressed **Identify** during
   Wi-Fi setup to find this unit.
 
 ## Brightness and dimming
@@ -80,10 +86,10 @@ you hold it:
 | **Hold 3 seconds**, then let go | Opens Bluetooth for ten minutes so you can [change Wi-Fi](/power-manifold/setup/wifi-provisioning/#changing-wi-fi-later). |
 | **Hold 10 seconds** | **Factory reset.** Erases all settings and the fault log, then restarts. |
 
-From 3 seconds on, the lights fill up in blue, one port at a time, as a
-warning. If you let go while they are filling, you get the Bluetooth
-window and nothing is erased. When all six are lit they turn red, and the
-reset happens without waiting for you to let go.
+From 3 seconds on, the lights fill up in blue from left to right, one
+light at a time, as a warning. If you let go while they are filling, you
+get the Bluetooth window and nothing is erased. When all seven are lit they
+turn red, and the reset happens without waiting for you to let go.
 
 <Aside type="caution">
 A factory reset erases your Wi-Fi details, API token, port names and every

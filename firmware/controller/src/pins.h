@@ -18,7 +18,7 @@
 #ifdef PWRMAN_CONTROLLER_CARD
 // hardware/controller, from the KiCad netlist (2026-09-09)
 #define PIN_EXP_RST_N   1  // TCA9539 reset, via Q1 (2N7002, 100k gate pull-down)
-#define PIN_LED_DATA    2  // WS2812C chain on backplane (6 pixels), via PIO
+#define PIN_LED_DATA    2  // WS2812C light bar (7 pixels) through the backplane, via PIO
 #define PIN_I2C_SDA     4  // I2C0 to backplane; 4.7k to 3.3 V on the card (R32)
 #define PIN_I2C_SCL     5  // 4.7k to 3.3 V on the card (R41)
 #define PIN_EXP_INT_N   6  // TCA9539 INT#: blade presence change (internal pull-up)
@@ -35,7 +35,7 @@
 #define RST_ASSERTED_LEVEL 1
 #else
 // Pico 2 W on the pcie-breakout: the breakout header's pins, push-pull
-#define PIN_LED_DATA    2  // WS2812C chain on backplane (6 pixels), via PIO
+#define PIN_LED_DATA    2  // WS2812C light bar (7 pixels) through the backplane, via PIO
 #define PIN_ALERT_N     3  // GLOBAL_ALERT#: wire-OR of all blade ALERT# lines
 #define PIN_I2C_SDA     4  // I2C0 to backplane (TCA9548A + TCA9539 upstream side)
 #define PIN_I2C_SCL     5

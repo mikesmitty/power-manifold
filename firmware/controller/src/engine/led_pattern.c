@@ -11,9 +11,10 @@ static const led_rgb_t COL_GREEN   = {0, 220, 40};
 static const led_rgb_t COL_RED     = {255, 0, 0};
 static const led_rgb_t COL_MAGENTA = {255, 0, 200};
 
-// Boot sweep hues, one per slot, so the rainbow reads left to right
-static const led_rgb_t RAINBOW[NUM_PORTS] = {
-    {255, 0, 0}, {255, 140, 0}, {220, 220, 0}, {0, 200, 40}, {0, 90, 255}, {170, 0, 255},
+// Boot sweep hues, one per pixel, so the rainbow reads left to right
+static const led_rgb_t RAINBOW[LED_PIXELS] = {
+    {255, 0, 0}, {255, 140, 0}, {220, 220, 0}, {0, 200, 40},
+    {0, 160, 220}, {0, 50, 255}, {170, 0, 255},
 };
 
 void led_view_init(led_view_t *v, uint8_t brightness, uint8_t boot_style) {
@@ -78,17 +79,17 @@ static led_rgb_t port_colour(const port_telemetry_t *p, uint32_t now_ms, uint32_
 }
 
 static void render_ports(const led_view_t *v, const telemetry_t *t, uint32_t now_ms,
-                         led_rgb_t out[NUM_PORTS]) {
+                         led_rgb_t out[LED_PIXELS]) {
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t->port[i];
         uint32_t level;
         led_rgb_t c = port_colour(p, now_ms, &level);
         uint32_t bright = v->brightness;
         if (bright == 0) {
-            if (p->state != PORT_STATE_FAULT) { out[i] = COL_OFF; continue; }
+            if (p->state != PORT_STATE_FAULT) { out[LED_PORT_PIXEL(i)] = COL_OFF; continue; }
             bright = LED_FAULT_FLOOR;
         }
-        out[i] = scale(scale(c, level, 255), bright, 255);
+        out[LED_PORT_PIXEL(i)] = scale(scale(c, level, 255), bright, 255);
     }
 }
 
@@ -96,15 +97,15 @@ static void render_ports(const led_view_t *v, const telemetry_t *t, uint32_t now
 // blue as the hold approaches the factory reset (release meanwhile opens
 // the BLE window, hence blue), the whole chain red as it fires. Shown even
 // on a dimmed chain: whoever is holding the button is looking at it.
-static bool render_hold(const led_view_t *v, led_rgb_t out[NUM_PORTS]) {
+static bool render_hold(const led_view_t *v, led_rgb_t out[LED_PIXELS]) {
     if (!v->hold) return false;
     uint32_t bright = v->brightness < LED_IDENTIFY_FLOOR ? LED_IDENTIFY_FLOOR : v->brightness;
     if (v->hold == 255) {
-        for (int i = 0; i < NUM_PORTS; i++) out[i] = scale(COL_RED, bright, 255);
+        for (int i = 0; i < LED_PIXELS; i++) out[i] = scale(COL_RED, bright, 255);
         return true;
     }
-    uint32_t span = (uint32_t)v->hold * NUM_PORTS; // 0..254*6, 255 per pixel
-    for (int i = 0; i < NUM_PORTS; i++) {
+    uint32_t span = (uint32_t)v->hold * LED_PIXELS; // 0..254*7, 255 per pixel
+    for (int i = 0; i < LED_PIXELS; i++) {
         uint32_t start = (uint32_t)i * 255;
         uint32_t part = span <= start ? 0 : span - start > 255 ? 255 : span - start;
         out[i] = scale(scale(COL_BLUE, part, 255), bright, 255);
@@ -114,33 +115,33 @@ static bool render_hold(const led_view_t *v, led_rgb_t out[NUM_PORTS]) {
 
 // A short press registered: every pixel white, briefly, at least at the
 // identify floor so a dark chain answers too.
-static bool render_ack(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]) {
+static bool render_ack(led_view_t *v, uint32_t now_ms, led_rgb_t out[LED_PIXELS]) {
     if (!v->ack_pending) return false;
     if ((int32_t)(now_ms - v->ack_until_ms) >= 0) {
         v->ack_pending = false;
         return false;
     }
     uint32_t bright = v->brightness < LED_IDENTIFY_FLOOR ? LED_IDENTIFY_FLOOR : v->brightness;
-    for (int i = 0; i < NUM_PORTS; i++) out[i] = scale(COL_WHITE, bright, 255);
+    for (int i = 0; i < LED_PIXELS; i++) out[i] = scale(COL_WHITE, bright, 255);
     return true;
 }
 
-static bool render_identify(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]) {
+static bool render_identify(led_view_t *v, uint32_t now_ms, led_rgb_t out[LED_PIXELS]) {
     if (!v->identify_pending) return false;
     if ((int32_t)(now_ms - v->identify_until_ms) >= 0) {
         v->identify_pending = false;
         return false;
     }
-    // alternate halves of the chain in blue, 2 Hz: unlike any port state
+    // alternate pixels in blue, swapping at 2 Hz: unlike any port state
     uint32_t bright = v->brightness < LED_IDENTIFY_FLOOR ? LED_IDENTIFY_FLOOR : v->brightness;
-    for (int i = 0; i < NUM_PORTS; i++) {
+    for (int i = 0; i < LED_PIXELS; i++) {
         bool lit = ((now_ms / 250) + (uint32_t)i) & 1;
         out[i] = lit ? scale(COL_BLUE, bright, 255) : COL_OFF;
     }
     return true;
 }
 
-static bool render_boot(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]) {
+static bool render_boot(led_view_t *v, uint32_t now_ms, led_rgb_t out[LED_PIXELS]) {
     if (!v->boot_pending) return false;
     uint32_t elapsed = now_ms - v->boot_start_ms;
     if (elapsed >= LED_BOOT_SWEEP_MS) {
@@ -148,11 +149,11 @@ static bool render_boot(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]
         return false;
     }
     if (v->brightness == 0) { // dark rack: skip the show, keep the timing
-        for (int i = 0; i < NUM_PORTS; i++) out[i] = COL_OFF;
+        for (int i = 0; i < LED_PIXELS; i++) out[i] = COL_OFF;
         return true;
     }
     uint32_t reached = elapsed / LED_BOOT_STEP_MS; // pixels 0..reached are lit
-    for (int i = 0; i < NUM_PORTS; i++) {
+    for (int i = 0; i < LED_PIXELS; i++) {
         if ((uint32_t)i > reached) { out[i] = COL_OFF; continue; }
         led_rgb_t c = v->boot_style == LED_BOOT_RAINBOW ? RAINBOW[i] : COL_WHITE;
         out[i] = scale(c, v->brightness, 255);
@@ -160,7 +161,10 @@ static bool render_boot(led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]
     return true;
 }
 
-static void overlay_comet(const led_view_t *v, uint32_t now_ms, led_rgb_t out[NUM_PORTS]) {
+// The chassis light, ahead of port 1: it breathes in the colour of the most
+// pressing management-plane condition and stays dark with nothing to report.
+static void render_chassis(const led_view_t *v, uint32_t now_ms, led_rgb_t out[LED_PIXELS]) {
+    out[LED_CHASSIS_PIXEL] = COL_OFF;
     if (v->brightness == 0) return;
     led_rgb_t c;
     // The actionable conditions come first: Bluetooth open, then settings
@@ -169,19 +173,16 @@ static void overlay_comet(const led_view_t *v, uint32_t now_ms, led_rgb_t out[NU
     else if (v->chassis & LED_CHASSIS_SETUP_OPEN) c = COL_MAGENTA;
     else if (v->chassis & LED_CHASSIS_NET_DOWN) c = COL_WHITE;
     else return;
-    uint32_t ph = now_ms % LED_COMET_PERIOD_MS;
-    uint32_t head = ph / LED_COMET_STEP_MS;
-    if (head >= NUM_PORTS) return; // between passes
-    out[head] = scale(c, v->brightness, 255);
-    if (head > 0) out[head - 1] = scale(out[head], 1, 3); // short tail
+    uint32_t level = pulse(now_ms, LED_CHASSIS_PERIOD_MS);
+    out[LED_CHASSIS_PIXEL] = scale(scale(c, level, 255), v->brightness, 255);
 }
 
 void led_pattern_render(led_view_t *v, const telemetry_t *t, uint32_t now_ms,
-                        led_rgb_t out[NUM_PORTS]) {
+                        led_rgb_t out[LED_PIXELS]) {
     if (render_hold(v, out)) return;
     if (render_ack(v, now_ms, out)) return;
     if (render_identify(v, now_ms, out)) return;
     if (render_boot(v, now_ms, out)) return;
+    render_chassis(v, now_ms, out);
     render_ports(v, t, now_ms, out);
-    overlay_comet(v, now_ms, out);
 }

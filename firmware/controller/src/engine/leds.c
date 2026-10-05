@@ -6,7 +6,7 @@
 #include "pins.h"
 #include "ws2812.pio.h"
 
-// PIO writer for the backplane chain. The colour policy lives in
+// PIO writer for the light-bar chain. The colour policy lives in
 // led_pattern.c (hardware-free, host-tested); this file only keeps the view
 // state and pushes frames.
 
@@ -66,7 +66,7 @@ void leds_render(const telemetry_t *t, uint32_t now_ms) {
     if (now_ms - last_frame_ms < FRAME_INTERVAL_MS) return;
     last_frame_ms = now_ms;
 
-    led_rgb_t px[NUM_PORTS];
+    led_rgb_t px[LED_PIXELS];
     led_pattern_render(&view, t, now_ms, px);
-    for (int i = 0; i < NUM_PORTS; i++) put_pixel(px[i]);
+    for (int i = 0; i < LED_PIXELS; i++) put_pixel(px[i]);
 }
