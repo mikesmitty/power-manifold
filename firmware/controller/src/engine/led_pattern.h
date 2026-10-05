@@ -24,7 +24,7 @@
 //              DC bus is past its low or high flag; otherwise it breathes
 //              blue while the BLE provisioning window is open, amber while
 //              settings are open for first-time setup (no API token yet),
-//              white while no link has an address; with nothing to report
+//              red while no link has an address; with nothing to report
 //              it glows green at the master brightness, capped at
 //              LED_CHASSIS_OK_MAX, so it stays dim on a bright chain and
 //              dims no further than the other lights on a dimmed one

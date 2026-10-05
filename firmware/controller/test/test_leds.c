@@ -216,13 +216,15 @@ static void test_chassis_light_breathes_blue_for_ble(void) {
     MT_ASSERT_EQ(PX(0).r, 255);
 }
 
-static void test_net_down_is_white_and_ble_wins(void) {
+static void test_net_down_breathes_red_and_ble_wins(void) {
     reset(255);
     all_idle();
     uint32_t peak = LED_CHASSIS_PERIOD_MS / 2;
     view.chassis = LED_CHASSIS_NET_DOWN;
     render(peak);
-    MT_ASSERT(CH.r == 255 && CH.g == 255 && CH.b == 255);
+    MT_ASSERT(CH.r == 255 && CH.g == 0 && CH.b == 0); // red at the top of the breath
+    render(0);
+    MT_ASSERT(CH.r < 255);                          // and dimmer at the bottom
     view.chassis = LED_CHASSIS_NET_DOWN | LED_CHASSIS_BLE_OPEN;
     render(peak);
     MT_ASSERT(CH.r == 0 && CH.b == 255);
@@ -364,7 +366,7 @@ void run_led_tests(void) {
     mt_run("leds: boot sweep rainbow", test_boot_sweep_rainbow);
     mt_run("leds: boot sweep dark at brightness 0", test_boot_sweep_dark_at_zero_brightness);
     mt_run("leds: chassis light breathes blue for BLE", test_chassis_light_breathes_blue_for_ble);
-    mt_run("leds: chassis light white for no network, BLE wins", test_net_down_is_white_and_ble_wins);
+    mt_run("leds: chassis light breathes red for no network, BLE wins", test_net_down_breathes_red_and_ble_wins);
     mt_run("leds: chassis light amber for setup, between BLE and net down",
            test_setup_is_amber_between_ble_and_net_down);
     mt_run("leds: chassis light dark at brightness 0", test_chassis_light_dark_at_zero_brightness);

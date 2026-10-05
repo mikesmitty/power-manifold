@@ -158,7 +158,7 @@ typedef enum {
 // CMD_LED_CHASSIS flags: core 0's view of the management plane, shown on the
 // chassis light at the head of the chain (see engine/led_pattern.h)
 #define LED_CHASSIS_BLE_OPEN   (1u << 0) // Improv provisioning window open: blue
-#define LED_CHASSIS_NET_DOWN   (1u << 1) // no link holds an address: white
+#define LED_CHASSIS_NET_DOWN   (1u << 1) // no link holds an address: red, breathing
 #define LED_CHASSIS_SETUP_OPEN (1u << 2) // settings open for first-time setup, no API token yet: amber
 #define LED_CHASSIS_BUS_FAULT  (1u << 3) // the DC bus is past its low or high flag (vin.h): red, fast blink
 

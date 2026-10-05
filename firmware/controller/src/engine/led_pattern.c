@@ -163,7 +163,8 @@ static bool render_boot(led_view_t *v, uint32_t now_ms, led_rgb_t out[LED_PIXELS
 }
 
 // The chassis light, ahead of port 1. A bus fault blinks red like a faulted
-// port, down to the fault floor on a dark chain. Otherwise the light breathes
+// port, down to the fault floor on a dark chain. Having no network breathes
+// red, slowly, so the two red states differ by speed. Otherwise the light breathes
 // in the colour of the most pressing management-plane condition, and glows
 // dim green with nothing to report: the glow is capped at LED_CHASSIS_OK_MAX
 // rather than scaled down, so on a dimmed chain it is as bright as the
@@ -181,7 +182,7 @@ static void render_chassis(const led_view_t *v, uint32_t now_ms, led_rgb_t out[L
         // open for first-time setup, then the plain fact of having no network.
         if (v->chassis & LED_CHASSIS_BLE_OPEN) c = COL_BLUE;
         else if (v->chassis & LED_CHASSIS_SETUP_OPEN) c = COL_AMBER;
-        else c = COL_WHITE;
+        else c = COL_RED;
         level = pulse(now_ms, LED_CHASSIS_PERIOD_MS);
     } else {
         c = COL_GREEN;
