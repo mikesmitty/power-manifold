@@ -6,12 +6,15 @@ sidebar:
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import FrontPanel from '../../../components/FrontPanel.astro';
 
 ## Ports
 
-Facing the front, the controller card is on the far left, with its Ethernet
-port. The six USB-C ports follow it, numbered **1 to 6 from left to right**.
-Each port has a status light just below and to its right.
+<FrontPanel />
+
+Facing the front, the Ethernet port and the button are on the far left. The
+six USB-C ports follow, numbered **1 to 6 from left to right**. Each port
+has a status light above its number.
 
 The light belongs to the slot, not the blade, so it still tells you
 something when the slot is empty.
