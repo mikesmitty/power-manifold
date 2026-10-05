@@ -1,7 +1,7 @@
 ---
 // The chassis right side plate, traced from its marking DXF
 // (export/Right Side Plate Text.dxf): the outline, the fan opening and its
-// screw holes, the XT60 power input and its printed markings. Units are
+// screw holes, the XT60 power input and its laser-etched markings. Units are
 // tenths of a millimetre, from the top left of the plate.
 //
 // labels: draw the callouts for the power input, the fan and the front.
@@ -18,12 +18,17 @@ const SCREWS = [
 	[530, 380],
 	[850, 380],
 ];
-// XT60 pins: negative above, positive below, as the printed marks say
+// XT60 pins: negative above, positive below, as the etched marks say
 const PINS = [
 	{ cy: 119.48, sign: 'negative' },
 	{ cy: 191.48, sign: 'positive' },
 ];
 const PIN_X = 1022.09;
+// The tabs' extents along the edge; they are the same top and bottom.
+const TABS = [
+	[235, 470],
+	[910, 1120.5],
+];
 const BLADES = Array.from({ length: 7 }, (_, i) => (i * 360) / 7);
 
 const top = labels ? -110 : -10;
@@ -34,7 +39,22 @@ const height = labels ? 110 + 440 + 120 : 460;
 	<svg viewBox={`-20 ${top} 1190 ${height}`} role="img" aria-label={title}>
 		<title>{title}</title>
 
-		<path class="sp-face" d="M250,394.5 235,394.5 235,438 230,438 132.11,440 27.49,440 0,412.5 0,27.5 27.49,-0 132.11,0 230,2 235,2 235.03,45.49 470.03,45.23 470,2 910,2 910.03,44.73 1120.54,44.49 1120.5,2 1122.5,2 1150,29.49 1150,410.5 1122.51,438 1120.5,438 1120.5,394.5 910,394.5 910,438 470,438 470,394.5 250,394.5Z" />
+		<path class="sp-face" d="M27.49,0 132.11,0 230,2 1122.5,2 1150,29.49 1150,410.5 1122.51,438 230,438 132.11,440 27.49,440 0,412.5 0,27.5Z" />
+
+		<!-- the tabs along the top and bottom edges, bent inward to join the
+		     top and bottom shell: a bend line, and a relief slot at each end -->
+		{TABS.map(([x0, x1]) => (
+			<g class="sp-tab">
+				<line x1={x0 + 10} y1="22" x2={x1 - 10} y2="22" />
+				<line x1={x0 + 10} y1="418" x2={x1 - 10} y2="418" />
+				{[x0, x1 - 10].map((x) => (
+					<g>
+						<path class="sp-relief" d={`M${x} 2 V45 a5 5 0 0 0 10 0 V2 Z`} />
+						<path class="sp-relief" d={`M${x} 438 V395 a5 5 0 0 1 10 0 V438 Z`} />
+					</g>
+				))}
+			</g>
+		))}
 
 		<!-- fan opening, with the fan behind it -->
 		<circle class="sp-hole" cx={FAN.cx} cy={FAN.cy} r={FAN.r} />
@@ -46,7 +66,7 @@ const height = labels ? 110 + 440 + 120 : 460;
 		</g>
 		{SCREWS.map(([x, y]) => <circle class="sp-hole sp-screw" cx={x} cy={y} r="21.5" />)}
 
-		<!-- printed markings: polarity leaders and the input rating -->
+		<!-- laser-etched markings: polarity leaders and the input rating -->
 		<g class="sp-print">
 			<path d="M1021.64,225 1021.64,260" />
 			<path d="M1022.09,191.48 1097.64,191.48" />
@@ -88,11 +108,23 @@ const height = labels ? 110 + 440 + 120 : 460;
 		width: 100%;
 		height: auto;
 	}
-	/* Black anodised, like the front, with white printing */
+	/* Black anodised, like the front; the markings are laser-etched, which
+	   leaves bare light grey aluminium */
 	.sp-face {
 		fill: #141517;
 		stroke: #4a4d54;
 		stroke-width: 2;
+		vector-effect: non-scaling-stroke;
+	}
+	.sp-tab line {
+		stroke: #4a4d54;
+		stroke-width: 1.5;
+		vector-effect: non-scaling-stroke;
+	}
+	.sp-relief {
+		fill: #050506;
+		stroke: #4a4d54;
+		stroke-width: 1.5;
 		vector-effect: non-scaling-stroke;
 	}
 	.sp-hole {
@@ -113,11 +145,11 @@ const height = labels ? 110 + 440 + 120 : 460;
 	}
 	.sp-print path {
 		fill: none;
-		stroke: #f4f4f2;
+		stroke: #c4c7cc;
 		stroke-width: 3;
 	}
 	.sp-text {
-		fill: #f4f4f2;
+		fill: #c4c7cc;
 		fill-rule: evenodd;
 	}
 	.sp-socket {
