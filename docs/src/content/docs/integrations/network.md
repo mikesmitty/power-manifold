@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-All of these are in the web page's **Settings**. The defaults work on most
+All of these are in the web interface's **Settings**. The defaults work on most
 home networks, so you only need this page if you want something different.
 
 ## IP address

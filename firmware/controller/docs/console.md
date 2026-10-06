@@ -8,8 +8,8 @@ the API and MQTT offer, plus bench tools for the backplane bus.
 USB CDC at 115200 from any serial terminal, or RTT through a debug probe.
 On the controller card the USB connection is an unpopulated header, so the
 console is a bench and development tool rather than something an owner
-reaches for; everything an owner needs is on the
-[web page](https://mikesmitty.github.io/power-manifold/guide/web-page/) and over
+reaches for; everything an owner needs is in the
+[web interface](https://mikesmitty.github.io/power-manifold/guide/web-page/) and over
 [Home Assistant](https://mikesmitty.github.io/power-manifold/guide/home-assistant/).
 
 A console-only first setup looks like this:

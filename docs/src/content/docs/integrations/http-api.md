@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-Everything on the web page is also available as JSON at
+Everything in the web interface is also available as JSON at
 `http://<name>.local/api/v1/`. Reading status needs no password. Anything
 that changes something needs your API token. A new controller has none and
 refuses every change until one is set;
@@ -20,7 +20,7 @@ curl -H "Authorization: Bearer $TOKEN" ...
 
 | Request | Returns |
 | --- | --- |
-| `GET /api/v1/status` | Everything the web page shows. See below. |
+| `GET /api/v1/status` | Everything the web interface shows. See below. |
 | `GET /api/v1/faults` | The fault log, newest first, eight entries per page. Add `?offset=8` for the next page. |
 | `GET /api/v1/log` | The controller's recent messages as text. Needs the token. |
 | `GET /api/v1/settings` | Every setting except passwords. Needs the token. |

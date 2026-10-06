@@ -9,7 +9,7 @@ If you use Home Assistant, you don't need this page: see
 [Home Assistant](/power-manifold/guide/home-assistant/). This page is for
 Node-RED, scripts and other MQTT tools.
 
-Set the broker in the web page's **Settings**. Every topic starts with
+Set the broker in the web interface's **Settings**. Every topic starts with
 `pwrman/<name>/`, where `<name>` is the device name (`pwrman` by default).
 Ports are numbered 1 to 6.
 
