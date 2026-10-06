@@ -34,19 +34,16 @@ documentation site.
 | `firmware/charger-module` | Charger blade firmware (STM32G071) and its host tests |
 | `firmware/update-proxy` | Cloudflare Worker that serves controller update images |
 | `docs` | The documentation site (Astro and Starlight) |
-| `cases` | V1 3D-printed cases |
+| `cases` | Earlier 3D-printed cases |
 
 Each firmware directory has a short README with build commands. Its full
 developer documentation is in its `docs/` directory and is published on the
 documentation site.
 
 CI exports KiCad fabrication outputs when a board changes, and
-release-please cuts a release for each component. The V1 design, with an
-RP2040 and ESPHome on every charger module, is in the git history and the
-older release tags.
+release-please cuts a release for each component.
 
 ## Status
 
-The V2 hardware is in its first fabrication run. The firmware has run on
-development boards against simulated blades, but not yet on real blades in
-a live backplane.
+The firmware has run on development boards against simulated blades, but
+not yet on real blades in a live backplane.
