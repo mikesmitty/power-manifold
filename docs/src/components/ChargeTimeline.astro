@@ -1,0 +1,280 @@
+---
+// A phone charging on one port over four hours, drawn three ways: with no
+// option set, with "Switch off once charged" and with a 2-hour sleep timer.
+// The rules follow the Port settings page: a device is charged once it has
+// drawn under 500 mW for 10 minutes; switching off once charged acts at
+// that moment; the sleep timer counts from plug-in whatever the device is
+// doing. The phone runs at 9 V, so its light is green while it charges.
+
+const W = 640;
+const H = 150; // the power plot
+const TOP = 10;
+const HOURS = 4;
+const MAX_W = 20;
+const x = (t: number) => (W * t) / HOURS;
+const y = (p: number) => TOP + H - (H * p) / MAX_W;
+
+// The phone's draw: a steady 18 W, then tapering off, then a trickle.
+const draw = (t: number) => (t < 1.4 ? 18 : Math.max(18 * Math.exp(-3.5 * (t - 1.4)), 0.25));
+const LOW = 1.4 + Math.log(18 / 0.5) / 3.5; // first under 0.5 W
+const CHARGED = LOW + 10 / 60;
+const SLEEP = 2;
+
+const line = (end: number) => {
+	const pts: string[] = [];
+	for (let t = 0; t <= end + 1e-9; t += 0.02) pts.push(`${x(t).toFixed(1)},${y(draw(t)).toFixed(1)}`);
+	pts.push(`${x(end).toFixed(1)},${y(draw(end)).toFixed(1)}`);
+	return pts.join(' ');
+};
+const area = (end: number) => `${x(0)},${y(0)} ${line(end)} ${x(end).toFixed(1)},${y(0)}`;
+const off = (from: number) => `M${x(from).toFixed(1)},${y(draw(from)).toFixed(1)} V${y(0)} H${W}`;
+
+const GREEN = '#22c55e';
+const WHITE = '#e8e8e8';
+
+const MODES = [
+	{
+		key: 'none',
+		title: 'Nothing set',
+		text: 'The phone charges, then draws next to nothing. Ten minutes under 0.5 W later the port shows charged and its light turns white. The port stays on, so the phone is kept topped up.',
+		end: HOURS,
+		lights: [
+			{ from: 0, to: CHARGED, colour: GREEN, label: 'Green' },
+			{ from: CHARGED, to: HOURS, colour: WHITE, label: 'White' },
+		],
+		marks: [{ t: CHARGED, label: 'Charged' }],
+	},
+	{
+		key: 'charged',
+		title: 'Switch off once charged',
+		text: 'The same until the phone counts as charged. At that moment the port switches off, and it stays off until you switch it on again.',
+		end: CHARGED,
+		lights: [
+			{ from: 0, to: CHARGED, colour: GREEN, label: 'Green' },
+			{ from: CHARGED, to: HOURS, colour: null, label: 'Off' },
+		],
+		marks: [{ t: CHARGED, label: 'Charged, switched off' }],
+	},
+	{
+		key: 'sleep',
+		title: 'Sleep timer, 2 hours',
+		text: 'The timer counts from when the phone is plugged in. Two hours later the port switches off, whether the phone has finished charging or not.',
+		end: SLEEP,
+		lights: [
+			{ from: 0, to: SLEEP, colour: GREEN, label: 'Green' },
+			{ from: SLEEP, to: HOURS, colour: null, label: 'Off' },
+		],
+		marks: [{ t: SLEEP, label: 'Timer ends, switched off' }],
+	},
+];
+const FIRST = 1;
+---
+
+<figure class="timeline not-content" data-mode={MODES[FIRST].key}>
+	<div class="tl-tabs" role="tablist" aria-label="Port options">
+		{MODES.map((m, i) => (
+			<button type="button" role="tab" aria-selected={i === FIRST ? 'true' : 'false'} data-mode={m.key}>{m.title}</button>
+		))}
+	</div>
+
+	{MODES.map((m) => <p class="tl-text" data-for={m.key}>{m.text}</p>)}
+
+	<svg viewBox={`-4 -24 ${W + 8} ${TOP + H + 90}`} role="img" aria-label="Power drawn by a phone over four hours, and the port light underneath.">
+		{[0.5, 1, 1.5, 2, 2.5, 3, 3.5].map((t) => (
+			<line class="tl-grid" x1={x(t)} x2={x(t)} y1={TOP} y2={y(0)} />
+		))}
+		<line class="tl-axis" x1="0" x2={W} y1={y(0)} y2={y(0)} />
+		<text class="tl-tick" x="2" y={TOP + 4}>{MAX_W} W</text>
+
+		<!-- 0.5 W, and the 10 minutes under it -->
+		<g class="tl-thresh">
+			<line x1={x(1.9)} x2={W} y1={y(0.5)} y2={y(0.5)} />
+			<text class="tl-tick tl-end" x={W - 2} y={y(0.5) - 5}>0.5 W</text>
+		</g>
+
+		{MODES.map((m) => (
+			<g class="tl-mode" data-for={m.key}>
+				<polygon class="tl-area" points={area(m.end)} />
+				<polyline class="tl-line" points={line(m.end)} />
+				{m.end < HOURS && <path class="tl-off" d={off(m.end)} />}
+				{m.key !== 'sleep' && (
+					<g class="tl-wait">
+						<rect x={x(LOW)} y={TOP} width={x(CHARGED) - x(LOW)} height={H} />
+						<text x={x(LOW) - 4} y={TOP + 26}>10 min</text>
+					</g>
+				)}
+				{m.marks.map((k) => (
+					<g class="tl-mark">
+						<line x1={x(k.t)} x2={x(k.t)} y1={TOP - 14} y2={y(0) + 40} />
+						<text x={x(k.t) + 5} y={TOP - 6}>{k.label}</text>
+					</g>
+				))}
+				{m.lights.map((l) => (
+					<g class="tl-light">
+						<rect class="tl-plate" x={x(l.from)} y={y(0) + 16} width={x(l.to) - x(l.from)} height="22" />
+						{l.colour && <rect class="tl-glow" x={x(l.from) + 3} y={y(0) + 19} width={x(l.to) - x(l.from) - 6} height="16" rx="3" style={`fill:${l.colour}`} />}
+						<text class:list={['tl-lightlabel', { lit: l.colour }]} x={x(l.from) + 8} y={y(0) + 30.5}>{l.label}</text>
+					</g>
+				))}
+			</g>
+		))}
+
+		<text class="tl-tick" x="0" y={y(0) + 56}>Plugged in</text>
+		{[1, 2, 3].map((t) => <text class="tl-tick tl-mid" x={x(t)} y={y(0) + 56}>{t} h</text>)}
+		<text class="tl-tick tl-end" x={W} y={y(0) + 56}>4 h</text>
+	</svg>
+
+	<figcaption>Power drawn by the phone, with the port light underneath.</figcaption>
+</figure>
+
+<script>
+	for (const fig of document.querySelectorAll<HTMLElement>('.timeline')) {
+		const tabs = [...fig.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+		tabs.forEach((t) =>
+			t.addEventListener('click', () => {
+				fig.dataset.mode = t.dataset.mode;
+				tabs.forEach((u) => u.setAttribute('aria-selected', String(u === t)));
+			}),
+		);
+	}
+</script>
+
+<style>
+	.timeline {
+		margin: 1.5rem 0;
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	}
+	.tl-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.tl-tabs button {
+		padding: 0.3rem 0.75rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 999px;
+		background: transparent;
+		color: var(--sl-color-gray-2);
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		cursor: pointer;
+	}
+	.tl-tabs button[aria-selected='true'] {
+		border-color: var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	.tl-text {
+		min-height: 3em;
+		margin: 0.75rem 0 0.5rem;
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-sm);
+	}
+	/* Only the chosen option's text and drawing show. */
+	.timeline:not([data-mode='none']) [data-for='none'],
+	.timeline:not([data-mode='charged']) [data-for='charged'],
+	.timeline:not([data-mode='sleep']) [data-for='sleep'] {
+		display: none;
+	}
+	.timeline svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		overflow: visible;
+	}
+	.tl-grid {
+		stroke: var(--sl-color-gray-6);
+		stroke-width: 1;
+	}
+	.tl-axis {
+		stroke: var(--sl-color-gray-4);
+	}
+	.tl-tick {
+		fill: var(--sl-color-gray-3);
+		font-size: 11px;
+	}
+	.tl-mid {
+		text-anchor: middle;
+	}
+	.tl-end {
+		text-anchor: end;
+	}
+	/* The sleep timer ignores what the device draws. */
+	.timeline[data-mode='sleep'] .tl-thresh {
+		display: none;
+	}
+	.tl-thresh line {
+		stroke: var(--sl-color-orange);
+		stroke-dasharray: 4 3;
+	}
+	.tl-area {
+		fill: var(--sl-color-accent);
+		fill-opacity: 0.15;
+	}
+	.tl-line {
+		fill: none;
+		stroke: var(--sl-color-accent);
+		stroke-width: 2;
+		stroke-linejoin: round;
+	}
+	.tl-off {
+		fill: none;
+		stroke: var(--sl-color-gray-3);
+		stroke-width: 1.5;
+		stroke-dasharray: 2 3;
+	}
+	.tl-wait rect {
+		fill: var(--sl-color-orange);
+		fill-opacity: 0.15;
+	}
+	.tl-wait text {
+		fill: var(--sl-color-orange);
+		font-size: 11px;
+		font-weight: 600;
+		text-anchor: end;
+	}
+	.tl-mark line {
+		stroke: var(--sl-color-white);
+		stroke-width: 1;
+		stroke-dasharray: 3 2;
+	}
+	.tl-mark text {
+		fill: var(--sl-color-white);
+		font-size: 12px;
+		font-weight: 600;
+	}
+	/* The light strip is the black faceplate in either theme. */
+	.tl-plate {
+		fill: #141517;
+		stroke: #4a4d54;
+	}
+	.tl-lightlabel {
+		fill: #9a9da4;
+		font-size: 10px;
+		font-weight: 600;
+	}
+	.tl-lightlabel.lit {
+		fill: #141517;
+	}
+	/* The drawing shrinks on a phone, so its words grow to stay readable. */
+	@media (max-width: 36rem) {
+		.tl-tick,
+		.tl-wait text {
+			font-size: 16px;
+		}
+		.tl-mark text {
+			font-size: 17px;
+		}
+		.tl-lightlabel {
+			font-size: 13px;
+		}
+	}
+	.timeline figcaption {
+		margin-top: 0.25rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+</style>

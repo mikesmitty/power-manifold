@@ -1,0 +1,225 @@
+---
+// Try a voltage cap, current limit and cable, and see what the port offers
+// a device: one bar per voltage option, 0 to 100 W. The rules are in
+// port-offer.ts, shared with the script below.
+import { CAPS, offers } from './port-offer';
+
+// Shown before the script runs, and without it: the page's own example.
+const CAP = 20;
+const LIMIT = 3000;
+const CABLE = 5000;
+const rows = offers(CAP, LIMIT, CABLE);
+const amps = (a: number) => `${a.toFixed(2)} A`;
+const why = { limit: 'set by the current limit', cable: 'set by the cable', '100 W': 'set by the 100 W ceiling' };
+---
+
+<figure class="offer not-content" data-cap={CAP} data-limit={LIMIT} data-cable={CABLE}>
+	<div class="of-controls">
+		<div class="of-control" role="group" aria-label="Voltage cap">
+			<span class="of-name">Voltage cap</span>
+			<div class="of-seg">
+				{CAPS.map((v) => (
+					<button type="button" data-cap={v} aria-pressed={v === CAP ? 'true' : 'false'}>{v} V</button>
+				))}
+			</div>
+		</div>
+		<label class="of-control">
+			<span class="of-name">Current limit <b class="of-limit">{LIMIT} mA</b></span>
+			<input type="range" min="500" max="5000" step="500" value={LIMIT} />
+		</label>
+		<div class="of-control" role="group" aria-label="Cable">
+			<span class="of-name">Cable</span>
+			<div class="of-seg">
+				<button type="button" data-cable="3000" aria-pressed={CABLE === 3000 ? 'true' : 'false'}>Ordinary</button>
+				<button type="button" data-cable="5000" aria-pressed={CABLE === 5000 ? 'true' : 'false'}>5 A e-marked</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="of-rows" aria-live="polite">
+		{rows.map((r) => (
+			<div class:list={['of-row', { gone: !r.offered }]}>
+				<span class="of-label">{r.label}</span>
+				<span class="of-track"><i style={`width:${r.offered ? r.watts : 0}%`} /></span>
+				<span class="of-value">{r.offered ? `${amps(r.amps)} · ${Math.round(r.watts)} W` : 'Above the cap'}</span>
+				<span class="of-why">{r.by ? why[r.by] : ''}</span>
+			</div>
+		))}
+	</div>
+
+	<figcaption>
+		Bars run from 0 to 100 W. A PPS range is shown at its top voltage. A device picks one option, and
+		power sharing can still turn the port down when the supply is short.
+	</figcaption>
+</figure>
+
+<script>
+	import { offers } from './port-offer';
+
+	const why = { limit: 'set by the current limit', cable: 'set by the cable', '100 W': 'set by the 100 W ceiling' };
+
+	for (const fig of document.querySelectorAll<HTMLElement>('.offer')) {
+		let cap = Number(fig.dataset.cap);
+		let limit = Number(fig.dataset.limit);
+		let cable = Number(fig.dataset.cable);
+		const rows = [...fig.querySelectorAll<HTMLElement>('.of-row')];
+		const range = fig.querySelector<HTMLInputElement>('input[type=range]')!;
+		const limitEl = fig.querySelector<HTMLElement>('.of-limit')!;
+
+		const show = () => {
+			fig.querySelectorAll<HTMLButtonElement>('[data-cap]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.cap) === cap)));
+			fig.querySelectorAll<HTMLButtonElement>('[data-cable]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.cable) === cable)));
+			limitEl.textContent = `${limit} mA`;
+			offers(cap, limit, cable).forEach((r, i) => {
+				const row = rows[i];
+				row.classList.toggle('gone', !r.offered);
+				row.querySelector<HTMLElement>('.of-track i')!.style.width = `${r.offered ? r.watts : 0}%`;
+				row.querySelector<HTMLElement>('.of-value')!.textContent = r.offered
+					? `${r.amps.toFixed(2)} A · ${Math.round(r.watts)} W`
+					: 'Above the cap';
+				row.querySelector<HTMLElement>('.of-why')!.textContent = r.by ? why[r.by] : '';
+			});
+		};
+
+		fig.querySelectorAll<HTMLButtonElement>('[data-cap]').forEach((b) =>
+			b.addEventListener('click', () => { cap = Number(b.dataset.cap); show(); }),
+		);
+		fig.querySelectorAll<HTMLButtonElement>('[data-cable]').forEach((b) =>
+			b.addEventListener('click', () => { cable = Number(b.dataset.cable); show(); }),
+		);
+		range.addEventListener('input', () => { limit = Number(range.value); show(); });
+		show();
+	}
+</script>
+
+<style>
+	.offer {
+		margin: 1.5rem 0;
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	}
+	.of-controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem 1.5rem;
+		align-items: flex-end;
+		margin-bottom: 1rem;
+	}
+	.of-control {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		font-size: var(--sl-text-sm);
+	}
+	.of-name {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.of-name b {
+		margin-inline-start: 0.35em;
+		color: var(--sl-color-white);
+		font-variant-numeric: tabular-nums;
+		text-transform: none;
+		letter-spacing: 0;
+	}
+	.of-seg {
+		display: inline-flex;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.4rem;
+		overflow: hidden;
+	}
+	.of-seg button {
+		padding: 0.3rem 0.65rem;
+		border: 0;
+		border-inline-start: 1px solid var(--sl-color-gray-5);
+		background: transparent;
+		color: var(--sl-color-gray-2);
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		cursor: pointer;
+	}
+	.of-seg button:first-child {
+		border-inline-start: 0;
+	}
+	.of-seg button[aria-pressed='true'] {
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+		font-weight: 600;
+	}
+	.of-control input[type='range'] {
+		width: 12rem;
+		height: 1.9rem;
+		margin: 0;
+		accent-color: var(--sl-color-accent);
+	}
+	.of-rows {
+		display: grid;
+		grid-template-columns: max-content minmax(4rem, 1fr) max-content max-content;
+		gap: 0.45rem 0.75rem;
+		align-items: center;
+	}
+	.of-row {
+		display: contents;
+	}
+	.of-label {
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		color: var(--sl-color-white);
+		white-space: nowrap;
+	}
+	.of-track {
+		height: 0.9rem;
+		border-radius: 0.2rem;
+		background: var(--sl-color-gray-6);
+		overflow: hidden;
+	}
+	.of-track i {
+		display: block;
+		height: 100%;
+		background: var(--sl-color-accent);
+		transition: width 0.4s ease;
+	}
+	.of-value {
+		font-size: var(--sl-text-sm);
+		font-variant-numeric: tabular-nums;
+		color: var(--sl-color-white);
+		white-space: nowrap;
+	}
+	.of-why {
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	.gone .of-label,
+	.gone .of-value {
+		color: var(--sl-color-gray-4);
+	}
+	.gone .of-label {
+		text-decoration: line-through;
+	}
+	.offer figcaption {
+		margin-top: 1rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	/* On a phone the reason moves under its bar. */
+	@media (max-width: 36rem) {
+		.of-rows {
+			grid-template-columns: max-content minmax(3rem, 1fr) max-content;
+		}
+		.of-why {
+			grid-column: 2 / -1;
+			margin-top: -0.35rem;
+		}
+		.gone .of-why {
+			display: none;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.of-track i { transition: none; }
+	}
+</style>
