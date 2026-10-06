@@ -7,6 +7,8 @@ sidebar:
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 import Flow from '../../../components/Flow.astro';
+import Screenshot from '../../../components/Screenshot.astro';
+import deviceShot from '../../../assets/home-assistant/device.png';
 
 Power Manifold connects to Home Assistant through an MQTT broker. Once it
 is connected, it appears as one device with every port and setting on it,
@@ -37,6 +39,13 @@ with nothing to write in YAML.
    services → MQTT**. Power Manifold appears as a device named after it.
 
 </Steps>
+
+<Screenshot
+	light={deviceShot}
+	scale={1.5}
+	alt="The Power Manifold device page in Home Assistant: device info showing firmware 0.13.0, and a Controls card with a switch for each port and the fan mode."
+	caption="The device page. Ports you have named, like Desk phone, appear under their names."
+/>
 
 If you use more than one Power Manifold, give each a different device name
 before connecting it.

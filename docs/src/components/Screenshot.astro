@@ -1,23 +1,32 @@
 ---
 // A screenshot taken in both themes: the light one shows on the light site,
 // the dark one on the dark site (Starlight's light:/dark:sl-hidden classes).
+// With only `light` given, that one image shows in both themes.
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 
 interface Props {
 	light: ImageMetadata;
-	dark: ImageMetadata;
+	dark?: ImageMetadata;
 	alt: string;
 	caption?: string;
+	// The pixel density the shot was taken at; most are 2x.
+	scale?: number;
 }
-const { light, dark, alt, caption } = Astro.props;
-// The shots are taken at twice the page's pixel density.
-const width = light.width / 2;
+const { light, dark, alt, caption, scale = 2 } = Astro.props;
+const width = Math.round(light.width / scale);
+const densities = scale >= 2 ? [1, 2] : [1, scale];
 ---
 
 <figure class="shot not-content">
-	<Image class="dark:sl-hidden" src={light} alt={alt} width={width} densities={[1, 2]} />
-	<Image class="light:sl-hidden" src={dark} alt={alt} width={width} densities={[1, 2]} />
+	{dark ? (
+		<Fragment>
+			<Image class="dark:sl-hidden" src={light} alt={alt} width={width} densities={densities} />
+			<Image class="light:sl-hidden" src={dark} alt={alt} width={width} densities={densities} />
+		</Fragment>
+	) : (
+		<Image src={light} alt={alt} width={width} densities={densities} />
+	)}
 	{caption && <figcaption>{caption}</figcaption>}
 </figure>
 
