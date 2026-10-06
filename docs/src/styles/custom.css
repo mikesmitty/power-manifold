@@ -104,3 +104,21 @@
 .sl-markdown-content table td:first-child {
 	white-space: nowrap;
 }
+
+/* The hero render is wide, so give it more room than Starlight's square-ish slot. */
+.hero > .hero-html {
+	width: min(100%, 30rem);
+}
+.hero > .hero-html img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+@media (min-width: 50rem) {
+	.hero {
+		grid-template-columns: 1fr 1fr;
+	}
+	.hero > .hero-html {
+		width: min(100%, 36rem);
+	}
+}
