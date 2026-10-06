@@ -1009,6 +1009,7 @@ static const char *evt_name(evt_type_t t) {
     case EVT_PROBE_FAIL:   return "probe_fail";
     case EVT_THROTTLE:     return "throttle";
     case EVT_BOOT:         return "boot";
+    case EVT_CHARGE:       return "charge";
     case EVT_UPDATE:       return "update";
     case EVT_BUS:          return "bus";
     default:               return "?";
