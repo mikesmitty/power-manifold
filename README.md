@@ -42,8 +42,3 @@ documentation site.
 
 CI exports KiCad fabrication outputs when a board changes, and
 release-please cuts a release for each component.
-
-## Status
-
-The firmware has run on development boards against simulated blades, but
-not yet on real blades in a live backplane.
