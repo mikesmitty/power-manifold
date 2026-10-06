@@ -100,8 +100,13 @@
 	.led.blink::after, .led.pulse::after { animation: none; }
 }
 
-/* Let wide reference tables keep their first column readable. */
+/* Keep a table's first column readable without letting a long cell take
+   the whole width: it wraps, but not below a minimum, and code in it, such
+   as an endpoint or a topic, never breaks. */
 .sl-markdown-content table td:first-child {
+	min-width: 8rem;
+}
+.sl-markdown-content table td:first-child code {
 	white-space: nowrap;
 }
 
