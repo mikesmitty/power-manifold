@@ -273,10 +273,12 @@ const $=s=>document.getElementById(s),N=600,H=[],esc=s=>String(s).replace(/[&<>"
 let last,sel=-1,ask=-1;
 const COL={green:'var(--green)',blue:'var(--blue)',white:'var(--mute)',amber:'var(--amber)',red:'var(--red)',cyan:'var(--cyan)',off:'var(--off)'};
 // The same colours and rates the chassis lights use (led_pattern.c).
+// A port whose blade is updating is dark, as on the chassis, and blinks
+// cyan once the blade starts up again.
 function led(p){const a=p.v>=11?'blue':'green';switch(p.state){
  case'absent':return'amber dim';case'probe':return'cyan blink';case'idle':return'white';
  case'active':return p.charged?'white':a;case'throttled':return p.charged?'white':a+' pulse';
- case'fault':return'red fast';case'updating':return'cyan pulse';default:return'off';}}
+ case'fault':return'red fast';default:return'off';}}
 const hue=p=>led(p).split(' ')[0];
 function label(p){switch(p.state){case'absent':return'Empty slot';case'probe':return'Detecting';case'idle':return'Ready';
  case'active':return p.charged?'Charged':'Delivering '+Math.round(p.v)+' V';case'throttled':return'Throttled';
