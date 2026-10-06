@@ -14,11 +14,11 @@ import FrontPanel from '../../../components/FrontPanel.astro';
 
 Facing the front, the Ethernet port and the button are on the far left. The
 six USB-C ports follow, numbered **1 to 6 from left to right**. Each port
-has a status light above its number, and the chassis light to the left of
-port 1 speaks for the controller as a whole.
+has a status light above its number. The chassis light, to the left of
+port 1, shows the status of the controller.
 
-The light belongs to the slot, not the blade, so it still tells you
-something when the slot is empty.
+Each light is mounted on the chassis at its slot, so it also shows when a
+slot is empty.
 
 ## Port lights
 
@@ -41,12 +41,12 @@ something when the slot is empty.
 
 ## The chassis light
 
-The chassis light glows dim green while all is well. If more than one of
+The chassis light is dim green during normal operation. If more than one of
 these applies, it shows the first in this table:
 
 | Light | Meaning |
 | --- | --- |
-| <span class="led" style="--led:#22c55e;--lvl:.4"></span>Dim green | All is well. |
+| <span class="led" style="--led:#22c55e;--lvl:.4"></span>Dim green | Normal operation. |
 | <span class="led pulse" style="--led:#3b82f6;animation-duration:2s"></span>Blue, breathing | The controller is waiting for [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/). |
 | <span class="led pulse" style="--led:#f59e0b;animation-duration:2s"></span>Amber, breathing | The controller has no API token yet and its settings are open for [first-time setup](/power-manifold/setup/first-time-setup/). It stops when you save a token. |
 | <span class="led pulse" style="--led:#ef4444;animation-duration:2s"></span>Red, breathing | The controller has no network connection. See [Troubleshooting](/power-manifold/guide/troubleshooting/#no-network). |

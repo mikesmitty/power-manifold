@@ -11,8 +11,7 @@ MPQ4242 that negotiated on its own in the gen-2 blade.
 > blade's own supervisor, power path and backplane register file around it.
 > The image builds and links; everything outside `src/hw/` and `src/usbpd/` is
 > covered by the host tests, against a simulated board. None of it has run on
-> hardware yet, and the first blade on the bench will find what the
-> simulation did not.
+> hardware yet. Bench bring-up may reveal faults the simulation did not.
 
 The source is in [`firmware/charger-module`](../). The backplane interface and the update path are on [Blade register map and updates](register-map.md).
 
@@ -26,8 +25,8 @@ The source is in [`firmware/charger-module`](../). The backplane interface and t
 | U4 TLV7022 | VBUS over-voltage comparators on TCPP_EN | |
 | U2 LP2985A-33 | 3.3 V from the slot's 5 V, always on | |
 
-The MCU runs from the slot's 5 V rail, so it is alive, and answers the
-controller, whenever the blade is seated. The slot's EN line is the
+The MCU runs from the slot's 5 V rail, so it runs and answers the
+controller whenever the blade is seated. The slot's EN line is the
 TPS55288's EN/UVLO pin: with EN low the converter is in shutdown whatever the
 firmware does, and its registers return to their defaults.
 
@@ -84,14 +83,14 @@ Any of these latches a fault, takes the port down and pulls ALERT#:
 | `PD` | the stack did not start |
 
 Below the two temperature trips sit two warning levels, 85 °C at the
-converter and 60 °C at the receptacle. A reading that holds at or above one
-for 50 ms makes the blade send the sink one PD Alert with the
-over-temperature bit (PD 3 sinks only; PD 2 has no Alert message), and its
-answer to Get_Status then says *Warning* with the over-temperature event
-flag until the reading has fallen 5 °C under the level, *Over temperature*
-once a trip has latched, and *Normal* otherwise. The port keeps running on
-a warning; what a sink does with it is its own business, the specification
-only asks it to fetch Status. All four temperatures are provisional until
+converter and 60 °C at the receptacle. When a reading stays at or above a
+warning level for 50 ms, the blade sends the sink one PD Alert with the
+over-temperature bit (PD 3 sinks only; PD 2 has no Alert message). Its
+Get_Status reply then reports *Warning* with the over-temperature event
+flag until the reading falls 5 °C below the level. It reports *Over
+temperature* once a trip has latched, and *Normal* otherwise. The port
+keeps running on a warning. The specification only requires the sink to
+fetch Status in response. All four temperatures are provisional until
 the blade has been measured in the closed chassis.
 
 ## Pin map
@@ -243,9 +242,9 @@ In this order. Steps 1 to 4 need no sink.
 1. **Bring-up** on the first gen-3 blade, per the checklist — the update
    path included: the ROM bootloader's answer on the backplane bus, a
    controller-programmed blank blade, and the option-byte trip.
-2. **Alert and Status at a sink.** Written and host-tested, never seen by
-   a real sink: a PD analyser or a logging sink should show one Alert with
-   the over-temperature bit when a thermometer passes its warning level,
-   and Status answering *Warning*. The four temperatures (85 / 60 °C warn,
-   100 / 70 °C trip) are set from the same thermocouple session as the
+2. **Alert and Status at a sink.** Written and host-tested, not yet tested
+   against a real sink: a PD analyser or a logging sink should show one
+   Alert with the over-temperature bit when a thermometer passes its warning
+   level, and Status answering *Warning*. The four temperatures (85 / 60 °C
+   warn, 100 / 70 °C trip) are set from the same thermocouple session as the
    controller's fan rule.

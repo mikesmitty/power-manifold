@@ -9,8 +9,8 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Flow from '../../../components/Flow.astro';
 import UpdateTimeline from '../../../components/UpdateTimeline.astro';
 
-Power Manifold checks for new firmware once a day. It never installs an
-update on its own. You decide when.
+Power Manifold checks for new firmware once a day. It installs an update
+only when you start the installation.
 
 ## Installing an update
 
@@ -49,8 +49,8 @@ the controller is back, after a few seconds.
 
 The blades have their own firmware, and the controller carries the version
 that goes with it. You don't need to do anything. After a controller update
-the controller brings each blade up to date by itself, but only when it
-costs nothing:
+the controller brings each blade up to date by itself, but only when its
+port is not in use:
 
 - when the chassis is switched on, before the port powers up;
 - when its port has had nothing plugged in for ten seconds.
@@ -60,7 +60,7 @@ update.** It waits until the device is unplugged, which could be days for a
 Raspberry Pi. Updating a blade takes a few seconds. Its light is off while
 it happens, and its state shows `updating` with a percentage.
 
-## Is it safe?
+## Security
 
 Every release is signed. The controller only installs firmware that is
 signed by this project, built for this hardware, and not older than what

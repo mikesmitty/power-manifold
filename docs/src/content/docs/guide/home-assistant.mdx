@@ -10,9 +10,9 @@ import Flow from '../../../components/Flow.astro';
 import Screenshot from '../../../components/Screenshot.astro';
 import deviceShot from '../../../assets/home-assistant/device.png';
 
-Power Manifold connects to Home Assistant through an MQTT broker. Once it
-is connected, it appears as one device with every port and setting on it,
-with nothing to write in YAML.
+Power Manifold connects to Home Assistant through an MQTT broker. Once
+connected, it appears as one device with every port and setting. No YAML
+configuration is required.
 
 ## Connect it
 
@@ -90,7 +90,7 @@ entity IDs don't change.
 
 ## Automations
 
-The **events** entity for each port is the easiest thing to trigger on.
+Each port has an **events** entity for use as an automation trigger.
 Its event types are:
 
 | Event | When |
@@ -124,12 +124,12 @@ actions:
       message: "Desk phone port: {{ trigger.to_state.attributes.text }}"
 ```
 
-**Example: power-cycle a stuck Raspberry Pi** by turning its port's switch
-off, waiting ten seconds, and turning it back on. That's the same switch as
-in the table above, so a script or a dashboard button does it.
+**Example: power-cycle an unresponsive Raspberry Pi** by turning its port's
+switch off, waiting ten seconds, and turning it back on. This uses the
+port's **Switch** entity, so a script or a dashboard button can do it.
 
 <Aside type="tip">
-For a phone or tablet that lives on a port, turn on **switch off when
-charged** and let a time-based automation turn the port back on in the
-morning.
+For a phone or tablet that stays plugged into a port, turn on **switch off
+when charged** and use a time-based automation to turn the port back on in
+the morning.
 </Aside>

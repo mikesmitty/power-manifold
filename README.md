@@ -18,8 +18,8 @@ serial console.
   USB-PD stack, a TI TPS55288 buck-boost and an ST TCPP02-M18 port
   protector, with an independent over-voltage cut-off on VBUS. Blades
   negotiate PD on their own; the controller constrains which PDOs they
-  advertise. The blade is a PCIe x1 card edge, so it slots in and out of
-  the backplane without tools.
+  advertise. The blade uses a PCIe x1 card edge and is inserted and
+  removed without tools.
 - **Backplane** (`hardware/backplane`). Six blade slots and a management
   slot. A TCA9548A I2C mux gives every blade its own bus segment, a TCA9539
   expander handles blade enable, presence detect, and the fan, and six
@@ -60,8 +60,9 @@ serial console.
 - DHCP or static addressing on WiFi or wired Ethernet, a DNS override, and
   console mirroring to a UDP syslog host.
 - Status LEDs with a night window and idle dimming.
-- A/B firmware slots with try-before-you-buy rollback. Updates arrive by HTTP
-  push, URL pull from the console, or the Home Assistant update entity.
+- A/B firmware slots with automatic rollback (the RP2350 try-before-you-buy
+  mechanism). Updates arrive by HTTP push, URL pull from the console, or the
+  Home Assistant update entity.
 - Persistent fault log with the reason for every boot, fan auto-policy on
   chassis power and port current, and per-port energy counters.
 
@@ -93,7 +94,7 @@ older release tags.
 As of September 2026 the V2 backplane, charger module, and development
 carrier are in their first fabrication run, and the controller card is
 through its first pass of schematic and layout but has not been fabricated.
-The firmware has been exercised on a Pico 2 W against simulated blades,
-including Wi-Fi, BLE provisioning, the web UI, MQTT, OTA updates, and fault
-injection, and the wired-Ethernet path has run on a WIZnet W6100-EVB-Pico2;
-it has not yet driven real blades on a live backplane.
+The firmware has been tested on a Pico 2 W against simulated blades,
+covering Wi-Fi, BLE provisioning, the web UI, MQTT, OTA updates and fault
+injection. The wired-Ethernet path has run on a WIZnet W6100-EVB-Pico2. The
+firmware has not yet driven real blades on a live backplane.

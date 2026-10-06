@@ -1,6 +1,6 @@
 ---
 title: Wi-Fi setup
-description: Give Power Manifold your Wi-Fi details over Bluetooth, straight from this page or from the Home Assistant app.
+description: Send Power Manifold your Wi-Fi details over Bluetooth from this page or from the Home Assistant app.
 sidebar:
   order: 2
 ---
@@ -11,8 +11,8 @@ import ImprovProvisioner from '../../../components/ImprovProvisioner.astro';
 Power Manifold gets its Wi-Fi details over Bluetooth, using the
 [Improv Wi-Fi](https://www.improv-wifi.com/) standard. You can do it from
 this page or from the Home Assistant app. The setup runs in your browser and
-talks straight to the controller, so your Wi-Fi password goes only to the
-controller.
+connects directly to the controller, so your Wi-Fi password is sent only to
+the controller.
 
 <ImprovProvisioner />
 
@@ -65,6 +65,6 @@ that is working, open a ten-minute setup window in either of these ways:
 Then follow the steps above. Bluetooth is off at all other times.
 
 <Aside type="caution">
-The Bluetooth link is not encrypted. Do the setup when nobody you don't
-trust is within Bluetooth range.
+The Bluetooth link is not encrypted. Run setup only when no untrusted
+person is within Bluetooth range.
 </Aside>

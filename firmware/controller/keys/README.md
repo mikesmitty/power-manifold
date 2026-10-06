@@ -24,7 +24,7 @@ ykman piv keys generate --algorithm ed25519 --pin-policy always \
 ```
 
 Keep two: the one the release workflow signs with, and an offline backup
-whose only job is to sign the release that replaces a lost or leaked primary.
+used only to sign the release that replaces a lost or leaked primary.
 
 ## Retiring a key
 

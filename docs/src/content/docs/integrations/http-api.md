@@ -7,10 +7,10 @@ sidebar:
 
 Everything in the web interface is also available as JSON at
 `http://<name>.local/api/v1/`. Reading status needs no password. Anything
-that changes something needs your API token. A new controller has none and
-refuses every change until one is set;
-[first-time setup](/power-manifold/setup/first-time-setup/) explains how the
-first one gets in.
+that changes something needs your API token. A new controller has no token and
+refuses every change until one is set.
+[First-time setup](/power-manifold/setup/first-time-setup/) describes how to
+set the first token.
 
 ## Examples
 
@@ -140,9 +140,10 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 curl -X POST -H "Authorization: Bearer $TOKEN" $PM/api/v1/reboot
 ```
 
-After a factory reset the controller has no token, so the restore goes in
-through [first-time setup](/power-manifold/setup/first-time-setup/), for
-with **Import…** in the web interface's **Settings**.
+After a factory reset the controller has no token. Complete
+[first-time setup](/power-manifold/setup/first-time-setup/) to set one, then
+restore the file with the commands above or with **Import…** in the web
+interface's **Settings**.
 
 </details>
 
@@ -202,7 +203,7 @@ A bad value gets `400` with the reason, such as
 blink: input voltage out of range), `bluetooth` (blue: Bluetooth setup
 open), `setup` (amber: first-time setup open) or `ok` (dim green).
 
-## Changing things
+## Commands
 
 All of these need the token.
 

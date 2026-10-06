@@ -4,11 +4,11 @@ How the controller's flash is laid out, how a board is programmed the first time
 
 ## Partition table
 
-The flash is carved up by an RP2350 partition table — two A/B image slots the
-bootrom picks between, plus a `data` partition holding persistent settings
-and the fault log. Layouts live in `partitions/*.json`, one per
-board; the build compiles the board's own (`PARTITION_TABLE_JSON` overrides
-it) into `build/partition_table.uf2`. The controller card's 16 MB map,
+The flash is divided by an RP2350 partition table into two A/B image slots,
+selected by the bootrom, and a `data` partition holding persistent settings
+and the fault log. Layouts live in `partitions/*.json`, one per board; the
+build compiles the board's own (`PARTITION_TABLE_JSON` overrides it) into
+`build/partition_table.uf2`. The controller card's 16 MB map,
 `prod-16mb.json`:
 
 | Offset | Size | Partition |
@@ -19,7 +19,7 @@ it) into `build/partition_table.uf2`. The controller card's 16 MB map,
 | `0x802000` | 7168K | `assets` |
 | `0xF02000` | 1012K | `data` — settings ping-pong pair in the first two sectors |
 
-The top 4 KB sector stays unpartitioned, which picotool insists on for the
+The top 4 KB sector stays unpartitioned, as picotool requires for the
 RP2350-E10 erratum workaround. The firmware never hardcodes these offsets:
 it looks partitions up **by ID** through the bootrom at boot, so the same
 code runs on any layout. The Pico 2 W stand-in's 4 MB map
@@ -104,16 +104,17 @@ until it is asked for, there or with `update latest`. The update source is
 `update_url` in the settings, or the page), and `update source off` stops
 the controller asking; `update check` asks at once. That host is a small
 proxy in front of this repository's GitHub releases
-(`firmware/update-proxy`), there because the update client speaks plain HTTP
-only (TLS is kept for the broker link) and GitHub nothing else. The same pointer can instead be published, retained, to
-`pwrman/<name>/update/latest` by something on the LAN; the newer of the two
-is the one that counts. Neither needs to be trusted, as the next paragraph
-explains.
+(`firmware/update-proxy`). It exists because the update client supports only
+plain HTTP (TLS is used only for the broker link) and GitHub serves release
+downloads only over HTTPS. The same pointer can instead be published,
+retained, to `pwrman/<name>/update/latest` by something on the LAN; the
+newer of the two is the one that counts. Neither needs to be trusted, as the
+next paragraph explains.
 
 ## Signed updates
 
-What makes an image trustworthy is its signature, not
-where it came from, so it can be served over plain HTTP from anywhere.
+An image is trusted on its signature alone, regardless of its source, so it
+can be served over plain HTTP from any host.
 `controller.signed.bin` is the raw `controller.bin` with a 176-byte trailer —
 the image's length, the board it was built for, its SHA-512, and an Ed25519
 signature over those — and the firmware carries the public keys in
@@ -123,14 +124,14 @@ signature over those — and the firmware carries the public keys in
 - built for this board, and
 - no older than the running firmware.
 
-The push endpoint and the Home Assistant install have no way around these.
-The console has: `update --unsigned <url>` takes an image without a trailer
+The push endpoint and the Home Assistant install cannot bypass these checks.
+The console can: `update --unsigned <url>` takes an image without a trailer
 (a local `controller.bin` or `.uf2`) and `update --downgrade <url>` an older
-one, because reaching the console takes the unpopulated USB header or a debug
-probe, and either of those can flash anything already. BOOTSEL and picotool
-are untouched by all of this. A build with no keys in `keys/` says so when it
-is configured, at boot and in `info`; it accepts unsigned images from the
-network, and still refuses older ones.
+one, because reaching the console takes the unpopulated USB header or a
+debug probe, and either of those can flash anything already. These checks do
+not apply to BOOTSEL or picotool. A build with no keys in `keys/` says so
+when it is configured, at boot and in `info`; it accepts unsigned images
+from the network, and still refuses older ones.
 
 The release workflow signs both released builds with a Cloud KMS key.
 `tools/sign_image.py` does the signing (Cloud KMS, a YubiKey, a key file, or
@@ -146,8 +147,8 @@ shows `slot B (TRIAL, uncommitted)` — and commits itself only after 10 s of
 an unbroken engine heartbeat and, with WiFi configured, once the network
 has come up at least once since boot; a link that then flaps does not
 revert a good image. Until
-then any reboot, watchdog bite, or the 10-minute deadline reverts to the
-previous image, so a broken OTA push heals itself.
+then any reboot, watchdog reset, or the 10-minute deadline reverts to the
+previous image, so a broken OTA push is undone automatically.
 
 ## Settings across a revert
 
@@ -169,12 +170,13 @@ the configuration: it finds its own record in the other sector.
 
 ## Version ordering
 
-Pushing a **newer** build sticks by version comparison, and
-pushing a strictly **older** one sticks too — the bootrom records the
-deliberate downgrade and erases the newer slot's image when the trial commits,
-which is the rollback path. Only pushing the **same** version doesn't reliably
-survive a power cycle (ties break to slot A); that's the local-iteration case,
-so bump `FW_VERSION` or use `picotool load -f -p <0|1>` at the bench.
+Pushing a **newer** build sticks by version comparison, and pushing a
+strictly **older** one sticks too — the bootrom records the deliberate
+downgrade and erases the newer slot's image when the trial commits, which is
+the rollback path. Only pushing the **same** version does not reliably
+persist across a power cycle (ties break to slot A). This occurs during
+local iteration; bump `FW_VERSION` or use `picotool load -f -p <0|1>` at the
+bench.
 
 ## Blade firmware updates
 
@@ -187,28 +189,28 @@ blade side is in the [blade firmware docs](../../charger-module/docs/register-ma
 
 **When it happens.** The probe finds a blade in its bootloader — factory
 blank, reset into it, or set to boot through it — and takes it through a
-trip (`updating` in the state column, with a progress percentage): read
-the bootloader's version and the chip's ID, read the image header out of
-the flash, then either start what is there (it is the bundled version, and
-the bootloader's checksum of the flash matches the bundle), or erase and
-write the bundle, check it the same way and start it. That port is dark
-already, so the trip costs nothing.
+trip (`updating` in the state column, with a progress percentage): read the
+bootloader's version and the chip's ID, read the image header out of the
+flash, then either start what is there (it is the bundled version, and the
+bootloader's checksum of the flash matches the bundle), or erase and write
+the bundle, check it the same way and start it. That port is already dark,
+so the trip interrupts no output.
 
 A blade *running* its firmware has to be sent to the bootloader, and that
-takes its port down for the few seconds the trip lasts. The controller
-wants it in two cases: the firmware is not the bundled version (`blades
-auto on`, the default: the chassis keeps its blades on the firmware it was
-tested with, downgrades included — turn it off to run a bench build on a
-chassis, and then a blade in its bootloader is started on whatever good
-image it holds), and its option bytes are still the factory ones (`blades
-bootopt on`, the default), to have them programmed, once, so every reset
-lands in the bootloader from then on. When both are wanted the option goes
-first and the image is written under it, in the same trip. Both settings
-ride along with the rest (`blade_auto_update`, `blade_boot_via_loader` in
-the settings JSON).
+takes its port down for the few seconds the trip lasts. The controller does
+this in two cases: the firmware is not the bundled version (`blades auto
+on`, the default: the chassis keeps its blades on the firmware it was tested
+with, downgrades included — turn it off to run a bench build on a chassis,
+and then a blade in its bootloader is started on whatever good image it
+holds), and its option bytes are still the factory ones (`blades bootopt
+on`, the default), to have them programmed, once, so every reset lands in
+the bootloader from then on. When both are wanted the option goes first and
+the image is written under it, in the same trip. Both are stored with the
+other settings (`blade_auto_update`, `blade_boot_via_loader` in the settings
+JSON).
 
-Neither is worth a port's power, so **a port with something plugged in is
-never taken down for them**. They are done
+**A port with something plugged in is never taken down for either of them.**
+They are done
 
 - at a probe that starts from a dark port — a blade just seated, the
   chassis powering up, a port switched on, the retry after a fault — before
@@ -218,16 +220,16 @@ never taken down for them**. They are done
 A port that is charging something keeps charging on the firmware its blade
 has, for days if that is how long the device stays: `status` marks it
 `[blade update due when idle]`, the status JSON and the telemetry carry
-`update_due`. `port <n> update` (the `update` action) is the way to say
-"now": it rewrites the bundle onto the blade whatever is plugged in and
-whatever the blade runs.
+`update_due`. `port <n> update` (the `update` action) forces an immediate
+update: it rewrites the bundle onto the blade regardless of what is plugged
+in or what firmware the blade runs.
 
-And nothing is done on the controller's own account **while its image is
-on trial**. A controller update that carries a newer blade firmware
-changes no blade until the trial has committed (ten seconds of health, see
-[Try-before-you-buy](#try-before-you-buy)); one that never gets there — a link
-too poor to count as healthy, a crash — is reverted having touched
-nothing, so the old image does not find blades it has to take back.
+The controller starts no blade update **while its own image is on trial**. A
+controller update that carries a newer blade firmware changes no blade until
+the trial has committed (ten seconds of health, see
+[Try-before-you-buy](#try-before-you-buy)); one that never gets there — a
+link too poor to count as healthy, a crash — is reverted with no blade
+changed, so the previous image finds every blade on the firmware it expects.
 (`blades` says so while it lasts.) A blade found in its bootloader during
 the trial is started on what it holds.
 
@@ -243,40 +245,39 @@ a trial revert) while a blade is mid-trip — the bootloader resets the
 blade if the controller goes quiet for a second in the middle of a
 command.
 
-**The watch** (`blades watch`, `blade_watch_s`, default 120 s) is the way
-to a blade whose firmware runs but has stopped answering. It is not a
-timeout on the controller: a blade only resets into its bootloader when
-its EN is low *and* it has not been addressed for that long. A controller
-that is rebooting, updating or gone leaves EN where it was, and the ports
-run on. `port <n> update` on a silent port is what uses it: EN goes low,
-the blade finds its own way to the bootloader within the watch time, and
-the retry after each cooldown picks it up there. Switching the port off
-and on does the same, slower. `blades watch off` leaves only switching the
-chassis off and on.
+**The watch** (`blades watch`, `blade_watch_s`, default 120 s) is the way to
+a blade whose firmware runs but has stopped answering. It is not a timeout
+on the controller: a blade only resets into its bootloader when its EN is
+low *and* it has not been addressed for that long. A controller that is
+rebooting, updating or gone leaves EN where it was, and the ports run on.
+`port <n> update` on a silent port is what uses it: EN goes low, the blade
+resets into its bootloader within the watch time, and the retry after each
+cooldown finds it there. Switching the port off and on does the same,
+slower. `blades watch off` leaves only switching the chassis off and on.
 
 **What can go wrong.** Each trip that ends with a blade back in its
-bootloader without its firmware having come up as wanted counts; after
-three the port is held in FAULT (`probe: update (crash loop)`) and stays
-there — no retry every cooldown — until the chassis is switched off and on,
-the port is re-enabled, or `port <n> update` is given. A blade that *does* run but
-cannot be brought to what was wanted (an option that will not take) is
-not faulted for it: after three tries the controller logs `probe: update
-(not taking)` once, leaves the port in service and stops asking until one
-of those three things happens. A trip that fails outright (`probe: update (no image)` for
-a blank blade in a build without one, `(write)`, `(verify)`, `(bootloader
-silent)`, `(wrong chip)`) is a probe failure like any other, retried after
-the cooldown within the same allowance. The image is erased a page at a
-time, first page first, and written first page last, its header chunk
-last of all, so a blade that loses power midway reads as blank next time
-and is simply written again; a controller that reboots midway finds the
-blade still in its bootloader and starts the trip over. (A page per erase
+bootloader without its firmware having come up as wanted counts; after three
+the port is held in FAULT (`probe: update (crash loop)`) and stays there —
+no retry every cooldown — until the chassis is switched off and on, the port
+is re-enabled, or `port <n> update` is given. A blade that *does* run but
+cannot be brought to what was wanted (an option that will not take) is not
+faulted for it: after three tries the controller logs `probe: update (not
+taking)` once, leaves the port in service and stops asking until one of
+those three things happens. A trip that fails outright (`probe: update (no
+image)` for a blank blade in a build without one, `(write)`, `(verify)`,
+`(bootloader silent)`, `(wrong chip)`) is a probe failure like any other,
+retried after the cooldown within the same allowance. The image is erased a
+page at a time, first page first, and written first page last, its header
+chunk last of all, so a blade that loses power midway reads as blank on the
+next probe and is written again. A controller that reboots midway finds the
+blade still in its bootloader and restarts the trip. (A page per erase
 command with a pause after each is ST's workaround for bootloader V11.3,
 which acknowledges an erase before the flash has finished; V11.4, the
-current one, does not need it.) The work is sliced one step per engine
-tick, so the other five ports keep being served; a whole image takes
-well under ten seconds. Events: `update` with `written`, `started` or
-`boot option` and the version in `text`; the HA events entity sees
-`updated` when an image was written.
+current one, does not need it.) The work is sliced one step per engine tick,
+so the other five ports keep being served; a whole image takes well under
+ten seconds. Events: `update` with `written`, `started` or `boot option` and
+the version in `text`; the HA events entity sees `updated` when an image was
+written.
 
 ## Not yet run on hardware
 
@@ -309,8 +310,8 @@ To check when one arrives, in this order:
    `-pico2w` files; `fw.powermanifold.io` serves the signed ones.
 8. **The bus-sag cap.** On a bench supply wound down slowly with a 100 W
    sink attached: the cap at 20.0 V (the sink's contract drops to 60 W,
-   `status` says `ports capped at 3 A`), the release 30 s after the
-   supply is back at 20.5 V, and the power-up case (the chassis started
-   with the supply at 20.3 V comes up capped). Worth measuring while
-   there: how far a loaded LRS-350 actually sags at the XT60 before the
-   backplane cuts, which says how much margin the 20 V knee has.
+   `status` says `ports capped at 3 A`), the release 30 s after the supply
+   is back at 20.5 V, and the power-up case (the chassis started with the
+   supply at 20.3 V comes up capped). Also measure how far a loaded LRS-350
+   sags at the XT60 before the backplane cuts the bus, to establish the
+   margin above the 20 V threshold.

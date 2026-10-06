@@ -23,10 +23,10 @@ Ports are numbered 1 to 6.
 
 | Topic | When | Contents |
 | --- | --- | --- |
-| `availability` | retained | `online`, or `offline` when the controller drops off |
+| `availability` | retained | `online`, or `offline` when the controller disconnects |
 | `status` | every second, retained | the whole chassis, see below |
 | `port/<n>/telemetry` | every second | one port, see below |
-| `event` | as things happen | `{"port", "event", "kind", "code", "arg", "text", "ts"}` |
+| `event` | on each event | `{"port", "event", "kind", "code", "arg", "text", "ts"}` |
 | `update/state` | retained | `installed_version` and `latest_version` |
 
 **`status` fields:** `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
@@ -53,7 +53,7 @@ the input voltage crossing its low warning, use port 0.
 
 ## Commands
 
-Publish to these topics to change things. Settings changed over MQTT are
+Publish to these topics to send commands or change settings. Settings changed over MQTT are
 saved a few seconds after the last change.
 
 | Topic | Payload |
@@ -71,7 +71,7 @@ saved a few seconds after the last change.
 | `charged_mw/set`, `charged_min/set` | when a device counts as charged |
 | `improv/set` | `open`: open Bluetooth setup for ten minutes |
 | `update/set` | `install`: install the newest known release |
-| `update/latest` | retained pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}` to offer your own release source; the newer of this and the daily check wins |
+| `update/latest` | retained pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}` to offer your own release source. The controller uses the newer of this version and the one found by the daily check. |
 
 Example, with Mosquitto's command-line client:
 

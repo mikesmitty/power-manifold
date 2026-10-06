@@ -30,7 +30,7 @@ takes effect together at its end.
 | 0x20 / 0x22 / 0x24 | VBUS_MV / IOUT_MA / VOUT_MV | R, u16 | |
 | 0x26 / 0x28 / 0x2A | TEMP_CONV / TEMP_PLUG / TEMP_MCU | R, i16 | 0.1 °C |
 | 0x40 | CONTROL | R/W | bit 0: port enable |
-| 0x41 | COMMAND | W | 1 re-send capabilities, 2 hard reset, 3 clear faults, 4 reset into the ROM bootloader, 5 program the boot option and reset. 4 and 5 take the port down, so each counts only when the next byte of the same transfer is its complement (0xFB, 0xFA): no single byte gone wrong on the bus can spell them |
+| 0x41 | COMMAND | W | 1 re-send capabilities, 2 hard reset, 3 clear faults, 4 reset into the ROM bootloader, 5 program the boot option and reset. 4 and 5 take the port down, so each is accepted only when the next byte of the same transfer is its complement (0xFB, 0xFA). A single corrupted byte on the bus cannot trigger them |
 | 0x42 | MAX_MA | R/W, u16 | current ceiling, stored clamped to 5000 |
 | 0x44 | MAX_MV | R/W, u16 | voltage cap; 20000 and up = no cap, the 21 V PPS range included |
 | 0x46 | WATCH_S | R/W, u8 | with EN low, seconds without a transaction from the controller before the blade resets itself into the bootloader; 0 = never (the reset state). With EN high the blade never resets on silence |
@@ -81,10 +81,10 @@ firmware, then an option-byte reload, which is a reset) and the controller
 sends it once per blade when its setting says so. With factory option bytes
 the chip boots the firmware directly, and `BLADE_CMD_RESET` still gets to
 the bootloader by declaring the flash empty for the reset that follows
-(RM0444 2.5.4); the firmware clears that again when it starts. That way in
-is good for one reset only: the bootloader (V11.3 on) clears the empty
-flag itself, so a second reset before the image is whole boots a flash
-with no first page and the chip stays dead until its next power-on
+(RM0444 2.5.4); the firmware clears that again when it starts. This method
+works for one reset only. The bootloader (V11.3 and later) clears the empty
+flag itself, so a second reset before the image is complete boots a flash
+with no first page, and the chip does not run until its next power-on
 (AN2606, 48.3.1). The controller therefore sets the option first and
 rewrites under it.
 
@@ -99,7 +99,7 @@ after a reset. V11.3 acknowledges an erase before it has finished (the
 controller erases a page per command and waits 40 ms, ST's workaround) and
 stretches the clock on the first I2C address match on packages without
 PC11, which this one is; V11.2 and earlier predate the peripheral reset on
-entry. Which version a given chip carries is one byte to read at bring-up.
+entry. The bootloader version is a single byte, read at bring-up.
 
 **Coming back.** The bootloader's Go command starts the firmware in place.
 `hw_init` resets every peripheral the bootloader configured, `SystemInit`
@@ -107,15 +107,15 @@ points the vector table at the flash (`USER_VECT_TAB_ADDRESS`), and the
 `RESET` fault and `CONFIGURED` clear tell the controller it is looking at
 a fresh start, as after any reset.
 
-**The watch.** `WATCH_S` is the way back for a blade the controller cannot
-reach over I2C — firmware that runs but has gone deaf. The controller takes
-the slot's EN low, and a blade that sees EN low and has not been addressed
-for `WATCH_S` seconds resets into the bootloader, where it answers again.
-EN is what makes it the controller's decision: silence alone never resets a
-blade. A controller that is restarting, updating itself or gone leaves EN
-where it was, and a port that is running keeps running, on the limits it
-last had, for as long as that takes. Off until the controller sets it, so a
-blade on the bench is left alone.
+**The watch.** `WATCH_S` recovers a blade the controller cannot reach over
+I2C because its firmware is running but no longer responding. The controller
+takes the slot's EN low, and a blade that sees EN low and has not been
+addressed for `WATCH_S` seconds resets into the bootloader, where it answers
+again. The reset requires EN low, so it is always initiated by the
+controller. Silence alone never resets a blade. A controller that is
+restarting, updating itself or absent leaves EN unchanged, and a running
+port keeps running on its last limits for the duration. The watch is off
+until the controller sets it, so a blade on the bench is not reset.
 
 **On the bench.** With the boot option programmed, `reset run` from a
 debugger lands in the bootloader too, so a bring-up blade is easier kept on

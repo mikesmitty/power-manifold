@@ -4,7 +4,7 @@ How the controller firmware is structured and how its less visible machinery beh
 
 ## Architecture
 
-Two cores, one rule: **only core 1 touches the backplane.**
+The firmware runs on two cores. **Only core 1 accesses the backplane.**
 
 - **Core 1 — engine** (`src/engine/`): 100 Hz supervisory loop. Round-robins
   the mux channels reading each blade (a gen-2 blade's INA226 and MPQ4242, a
@@ -69,11 +69,11 @@ off), which is what makes a [warm start](#warm-start) possible. Should
 the expander ever come back at its power-on registers anyway, the
 presence refresh notices the lost configuration word, rewrites outputs
 and direction with every EN as it was, and logs `probe: expander reset`.
-An expander that merely fails to answer is not reset for it: the mux is
-(after half a second; that frees a blade segment holding the bus and
-costs no port anything), and only after five seconds out of reach is the
-expander itself reset and its EN pattern written straight back — see
-[Keeping ports powered](#keeping-ports-powered).
+An expander that does not answer is not reset straight away. The mux is
+reset after half a second, which frees a blade segment holding the bus and
+does not affect port power. The expander itself is reset only after five
+seconds without an answer, and its EN pattern is written back immediately.
+See [Keeping ports powered](#keeping-ports-powered).
 
 Behind the mux and the expander, port *n* (1-based wherever the firmware
 talks to a person) is mux channel *n*−1, EN on P0(*n*−1), PRSNT# on
@@ -93,10 +93,11 @@ chassis light.
 Two charger blades fit the chassis, and a probe tells them apart by what
 answers on the slot's mux channel: a gen-3 blade's register file at 0x3A
 first, else a gen-2 blade's INA226 at 0x40. The port engine
-(`src/engine/port_fsm.c`) does not care which; `src/engine/blade.c` puts
-both behind one interface, and the status table, the JSON and the MQTT
-telemetry carry the generation as `gen`. A chassis can hold a mix, and the
-budget arbiter sheds and restores across generations by priority alone.
+(`src/engine/port_fsm.c`) does not depend on the generation.
+`src/engine/blade.c` puts both behind one interface, and the status table,
+the JSON and the MQTT telemetry carry the generation as `gen`. A chassis can
+hold a mix, and the budget arbiter sheds and restores across generations by
+priority alone.
 
 - **Gen 2** (`hardware/charger-module` up to 0.14): an MPQ4242 negotiates
   PD on its own and an INA226 meters the port. The controller writes the
@@ -153,15 +154,14 @@ reset and configured from scratch, outputs low first.
 Every blade found powered is then taken back under supervision without
 touching EN, in priority order, 50 ms apart: the mux channel is selected,
 the blade identified (its generation with it), any fault latched while
-nobody was watching (an over-current trip, an MPQ4242 fault flag, a gen-3
-blade's fault register) is treated as a
-fault now — the usual path, EN off, cooldown, re-probe — and the blade's
-configuration is compared, read-only, with the settings and rewritten
-(and re-advertised to an attached sink) only when it differs, so a live
-contract normally rides through untouched. The port then reports `active`
-with its contract reserved in the budget as if nothing had happened. A
-blade that does not answer stays powered all the same — it ran without
-the controller until now — and is shown as silent and asked again every
+the controller was down (an over-current trip, an MPQ4242 fault flag, a
+gen-3 blade's fault register) is handled as a new fault — the usual path,
+EN off, cooldown, re-probe — and the blade's configuration is compared,
+read-only, with the settings and rewritten (and re-advertised to an
+attached sink) only when it differs, so a live contract is normally not
+interrupted. The port then reports `active`, with its contract reserved in
+the budget. A blade that does not answer also stays powered, as it was
+while the controller was down, and is shown as silent and asked again every
 second ([Keeping ports powered](#keeping-ports-powered)); a port whose
 boot policy is `off` (or `last` with the port last switched off) is
 switched off at once; an EN left on with no blade seated behind it is
@@ -170,29 +170,28 @@ whether it stays on. Whether it is a warm start at all rests on one read
 of the expander, so an expander that does not answer that read is asked
 again for half a second before its silence is taken for a cold start.
 
-What a warm start cannot do is make up for the time the controller was
-down: there is no budget arbitration and no firmware fault response while
-it is away — only the blades' own current and thermal limits — and the
-charge-complete hold and sleep timers restart at the reboot. The console
-logs `engine: warm start, ports 1 and 3 kept powered` (or `cold start`),
-`info` repeats it, and the status JSON carries `warm_start`. The
-Pico 2 W carrier and the controller card both behave this way; it is
-exercised against the simulator in the host tests and still to be
-confirmed on a live backplane.
+A warm start does not cover the time the controller was down: there is no
+budget arbitration and no firmware fault response while it is away — only
+the blades' own current and thermal limits — and the charge-complete hold
+and sleep timers restart at the reboot. The console logs `engine: warm
+start, ports 1 and 3 kept powered` (or `cold start`), `info` repeats it, and
+the status JSON carries `warm_start`. The Pico 2 W carrier and the
+controller card both behave this way; it is exercised against the simulator
+in the host tests and still to be confirmed on a live backplane.
 
 ## Keeping ports powered
 
-A port that is delivering power keeps delivering it unless something
-requires otherwise. What does: a fault the blade or the controller's own
-meter reports, the blade being pulled, the port being switched off (by
-hand, by its sleep timer or charged-off rule), and `port <n> update`.
-The budget never cuts a port; it lowers what the port advertises.
+A port that is delivering power keeps delivering it unless one of the
+following occurs: a fault the blade or the controller's own meter reports,
+the blade being pulled, the port being switched off (by hand, by its sleep
+timer or charged-off rule), or `port <n> update`. The budget never switches
+a port off; it lowers what the port advertises.
 
-What does not, and what the firmware does instead:
+The following events do not switch a port off. Each is handled as described:
 
 - **The controller restarting**, for any reason and for however long: a
-  warm start, above. The blades' own watch does not count the controller's
-  silence against a port whose EN is high.
+  warm start, above. The blade's watch timer does not run while the
+  port's EN is high.
 - **A blade that stops answering** while its port is powered. EN stays,
   the budget keeps the port's reservation, and nothing is decided from
   readings that have gone stale: no charge-complete, no throttling of that
@@ -218,9 +217,9 @@ What does not, and what the firmware does instead:
   itself reset (EN pattern written straight back) only after five seconds
   out of reach.
 
-The price is a port that may run for a while with nobody watching it, on
-the limits it was last given and the blade's own protections — which is
-what every port does whenever the controller restarts.
+As a result, a port may run unsupervised for a time, on the limits it was
+last given and the blade's own protections. Every port does the same during
+a controller restart.
 
 ## Bus voltage
 
@@ -229,21 +228,20 @@ across the bottom leg) brings VIN to GP28/ADC2, so 3.3 V full scale is
 42.9 V and the bus's 33 V clamp can never take the pin past the rail. Core 0
 takes eight conversions every 100 ms and reports a one-second average,
 about 10 mV a count. The ADC's reference is the card's 3.3 V rail and the
-divider is 1 % parts, so the reading can be a couple of percent off; put a
-meter on the bus and `vin cal 24.13` (then `save`) stores the gain trim
-that makes them agree, in the `vin_cal` setting (permille, 900 to 1100;
-`vin cal reset` clears it). The reading is `vin_v` in the status JSON and
-the MQTT status, a *Bus voltage* sensor in Home Assistant,
+divider uses 1 % parts, so the reading can be off by about 2 %. To correct
+it, measure the bus with a meter and run `vin cal 24.13` (then `save`) to
+store the gain trim that makes them agree, in the `vin_cal` setting
+(permille, 900 to 1100; `vin cal reset` clears it). The reading is `vin_v` in the status
+JSON and the MQTT status, a *Bus voltage* sensor in Home Assistant,
 `pwrman_bus_volts` on `/metrics`, part of the chassis summary on the page,
 `vin` and a line in `info` and `status` on the console. The hardware is
-rated for 20 to 28 V and the backplane opens the bus near 17.7 V (and
-closes it again near 19.3 V), so a bus under 19 V or over 29 V (half a
-volt of hysteresis either way) raises the problem indicator and logs a
-line; the crossing of the 19 V flag, either way, also goes into the fault
-log, since the cut a volt further down restarts the controller and would
-otherwise leave no trace. The Pico 2 W carrier has no path from VIN to an
-ADC pin, so there the monitor reports *not fitted* and every surface
-leaves it out.
+rated for 20 to 28 V and the backplane opens the bus near 17.7 V (and closes
+it again near 19.3 V), so a bus under 19 V or over 29 V (half a volt of
+hysteresis either way) raises the problem indicator and logs a line; the
+crossing of the 19 V flag, either way, also goes into the fault log, since
+the cut a volt further down restarts the controller and would otherwise
+leave no trace. The Pico 2 W carrier has no path from VIN to an ADC pin, so
+there the monitor reports *not fitted* and every surface leaves it out.
 
 **Bus-sag cap.** Before the bus gets near that cut, the firmware takes
 load off it: while the bus reads under 20.0 V every port's advertised
@@ -254,9 +252,9 @@ renegotiate within it, and nothing is switched off. The cap comes off
 once the bus has held 20.5 V for 30 s without a dip. At power-up the
 first reading is judged against 20.5 V rather than 20.0 V, so a chassis
 that has just been cut by the backplane and comes back on a marginal
-supply brings its blades up under the cap and earns its way out, instead
-of putting the same load straight back. The numbers are fixed, not
-settings: this is a safety cut-off (`src/bus_cap.c`). While it is on, the
+supply brings its blades up under the cap and leaves it only once the
+voltage has recovered, without immediately reapplying the full load. The
+numbers are fixed, not settings: this is a safety cut-off (`src/bus_cap.c`). While it is on, the
 problem indicator says so (`bus voltage sagging, 19.80 V, ports capped at
 3 A`), `ceiling_ma` in the status JSON and MQTT status is 3000 (0
 otherwise), the page's chassis summary and the console's `status` and
@@ -289,7 +287,7 @@ boot adds a record saying why it happened, and the DC bus crossing its
 
 ## Wired Ethernet
 
-The W6100 runs in MACRAW mode, so it is just another lwIP netif and
+The W6100 runs in MACRAW mode, as an ordinary lwIP netif, so
 everything above it (DHCP, mDNS, MQTT, HTTP, OTA pull) is the same code as
 over WiFi. Its MAC is locally administered, derived from the RP2350's
 unique ID. When both links are up the wired one holds the default route and
@@ -323,8 +321,9 @@ faults. Running on battery, or a battery fault (missing, reversed,
 under/overvoltage, unbalanced, discharge overload, a bad block), raises the
 problem indicator. `ups buzzer off` silences the supply's alarm; the
 setting lives in the supply and is lost when it restarts, as its manual
-says of every write. The driver runs against an emulated supply in the
-host tests (`test_ups.c`) and has not yet met a real LAD.
+says of every write. The driver is tested against an emulated supply in
+the host tests (`test_ups.c`) and has not yet been run against a real LAD
+supply.
 
 ## Console log
 

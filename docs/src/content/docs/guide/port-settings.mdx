@@ -48,7 +48,7 @@ example:
 
 - **5 V** for a device with a USB-C trigger board or adapter that you don't
   fully trust.
-- **9 V** for a phone you'd rather charge gently.
+- **9 V** to limit the charging power of a phone.
 
 ## Current limit
 
@@ -56,8 +56,8 @@ The current limit is the most current a port offers at any voltage, from
 500 to 5000 mA. Power scales with the voltage the device picks: a 3000 mA
 limit means 15 W at 5 V and 60 W at 20 V.
 
-The limit only sets what the port offers. A device that wants more simply
-gets less. It isn't cut off.
+The limit only sets what the port offers. A device that requests more
+receives the limited amount and is not switched off.
 
 Try a cap, a limit and a cable to see what a port offers:
 
@@ -80,8 +80,8 @@ both numbers in **Settings**, or set the power to 0 to turn detection off.
 Two per-port options build on this:
 
 - **Switch off once charged** turns the port off as soon as the device is
-  charged. Use it to stop phones and tablets from sitting at 100 % all
-  night.
+  charged. Use it to stop phones and tablets from staying at 100 %
+  overnight.
 - **Sleep timer** turns the port off a set number of minutes after you plug
   a device in, whether it has finished charging or not, up to 24 hours.
 

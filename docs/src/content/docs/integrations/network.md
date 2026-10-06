@@ -38,8 +38,8 @@ TLS port, usually 8883.
 
 With **TLS**, the controller checks that it is talking to your real broker:
 
-- **A broker with a Let's Encrypt certificate** works with nothing else to
-  set up, as long as you enter the broker by name, not by IP address.
+- **A broker with a Let's Encrypt certificate** needs no further setup if
+  you enter the broker by name, not by IP address.
 - **Any other broker**, such as one with a self-signed certificate or your
   own certificate authority, needs its certificate. Paste the certificate
   authority that issued the broker's certificate, or the broker's own
@@ -48,12 +48,12 @@ With **TLS**, the controller checks that it is talking to your real broker:
 - **A broker entered by IP address** always needs its certificate pasted
   in.
 
-**TLS, unverified** encrypts the connection without checking who is on the
-other end. It stops anyone from listening in, but not from impersonating
-your broker.
+**TLS, unverified** encrypts the connection without verifying the broker's
+identity. It prevents eavesdropping but not impersonation of the broker.
 
 A verified connection waits until the controller has the time from the
-[time server](#time-server), because certificates have dates.
+[time server](#time-server), because certificate checks depend on the current
+date.
 
 ## Syslog
 

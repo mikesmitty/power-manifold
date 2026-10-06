@@ -1,12 +1,12 @@
 ---
 title: Power Manifold
-description: A six-port USB-C power supply for single-board computers and other USB-C devices, with per-port control, sensible power sharing and Home Assistant support.
+description: A six-port USB-C power supply for single-board computers and other USB-C devices, with per-port control, priority-based power sharing and Home Assistant support.
 template: splash
 hero:
   image:
     # A plain img: Starlight would crop an image file to a square.
     html: '<img src="/power-manifold/hero.webp" width="963" height="372" alt="Power Manifold chassis from the front right, showing the Ethernet jack, six numbered USB-C ports, the exhaust fan and the XT60 power input.">'
-  tagline: Six USB-C ports up to 100 W each, from one 24 V supply instead of a pile of power adapters. Switch, name, limit and watch every port from your browser or Home Assistant.
+  tagline: Six USB-C ports up to 100 W each, from one 24 V supply. Switch, name, limit and monitor every port from a browser or Home Assistant.
   actions:
     - text: Get started
       link: /power-manifold/setup/first-time-setup/
@@ -25,11 +25,10 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 import AdapterClutter from '../../components/AdapterClutter.astro';
 
 Power Manifold powers a stack of Raspberry Pis, mini PCs, phones and
-laptops from one DC power supply. That replaces a power adapter for every
-device, along with the power strip they hang off and the tangle of cords
-between them. Each of its six USB-C ports supports USB Power Delivery, so
-every device gets the voltage it asks for, and a controller inside keeps
-track of all of them.
+laptops from one DC power supply. It replaces the separate power adapter for
+each device, the power strip and the cables between them. Each of its six
+USB-C ports supports USB Power Delivery, so every device gets the voltage it
+requests, and a built-in controller monitors every port.
 
 <AdapterClutter />
 
@@ -39,15 +38,15 @@ track of all of them.
 		<p>Each port offers 5, 9, 12, 15 and 20 V plus PPS, and up to 5 A with a 5 A cable.</p>
 	</div>
 	<div class="feature">
-		<h3>Shares power sensibly</h3>
-		<p>Tell it how big your power supply is and which ports matter most. When devices ask for more than the supply can give, the least important ports are turned down. Nothing is switched off.</p>
+		<h3>Shares power by priority</h3>
+		<p>Set the size of your power supply and a priority for each port. When devices ask for more than the supply can give, the least important ports are turned down. Nothing is switched off.</p>
 	</div>
 	<div class="feature">
 		<h3>Works with Home Assistant</h3>
 		<p>Every port shows up with its power, an on/off switch and its settings, ready for dashboards, the energy panel and automations.</p>
 	</div>
 	<div class="feature">
-		<h3>Status at a glance</h3>
+		<h3>Status lights and live readings</h3>
 		<p>A light under each port shows what it is doing, and the built-in web interface shows live power for every port.</p>
 	</div>
 </div>
@@ -71,7 +70,7 @@ track of all of them.
 		href="/power-manifold/guide/home-assistant/"
 	/>
 	<LinkCard
-		title="Something's not right"
+		title="Troubleshooting"
 		description="What a red light or a problem warning means, and what to do about it."
 		href="/power-manifold/guide/troubleshooting/"
 	/>

@@ -19,16 +19,16 @@ carry them.
 | `isrg-root-ye.pem` | Root YE | ECDSA P-384 | 2045-09-02 | `E1:4F:FC:AD:5B:00:25:73:10:06:CA:A4:3A:12:1A:22:D8:E9:70:0F:4F:B9:CF:85:2F:02:A7:08:AA:5D:56:66` |
 | `isrg-root-yr.pem` | Root YR | RSA 4096 | 2045-09-02 | `E5:7B:7E:6F:15:0C:41:91:02:E8:D5:C0:55:72:9F:F9:67:B9:D1:A8:29:BF:00:CE:C8:9C:A6:04:EB:F4:A8:6F` |
 
-Keep this to the roots the firmware should trust without being told. Anyone
-can get a certificate from a public CA for a name they control, so every
-root here widens who could stand in for a broker whose name they also
-control; Let's Encrypt is here because it is what most brokers with a
-certificate at all were issued by. To add or replace a root, download its
+Limit this directory to the roots the firmware should trust by default.
+Anyone can get a certificate from a public CA for a name they control, so
+every root here widens who could stand in for a broker whose name they also
+control. Let's Encrypt is included because it issued the certificates of
+most brokers that have one. To add or replace a root, download its
 PEM from the page above, check the fingerprint printed by
 
 ```sh
 openssl x509 -in roots/<file>.pem -noout -fingerprint -sha256
 ```
 
-against the page, drop the file here and rebuild. A root that has expired
-costs nothing but flash and can stay until the next tidy-up.
+against the page, drop the file here and rebuild. An expired root uses only
+flash space and can be removed at the next cleanup.

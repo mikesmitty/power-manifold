@@ -9,8 +9,8 @@ import { Aside } from '@astrojs/starlight/components';
 import PowerSharing from '../../../components/PowerSharing.astro';
 
 Six ports at 100 W would need a 600 W supply. Most setups never draw that
-much at once, so Power Manifold lets you use a smaller supply and shares it
-out. You tell it how much power the supply has (the **budget**) and which
+much at once, so Power Manifold can run from a smaller supply and divide its
+power between the ports. You tell it how much power the supply has (the **budget**) and which
 ports matter most (their **priority**).
 
 ## The budget
@@ -76,9 +76,8 @@ slowly. If a Pi is unplugged, the laptop gets its share.
 
 ## When the input voltage drops
 
-If the power supply struggles and its voltage falls below 20 V, every port
-is limited to 3 A (60 W at most) until the voltage has been back above
-20.5 V for 30 seconds. Devices are offered less, but nothing is switched
+If the supply voltage falls below 20 V, every port is limited to 3 A (60 W
+at most) until the voltage has been above 20.5 V for 30 seconds. Devices are offered less, but nothing is switched
 off. While this is happening the web interface and Home Assistant show a
 problem saying the ports are capped.
 
@@ -88,7 +87,7 @@ cable is too thin. Lower the budget or use a bigger supply. See
 
 ## The fan
 
-The fan switches on by itself when the chassis is busy:
+The fan switches on automatically under any of these conditions:
 
 - when the total power reaches 80 W, staying on until it falls to 60 W;
 - while any port delivers more than 3 A;

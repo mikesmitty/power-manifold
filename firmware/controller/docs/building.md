@@ -85,9 +85,9 @@ ninja -C build-eth
 
 With 2 MB there is no room for the A/B partition layout, so the EVB runs the
 image unpartitioned (`boot: slot raw`) and OTA is unavailable on it; flash it
-over SWD or BOOTSEL. Give the W6100 its time after reset: the driver waits
-100 ms before the first register read, because at 10 ms the chip does not
-answer yet.
+over SWD or BOOTSEL. The W6100 needs time after reset: the driver waits
+100 ms before the first register read, because the chip does not answer at
+10 ms.
 
 ## Fake-blade mode (no backplane needed)
 
