@@ -14,9 +14,9 @@ const IDLE = 15;
 // Per port: device (null for nothing plugged in), its light, what it asked
 // for, and what it was given.
 type Port = { device: string | null; light: string; ask: number; got: number };
-const pi = (): Port => ({ device: 'Pi 5', light: '#3b82f6', ask: 25, got: 25 });
+const pi = (): Port => ({ device: 'Pi 5', light: '#22c55e', ask: 25, got: 25 });
 const idle = (): Port => ({ device: null, light: '#e8e8e8', ask: IDLE, got: IDLE });
-const tablet = (got = 45): Port => ({ device: 'Tablet', light: '#22c55e', ask: 45, got });
+const tablet = (got = 45): Port => ({ device: 'Tablet', light: '#3b82f6', ask: 45, got });
 
 const STEPS = [
 	{
@@ -27,7 +27,7 @@ const STEPS = [
 	{
 		title: 'A laptop plugs in',
 		text: 'A 100 W laptop plugs into port 3, which would take the total to 225 W. Port 5 has a lower priority, so the tablet is turned down to 15 W. The laptop is still 30 W short, so it gets the 85 W that is left. Both keep charging.',
-		ports: [pi(), pi(), { device: 'Laptop', light: '#22c55e', ask: 100, got: 85 }, idle(), tablet(IDLE), idle()],
+		ports: [pi(), pi(), { device: 'Laptop', light: '#3b82f6', ask: 100, got: 85 }, idle(), tablet(IDLE), idle()],
 	},
 	{
 		title: 'The laptop is unplugged',
