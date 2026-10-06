@@ -99,6 +99,8 @@ background:color-mix(in srgb,var(--red) 10%,var(--panel));border:1px solid color
 .meter i{display:block;height:100%;border-radius:2px}
 .spark{display:block;width:100%;height:auto}
 .note{font-size:.82rem;color:var(--mute);min-height:2.6rem;display:flex;align-items:center}
+.cfi{display:flex;flex-wrap:wrap;gap:.1rem .9rem}
+.cfi>span{white-space:nowrap}
 .cf{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:.78rem;color:var(--mute);border-top:1px solid var(--line);padding-top:.55rem;min-height:2.3rem}
 .tgl{display:inline-flex;align-items:center;gap:.45rem;background:none;border:0;cursor:pointer;padding:.15rem;font-size:.78rem;color:var(--mute)}
 .tgl i{width:2.1rem;height:1.2rem;border-radius:99px;background:var(--off);position:relative;transition:background .2s}
@@ -122,7 +124,6 @@ background:color-mix(in srgb,var(--red) 10%,var(--panel));border:1px solid color
 .chart .cap b{color:var(--fg);font-size:1rem}
 .chart svg{display:block;width:100%;height:auto;background:var(--panel2);border:1px solid var(--line);border-radius:6px}
 .gl{stroke:var(--line);stroke-width:1}
-.gt{fill:var(--mute);font:9px var(--mono)}
 .pf{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.5rem 1rem}
 .pf div{font-size:.72rem;color:var(--mute)}.pf b{display:block;font-size:.88rem;color:var(--fg);font-weight:600}
 
@@ -295,7 +296,7 @@ function spark(s,k,c,w,h,grid){const n=s.length,m=Math.max(...s.map(x=>x[k]),1e-
  const e=n?`<circle cx="${X(n-1)}" cy="${Y(s[n-1][k])}" r="${grid?3:2.2}" fill="${c}"/>`:'';
  return `<svg class="${grid?'':'spark'}" viewBox="0 0 ${w} ${h}" aria-hidden="true">${g}`+
  (n>1?`<polygon points="0,${h} ${pts} ${w},${h}" fill="${c}" fill-opacity=".14"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.6" stroke-linejoin="round"/>`:'')+
- e+(grid?`<text class="gt" x="4" y="11">${W(m,k=='p'?1:2)}</text>`:'')+'</svg>';}
+ e+'</svg>';}
 
 function span(n){const s=Math.max(n-1,0);return s<60?s+' s':Math.floor(s/60)+' min';}
 function chart(i,k,u,dp){const s=H[i]||[],n=s.length,c=COL[hue(last.ports[i])],m=Math.max(...s.map(x=>x[k]),0);
@@ -312,7 +313,7 @@ function card(p,i){const h=hue(p),c=COL[h],live=p.state=='active'||p.state=='thr
   :`<button class="tgl" role="switch" aria-checked="${on}" data-a="pw" data-i="${i}" aria-label="Power for port ${i+1}">${on?'On':'Off'}<i></i></button>`;
  return `<div class="panel card${i==sel?' sel':''}${p.state=='fault'?' fault':''}${live?'':' quiet'}" data-i="${i}" tabindex="0">
   <div class="ch"><span class="led ${led(p)}"></span><span class="pn">${i+1}</span><span class="nm" title="${esc(p.name)}">${esc(p.name)}</span><span class="pill ${h}">${label(p)}</span></div>
-  ${body}<div class="cf"><span class="num">${W(p.e,3)} kWh${t.length?' \u00b7 '+t.join(' \u00b7 '):''}</span>${ctl}</div></div>`;}
+  ${body}<div class="cf"><span class="num cfi">${[W(p.e,3)+' kWh',...t].map(x=>`<span>${x}</span>`).join('')}</span>${ctl}</div></div>`;}
 
 function detail(i){const p=last.ports[i],f=[['Reserved',p.contract_w?W(p.contract_w,0)+' W':'none'],['Current limit',p.limit_ma+' mA'],
  ['Voltage cap',p.max_v+' V'],['At power-up',p.boot],['Converter',p.t_conv!=null?W(p.t_conv)+' \u00b0C':'\u2013'],['Plug',p.t_plug!=null?W(p.t_plug)+' \u00b0C':'\u2013'],['Blade MCU',p.t_mcu!=null?W(p.t_mcu)+' \u00b0C':'\u2013'],['Energy',W(p.e,3)+' kWh']];
