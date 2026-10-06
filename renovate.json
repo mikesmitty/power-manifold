@@ -1,13 +1,23 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "local>mikesmitty/renovate-config"
+    "local>mikesmitty/renovate-config",
+    ":maintainLockFilesMonthly"
   ],
   "packageRules": [
     {
       "description": "The docs site is not a released package: its dependency updates are chores, never feat/fix/breaking (the shared preset marks every v0.x update as feat!)",
       "matchFileNames": ["docs/**"],
       "commitMessagePrefix": "chore(docs):"
+    },
+    {
+      "description": "The docs site only builds static pages, so its updates wait for one grouped pull request at the start of each month",
+      "matchFileNames": ["docs/**"],
+      "groupName": "docs dependencies",
+      "schedule": ["* 0-3 1 * *"]
     }
-  ]
+  ],
+  "lockFileMaintenance": {
+    "commitMessagePrefix": "chore(docs):"
+  }
 }
