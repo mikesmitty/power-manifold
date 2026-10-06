@@ -6,12 +6,24 @@ sidebar:
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import Screenshot from '../../../components/Screenshot.astro';
+import overviewLight from '../../../assets/web-page/overview-light.png';
+import overviewDark from '../../../assets/web-page/overview-dark.png';
+import detailLight from '../../../assets/web-page/port-detail-light.png';
+import detailDark from '../../../assets/web-page/port-detail-dark.png';
 
 Every Power Manifold serves its own web page. Open `http://pwrman.local/`, or
 `http://<name>.local/` if you changed the device name. If `.local` names
 don't work on your network, use the IP address your router gave it.
 
 The page works without Home Assistant and without internet access.
+
+<Screenshot
+	light={overviewLight}
+	dark={overviewDark}
+	alt="The top of the web page: the front panel drawing with six port lights, the power budget bar, chassis details and the first two port cards with power graphs"
+	caption="The top of the page, with five ports delivering power and port 6 ready for a device. The page follows your browser's light or dark setting."
+/>
 
 ## At the top
 
@@ -50,6 +62,13 @@ no blade in the slot, or a fault. A port with nothing plugged in still holds
 Click a card to see graphs of its power, current and voltage, with the
 port's settings and temperatures. The graphs start when you open the page
 and cover the last ten minutes. Home Assistant keeps the long-term history.
+
+<Screenshot
+	light={detailLight}
+	dark={detailDark}
+	alt="Port 3, a laptop, opened below its card: power, current and voltage graphs over three minutes, then its reserved power, current limit, voltage cap, power-up state, temperatures and energy"
+	caption="A port opened to its graphs and settings."
+/>
 
 The switch at the bottom of each card turns the port on or off. Turning it
 off asks you to confirm on the card first, because the device plugged into
