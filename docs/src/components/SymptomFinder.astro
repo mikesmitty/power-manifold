@@ -1,0 +1,147 @@
+---
+// The top of the Troubleshooting page: pick what you see, read one line on
+// what it means and follow the link to the fix. Light colours and patterns
+// match the tables on the Front panel page.
+
+type Symptom = {
+	led?: { colour: string; anim?: 'blink' | 'pulse'; off?: boolean };
+	title: string;
+	means: string;
+	href: string;
+};
+
+const T = '/power-manifold/guide/troubleshooting/';
+const GROUPS: { name: string; items: Symptom[] }[] = [
+	{
+		name: 'A port light',
+		items: [
+			{ led: { colour: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The port shut itself off after a fault.', href: `${T}#a-port-blinks-red` },
+			{ led: { colour: '#e8e8e8' }, title: 'White with a device plugged in', means: 'The port doesn’t see the device, or it has finished charging.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
+			{ led: { colour: 'transparent', off: true }, title: 'Off', means: 'The port is switched off.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
+			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Pulsing slowly', means: 'Turned down: the chassis is at its power budget.', href: '/power-manifold/guide/sharing-power/' },
+			{ led: { colour: '#22d3ee', anim: 'blink' }, title: 'Cyan, blinking', means: 'The blade is starting up, usually after an update. Nothing to fix.', href: '/power-manifold/guide/updates/' },
+		],
+	},
+	{
+		name: 'The chassis light, left of port 1',
+		items: [
+			{ led: { colour: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The input voltage is out of range.', href: `${T}#bus-voltage-out-of-range` },
+			{ led: { colour: '#ef4444', anim: 'pulse' }, title: 'Red, breathing', means: 'No network connection.', href: `${T}#no-network` },
+			{ led: { colour: '#f59e0b', anim: 'pulse' }, title: 'Amber, breathing', means: 'No API token yet: setup is open.', href: '/power-manifold/setup/first-time-setup/' },
+			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Blue, breathing', means: 'Waiting for Wi-Fi setup over Bluetooth.', href: '/power-manifold/setup/wifi-provisioning/' },
+		],
+	},
+	{
+		name: 'Something else',
+		items: [
+			{ title: 'A laptop charges slowly', means: 'Check the voltage cap, current limit and cable.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
+			{ title: '“Ports capped at 3 A”', means: 'The power supply’s voltage sagged under load.', href: `${T}#ports-capped-at-3-a` },
+			{ title: 'A port shows silent', means: 'The blade stopped answering. The port keeps its power.', href: `${T}#a-port-shows-silent-or-not-answering` },
+			{ title: 'Can’t open the web interface', means: 'Try the IP address instead of pwrman.local.', href: `${T}#cant-reach-the-web-interface` },
+			{ title: 'Forgot the API token', means: 'It can’t be recovered: factory reset and set a new one.', href: `${T}#forgot-the-api-token` },
+		],
+	},
+];
+---
+
+<nav class="symptoms not-content" aria-label="Find your symptom">
+	{GROUPS.map((g) => (
+		<section>
+			<h3>{g.name}</h3>
+			<ul>
+				{g.items.map((s) => (
+					<li>
+						<a href={s.href}>
+							{s.led && (
+								<span
+									class:list={['led', s.led.anim, { off: s.led.off }]}
+									style={`--led:${s.led.colour}${s.led.anim === 'pulse' ? ';animation-duration:2s' : ''}`}
+									aria-hidden="true"
+								/>
+							)}
+							<span class="sy-text">
+								<strong>{s.title}</strong>
+								<span>{s.means}</span>
+							</span>
+							<span class="sy-arrow" aria-hidden="true">→</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		</section>
+	))}
+</nav>
+
+<style>
+	.symptoms {
+		display: grid;
+		gap: 1.25rem;
+		margin: 1.5rem 0 2rem;
+	}
+	.symptoms h3 {
+		margin: 0 0 0.5rem;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--sl-color-gray-3);
+	}
+	.symptoms ul {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.symptoms a {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.6rem;
+		height: 100%;
+		padding: 0.6rem 0.75rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+		color: inherit;
+		text-decoration: none;
+		transition: border-color 0.15s;
+	}
+	.symptoms a:hover,
+	.symptoms a:focus-visible {
+		border-color: var(--sl-color-accent);
+	}
+	.symptoms .led {
+		flex: none;
+		margin: 0.15em 0 0;
+	}
+	/* A light that is off: just the dark faceplate. */
+	.symptoms .led.off::after {
+		box-shadow: none;
+	}
+	.sy-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+		flex: 1;
+		min-width: 0;
+	}
+	.sy-text strong {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-white);
+	}
+	.sy-text span {
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		line-height: 1.4;
+	}
+	.sy-arrow {
+		flex: none;
+		color: var(--sl-color-gray-4);
+		transition: color 0.15s, transform 0.15s;
+	}
+	.symptoms a:hover .sy-arrow {
+		color: var(--sl-color-accent);
+		transform: translateX(2px);
+	}
+</style>

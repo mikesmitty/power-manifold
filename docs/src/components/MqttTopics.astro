@@ -1,0 +1,235 @@
+---
+// Every MQTT topic under pwrman/<name>/ as a tree. Each one says which way it
+// goes: "out" is published by the controller, "in" is a command you
+// publish. Topics with a JSON payload open to show an example. The topics
+// and payload layouts follow firmware/controller/src/net/mqtt.c; the
+// numbers are made up but in range.
+
+type Leaf = { name: string; dir: 'out' | 'in'; note: string; example?: object | string };
+type Branch = { name: string; children: Leaf[] };
+
+const STATUS = {
+	total_w: 110.42, reserved_w: 202.0, budget_w: 240.0, headroom_w: 38.0, energy_kwh: 17.85,
+	fan: 'ON', fan_mode: 'auto', alert: false, rssi: -58, uptime_s: 274620, led: 48,
+	fw: '0.12.0', boot: 'power-on', problem: 'OFF', problems: '', charged_mw: 500, charged_min: 10,
+	led_mode: 'normal', ups: false, ups_ac: 'OFF', ups_on_battery: 'OFF', ups_charging: 'OFF',
+	ups_batt_v: 0, ups_mains_v: 0, ups_load_a: 0, vin: true, vin_v: 24.06, ceiling_ma: 0,
+};
+const TELEMETRY = {
+	state: 'active', gen: 3, v: 20.021, i: 2.712, p: 54.3, e: 6.211, pdo: 5, contract_w: 65.0,
+	prio: 2, limit_ma: 5000, max_v: 20, boot: 'on', charged: false, auto_off: false, sleep_min: 0,
+	fault: 0, last_fault: '', last_fault_at: 0, t_conv: 54.9, t_plug: 41.3, t_mcu: 36.2,
+	progress: 0, update_due: false, silent: false,
+};
+const EVENT = { port: 4, event: 'charge', kind: 'auto_off', code: 2, arg: 0, text: 'charged', ts: 1791268930 };
+
+const TREE: (Leaf | Branch)[] = [
+	{ name: 'availability', dir: 'out', note: 'online or offline, retained', example: 'online' },
+	{ name: 'status', dir: 'out', note: 'the whole chassis, every second, retained', example: STATUS },
+	{ name: 'event', dir: 'out', note: 'something happened to a port, or to the chassis as port 0', example: EVENT },
+	{
+		name: 'port/<n>/',
+		children: [
+			{ name: 'telemetry', dir: 'out', note: 'one port, every second', example: TELEMETRY },
+			{ name: 'set', dir: 'in', note: 'ON, OFF, hard_reset or src_cap' },
+			{ name: 'priority/set', dir: 'in', note: '0–255, 0 = most important' },
+			{ name: 'limit/set', dir: 'in', note: 'current limit, 500–5000 mA' },
+			{ name: 'volt/set', dir: 'in', note: 'voltage cap: 5, 9, 12, 15 or 20' },
+			{ name: 'boot/set', dir: 'in', note: 'at power-up: on, off or last' },
+			{ name: 'autooff/set', dir: 'in', note: 'switch off once charged: ON or OFF' },
+			{ name: 'sleep/set', dir: 'in', note: 'sleep timer in minutes, 0 = off' },
+		],
+	},
+	{ name: 'budget/set', dir: 'in', note: 'chassis budget in watts' },
+	{ name: 'fan/set', dir: 'in', note: 'auto, on or off' },
+	{ name: 'led/set', dir: 'in', note: 'light brightness, 0–255' },
+	{ name: 'charged_mw/set', dir: 'in', note: 'charged below this many mW…' },
+	{ name: 'charged_min/set', dir: 'in', note: '…for this many minutes' },
+	{ name: 'improv/set', dir: 'in', note: 'open: Bluetooth setup for ten minutes' },
+	{
+		name: 'update/',
+		children: [
+			{ name: 'state', dir: 'out', note: 'installed and newest versions, retained', example: { installed_version: '0.12.0', latest_version: '0.12.0' } },
+			{ name: 'set', dir: 'in', note: 'install: install the newest known release' },
+			{ name: 'latest', dir: 'in', note: 'retained pointer to your own release', example: { version: '0.13.0', url: 'http://fw.lan/controller.signed.bin' } },
+		],
+	},
+];
+
+const show = (x: object | string) => (typeof x === 'string' ? x : JSON.stringify(x, null, 2));
+const isBranch = (n: Leaf | Branch): n is Branch => 'children' in n;
+---
+
+<figure class="topics not-content">
+	<div class="tp-root"><code>pwrman/&lt;name&gt;/</code></div>
+	<ul>
+		{TREE.map((n) => isBranch(n) ? (
+			<li class="tp-branch">
+				<code class="tp-dir-name">{n.name}</code>
+				<ul>
+					{n.children.map((l) => (
+						<li>
+							{l.example ? (
+								<details>
+									<summary><code>{l.name}</code><span class={`tp-badge ${l.dir}`}>{l.dir}</span><span class="tp-note">{l.note}</span></summary>
+									<pre>{show(l.example)}</pre>
+								</details>
+							) : (
+								<div class="tp-row"><code>{l.name}</code><span class={`tp-badge ${l.dir}`}>{l.dir}</span><span class="tp-note">{l.note}</span></div>
+							)}
+						</li>
+					))}
+				</ul>
+			</li>
+		) : (
+			<li>
+				{n.example ? (
+					<details>
+						<summary><code>{n.name}</code><span class={`tp-badge ${n.dir}`}>{n.dir}</span><span class="tp-note">{n.note}</span></summary>
+						<pre>{show(n.example)}</pre>
+					</details>
+				) : (
+					<div class="tp-row"><code>{n.name}</code><span class={`tp-badge ${n.dir}`}>{n.dir}</span><span class="tp-note">{n.note}</span></div>
+				)}
+			</li>
+		))}
+	</ul>
+	<figcaption>
+		<span class="tp-badge out">out</span> the controller publishes it
+		<span class="tp-badge in">in</span> you publish it to change something.
+		Topics with a ▸ open to show an example.
+	</figcaption>
+</figure>
+
+<style>
+	.topics {
+		margin: 1.5rem 0;
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+		font-size: var(--sl-text-sm);
+	}
+	.topics code {
+		padding: 0;
+		background: none;
+		color: var(--sl-color-white);
+		font-size: 0.95em;
+		white-space: nowrap;
+	}
+	.tp-root code {
+		font-weight: 600;
+	}
+	.topics ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	/* Tree lines: each item hangs off a vertical rule with a short tick. */
+	.topics li {
+		position: relative;
+		margin: 0;
+		padding-left: 1.4rem;
+	}
+	.topics li::before {
+		content: '';
+		position: absolute;
+		left: 0.45rem;
+		top: 0;
+		bottom: 0;
+		border-left: 1px solid var(--sl-color-gray-5);
+	}
+	.topics li:last-child::before {
+		bottom: auto;
+		height: 0.95rem;
+	}
+	.topics li::after {
+		content: '';
+		position: absolute;
+		left: 0.45rem;
+		top: 0.95rem;
+		width: 0.7rem;
+		border-top: 1px solid var(--sl-color-gray-5);
+	}
+	.tp-branch > code {
+		display: block;
+		padding: 0.3rem 0.4rem;
+		color: var(--sl-color-gray-2);
+	}
+	.tp-row,
+	.topics summary {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.15rem 0.6rem;
+		padding: 0.3rem 0.4rem;
+		border-radius: 0.3rem;
+	}
+	.topics summary {
+		cursor: pointer;
+		list-style: none;
+	}
+	.topics summary::-webkit-details-marker {
+		display: none;
+	}
+	.topics summary::before {
+		content: '▸';
+		order: 3;
+		color: var(--sl-color-accent);
+		font-size: 1.1em;
+		line-height: 1;
+		transition: transform 0.15s;
+	}
+	.topics details[open] > summary::before {
+		transform: rotate(90deg);
+	}
+	.topics summary:hover {
+		background: var(--sl-color-gray-6);
+	}
+	.tp-badge {
+		display: inline-block;
+		padding: 0 0.4em;
+		border-radius: 0.25rem;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		line-height: 1.5;
+	}
+	.tp-badge.out {
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	.tp-badge.in {
+		background: color-mix(in srgb, var(--sl-color-orange) 18%, transparent);
+		color: var(--sl-color-orange-high, var(--sl-color-orange));
+	}
+	.tp-note {
+		order: 4;
+		flex-basis: 14rem;
+		flex-grow: 1;
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-xs);
+	}
+	.topics pre {
+		margin: 0.25rem 0 0.6rem 0.4rem;
+		padding: 0.6rem 0.75rem;
+		max-height: 18rem;
+		overflow: auto;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.4rem;
+		background: var(--sl-color-bg);
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-xs);
+		line-height: 1.45;
+	}
+	.topics figcaption {
+		margin-top: 0.75rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	.topics figcaption .tp-badge {
+		margin-inline: 0.5em 0.25em;
+	}
+	.topics figcaption .tp-badge:first-child {
+		margin-inline-start: 0;
+	}
+</style>

@@ -1,0 +1,175 @@
+---
+// The two ways onto the network during first-time setup, side by side,
+// meeting at the API token. Each step shows the chassis light at that point
+// (render_chassis in firmware/controller/src/engine/led_pattern.c): blue
+// while Bluetooth waits, amber while settings are open with no token, dim
+// green once a token is saved.
+
+type Step = { light: string; lvl?: number; anim?: 'pulse'; title: string; detail: string };
+
+const BLUE = '#3b82f6';
+const AMBER = '#f59e0b';
+const GREEN = '#22c55e';
+
+const ROUTES: { name: string; steps: Step[] }[] = [
+	{
+		name: 'Ethernet',
+		steps: [
+			{ light: AMBER, anim: 'pulse', title: 'Plug in the cable, power up', detail: 'Settings are open to your network for one hour.' },
+			{ light: AMBER, anim: 'pulse', title: 'Go to pwrman.local', detail: 'The Settings panel opens by itself.' },
+		],
+	},
+	{
+		name: 'Wi-Fi',
+		steps: [
+			{ light: BLUE, anim: 'pulse', title: 'Power up', detail: 'After about 15 seconds it waits for setup over Bluetooth.' },
+			{ light: BLUE, anim: 'pulse', title: 'Run Wi-Fi setup', detail: 'From the Wi-Fi setup page or the Home Assistant app.' },
+			{ light: AMBER, anim: 'pulse', title: 'Press Next', detail: 'Opens the web interface with settings open for ten minutes.' },
+		],
+	},
+];
+const DONE: Step = { light: GREEN, lvl: 0.4, title: 'Save an API token', detail: 'Setup closes. The light settles to dim green.' };
+
+const led = (s: Step) => `--led:${s.light}${s.lvl ? `;--lvl:${s.lvl}` : ''}${s.anim ? ';animation-duration:2s' : ''}`;
+---
+
+<figure class="routes not-content">
+	<div class="rt-lanes">
+		{ROUTES.map((r) => (
+			<div class="rt-lane">
+				<div class="rt-name">{r.name}</div>
+				<ol>
+					{r.steps.map((s) => (
+						<li>
+							<span class:list={['led', s.anim]} style={led(s)} aria-hidden="true" />
+							<span class="rt-text"><strong>{s.title}</strong><span>{s.detail}</span></span>
+						</li>
+					))}
+				</ol>
+			</div>
+		))}
+	</div>
+	<div class="rt-join" aria-hidden="true"><i /><i /></div>
+	<div class="rt-done">
+		<span class="led" style={led(DONE)} aria-hidden="true" />
+		<span class="rt-text"><strong>{DONE.title}</strong><span>{DONE.detail}</span></span>
+	</div>
+	<figcaption>Either route ends the same way. The swatch is the chassis light, left of port 1, at each step.</figcaption>
+</figure>
+
+<style>
+	.routes {
+		margin: 1.5rem 0;
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	}
+	.rt-lanes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+	.rt-name {
+		margin-bottom: 0.5rem;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--sl-color-gray-3);
+	}
+	.rt-lane {
+		display: flex;
+		flex-direction: column;
+	}
+	.routes ol {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	/* The shorter lane's line carries on down to the shared step. */
+	.routes ol::after {
+		content: '';
+		flex: 1;
+		margin-left: 1.4rem;
+		border-left: 2px solid var(--sl-color-gray-4);
+	}
+	.routes li,
+	.rt-done {
+		position: relative;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.6rem;
+		padding: 0.55rem 0.7rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-bg);
+	}
+	/* A short line down to the next step. */
+	.routes li + li {
+		margin-top: 0.9rem;
+	}
+	.routes li + li::before {
+		content: '';
+		position: absolute;
+		top: calc(-0.9rem - 1px);
+		left: 1.4rem;
+		height: 0.9rem;
+		border-left: 2px solid var(--sl-color-gray-4);
+	}
+	.routes .led {
+		flex: none;
+		margin: 0.15em 0 0;
+	}
+	.rt-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+		min-width: 0;
+	}
+	.rt-text strong {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-white);
+	}
+	.rt-text span {
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		line-height: 1.4;
+	}
+	/* Both lanes run down into the shared last step. */
+	.rt-join {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+		height: 1.25rem;
+	}
+	.rt-join i {
+		border-left: 2px solid var(--sl-color-gray-4);
+		margin-left: 1.4rem;
+	}
+	.rt-done {
+		border-color: var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+	}
+	.routes figcaption {
+		margin-top: 0.75rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	@media (max-width: 36rem) {
+		.rt-lanes,
+		.rt-join {
+			grid-template-columns: 1fr;
+		}
+		.rt-join i + i,
+		.rt-lane:first-child ol::after {
+			display: none;
+		}
+		.rt-lane + .rt-lane {
+			padding-top: 0.25rem;
+		}
+	}
+</style>
