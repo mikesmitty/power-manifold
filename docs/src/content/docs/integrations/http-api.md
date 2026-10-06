@@ -9,7 +9,7 @@ Everything in the web interface is also available as JSON at
 `http://<name>.local/api/v1/`. Reading status needs no password. Anything
 that changes something needs your API token. A new controller has no token and
 refuses every change until one is set.
-[First-time setup](/power-manifold/setup/first-time-setup/) describes how to
+[First-time setup](/setup/first-time-setup/) describes how to
 set the first token.
 
 ## Examples
@@ -141,7 +141,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" $PM/api/v1/reboot
 ```
 
 After a factory reset the controller has no token. Complete
-[first-time setup](/power-manifold/setup/first-time-setup/) to set one, then
+[first-time setup](/setup/first-time-setup/) to set one, then
 restore the file with the commands above or with **Import…** in the web
 interface's **Settings**.
 
@@ -259,7 +259,7 @@ curl -H "Authorization: Bearer $TOKEN" --data-binary @controller.signed.bin \
 ```
 
 The controller checks the signature, installs it and restarts on trial,
-exactly as described in [Updates](/power-manifold/guide/updates/). It
+exactly as described in [Updates](/guide/updates/). It
 refuses unsigned files, files for other hardware and older versions.
 
 ## Prometheus

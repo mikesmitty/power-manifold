@@ -32,17 +32,17 @@ The page refreshes every second. At the top:
 - **The front panel.** A drawing of the chassis front shows each port's
   light in the colour it has on the real chassis, blinking or breathing the
   same way, plus the chassis light. See
-  [Front panel and lights](/power-manifold/guide/front-panel/). Click a port
+  [Front panel and lights](/guide/front-panel/). Click a port
   to open its graphs.
 - **A status line:** the input voltage, the fan, the energy delivered since
   the controller started, and the firmware version.
 - **A red line**, only when something needs attention. It says what. See
-  [Troubleshooting](/power-manifold/guide/troubleshooting/).
+  [Troubleshooting](/guide/troubleshooting/).
 - **The power budget.** How much power the chassis is drawing now, how much
   is set aside for the ports, and how much is free. The bar below splits the
   drawn power by port, in each port's colour, and hatches the part that is
   set aside but not in use. See
-  [Sharing power](/power-manifold/guide/sharing-power/).
+  [Sharing power](/guide/sharing-power/).
 
 The page follows your device's light or dark setting. The **Theme** button
 at the top right switches between automatic, light and dark. Your choice is
@@ -80,7 +80,7 @@ first, because the device plugged into it loses power. Both need your API
 token: unlock **Settings** once and the buttons work for as long as the tab
 is open. A port you turn off stays off
 until you turn it on again. After a restart it follows its
-[power-up setting](/power-manifold/guide/port-settings/#on-or-off-at-power-up).
+[power-up setting](/guide/port-settings/#on-or-off-at-power-up).
 
 ## Fault log and console log
 
@@ -101,7 +101,7 @@ unlock the rest. The settings are grouped into Device, Network, MQTT, Power and
 fan, Status lights, and a Ports table with one row per port. Change what you need and press **Save**.
 
 A new controller has no token yet. During
-[first-time setup](/power-manifold/setup/first-time-setup/) the tab opens
+[first-time setup](/setup/first-time-setup/) the tab opens
 by itself and asks you to choose one. Until you do, nothing can be changed
 from the network, and the tab says what to do if setup has closed.
 
@@ -112,16 +112,16 @@ power to any port.
 The settings and the pages that describe them:
 
 - **Device name** and **MQTT broker**: see
-  [Home Assistant](/power-manifold/guide/home-assistant/).
+  [Home Assistant](/guide/home-assistant/).
 - **Chassis budget** and **fan**: see
-  [Sharing power](/power-manifold/guide/sharing-power/).
+  [Sharing power](/guide/sharing-power/).
 - **Port names, current limits, voltage caps, state at power-up, switch off
   once charged, sleep timer**: see
-  [Port settings](/power-manifold/guide/port-settings/).
+  [Port settings](/guide/port-settings/).
 - **Status light brightness, night window, idle dimming, UTC offset**: see
-  [Front panel and lights](/power-manifold/guide/front-panel/#brightness-and-dimming).
+  [Front panel and lights](/guide/front-panel/#brightness-and-dimming).
 - **Addressing, DNS, time server, syslog, MQTT security, update source**:
-  see [Network settings](/power-manifold/integrations/network/).
+  see [Network settings](/integrations/network/).
 
 ## Backing up your settings
 

@@ -13,8 +13,8 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = join(REPO, 'docs/src/content/docs/developers');
-const BASE = '/power-manifold/';
-const SITE = `https://mikesmitty.github.io${BASE}`;
+const BASE = '/';
+const SITE = 'https://docs.powermanifold.io/';
 const GITHUB = 'https://github.com/mikesmitty/power-manifold';
 
 // Source file (repo-relative) → site slug under developers/, sidebar order and

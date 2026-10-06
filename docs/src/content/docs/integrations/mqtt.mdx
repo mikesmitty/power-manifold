@@ -8,7 +8,7 @@ sidebar:
 import MqttTopics from '../../../components/MqttTopics.astro';
 
 If you use Home Assistant, you don't need this page: see
-[Home Assistant](/power-manifold/guide/home-assistant/). This page is for
+[Home Assistant](/guide/home-assistant/). This page is for
 Node-RED, scripts and other MQTT tools.
 
 Set the broker in the web interface's **Settings**. Every topic starts with
@@ -34,8 +34,8 @@ Ports are numbered 1 to 6.
 `led_mode`, `fw`, `boot` (why it last started), `problem` and `problems`,
 `charged_mw`, `charged_min`, the input voltage `vin_v` (`vin` is false
 when it isn't measured), `ceiling_ma` (3000 while [low input voltage caps
-the ports](/power-manifold/guide/troubleshooting/#ports-capped-at-3-a),
-else 0), `ups` (true once a [UPS](/power-manifold/integrations/ups/)
+the ports](/guide/troubleshooting/#ports-capped-at-3-a),
+else 0), `ups` (true once a [UPS](/integrations/ups/)
 answers) and, with one connected, `ups_ac`, `ups_on_battery`,
 `ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`.
 
@@ -47,7 +47,7 @@ answers) and, with one connected, `ups_ac`, `ups_on_battery`,
 update), `update_due` and `silent`.
 
 **Events:** `kind` is one of the
-[Home Assistant event types](/power-manifold/guide/home-assistant/#automations).
+[Home Assistant event types](/guide/home-assistant/#automations).
 `text` explains faults, auto-off and blade updates. Chassis events, such as
 the input voltage crossing its low warning, use port 0.
 

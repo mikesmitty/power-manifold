@@ -34,8 +34,8 @@ slot is empty.
 | <span class="led" style="--led:#22c55e"></span>Green | Powering a device at 5 or 9 V, such as a phone or a Raspberry Pi. |
 | <span class="led" style="--led:#e8e8e8"></span>White | Nothing to deliver: no device is plugged in, or the device has finished charging and is only trickling. |
 | <span class="led blink" style="--led:#22d3ee"></span>Cyan, blinking | The blade is starting up. |
-| <span class="led pulse" style="--led:#3b82f6"></span>Slow pulse (blue or green) | Powering a device, but turned down because the chassis is at its power budget. See [Sharing power](/power-manifold/guide/sharing-power/). |
-| <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The port shut itself off because of a fault. It tries again after 5 seconds. See [Troubleshooting](/power-manifold/guide/troubleshooting/#a-port-blinks-red). |
+| <span class="led pulse" style="--led:#3b82f6"></span>Slow pulse (blue or green) | Powering a device, but turned down because the chassis is at its power budget. See [Sharing power](/guide/sharing-power/). |
+| <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The port shut itself off because of a fault. It tries again after 5 seconds. See [Troubleshooting](/guide/troubleshooting/#a-port-blinks-red). |
 | <span class="led" style="--led:#f59e0b;--lvl:.4"></span>Dim amber | No port fitted in this position. |
 | Off | The port is switched off. |
 
@@ -47,10 +47,10 @@ these applies, it shows the first in this table:
 | Light | Meaning |
 | --- | --- |
 | <span class="led" style="--led:#22c55e;--lvl:.4"></span>Dim green | Normal operation. |
-| <span class="led pulse" style="--led:#3b82f6;animation-duration:2s"></span>Blue, breathing | The controller is waiting for [Wi-Fi setup](/power-manifold/setup/wifi-provisioning/). |
-| <span class="led pulse" style="--led:#f59e0b;animation-duration:2s"></span>Amber, breathing | The controller has no API token yet and its settings are open for [first-time setup](/power-manifold/setup/first-time-setup/). It stops when you save a token. |
-| <span class="led pulse" style="--led:#ef4444;animation-duration:2s"></span>Red, breathing | The controller has no network connection. See [Troubleshooting](/power-manifold/guide/troubleshooting/#no-network). |
-| <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The input voltage from your power supply is out of range. See [Troubleshooting](/power-manifold/guide/troubleshooting/#bus-voltage-out-of-range). |
+| <span class="led pulse" style="--led:#3b82f6;animation-duration:2s"></span>Blue, breathing | The controller is waiting for [Wi-Fi setup](/setup/wifi-provisioning/). |
+| <span class="led pulse" style="--led:#f59e0b;animation-duration:2s"></span>Amber, breathing | The controller has no API token yet and its settings are open for [first-time setup](/setup/first-time-setup/). It stops when you save a token. |
+| <span class="led pulse" style="--led:#ef4444;animation-duration:2s"></span>Red, breathing | The controller has no network connection. See [Troubleshooting](/guide/troubleshooting/#no-network). |
+| <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The input voltage from your power supply is out of range. See [Troubleshooting](/guide/troubleshooting/#bus-voltage-out-of-range). |
 
 ## Lights across the whole row
 
@@ -96,8 +96,8 @@ you hold it:
 
 | Press | What happens |
 | --- | --- |
-| **Short press** (under 3 seconds) | Flashes all lights white, then shows them at full brightness for 30 seconds. Useful when the lights are dimmed or off. On a controller with no API token yet, it also gives you another hour to [set one over Ethernet](/power-manifold/setup/first-time-setup/#steps). |
-| **Hold 3 seconds**, then let go | Opens Bluetooth for ten minutes so you can [change Wi-Fi](/power-manifold/setup/wifi-provisioning/#changing-wi-fi-later). |
+| **Short press** (under 3 seconds) | Flashes all lights white, then shows them at full brightness for 30 seconds. Useful when the lights are dimmed or off. On a controller with no API token yet, it also gives you another hour to [set one over Ethernet](/setup/first-time-setup/#steps). |
+| **Hold 3 seconds**, then let go | Opens Bluetooth for ten minutes so you can [change Wi-Fi](/setup/wifi-provisioning/#changing-wi-fi-later). |
 | **Hold 10 seconds** | **Factory reset.** Erases all settings and the fault log, then restarts. |
 
 <FrontPanel
@@ -114,7 +114,7 @@ turn red, and the reset happens without waiting for you to let go.
 <Aside type="caution">
 A factory reset erases your Wi-Fi details, API token, port names and every
 other setting. You'll need to do
-[first-time setup](/power-manifold/setup/first-time-setup/) again. You can
-[export your settings](/power-manifold/guide/web-interface/#backing-up-your-settings)
+[first-time setup](/setup/first-time-setup/) again. You can
+[export your settings](/guide/web-interface/#backing-up-your-settings)
 first.
 </Aside>

@@ -1,6 +1,6 @@
 # Controller internals
 
-How the controller firmware is structured and how its less visible machinery behaves. For what an owner sees, start with the [user guide](https://mikesmitty.github.io/power-manifold/guide/front-panel/).
+How the controller firmware is structured and how its less visible machinery behaves. For what an owner sees, start with the [user guide](https://docs.powermanifold.io/guide/front-panel/).
 
 ## Architecture
 
@@ -51,7 +51,7 @@ see [Boards](building.md#boards)).
 | SPI0 MISO/CS/SCK/MOSI | GP16–GP19 | GP16–GP19 | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
 | ETH_RST# | GP20 | GP20 | W6100 reset |
 | ETH_INT# | GP21 | GP21 | W6100 interrupt, level-low while a frame waits |
-| BUTTON | GP22 (a wire to GND) | GP22 | front-panel button, see [Front-panel button](https://mikesmitty.github.io/power-manifold/guide/front-panel/) |
+| BUTTON | GP22 (a wire to GND) | GP22 | front-panel button, see [Front-panel button](https://docs.powermanifold.io/guide/front-panel/) |
 | VIN_SENSE | — | GP28 / ADC2 | DC bus voltage through 120 kΩ / 10 kΩ, see [Bus voltage](#bus-voltage) |
 | RM2 radio | — | GP23/24/25/29 | the Pico 2 W's own CYW43 wiring, so the WiFi and BLE code carries over unchanged |
 
@@ -81,7 +81,7 @@ P1(*n*−1) and pixel *n* of the light-bar chain (pixel 0 is the chassis
 light, ahead of port 1), and the backplane wires all four
 to one socket, in silkscreen order from the management socket toward the
 power input (sockets J3, J5, J7, J4, J6, J8 after the re-annotation; the
-[architecture](https://mikesmitty.github.io/power-manifold/developers/architecture/#31-slot-numbering-verified-against-the-netlist-2026-09-09)
+[architecture](https://docs.powermanifold.io/developers/architecture/#31-slot-numbering-verified-against-the-netlist-2026-09-09)
 page has the table). Verified against the backplane netlist and layout on
 2026-09-09. Facing the front panel, port 1 is on the left next to the
 management card and port 6 on the right, each light above its port with the

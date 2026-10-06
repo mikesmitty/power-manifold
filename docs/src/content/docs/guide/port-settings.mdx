@@ -10,9 +10,9 @@ import PortOffer from '../../../components/PortOffer.astro';
 import ChargeTimeline from '../../../components/ChargeTimeline.astro';
 
 Each port has its own settings. You can change them in the web interface's
-**Settings**, in [Home Assistant](/power-manifold/guide/home-assistant/), over
-[MQTT](/power-manifold/integrations/mqtt/) or with the
-[HTTP API](/power-manifold/integrations/http-api/). Changes apply at once,
+**Settings**, in [Home Assistant](/guide/home-assistant/), over
+[MQTT](/integrations/mqtt/) or with the
+[HTTP API](/integrations/http-api/). Changes apply at once,
 even to a device that is already plugged in.
 
 ## Name
@@ -35,7 +35,7 @@ after a power cut:
 - **last**: the port comes back the way you last left it.
 
 When the chassis powers up, the ports come on one at a time, a quarter of a
-second apart, in [priority](/power-manifold/guide/sharing-power/#priorities)
+second apart, in [priority](/guide/sharing-power/#priorities)
 order. This stops six devices from starting all at once.
 
 ## Voltage cap
@@ -100,4 +100,4 @@ computer that should stay on.
 
 Each port also has a priority, which decides which ports are turned down
 first when devices ask for more power than the supply can give. See
-[Sharing power between ports](/power-manifold/guide/sharing-power/).
+[Sharing power between ports](/guide/sharing-power/).

@@ -48,7 +48,7 @@ device sees a new, smaller offer and switches to it without disconnecting.
 Nothing is switched off to save power.
 
 When power frees up, for example when another device is unplugged or a
-port with [switch off when charged](/power-manifold/guide/port-settings/#switching-off-when-charged)
+port with [switch off when charged](/guide/port-settings/#switching-off-when-charged)
 turns itself off, the turned-down ports get it back, highest priority
 first. A device that has finished charging but stays plugged in keeps its
 share, because it can start drawing again at any time.
@@ -65,8 +65,8 @@ Ports with the same priority never take power from each other. The one
 that plugged in first keeps what it has.
 
 Set priorities in Home Assistant (a number for each port), over
-[MQTT](/power-manifold/integrations/mqtt/) or with the
-[HTTP API](/power-manifold/integrations/http-api/).
+[MQTT](/integrations/mqtt/) or with the
+[HTTP API](/integrations/http-api/).
 
 **Example:** a 150 W supply powers four Raspberry Pi 5s on ports 1 to 4,
 which take 25 W each, and a 100 W laptop on port 6. Give the Pis priority 0
@@ -83,7 +83,7 @@ problem saying the ports are capped.
 
 If you see this often, your supply is too small for your devices, or its
 cable is too thin. Lower the budget or use a bigger supply. See
-[Troubleshooting](/power-manifold/guide/troubleshooting/#ports-capped-at-3-a).
+[Troubleshooting](/guide/troubleshooting/#ports-capped-at-3-a).
 
 ## The fan
 

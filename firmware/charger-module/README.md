@@ -25,7 +25,7 @@ with it over the backplane.
 ## Documentation
 
 Developer documentation lives in [`docs/`](docs/) and is published on the
-[documentation site](https://mikesmitty.github.io/power-manifold/) under
+[documentation site](https://docs.powermanifold.io/) under
 *For developers*:
 
 - [Overview](docs/overview.md): what the blade is, its protection, how the

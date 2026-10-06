@@ -1,6 +1,6 @@
 # Flash layout and updates
 
-How the controller's flash is laid out, how a board is programmed the first time, how firmware updates are delivered and verified, and how the controller programs the charger blades. The owner's view of updates is in [Updates](https://mikesmitty.github.io/power-manifold/guide/updates/).
+How the controller's flash is laid out, how a board is programmed the first time, how firmware updates are delivered and verified, and how the controller programs the charger blades. The owner's view of updates is in [Updates](https://docs.powermanifold.io/guide/updates/).
 
 ## Partition table
 

@@ -6,7 +6,7 @@ one RP2350 management controller that budgets power across the chassis,
 drives a status LED per port, and exposes everything over MQTT, HTTP, and a
 serial console.
 
-**Documentation:** <https://mikesmitty.github.io/power-manifold/>
+**Documentation:** <https://docs.powermanifold.io/>
 
 ## How it works
 
@@ -54,7 +54,7 @@ serial console.
   a settings panel with export and import, backed by a JSON API behind a
   bearer token and a Prometheus `/metrics` endpoint.
 - First-time setup over Bluetooth using the Improv Wi-Fi standard, from the
-  [hosted provisioner](https://mikesmitty.github.io/power-manifold/setup/wifi-provisioning/),
+  [hosted provisioner](https://docs.powermanifold.io/setup/wifi-provisioning/),
   the Home Assistant app, or any Improv client, or over Ethernet in the
   first hour after power-up. A USB serial console covers everything else.
 - DHCP or static addressing on WiFi or wired Ethernet, a DNS override, and

@@ -16,7 +16,7 @@ Start with what you see:
 
 When something needs attention, Power Manifold says so in several places:
 
-- a red line near the top of the [web interface](/power-manifold/guide/web-interface/);
+- a red line near the top of the [web interface](/guide/web-interface/);
 - the **Problem** sensor in Home Assistant, whose `detail` attribute says
   what is wrong;
 - the lights: a red, fast-blinking light for a port that faulted, the
@@ -50,14 +50,14 @@ What to try:
   device. Reseat the cable at both ends, or try another cable. Some cheap
   USB-A to USB-C adapters and cables don't work with USB-C chargers.
 - **Light off:** the port is switched off. Turn it on with the switch on its card on the
-  [web interface](/power-manifold/guide/web-interface/#the-port-cards) or in Home Assistant.
+  [web interface](/guide/web-interface/#the-port-cards) or in Home Assistant.
   If you didn't switch it off, check whether
-  [switch off once charged or the sleep timer](/power-manifold/guide/port-settings/#switching-off-when-charged)
+  [switch off once charged or the sleep timer](/guide/port-settings/#switching-off-when-charged)
   is on, or whether the port is set to stay **off** at power-up.
 - **Light pulsing slowly:** the port is turned down because the chassis is
-  at its budget. See [Sharing power](/power-manifold/guide/sharing-power/).
+  at its budget. See [Sharing power](/guide/sharing-power/).
 - **Laptop charges slower than expected:** check the port's
-  [voltage cap and current limit](/power-manifold/guide/port-settings/#voltage-cap).
+  [voltage cap and current limit](/guide/port-settings/#voltage-cap).
   Laptops need 20 V, and more than 60 W needs a 5 A cable.
 
 ## Ports capped at 3 A
@@ -70,7 +70,7 @@ voltage recovers.
 If it happens often:
 
 - your supply is too small for your devices, so lower the
-  [budget](/power-manifold/guide/sharing-power/#the-budget) to match it, or
+  [budget](/guide/sharing-power/#the-budget) to match it, or
   use a bigger supply;
 - or the cable from the supply is too long or too thin, so use a shorter,
   thicker one.
@@ -101,7 +101,7 @@ no network address.
 
 - **Wi-Fi:** check that the network is up. After five minutes off the
   network the controller opens Bluetooth, so you can
-  [enter new Wi-Fi details](/power-manifold/setup/wifi-provisioning/) if
+  [enter new Wi-Fi details](/setup/wifi-provisioning/) if
   your network changed.
 - **Ethernet:** check the cable and that your router hands out addresses.
   If you set a fixed address, check that it is still free and correct.
@@ -118,17 +118,17 @@ and the API are unavailable.
 ## Forgot the API token
 
 You can't recover the token. To set a new one, do a
-[factory reset](/power-manifold/guide/front-panel/#the-button) and repeat
-[first-time setup](/power-manifold/setup/first-time-setup/). If you have a
+[factory reset](/guide/front-panel/#the-button) and repeat
+[first-time setup](/setup/first-time-setup/). If you have a
 settings export that includes secrets, you can import it after the reset.
 
 ## Other problems the controller reports
 
 | Message | What it means |
 | --- | --- |
-| *trial firmware uncommitted* | A firmware update is on trial. It clears within a few seconds when the update succeeds. See [Updates](/power-manifold/guide/updates/). |
+| *trial firmware uncommitted* | A firmware update is on trial. It clears within a few seconds when the update succeeds. See [Updates](/guide/updates/). |
 | *wired link down* | The Ethernet cable is unplugged or the switch is off. Wi-Fi is carrying traffic for now. |
-| *on battery* / UPS battery fault | Your [UPS power supply](/power-manifold/integrations/ups/) lost mains power or reports a battery problem. |
+| *on battery* / UPS battery fault | Your [UPS power supply](/integrations/ups/) lost mains power or reports a battery problem. |
 | *bus voltage* out of range | The input voltage is outside the rated range. See [Bus voltage out of range](#bus-voltage-out-of-range). |
 
 <Aside type="tip" title="Reporting a problem">

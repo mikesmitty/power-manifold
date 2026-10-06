@@ -2,12 +2,12 @@
 
 Documentation site for Power Manifold, built with [Astro](https://astro.build)
 and [Starlight](https://starlight.astro.build). Published to
-<https://mikesmitty.github.io/power-manifold/> by the `Docs` GitHub Actions
+<https://docs.powermanifold.io/> by the `Docs` GitHub Actions
 workflow on every push to `main` that touches `docs/` or `firmware/*/docs/`.
 
 ```sh
 npm install
-npm run dev      # http://localhost:4321/power-manifold/
+npm run dev      # http://localhost:4321/
 npm run build    # static output in dist/
 ```
 

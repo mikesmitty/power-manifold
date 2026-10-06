@@ -10,7 +10,7 @@ type Symptom = {
 	href: string;
 };
 
-const T = '/power-manifold/guide/troubleshooting/';
+const T = '/guide/troubleshooting/';
 const GROUPS: { name: string; items: Symptom[] }[] = [
 	{
 		name: 'A port light',
@@ -18,8 +18,8 @@ const GROUPS: { name: string; items: Symptom[] }[] = [
 			{ led: { colour: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The port shut itself off after a fault.', href: `${T}#a-port-blinks-red` },
 			{ led: { colour: '#e8e8e8' }, title: 'White with a device plugged in', means: 'The port doesn’t see the device, or it has finished charging.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
 			{ led: { colour: 'transparent', off: true }, title: 'Off', means: 'The port is switched off.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
-			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Pulsing slowly', means: 'Turned down: the chassis is at its power budget.', href: '/power-manifold/guide/sharing-power/' },
-			{ led: { colour: '#22d3ee', anim: 'blink' }, title: 'Cyan, blinking', means: 'The blade is starting up, usually after an update. Nothing to fix.', href: '/power-manifold/guide/updates/' },
+			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Pulsing slowly', means: 'Turned down: the chassis is at its power budget.', href: '/guide/sharing-power/' },
+			{ led: { colour: '#22d3ee', anim: 'blink' }, title: 'Cyan, blinking', means: 'The blade is starting up, usually after an update. Nothing to fix.', href: '/guide/updates/' },
 		],
 	},
 	{
@@ -27,8 +27,8 @@ const GROUPS: { name: string; items: Symptom[] }[] = [
 		items: [
 			{ led: { colour: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The input voltage is out of range.', href: `${T}#bus-voltage-out-of-range` },
 			{ led: { colour: '#ef4444', anim: 'pulse' }, title: 'Red, breathing', means: 'No network connection.', href: `${T}#no-network` },
-			{ led: { colour: '#f59e0b', anim: 'pulse' }, title: 'Amber, breathing', means: 'No API token yet: setup is open.', href: '/power-manifold/setup/first-time-setup/' },
-			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Blue, breathing', means: 'Waiting for Wi-Fi setup over Bluetooth.', href: '/power-manifold/setup/wifi-provisioning/' },
+			{ led: { colour: '#f59e0b', anim: 'pulse' }, title: 'Amber, breathing', means: 'No API token yet: setup is open.', href: '/setup/first-time-setup/' },
+			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Blue, breathing', means: 'Waiting for Wi-Fi setup over Bluetooth.', href: '/setup/wifi-provisioning/' },
 		],
 	},
 	{

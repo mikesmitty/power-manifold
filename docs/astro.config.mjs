@@ -4,8 +4,7 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://mikesmitty.github.io',
-	base: '/power-manifold',
+	site: 'https://docs.powermanifold.io',
 	integrations: [
 		starlight({
 			title: 'Power Manifold',

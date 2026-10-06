@@ -26,7 +26,7 @@ ctest --test-dir test/build --output-on-failure
 ## Documentation
 
 Developer documentation lives in [`docs/`](docs/) and is published on the
-[documentation site](https://mikesmitty.github.io/power-manifold/) under
+[documentation site](https://docs.powermanifold.io/) under
 *For developers*:
 
 - [Building](docs/building.md): toolchain, board targets, network options,
@@ -41,6 +41,6 @@ Developer documentation lives in [`docs/`](docs/) and is published on the
 
 What an owner sees (setup, the web page, port settings, Home Assistant, the
 MQTT topics and the HTTP API) is in the
-[user guide](https://mikesmitty.github.io/power-manifold/).
+[user guide](https://docs.powermanifold.io/).
 
 Signing keys are covered in [`keys/README.md`](keys/README.md).
