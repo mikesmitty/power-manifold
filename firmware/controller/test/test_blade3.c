@@ -272,7 +272,7 @@ static void test_warm_adoption_acts_on_a_latched_fault(void) {
     tick(2);
     sim_attach(0, 20000, 3000);
     tick(2);
-    sim_set_blade_fault(0, BLADE_FAULT_CONV_OCP); // latched while nobody was watching
+    sim_set_blade_fault(0, BLADE_FAULT_CONV_OCP); // latched while the controller was down
     sim_set_blade_fault(0, 0);                    // ...and the condition has passed
 
     MT_ASSERT_EQ(warm_reboot(), 0x01);
@@ -376,7 +376,7 @@ static void test_a_pulled_blade_forgets_its_generation(void) {
     MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250);
 }
 
-// The blade's thermometers ride along in telemetry while the port is
+// The blade's thermometers are reported in telemetry while the port is
 // powered: modelled from the load by the sim, pinned by the script, an open
 // NTC passed through as "none"; a gen-2 blade and a port that is off have
 // no reading.

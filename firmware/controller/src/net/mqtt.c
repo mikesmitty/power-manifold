@@ -545,7 +545,7 @@ static void publish_port_boot_select(unsigned port) {
 
 // One HA event entity per port, fed from the shared base/event topic: the
 // template keeps this port's events with a kind and drops the rest (an
-// empty render is ignored). code/arg/text ride along as attributes.
+// empty render is ignored). code/arg/text are sent as attributes.
 static void publish_port_event(unsigned port) {
     char object[32];
     snprintf(object, sizeof(object), "p%u_event", port);

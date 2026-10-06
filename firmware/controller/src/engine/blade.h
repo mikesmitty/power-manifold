@@ -75,10 +75,10 @@ bool blade_request_loader(blade_gen_t gen, bool boot_option);
 // Probe steps: 0 on success, else a PROBE_FAIL_* code.
 // A freshly powered blade: configure it from scratch.
 uint16_t blade_setup(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv);
-// A blade adopted powered at a warm start: read what latched while nobody
-// was watching (st->fault_bits, for the caller to act on), then check its
-// configuration against ours and rewrite it — re-advertising to an attached
-// sink — only when it differs, so a live contract rides through untouched.
+// A blade adopted powered at a warm start: read what latched while the
+// controller was down (st->fault_bits, for the caller to act on), then check
+// its configuration against ours and rewrite it — re-advertising to an
+// attached sink — only when it differs, so a live contract is not interrupted.
 uint16_t blade_adopt(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv, blade_status_t *st);
 
 // Telemetry, contract and faults. `alert` also reads the latch only the

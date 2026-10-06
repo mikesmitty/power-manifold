@@ -25,9 +25,9 @@
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_WHITELIST_ENTRIES 1
 
-// The LE device DB in pico_btstack_ble is the TLV-backed one (it insists on
-// this being defined); btstack_glue.c gives it a discard-everything TLV, so
-// nothing ever reaches flash. Nothing bonds, so one slot is plenty.
+// The LE device DB in pico_btstack_ble is the TLV-backed one (it requires
+// this to be defined); btstack_glue.c gives it a discard-everything TLV, so
+// nothing ever reaches flash. Nothing bonds, so one slot is enough.
 #define NVM_NUM_DEVICE_DB_ENTRIES 1
 
 // limit controller buffer use to avoid overrunning the cyw43 shared bus

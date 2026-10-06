@@ -370,7 +370,7 @@ void run_led_tests(void) {
     mt_run("leds: chassis light amber for setup, between BLE and net down",
            test_setup_is_amber_between_ble_and_net_down);
     mt_run("leds: chassis light dark at brightness 0", test_chassis_light_dark_at_zero_brightness);
-    mt_run("leds: chassis light glows dim green when all is well", test_chassis_light_glows_dim_green);
+    mt_run("leds: chassis light is dim green during normal operation", test_chassis_light_glows_dim_green);
     mt_run("leds: bus fault blinks red over everything", test_bus_fault_blinks_red_over_everything);
     mt_run("leds: identify overrides everything", test_identify_overrides_everything);
     mt_run("leds: identify visible at brightness 0", test_identify_visible_when_dimmed_to_zero);

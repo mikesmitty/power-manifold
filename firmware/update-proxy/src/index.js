@@ -3,7 +3,7 @@
 // A controller pulls updates over plain HTTP (no TLS on that stack) and
 // GitHub serves release downloads over HTTPS only, behind a redirect. This
 // Worker fetches from GitHub and answers with one fixed-length response,
-// which the controller's HTTP client insists on:
+// which the controller's HTTP client requires:
 //
 //   /controller/<x.y.z>/<board>/controller.signed.bin
 //       the signed image of release controller-firmware-v<x.y.z> for a board

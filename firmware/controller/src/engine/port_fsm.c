@@ -206,10 +206,10 @@ static void read_identity(uint8_t i) {
 // What the controller would change about a running gen-3 blade's firmware,
 // from what the blade said of itself at the probe: the bundled version,
 // when the setting says the chassis keeps its blades on it or a rewrite was
-// asked for, and the boot option, when that setting says so. Either costs
-// the port a trip through the bootloader, so the caller picks the moment.
-// Nothing is wanted on the controller's own account while its image is on
-// trial (port_fsm_hold_updates), nor after the trips failed to deliver it.
+// asked for, and the boot option, when that setting says so. Either takes
+// the port through the bootloader, so the caller chooses when. No update is
+// requested while the controller's own image is on trial
+// (port_fsm_hold_updates), or after the bootloader trips have failed.
 static unsigned blade_wants(uint8_t i) {
     const port_ctx_t *p = &ctx[i];
     if (p->gen != BLADE_GEN_3 || !p->id_ok) return 0;
@@ -279,11 +279,11 @@ static void warm_probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
 }
 
 // A blade found powered at a warm start: bring it under supervision without
-// touching EN. A fault latched while nobody was watching counts as a fault
-// now (the usual path: EN off, cooldown, re-probe). The blade's
+// touching EN. A fault latched while the controller was down is handled as
+// a new fault (the usual path: EN off, cooldown, re-probe). The blade's
 // configuration is checked against the settings and rewritten — and
 // re-advertised to an attached sink — only when it differs, so a live
-// contract normally rides through untouched. Its firmware is left alone
+// contract is normally not interrupted. Its firmware is left alone
 // here whatever the controller would change about it: that waits for the
 // port to be idle (blade_wants). A blade that will not answer stays
 // powered too (warm_probe_failed).

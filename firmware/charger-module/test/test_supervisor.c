@@ -454,10 +454,10 @@ static void reset_and_boot_option_commands(void) {
     MT_ASSERT_EQ(fake_board_loader_resets(), 1);
 }
 
-// With EN high the watch does nothing: the port runs on however long the
-// controller stays away. With EN low, a controller that has not spoken for
-// WATCH_S gets the blade back in the bootloader; any transaction resets the
-// clock, and a blade that was never given a watch is left alone.
+// With EN high the watch does nothing: the port keeps running for as long
+// as the controller is absent. With EN low, no controller access for WATCH_S
+// resets the blade into the bootloader; any transaction restarts the timer,
+// and a blade that was never given a watch is not reset.
 static void a_silent_controller_resets_the_blade(void) {
     boot();
     en_high();
