@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.14.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.13.0...controller-firmware-v0.14.0) (2026-10-06)
+
+
+### Features
+
+* **controller:** open Settings at the token field when a change needs it ([bf3633a](https://github.com/mikesmitty/power-manifold/commit/bf3633a7f9704bada51e678d8992fc35bd0de9ba))
+* **controller:** restyle the web page like the front of the chassis ([2884df2](https://github.com/mikesmitty/power-manifold/commit/2884df2440a09d7eeb64fc55194fb8b55b60a449))
+
+
+### Bug Fixes
+
+* **controller:** name charge events on MQTT ([2b108b9](https://github.com/mikesmitty/power-manifold/commit/2b108b9632afb296ce416499f6a3b6d685837938))
+* **controller:** stop web page labels overlapping or splitting ([70baa26](https://github.com/mikesmitty/power-manifold/commit/70baa26e945b5751f3b1fa152bcdd3541427b79d))
+
 ## [0.13.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.12.0...controller-firmware-v0.13.0) (2026-10-06)
 
 
