@@ -21,8 +21,8 @@ The page works without Home Assistant and without internet access.
 <Screenshot
 	light={overviewLight}
 	dark={overviewDark}
-	alt="The top of the web interface: the front panel drawing with six port lights, the power budget bar, chassis details and the first two port cards with power graphs"
-	caption="The top of the page, with five ports delivering power and port 6 ready for a device. The page follows your browser's light or dark setting."
+	alt="The top of the web interface: the front panel drawing with six port lights, a status line, the power budget bar and the first port cards with power graphs"
+	caption="The top of the page, with five ports delivering power and port 6 ready for a device."
 />
 
 ## At the top
@@ -34,6 +34,8 @@ The page refreshes every second. At the top:
   same way, plus the chassis light. See
   [Front panel and lights](/power-manifold/guide/front-panel/). Click a port
   to open its graphs.
+- **A status line:** the input voltage, the fan, the energy delivered since
+  the controller started, and the firmware version.
 - **A red line**, only when something needs attention. It says what. See
   [Troubleshooting](/power-manifold/guide/troubleshooting/).
 - **The power budget.** How much power the chassis is drawing now, how much
@@ -41,15 +43,17 @@ The page refreshes every second. At the top:
   drawn power by port, in each port's colour, and hatches the part that is
   set aside but not in use. See
   [Sharing power](/power-manifold/guide/sharing-power/).
-- **Chassis details:** the input (bus) voltage, the fan, energy delivered,
-  the light mode, why the controller last restarted, and the blade firmware.
+
+The page follows your device's light or dark setting. The **Theme** button
+at the top right switches between automatic, light and dark. Your choice is
+remembered in that browser only.
 
 ## The port cards
 
 Each port has a card. A port that is delivering power shows:
 
 - the power the device is drawing right now, in large type;
-- the voltage and current, and the power set aside for the port (its
+- the current and voltage, and the power set aside for the port (its
   *contract*), with a bar showing how much of it is in use;
 - a graph of the last three minutes;
 - the energy delivered since the controller last started, and the blade's
@@ -70,10 +74,11 @@ and cover the last ten minutes. Home Assistant keeps the long-term history.
 	caption="A port opened to its graphs and settings."
 />
 
-The switch at the bottom of each card turns the port on or off. Turning it
-off asks you to confirm on the card first, because the device plugged into
-it loses power. Both need your API token: unlock **Settings** once and the
-switches work for as long as the tab is open. A port you turn off stays off
+The **Switch off** button at the bottom of each card turns the port off, and
+**Switch on** turns it back on. Switching off asks you to confirm on the card
+first, because the device plugged into it loses power. Both need your API
+token: unlock **Settings** once and the buttons work for as long as the tab
+is open. A port you turn off stays off
 until you turn it on again. After a restart it follows its
 [power-up setting](/power-manifold/guide/port-settings/#on-or-off-at-power-up).
 
@@ -88,8 +93,11 @@ token because it names your networks and servers.
 
 ## Settings
 
-Open the **Settings** tab below the port cards and enter your API token to
-unlock it. The settings are grouped into Device, Network, MQTT, Power and
+Open the **Settings** tab below the port cards. Its first row, which shows
+without the token, is about the unit itself: the controller firmware and the
+slot it runs from, the blade firmware, how long it has been running, why it
+last started, and whether the lights are dimmed. Enter your API token to
+unlock the rest. The settings are grouped into Device, Network, MQTT, Power and
 fan, Status lights, and a Ports table with one row per port. Change what you need and press **Save**.
 
 A new controller has no token yet. During
