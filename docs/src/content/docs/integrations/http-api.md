@@ -34,8 +34,12 @@ curl -H "Authorization: Bearer $TOKEN" ...
 **Status, chassis:** `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`,
 `fw`, `blade_fw`, `slot`, `trial`, `boot`, `warm_start`, `vin_v`,
-`ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`, and a `ups`
-object.
+`ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`,
+`chassis_light`, and a `ups` object.
+
+`chassis_light` is what the chassis light shows: `bus_fault` (red, fast
+blink: input voltage out of range), `bluetooth` (blue: Bluetooth setup
+open), `setup` (amber: first-time setup open) or `ok` (dim green).
 
 ## Changing things
 

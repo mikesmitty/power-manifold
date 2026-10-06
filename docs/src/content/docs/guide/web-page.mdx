@@ -13,52 +13,70 @@ don't work on your network, use the IP address your router gave it.
 
 The page works without Home Assistant and without internet access.
 
-## The port table
+## At the top
 
-The table has one row per port and refreshes every second:
+The page refreshes every second. At the top:
 
-| Column | What it shows |
-| --- | --- |
-| **State** | What the port is doing: `absent`, `idle`, `active`, `throttled`, `fault`, `disabled`. It also shows *charged* once a device has finished charging. |
-| **V / A** | The voltage and current the device is drawing right now. |
-| **Draw W** | The power the device is drawing right now. |
-| **Res W** | The power set aside for this port in the [power budget](/power-manifold/guide/sharing-power/). A port with nothing plugged in still holds 15 W. |
-| **kWh** | Energy delivered since the controller last started. |
-| **Power** | A button that turns the port off or on. |
+- **The front panel.** A drawing of the chassis front shows each port's
+  light in the colour it has on the real chassis, blinking or breathing the
+  same way, plus the chassis light. See
+  [Front panel and lights](/power-manifold/guide/front-panel/). Click a port
+  to open its graphs.
+- **A red line**, only when something needs attention. It says what. See
+  [Troubleshooting](/power-manifold/guide/troubleshooting/).
+- **The power budget.** How much power the chassis is drawing now, how much
+  is set aside for the ports, and how much is free. The bar below splits the
+  drawn power by port, in each port's colour, and hatches the part that is
+  set aside but not in use. See
+  [Sharing power](/power-manifold/guide/sharing-power/).
+- **Chassis details:** the input (bus) voltage, the fan, energy delivered,
+  the light mode, why the controller last restarted, and the blade firmware.
 
-Click a port's row to see graphs of its power, current and voltage. The
-graphs start when you open the page and cover the last ten minutes. Home
-Assistant keeps the long-term history.
+## The port cards
 
-**Turn off** cuts the port's power and asks you first, because the device
-plugged into it loses power. **Turn on** brings it back. Both need your API
-token: unlock **Settings** once and the buttons work for as long as the tab
-is open. A port you turn off stays off until you turn it on again. After a
-restart it follows its
+Each port has a card. A port that is delivering power shows:
+
+- the power the device is drawing right now, in large type;
+- the voltage and current, and the power set aside for the port (its
+  *contract*), with a bar showing how much of it is in use;
+- a graph of the last three minutes;
+- the energy delivered since the controller last started, and the blade's
+  converter and plug temperatures.
+
+A port that isn't delivering says why: nothing plugged in, switched off,
+no blade in the slot, or a fault. A port with nothing plugged in still holds
+15 W for the next device, and its card says so.
+
+Click a card to see graphs of its power, current and voltage, with the
+port's settings and temperatures. The graphs start when you open the page
+and cover the last ten minutes. Home Assistant keeps the long-term history.
+
+The switch at the bottom of each card turns the port on or off. Turning it
+off asks you to confirm on the card first, because the device plugged into
+it loses power. Both need your API token: unlock **Settings** once and the
+switches work for as long as the tab is open. A port you turn off stays off
+until you turn it on again. After a restart it follows its
 [power-up setting](/power-manifold/guide/port-settings/#on-or-off-at-power-up).
-
-Below the table, a line shows the chassis total, the budget, the fan and
-the network link. If something needs attention, a red line under it says
-what. See [Troubleshooting](/power-manifold/guide/troubleshooting/).
 
 ## Fault log and console log
 
-**Fault log** lists the most recent faults, newest first, with the time and
-how much power the port was drawing at that moment. It also records each
+The **Fault log** tab lists the most recent faults, newest first, with the
+time and how much power the port was drawing at that moment. It also records each
 restart and why it happened. It keeps about 256 entries.
 
-**Console log** shows the controller's recent messages. It needs your API
+The **Console** tab shows the controller's recent messages. It needs your API
 token because it names your networks and servers.
 
 ## Settings
 
-Open **Settings** at the bottom of the page and enter your API token to
-unlock it. Change what you need and press **Save**.
+Open the **Settings** tab below the port cards and enter your API token to
+unlock it. The settings are grouped into Device, Network, MQTT, Power and
+fan, Status lights, and a Ports table with one row per port. Change what you need and press **Save**.
 
 A new controller has no token yet. During
-[first-time setup](/power-manifold/setup/first-time-setup/) the panel opens
+[first-time setup](/power-manifold/setup/first-time-setup/) the tab opens
 by itself and asks you to choose one. Until you do, nothing can be changed
-from the network, and the panel says what to do if setup has closed.
+from the network, and the tab says what to do if setup has closed.
 
 Most changes apply at once. The device name, Wi-Fi, MQTT broker and
 addressing apply after you press **Reboot**. A reboot does not interrupt
