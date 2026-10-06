@@ -49,8 +49,8 @@ static void test_port_state_colours(void) {
     MT_ASSERT_EQ(PX(1).r, 255); // white
     MT_ASSERT_EQ(PX(1).g, 255);
     MT_ASSERT_EQ(PX(1).b, 255);
-    MT_ASSERT(PX(2).b == 255 && PX(2).r == 0); // blue at 9 V, the last PDO under the 11 V line
-    MT_ASSERT(PX(3).g == 220 && PX(3).r == 0 && PX(3).b < PX(3).g); // green at 12 V, the first above it
+    MT_ASSERT(PX(2).g == 220 && PX(2).r == 0 && PX(2).b < PX(2).g); // green at 9 V, the last PDO under the 11 V line
+    MT_ASSERT(PX(3).b == 255 && PX(3).r == 0); // blue at 12 V, the first above it
     MT_ASSERT(dark(PX(4)));
     MT_ASSERT(PX(5).r == 255 && PX(5).g == 0 && PX(5).b == 0); // fault, blink on
     render(100); // 5 Hz: off in the second half of each 200 ms
@@ -74,7 +74,7 @@ static void test_hold_fill(void) {
     for (int i = 0; i < LED_PIXELS; i++) MT_ASSERT(px[i].r == 255 && px[i].g == 0 && px[i].b == 0);
     view.hold = 0;
     render(0);
-    MT_ASSERT(PX(0).g == 220); // ports back
+    MT_ASSERT(PX(0).b == 255); // ports back
     MT_ASSERT(all_clear(CH));
     // shown on a blanked chain, at the identify floor
     view.brightness = 0;
@@ -100,14 +100,14 @@ static void test_throttled_pulses_active_colour(void) {
     set_port(1, PORT_STATE_THROTTLED, 9000);
     render(0); // pulse trough: dim but never dark
     MT_ASSERT(!dark(PX(0)));
-    MT_ASSERT(PX(0).r == 0 && PX(0).g > PX(0).b); // green hue
-    MT_ASSERT(PX(1).r == 0 && PX(1).b > PX(1).g); // blue hue
-    uint8_t trough = PX(0).g;
+    MT_ASSERT(PX(0).r == 0 && PX(0).b > PX(0).g); // blue hue
+    MT_ASSERT(PX(1).r == 0 && PX(1).g > PX(1).b); // green hue
+    uint8_t trough = PX(0).b;
     render(500); // pulse peak = the solid active colour
-    MT_ASSERT_EQ(PX(0).g, 220);
-    MT_ASSERT(PX(0).g > trough);
+    MT_ASSERT_EQ(PX(0).b, 255);
+    MT_ASSERT(PX(0).b > trough);
     render(1000); // back to the trough
-    MT_ASSERT_EQ(PX(0).g, trough);
+    MT_ASSERT_EQ(PX(0).b, trough);
 }
 
 static void test_charged_shows_white(void) {
@@ -117,9 +117,9 @@ static void test_charged_shows_white(void) {
     set_port(2, PORT_STATE_ACTIVE, 5000);
     tele.port[0].charged = tele.port[1].charged = true;
     render(0);
-    MT_ASSERT(PX(0).r == 255 && PX(0).g == 255 && PX(0).b == 255); // white, not the 20 V green
+    MT_ASSERT(PX(0).r == 255 && PX(0).g == 255 && PX(0).b == 255); // white, not the 20 V blue
     MT_ASSERT(same(PX(1), PX(0)));                                // and no throttle pulse
-    MT_ASSERT(PX(2).b == 255 && PX(2).r == 0);                    // still charging: blue
+    MT_ASSERT(PX(2).g == 220 && PX(2).r == 0);                    // still charging: green
     render(500);
     MT_ASSERT(same(PX(1), PX(0))); // solid
     reset(0); // master brightness 0 hides it like every non-fault colour
@@ -270,8 +270,8 @@ static void test_chassis_light_glows_dim_green(void) {
     all_idle();
     render(0);
     MT_ASSERT_EQ(CH.g, 220 * LED_CHASSIS_OK_MAX / 255);
-    reset(4); // dimmed for the night: as bright as a port, not dark
-    set_port(0, PORT_STATE_ACTIVE, 20000);
+    reset(4); // dimmed for the night: as bright as a green port, not dark
+    set_port(0, PORT_STATE_ACTIVE, 5000);
     render(0);
     MT_ASSERT(!dark(CH));
     MT_ASSERT(same(CH, PX(0)));

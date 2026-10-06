@@ -23,15 +23,15 @@ something when the slot is empty.
 ## Port lights
 
 <FrontPanel
-	lights={['green dim', 'green', 'blue', 'white', 'green pulse', 'red fast', 'amber dim']}
+	lights={['green dim', 'blue', 'green', 'white', 'blue pulse', 'red fast', 'amber dim']}
 	title="Front panel with ports showing different states"
 	caption="For example: port 1 powering a laptop, port 2 a phone, port 3 idle, port 4 turned down for the budget, port 5 faulted and no port fitted at 6."
 />
 
 | Light | Meaning |
 | --- | --- |
-| <span class="led" style="--led:#22c55e"></span>Green | Powering a device at 12 V or more, such as a monitor, a game console or a laptop. |
-| <span class="led" style="--led:#3b82f6"></span>Blue | Powering a device at 5 or 9 V, such as a phone or a Raspberry Pi. |
+| <span class="led" style="--led:#3b82f6"></span>Blue | Powering a device at 12 V or more, such as a monitor, a game console or a laptop. |
+| <span class="led" style="--led:#22c55e"></span>Green | Powering a device at 5 or 9 V, such as a phone or a Raspberry Pi. |
 | <span class="led" style="--led:#e8e8e8"></span>White | Nothing to deliver: no device is plugged in, or the device has finished charging and is only trickling. |
 | <span class="led blink" style="--led:#22d3ee"></span>Cyan, blinking | The blade is starting up. |
 | <span class="led pulse" style="--led:#3b82f6"></span>Slow pulse (blue or green) | Powering a device, but turned down because the chassis is at its power budget. See [Sharing power](/power-manifold/guide/sharing-power/). |
@@ -102,7 +102,7 @@ you hold it:
 
 <FrontPanel
 	sequence="hold"
-	lights={['green dim', 'green', 'blue', 'white', 'white', 'white', 'white']}
+	lights={['green dim', 'blue', 'green', 'white', 'white', 'white', 'white']}
 	title="Holding the button down to a factory reset"
 />
 
