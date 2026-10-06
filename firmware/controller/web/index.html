@@ -360,13 +360,13 @@ $('grid').onkeydown=e=>{const c=e.target.closest('.card');if(c&&(e.key=='Enter'|
 async function power(i,on){ask=-1;const PM=$('pm');let r;
  try{r=await fetch('/api/v1/port/'+(i+1),{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify({action:on?'enable':'disable'})});}catch(e){}
  if(r&&r.ok){PM.textContent='';tick();return;}
- if(r&&r.status==401){const w=await why(r);PM.textContent=w==BT?'Unlock Settings with the API token first.':cap(w);draw();return;}
+ if(r&&r.status==401){const w=await why(r);if(w==BT){PM.textContent='';unlock('switch ports');}else PM.textContent=cap(w);draw();return;}
  PM.textContent=r?'The controller is busy. Try again.':'No response from the device.';draw();}
 
 // tabs
 const TABS=[...document.querySelectorAll('.tab')];
-function tab(t){TABS.forEach(b=>{const on=b.dataset.t==t;b.setAttribute('aria-selected',on);$(b.dataset.t).hidden=!on;});
- if(t=='fl')flLoad();if(t=='lg')lgLoad();if(t=='cfg')cfgLoad();}
+function tab(t,q){TABS.forEach(b=>{const on=b.dataset.t==t;b.setAttribute('aria-selected',on);$(b.dataset.t).hidden=!on;});
+ if(q)return;if(t=='fl')flLoad();if(t=='lg')lgLoad();if(t=='cfg')cfgLoad();}
 TABS.forEach(b=>b.onclick=()=>tab(b.dataset.t));
 
 // settings
@@ -414,13 +414,17 @@ IMF.onchange=async()=>{const f=IMF.files[0];if(!f)return;const t=await f.text();
  if(!r||!r.ok){M.textContent='Not imported: '+(d.error||'no response');return;}await cfgLoad();
  M.textContent=d.reboot_required?'Imported. Reboot to apply the name, network and broker.':'Imported and applied.';};
 $('ul').onclick=()=>{sessionStorage.tok=$('tok').value;cfgLoad();};
+$('tok').onkeydown=e=>{if(e.key=='Enter')$('ul').click();};
+// Something needed the token: open Settings at the token field and say what for.
+async function unlock(what){tab('cfg',1);await cfgLoad();if(LK.hidden)return;
+ M.textContent=(sessionStorage.tok?'Token rejected. ':'')+'Enter the API token to '+what+'.';const k=$('tok');k.scrollIntoView({block:'center'});k.focus();}
 const U=new URL(location),S=U.searchParams.get('s');
 if(S){sessionStorage.tok=S;U.searchParams.delete('s');history.replaceState(null,'',U);tab('cfg');}
 else cfgLoad().then(d=>{if(d&&!d.token_set)tab('cfg');});
 
 // console
 async function lgLoad(){let r;try{r=await fetch('/api/v1/log',{headers:hdr()});}catch(e){$('lgm').textContent='No response from the device.';return;}
- if(r.status==401){const w=await why(r);$('lgm').textContent=w==BT?'Unlock Settings with the API token first.':cap(w);$('lgp').textContent='';return;}
+ if(r.status==401){const w=await why(r);$('lgp').textContent='';if(w==BT){$('lgm').textContent='';unlock('read the console');}else $('lgm').textContent=cap(w);return;}
  const P=$('lgp');P.textContent=await r.text();$('lgm').textContent='';P.scrollTop=P.scrollHeight;}
 $('lgr').onclick=lgLoad;
 
@@ -434,7 +438,7 @@ async function flLoad(){let d;try{d=await(await fetch('/api/v1/faults')).json();
   <td><span class="ty ${f.type}">${f.type.replace('_',' ')}</span> ${esc(f.text)}</td><td class="num">${f.type=='boot'||f.type=='bus'?'':W(f.power_w)+' / '+W(f.contract_w,0)}</td></tr>`).join('');}
 setInterval(()=>{if(!$('fl').hidden)flLoad();},10000);
 $('flc').onclick=async()=>{let r;try{r=await fetch('/api/v1/faults/clear',{method:'POST',headers:hdr()});}catch(e){}
- if(r&&r.ok){flLoad();return;}if(r&&r.status==401){const w=await why(r);$('flm').textContent=w==BT?'Unlock Settings with the API token first.':cap(w);return;}$('flm').textContent='Clear failed.';};
+ if(r&&r.ok){flLoad();return;}if(r&&r.status==401){const w=await why(r);if(w==BT)unlock('clear the fault log');else $('flm').textContent=cap(w);return;}$('flm').textContent='Clear failed.';};
 flLoad();
 addEventListener('resize',()=>{if(sel>=0)draw();});
 </script>
