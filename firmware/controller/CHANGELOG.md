@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.13.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.12.0...controller-firmware-v0.13.0) (2026-10-06)
+
+
+### Features
+
+* **controller:** breathe the chassis light red with no network ([53d8d74](https://github.com/mikesmitty/power-manifold/commit/53d8d74d1b1be2a962ad32b2f0c22657820c1154))
+* **controller:** drive the chassis light at the head of the light bar ([cedbd06](https://github.com/mikesmitty/power-manifold/commit/cedbd06a386f39cc354731ec4e6da31c21b5d7d0))
+* **controller:** first-time setup over Ethernet, no changes without a token ([e418972](https://github.com/mikesmitty/power-manifold/commit/e418972b2a028b1940f03acded0174b82b0bbcca))
+* **controller:** redesign the web page ([16bff12](https://github.com/mikesmitty/power-manifold/commit/16bff1206038b9fba9c0d4fcc26c7b5347fd983d))
+* **controller:** retire magenta from the status lights ([aee9fe1](https://github.com/mikesmitty/power-manifold/commit/aee9fe19f04ed03800dc4856e0a87405b4fcebda))
+* **controller:** show 12 V and up in blue, 5 and 9 V in green ([5d539dc](https://github.com/mikesmitty/power-manifold/commit/5d539dc3b00742d5c86e76ab6ad94ad046079716))
+* **controller:** show bus faults and an all-clear glow on the chassis light ([3dcfda6](https://github.com/mikesmitty/power-manifold/commit/3dcfda67b80647b376a92d8d561e178765993302))
+* **controller:** swap the empty-slot and ready port colours ([32a6ce6](https://github.com/mikesmitty/power-manifold/commit/32a6ce6e7e0405aaf74c48abd9189a6e4e48acf8))
+* **controller:** turn an active port green from 11 V, not 19 V ([54096a3](https://github.com/mikesmitty/power-manifold/commit/54096a395687a62017f980c3dace82a2e763a8ea))
+* **controller:** turn ports on and off from the web page ([4aaef0d](https://github.com/mikesmitty/power-manifold/commit/4aaef0d2664b17a2f2751e60f0ebb6b4c726affc))
+
+
+### Bug Fixes
+
+* **controller:** draw an updating port dark on the web page ([6502714](https://github.com/mikesmitty/power-manifold/commit/6502714f0bac3786fb5fd185fdae372fbd749592))
+* **controller:** give the links 15 s after power-up before flagging no network ([e8fce1d](https://github.com/mikesmitty/power-manifold/commit/e8fce1d6d0813768b30bd88abe3f2ec00a41f423))
+
 ## [0.12.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.11.0...controller-firmware-v0.12.0) (2026-10-05)
 
 
