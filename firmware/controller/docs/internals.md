@@ -81,7 +81,7 @@ P1(*n*−1) and pixel *n* of the light-bar chain (pixel 0 is the chassis
 light, ahead of port 1), and the backplane wires all four
 to one socket, in silkscreen order from the management socket toward the
 power input (sockets J3, J5, J7, J4, J6, J8 after the re-annotation; the
-[architecture](https://docs.powermanifold.io/developers/architecture/#31-slot-numbering-verified-against-the-netlist-2026-09-09)
+[architecture](https://docs.powermanifold.io/developers/architecture/#31-slot-numbering)
 page has the table). Verified against the backplane netlist and layout on
 2026-09-09. Facing the front panel, port 1 is on the left next to the
 management card and port 6 on the right, each light above its port with the
