@@ -35,8 +35,8 @@ Developer documentation lives in [`docs/`](docs/) and is published on the
   generations, warm starts and keeping ports powered, bus voltage, wired
   Ethernet, the UPS link, the fan and the logs.
 - [Flash layout and updates](docs/flash-and-updates.md): partitions, first
-  programming, OTA, signed images, try-before-you-buy, blade firmware
-  updates, and the not-yet-run-on-hardware checklist.
+  programming, OTA, signed images, try-before-you-buy and blade firmware
+  updates.
 - [Serial console](docs/console.md): every console command.
 
 What an owner sees (setup, the web page, port settings, Home Assistant, the

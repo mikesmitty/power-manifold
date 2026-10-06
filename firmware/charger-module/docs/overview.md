@@ -4,17 +4,6 @@ Firmware for the gen-3 charger blade (`hardware/charger-module` from release
 0.15.0 on): an STM32G071C8 as the USB-PD source controller, in place of the
 MPQ4242 that negotiated on its own in the gen-2 blade.
 
-> [!CAUTION]
-> **Written, not yet run**
->
-> ST's USB-PD stack is integrated as the port's policy engine, with the
-> blade's own supervisor, power path and backplane register file around it.
-> The image builds and links; everything outside `src/hw/` and `src/usbpd/` is
-> covered by the host tests, against a simulated board. None of it has run on
-> hardware yet. Bench bring-up may reveal faults the simulation did not.
-
-The source is in [`firmware/charger-module`](../). The backplane interface and the update path are on [Blade register map and updates](register-map.md).
-
 ## What the blade is
 
 | Part | Role | Bus |
@@ -212,39 +201,3 @@ controller's configuration:
 ```
 en=1 armed=1 st=8b vdda=3301 vout=9012 vbus=8987 iout=1480 contract=9000/2000 conv=41.8 plug=33.1 fault=0000
 ```
-
-## Bring-up checklist
-
-In this order. Steps 1 to 4 need no sink.
-
-1. **5 V only, EN low.** The LED flashes once a second and the console
-   prints the banner and the report line: `vdda` within a few percent of
-   3300, both NTCs near room temperature, `fault=8000` (the restart).
-2. **The controller, or an I2C adapter on the slot's SDA/SCL,** reads 0xB3
-   from register 0x00 at address 0x3A.
-3. **Bus voltage applied and EN high:** `EN high`, and no `BUS` fault 50 ms
-   later. `vout` stays at 0.
-4. **Writing `MAX_MA`, `MAX_MV` and `CONTROL`** prints the configuration;
-   `armed=1` follows. CC1 and CC2 at the receptacle now carry the 3 A pull-up.
-5. **A sink emulator, 5 V only at first.** Watch VBUS on a scope from
-   attach: a ramp from 0 V, no step. Then each fixed voltage up and down,
-   unloaded, which is the case that needs forced PWM to come down in time.
-6. **PPS,** across both ranges, and into current limit.
-7. **An e-marked 5 A cable:** `st` gains the 5 A bit and the 20 V object
-   offers 5 A.
-8. **The trips,** with a bench supply on the converter output through a
-   diode: the comparator at 1.2 × the contract, the fixed one at 23 V, and
-   the time from either to the switch opening, which the TCPP02's datasheet
-   does not give.
-
-## What comes next
-
-1. **Bring-up** on the first gen-3 blade, per the checklist — the update
-   path included: the ROM bootloader's answer on the backplane bus, a
-   controller-programmed blank blade, and the option-byte trip.
-2. **Alert and Status at a sink.** Written and host-tested, not yet tested
-   against a real sink: a PD analyser or a logging sink should show one
-   Alert with the over-temperature bit when a thermometer passes its warning
-   level, and Status answering *Warning*. The four temperatures (85 / 60 °C
-   warn, 100 / 70 °C trip) are set from the same thermocouple session as the
-   controller's fan rule.

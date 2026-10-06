@@ -5,8 +5,6 @@ from release 0.15.0 on). It runs the blade's USB-C port with ST's USB-PD
 stack, a TPS55288 converter and a TCPP02-M18 port protector, and serves a
 register file to the controller over the backplane.
 
-**Status: written, not yet run on hardware.**
-
 ## Quick start
 
 ```sh
@@ -30,6 +28,6 @@ Developer documentation lives in [`docs/`](docs/) and is published on the
 
 - [Overview](docs/overview.md): what the blade is, its protection, how the
   port runs, pin map, source layout, ST's stack and its licence, building,
-  flashing, the console and the bring-up checklist.
+  flashing and the console.
 - [Register map and updates](docs/register-map.md): the backplane register
   map and how the controller programs the blade through the ROM bootloader.

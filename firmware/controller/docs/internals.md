@@ -322,7 +322,7 @@ under/overvoltage, unbalanced, discharge overload, a bad block), raises the
 problem indicator. `ups buzzer off` silences the supply's alarm; the
 setting lives in the supply and is lost when it restarts, as its manual
 says of every write. The driver is tested against an emulated supply in
-the host tests (`test_ups.c`) and has not yet been run against a real LAD
+the host tests (`test_ups.c`) and is as yet untested with a real LAD
 supply.
 
 ## Console log

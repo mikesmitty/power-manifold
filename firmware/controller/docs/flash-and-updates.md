@@ -37,8 +37,7 @@ needs both.
 - *Over SWD*, which is how a controller card is programmed (its USB is an
   unpopulated header): write `controller-factory.bin` at `0x10000000`. It is
   the start of flash as one file — the partition table, then the firmware
-  where slot A begins. Not yet tried on a board: see
-  [Not yet run on hardware](#not-yet-run-on-hardware).
+  where slot A begins.
 
   ```
   openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg -c "adapter speed 4000" \
@@ -278,40 +277,3 @@ so the other five ports keep being served; a whole image takes well under
 ten seconds. Events: `update` with `written`, `started` or `boot option` and
 the version in `text`; the HA events entity sees `updated` when an image was
 written.
-
-## Not yet run on hardware
-
-> [!CAUTION]
-> Signed updates, the update check and first programming over SWD were written
-> and host-tested before a controller card existed, and none of it has run on
-> a board.
-
-To check when one arrives, in this order:
-
-1. **First programming over SWD.** `controller-factory.bin` written at
-   `0x10000000` with openocd, on the card's 16 MB flash. `info` then reports
-   `boot: slot A`, not `slot raw`.
-2. **A signed image installs.** Once by push (`POST /api/v1/update`) and once
-   by pull (`update <url>`): the trial boot, then `slot … committed` ten
-   seconds later.
-3. **The refusals.** Over the network: an unsigned image, one signed for the
-   other board, and an older one are each turned away with their own message
-   and nothing is left bootable in the slot. From the console,
-   `update --unsigned` and `update --downgrade` let the first and the last in.
-4. **Stack.** `stack` after a signature check: the Ed25519 verification runs
-   on core 0's stack, in the network callback.
-5. **The update check.** `update check` fetches the pointer from the update
-   source; `info` and Home Assistant's update entity show the release;
-   `update latest` and the entity's Install pull it.
-6. **Settings across the upgrade.** A board coming from 0.11.0 keeps its
-   settings and gains the default update source.
-7. **The release assets.** The first release built this way carries
-   `controller-factory.bin`, the signed images for both boards, and the
-   `-pico2w` files; `fw.powermanifold.io` serves the signed ones.
-8. **The bus-sag cap.** On a bench supply wound down slowly with a 100 W
-   sink attached: the cap at 20.0 V (the sink's contract drops to 60 W,
-   `status` says `ports capped at 3 A`), the release 30 s after the supply
-   is back at 20.5 V, and the power-up case (the chassis started with the
-   supply at 20.3 V comes up capped). Also measure how far a loaded LRS-350
-   sags at the XT60 before the backplane cuts the bus, to establish the
-   margin above the 20 V threshold.

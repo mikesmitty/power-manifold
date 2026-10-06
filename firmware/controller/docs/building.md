@@ -43,8 +43,7 @@ fault-log sectors land inside the chip. The card's header declares its
 16 MB W25Q128, the RM2 radio on the Pico 2 W's CYW43 pins, and defines
 `PWRMAN_CONTROLLER_CARD`, which switches `src/pins.h` to the card's
 [GPIO map](internals.md#gpio-map) and the inverted reset drivers; the build picks the
-16 MB partition layout for it. Pins were checked against the card's KiCad
-netlist; the card itself has not been fabricated yet.
+16 MB partition layout for it.
 
 ```sh
 cmake -B build-pico2w -G Ninja -DPICO_BOARD=pico2_w
