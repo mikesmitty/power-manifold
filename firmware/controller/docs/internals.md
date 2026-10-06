@@ -234,7 +234,7 @@ meter on the bus and `vin cal 24.13` (then `save`) stores the gain trim
 that makes them agree, in the `vin_cal` setting (permille, 900 to 1100;
 `vin cal reset` clears it). The reading is `vin_v` in the status JSON and
 the MQTT status, a *Bus voltage* sensor in Home Assistant,
-`pwrman_bus_volts` on `/metrics`, part of the chassis line on the page,
+`pwrman_bus_volts` on `/metrics`, part of the chassis summary on the page,
 `vin` and a line in `info` and `status` on the console. The hardware is
 rated for 20 to 28 V and the backplane opens the bus near 17.7 V (and
 closes it again near 19.3 V), so a bus under 19 V or over 29 V (half a
@@ -259,7 +259,7 @@ of putting the same load straight back. The numbers are fixed, not
 settings: this is a safety cut-off (`src/bus_cap.c`). While it is on, the
 problem indicator says so (`bus voltage sagging, 19.80 V, ports capped at
 3 A`), `ceiling_ma` in the status JSON and MQTT status is 3000 (0
-otherwise), the page's chassis line and the console's `status` and
+otherwise), the page's chassis summary and the console's `status` and
 `info` note it, and a line is logged each way. A board without the
 divider never caps.
 
@@ -317,7 +317,7 @@ per-block voltages and undervoltage cutoff every ten, spacing requests the
 missed replies in a row or five silent seconds mark it absent again. What
 comes back is the `ups` block in the status JSON, the `ups_*` fields and
 Home Assistant entities over MQTT, `pwrman_ups_*` on `/metrics`, the UPS
-part of the chassis line on the page, `ups` and a line in `info` on the
+part of the chassis summary on the page, `ups` and a line in `info` on the
 console, and log lines for mains lost/restored, battery full and battery
 faults. Running on battery, or a battery fault (missing, reversed,
 under/overvoltage, unbalanced, discharge overload, a bad block), raises the

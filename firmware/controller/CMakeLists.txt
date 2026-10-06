@@ -149,6 +149,10 @@ pwrman_update_keys(controller ${CMAKE_CURRENT_LIST_DIR})
 include(${CMAKE_CURRENT_LIST_DIR}/tools/letsencrypt_roots.cmake)
 pwrman_letsencrypt_roots(controller ${CMAKE_CURRENT_LIST_DIR})
 
+# The web page in web/index.html is built in as web_index.h.
+include(${CMAKE_CURRENT_LIST_DIR}/tools/web_page.cmake)
+pwrman_web_page(controller ${CMAKE_CURRENT_LIST_DIR})
+
 pico_generate_pio_header(controller ${CMAKE_CURRENT_LIST_DIR}/src/engine/ws2812.pio)
 
 if(NET_WIFI)

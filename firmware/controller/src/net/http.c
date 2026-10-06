@@ -39,7 +39,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
-#define STATUS_JSON_MAX 3456 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block and the bus voltage, worst case
+#define STATUS_JSON_MAX 3488 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block, the bus voltage and the chassis light, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -49,21 +49,6 @@
 #define SETUP_ETH_WINDOW_MS (60 * 60 * 1000) // first hour on Ethernet with no token stored
 #define STR_(x) #x
 #define STR(x) STR_(x)
-
-// one per-port "off when charged" checkbox in the settings panel
-#define PORT_AUTOOFF_BOX(n) \
-    "<label><input type='checkbox' name='pa" #n "'>Port " #n "</label>"
-
-// one per-port power-up policy select in the settings panel
-#define PORT_BOOT_SELECT(n) \
-    "<select name='pb" #n "' title='Port " #n "'><option value='on'>on</option>" \
-    "<option value='off'>off</option><option value='last'>last</option></select>"
-
-// one per-port voltage cap select in the settings panel
-#define PORT_VOLT_SELECT(n) \
-    "<select name='pv" #n "' title='Port " #n "'><option value='5'>5 V</option>" \
-    "<option value='9'>9 V</option><option value='12'>12 V</option>" \
-    "<option value='15'>15 V</option><option value='20'>20 V</option></select>"
 
 typedef struct {
     struct tcp_pcb *pcb;
@@ -86,330 +71,11 @@ typedef struct {
 static conn_t conns[MAX_CONNS];
 static conn_t *update_conn; // the one connection allowed to stream an update
 
+// The page itself lives in web/index.html; the build turns it into this
+// literal (tools/web_page.py), with the {{...}} limits taken from the headers.
 static const char INDEX_HTML[] =
-    "<!doctype html><html><head><meta charset='utf-8'>"
-    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-    "<title>Power Manifold</title><style>"
-    "body{font-family:system-ui,sans-serif;background:#111;color:#eee;margin:1.5em}"
-    "h1{font-size:1.3em}table{border-collapse:collapse;width:100%;max-width:44em}"
-    "td,th{padding:.4em .7em;text-align:left;border-bottom:1px solid #333}"
-    "th{color:#888;font-weight:600}#chassis{color:#9ad;margin:.8em 0}"
-    "#prob{color:#f55;margin:-.3em 0 .8em;max-width:44em}#prob:empty{display:none}"
-    ".s-active{color:#6f6}.s-idle{color:#fc6}.s-fault{color:#f55}"
-    ".s-throttled{color:#ff5}.s-absent{color:#666}.s-probe{color:#6dd}"
-    ".s-disabled{color:#555}"
-    "tr.p{cursor:pointer}tr.p:hover td{background:#1a1a1a}tr.sel td{background:#1c2430}"
-    "tr.d td{padding:.6em .7em .9em;background:#161a20}"
-    ".g{display:grid;grid-template-columns:repeat(3,1fr);gap:.8em}"
-    ".g div{font-size:.8em;color:#888}.g b{color:#eee;font-weight:600}"
-    "svg{display:block;width:100%;height:5em;margin-top:.3em;background:#0d0d0d;"
-    "border:1px solid #333}"
-    "polyline{fill:none;stroke:#9ad;stroke-width:1.5;vector-effect:non-scaling-stroke}"
-    "#hint{font-size:.8em;color:#666;margin-top:.8em;max-width:44em}"
-    "details{margin-top:1.2em;max-width:44em}summary{cursor:pointer;color:#888}"
-    "label{display:block;margin:.55em 0;font-size:.8em;color:#888}"
-    "input,select,textarea{display:block;width:100%;box-sizing:border-box;margin-top:.2em;padding:.4em;"
-    "background:#1a1a1a;color:#eee;border:1px solid #333;border-radius:3px;font:inherit}"
-    "textarea{font-family:monospace;font-size:.75em;resize:vertical}"
-    "button{padding:.45em 1em;margin:.6em .6em 0 0;background:#1c2430;color:#eee;"
-    "border:1px solid #345;border-radius:3px;cursor:pointer;font:inherit}"
-    "#msg,#flm,#lgm,#pm{color:#fc6;font-size:.85em;margin:.4em 0;min-height:1.2em}"
-    "td button{margin:0;padding:.15em .6em;font-size:.85em}"
-    "pre{white-space:pre-wrap;word-break:break-all;font-size:.75em;background:#0d0d0d;"
-    "border:1px solid #333;padding:.6em;max-height:24em;overflow:auto;margin:.4em 0}"
-    "#lock input{display:inline-block;width:14em;margin-right:.5em}"
-    "#bk{margin-top:1em;border-top:1px solid #333;padding-top:.4em}"
-    "#bk input[type=checkbox]{display:inline;width:auto;margin-right:.4em}"
-    "#ao label{margin:0;color:#eee}#ao input{display:inline;width:auto;margin-right:.4em}"
-    "@media(max-width:40em){body{margin:1em .6em}td,th{padding:.4em .35em}"
-    ".g{grid-template-columns:1fr}}"
-    "</style></head><body>"
-    "<h1>Power Manifold</h1><div id='chassis'>loading&hellip;</div><div id='prob'></div>"
-    "<table><thead><tr><th>Port</th><th>State</th><th>V</th><th>A</th>"
-    "<th title='measured by the INA226'>Draw W</th>"
-    "<th title='PD contract wattage held against the chassis budget'>Res W</th>"
-    "<th>kWh</th><th>Power</th></tr></thead><tbody id='ports'></tbody></table><div id='pm'></div>"
-    "<div id='hint'>Click a port for its last 10 minutes of W / A / V, sampled"
-    " once a second while this page is open.</div>"
-    // Persistent fault log (data partition): newest first, refreshed while open.
-    "<details id='fl'><summary>Fault log</summary><div id='flm'></div>"
-    "<table id='flt' hidden><thead><tr><th>When</th><th>Port</th><th>Event</th>"
-    "<th title='draw / contract at the moment of the event'>W then</th></tr></thead>"
-    "<tbody></tbody></table><button type='button' id='flc'>Clear log</button></details>"
-    // Console ring (last 4 KB of what the firmware printed); needs the token.
-    "<details id='lg'><summary>Console log</summary><div id='lgm'></div><pre id='lgp'></pre>"
-    "<button type='button' id='lgr'>Refresh</button></details>"
-    // Connection-level settings. Unlocked by the API token, or, while no token
-    // exists yet, by the setup secret Improv passes in the redirect URL or by
-    // the first hour on Ethernet (see "First-time setup" below).
-    "<details id='cfg'><summary>Settings</summary><div id='msg'></div>"
-    "<div id='lock' hidden><input id='tok' type='password' placeholder='API token'>"
-    "<button id='ul'>Unlock</button></div>"
-    "<form id='f' hidden autocomplete='off'>"
-    "<label>Device name (hostname, MQTT topic id)"
-    "<input name='dname' maxlength='31' pattern='[A-Za-z0-9\\-]+' required></label>"
-    "<label>MQTT broker (blank = MQTT off)<input name='mhost' maxlength='63'></label>"
-    "<label>MQTT port<input name='mport' type='number' min='1' max='65535'></label>"
-    "<label>MQTT user<input name='muser' maxlength='32'></label>"
-    "<label>MQTT password<input name='mpass' type='password' maxlength='64'></label>"
-    "<label>MQTT connection (TLS verifies the broker against the certificate below, or against the"
-    " Let's Encrypt roots when none is installed and the broker is given by name)"
-    "<select name='mtls'><option value='plain'>plain</option><option value='tls'>TLS</option>"
-    "<option value='unverified'>TLS, unverified</option></select></label>"
-    "<label>Broker certificate (PEM, one certificate up to 2 KB, for a broker not issued by Let's Encrypt:"
-    " the CA that issued its certificate, or its own self-signed one; blank = Let's Encrypt)"
-    "<textarea name='mca' rows='4' spellcheck='false'></textarea></label>"
-    "<label>Addressing (wired link if a W6100 is fitted, else WiFi; applies at reboot)"
-    "<select name='ipmode'><option value='dhcp'>DHCP</option>"
-    "<option value='static'>static</option></select></label>"
-    "<div class='g'><label>IP address<input name='ip' placeholder='10.0.0.20'></label>"
-    "<label>Netmask<input name='mask' placeholder='255.255.255.0'></label>"
-    "<label>Gateway<input name='gw' placeholder='10.0.0.1'></label></div>"
-    "<label>DNS server (blank = from DHCP, or the gateway when static; applies at once)"
-    "<input name='dns' placeholder='10.0.0.1'></label>"
-    "<label>Time server (blank = the one DHCP names, else " NET_NTP_DEFAULT "; applies at once)"
-    "<input name='ntp' maxlength='63'></label>"
-    "<label>Syslog host (blank = off; the console is mirrored there as RFC 5424 over UDP)"
-    "<input name='slh' maxlength='63'></label>"
-    "<label>Syslog port<input name='slp' type='number' min='1' max='65535'></label>"
-    "<label>Update source (blank = never ask; the controller looks there once a day for a newer release)"
-    "<input name='upd' maxlength='63'></label>"
-    "<label>Chassis budget (W)<input name='bud' type='number' min='" STR(BUDGET_MIN_W) "'"
-    " max='" STR(BUDGET_MAX_W) "' required></label>"
-    "<label>Fan<select name='fmode'><option value='auto'>auto</option>"
-    "<option value='on'>on</option><option value='off'>off</option></select></label>"
-    "<label>Fan auto: on at or above (W)"
-    "<input name='fon' type='number' min='1' max='1000' required></label>"
-    "<label>Fan auto: off at or below (W)"
-    "<input name='foff' type='number' min='0' max='999' required></label>"
-    "<label>Fan auto: also on while any contract exceeds (mA, 0 = off)"
-    "<input name='fma' type='number' min='0' max='10000' required></label>"
-    "<label>Status LED brightness (0-255, 0 = off but faults still show)"
-    "<input name='led' type='number' min='0' max='255' required></label>"
-    "<label>Power-up LED sweep<select name='lboot'><option value='white'>white</option>"
-    "<option value='rainbow'>rainbow</option></select></label>"
-    "<label>Dimmed LED brightness (night window or idle)"
-    "<input name='ldim' type='number' min='0' max='255' required></label>"
-    "<label>Night window, local time (both blank = off; may wrap midnight)</label>"
-    "<div class='g'><input name='lns' type='time'><input name='lne' type='time'></div>"
-    "<label>Dim after this long without a port event (minutes, 0 = never)"
-    "<input name='lidle' type='number' min='0' max='1440' required></label>"
-    "<label>UTC offset in minutes for local time (e.g. -240 for UTC-4)"
-    "<input name='tz' type='number' min='-720' max='840' required></label>"
-    "<label>Port names (blank = Port N; shown in the table and Home Assistant)</label>"
-    "<div class='g'><input name='pn1' maxlength='23' placeholder='Port 1'>"
-    "<input name='pn2' maxlength='23' placeholder='Port 2'>"
-    "<input name='pn3' maxlength='23' placeholder='Port 3'>"
-    "<input name='pn4' maxlength='23' placeholder='Port 4'>"
-    "<input name='pn5' maxlength='23' placeholder='Port 5'>"
-    "<input name='pn6' maxlength='23' placeholder='Port 6'></div>"
-    "<label>Port current limits (mA, " STR(PORT_LIMIT_MIN_MA) "-" STR(PORT_LIMIT_MAX_MA) ": the current every PDO"
-    " advertises, so the watt ceiling scales with the voltage the device picks; the 21 V PPS range stops at 4750 to stay within 100 W)</label>"
-    "<div class='g'><input name='pl1' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
-    "<input name='pl2' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
-    "<input name='pl3' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
-    "<input name='pl4' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
-    "<input name='pl5' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required>"
-    "<input name='pl6' type='number' min='" STR(PORT_LIMIT_MIN_MA) "' max='" STR(PORT_LIMIT_MAX_MA) "' step='20' required></div>"
-    "<label>Voltage cap: the highest PDO each port advertises (20 V = the whole table; a live port"
-    " renegotiates at once)</label>"
-    "<div class='g'>" PORT_VOLT_SELECT(1) PORT_VOLT_SELECT(2) PORT_VOLT_SELECT(3)
-    PORT_VOLT_SELECT(4) PORT_VOLT_SELECT(5) PORT_VOLT_SELECT(6) "</div>"
-    "<label>Charged = a sink drawing under (mW; 0 = detection off)"
-    "<input name='chmw' type='number' min='0' max='20000' step='50' required></label>"
-    "<label>&hellip;for this long (minutes)"
-    "<input name='chmin' type='number' min='1' max='255' required></label>"
-    "<label>Switch off once charged</label>"
-    "<div class='g' id='ao'>" PORT_AUTOOFF_BOX(1) PORT_AUTOOFF_BOX(2) PORT_AUTOOFF_BOX(3)
-    PORT_AUTOOFF_BOX(4) PORT_AUTOOFF_BOX(5) PORT_AUTOOFF_BOX(6) "</div>"
-    "<label>Sleep timer: switch off this many minutes after a sink attaches (0 = never)</label>"
-    "<div class='g'><input name='ps1' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
-    "<input name='ps2' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
-    "<input name='ps3' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
-    "<input name='ps4' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
-    "<input name='ps5' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required>"
-    "<input name='ps6' type='number' min='0' max='" STR(PORT_SLEEP_MAX_MIN) "' required></div>"
-    "<label>Port state at power-up (last = however it was switched, from any surface)</label>"
-    "<div class='g'>" PORT_BOOT_SELECT(1) PORT_BOOT_SELECT(2) PORT_BOOT_SELECT(3)
-    PORT_BOOT_SELECT(4) PORT_BOOT_SELECT(5) PORT_BOOT_SELECT(6) "</div>"
-    "<label>API token (locks the API and this panel)"
-    "<input name='atok' type='password' maxlength='32'></label>"
-    "<button type='submit'>Save</button>"
-    "<button type='button' id='rb'>Reboot</button>"
-    // Backup: the export is the settings object; importing posts it back.
-    "<div id='bk'><label><input type='checkbox' id='xps'> include the WiFi and MQTT"
-    " passwords and the API token in the export</label>"
-    "<button type='button' id='xpb'>Export</button>"
-    "<button type='button' id='imb'>Import&hellip;</button>"
-    "<input type='file' id='imf' accept='.json,application/json' hidden></div></form></details>"
-    "<script>"
-    // Per-port sample rings live in the page: the 1 Hz status poll already
-    // carries V/A/W, so history costs the firmware nothing. Sparklines are
-    // inline SVG — the device is LAN-only, so no chart library from a CDN.
-    "const N=600,H=[],ports=document.getElementById('ports'),"
-    "esc=s=>s.replace(/[&<>]/g,c=>'&#'+c.charCodeAt(0)+';');let sel=-1,last;"
-    // A port's power button: the API's enable/disable, the same switch Home
-    // Assistant has. Switching off asks first because the device loses power.
-    "ports.onclick=e=>{const b=e.target.closest('button.pw');if(b){pw(+b.dataset.i);return;}"
-    "const r=e.target.closest('tr.p');"
-    "if(r){const i=+r.dataset.i;sel=sel==i?-1:i;draw();}};"
-    // Samples fill the strip's width until the ring is full, then scroll;
-    // the caption states the span actually covered so the scale is explicit.
-    "function line(k,u,dp){const s=H[sel]||[],n=s.length,m=Math.max(...s.map(x=>x[k]),1e-9);"
-    "const pts=s.map((x,j)=>`${(300*j/Math.max(n-1,1)).toFixed(1)},"
-    "${(58-56*x[k]/m).toFixed(1)}`).join(' ');"
-    "const sp=Math.max(n-1,0),t=sp<60?sp+'s':Math.floor(sp/60)+'m'+(sp%60?sp%60+'s':'');"
-    "return `<div>${u} now <b>${(n?s[n-1][k]:0).toFixed(dp)}</b>"
-    " &middot; peak ${m.toFixed(dp)} &middot; ${t}"
-    "<svg viewBox='0 0 300 60' preserveAspectRatio='none'>"
-    "<polyline points='${pts}'/></svg></div>`;}"
-    "function draw(){if(!last)return;"
-    "ports.innerHTML=last.ports.map((p,i)=>"
-    "`<tr class='p${i==sel?' sel':''}' data-i='${i}'><td title='Port ${i+1}'>${esc(p.name)}</td>"
-    "<td class='s-${p.state}'>${p.state}${p.charged?' &middot; charged':''}</td>"
-    "<td>${p.v.toFixed(2)}</td><td>${p.i.toFixed(2)}</td><td>${p.p.toFixed(1)}</td>"
-    "<td>${p.contract_w.toFixed(0)}</td><td>${p.e.toFixed(3)}</td><td>${p.state=='absent'?'':"
-    "`<button type='button' class='pw' data-i='${i}'>${p.state=='disabled'?'Turn on':'Turn off'}</button>`}"
-    "</td></tr>`+"
-    "(i==sel?`<tr class='d'><td colspan='8'><div class='g'>${line('p','W',1)}"
-    "${line('i','A',2)}${line('v','V',2)}</div></td></tr>`:'')).join('');}"
-    "async function tick(){try{"
-    "const r=await fetch('/api/v1/status');const d=await r.json();last=d;"
-    "document.getElementById('chassis').textContent="
-    "`${d.name} \\u2014 ${d.total_w.toFixed(1)}W drawn, ${d.reserved_w.toFixed(0)}W"
-    " reserved of ${d.budget_w.toFixed(0)}W budget"
-    " (${d.headroom_w.toFixed(0)}W free) \\u2014 fan ${d.fan} \\u2014 fw ${d.fw}"
-    " \\u2014 last boot ${d.boot}${d.led_mode!='normal'?' \\u2014 LEDs dimmed ('+d.led_mode+')':''}"
-    "${d.vin_v!=null?' \\u2014 bus '+d.vin_v.toFixed(2)+' V':''}"
-    "${d.ceiling_ma?' (ports capped at '+(d.ceiling_ma/1000)+' A)':''}"
-    "${d.ups&&d.ups.present?' \\u2014 UPS '+d.ups.status:''}`;"
-    "document.getElementById('prob').textContent=d.problems?'\\u26a0 '+d.problems:'';"
-    "d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});"
-    "if(H[i].length>N)H[i].shift();});"
-    "draw();}catch(e){}}tick();setInterval(tick,1000);"
-    "async function pw(i){const p=last.ports[i],on=p.state=='disabled',PM=document.getElementById('pm');"
-    "if(!on&&!confirm(`Turn off port ${i+1} (${p.name})? Its device loses power.`))return;"
-    "let r;try{r=await fetch('/api/v1/port/'+(i+1),{method:'POST',"
-    "headers:{...hdr(),'Content-Type':'application/json'},"
-    "body:JSON.stringify({action:on?'enable':'disable'})});}catch(e){}"
-    "if(r&&r.ok){PM.textContent=`Port ${i+1} turned ${on?'on':'off'}.`;tick();return;}"
-    "if(r&&r.status==401){const w=await why(r);PM.textContent=w==BT?"
-    "'Unlock Settings with the API token first.':cap(w);return;}"
-    "PM.textContent=r?'The controller is busy; try again.':'No response from the device.';}"
-    // Settings panel. The bearer lives in sessionStorage for this tab only;
-    // a ?s=<secret> from Improv's redirect seeds it and is scrubbed from the
-    // address bar. Without one the page asks the controller once at load:
-    // if settings answer with no token stored (the Ethernet setup hour), the
-    // panel opens by itself. A 401 is shown with the controller's own reason.
-    // Blank password/token fields mean "unchanged".
-    "const CFG=document.getElementById('cfg'),F=document.getElementById('f'),"
-    "M=document.getElementById('msg'),LK=document.getElementById('lock'),"
-    "PN=[...document.querySelectorAll('input[name^=pn]')],"
-    "PL=[...document.querySelectorAll('input[name^=pl]')],"
-    "PB=[...document.querySelectorAll('select[name^=pb]')],"
-    "PV=[...document.querySelectorAll('select[name^=pv]')],"
-    "PA=[...document.querySelectorAll('input[name^=pa]')],"
-    "PS=[...document.querySelectorAll('input[name^=ps]')],"
-    "KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',"
-    "fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',"
-    "led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',"
-    "gw:'gateway',dns:'dns',ntp:'ntp_server',mca:'mqtt_ca',slh:'syslog_host',slp:'syslog_port',upd:'update_url',"
-    "chmw:'charged_mw',"
-    "chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},"
-    "NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1},"
-    "hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{},"
-    "BT='bearer token required',cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1)+'.':'Not allowed.';"
-    "async function why(r){try{return (await r.json()).error||'';}catch(e){return '';}}"
-    "async function cfgLoad(){let r;"
-    "try{r=await fetch('/api/v1/settings',{headers:hdr()});}"
-    "catch(e){M.textContent='No response from the device.';return null;}"
-    "if(r.status==401){const w=await why(r);F.hidden=true;LK.hidden=w!=BT;"
-    "M.textContent=w==BT?(sessionStorage.tok?'Token rejected. ':'')+"
-    "'Enter the API token to edit settings.':cap(w);return null;}"
-    "const d=await r.json();LK.hidden=true;F.hidden=false;"
-    "for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';"
-    "PN.forEach((e,i)=>e.value=d.port_names[i]||'');"
-    "PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);"
-    "PV.forEach((e,i)=>e.value=d.port_max_v[i]);"
-    "PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);"
-    "const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';"
-    "F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';"
-    "F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;"
-    "M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks"
-    " the API and this panel, so keep a copy.';return d;}"
-    "F.onsubmit=async e=>{e.preventDefault();const b={};"
-    "for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;"
-    "b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';"
-    "b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);"
-    "b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);"
-    "b.port_auto_off=PA.map(e=>e.checked?1:0);"
-    "b.port_sleep_min=PS.map(e=>+e.value);"
-    "b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';"
-    "if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;"
-    "let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
-    "headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});"
-    "d=await r.json();}catch(e){}"
-    "if(!r||!r.ok){M.textContent='Not saved: '+(d.error||'no response');return;}"
-    "if(b.token)sessionStorage.tok=b.token;F.mpass.value=F.atok.value='';"
-    "await cfgLoad();M.textContent=d.reboot_required?"
-    "'Saved. Reboot to apply the name, broker and addressing.':'Saved and applied.';};"
-    "document.getElementById('rb').onclick=async()=>{let r;"
-    "try{r=await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}"
-    "if(r&&r.status==401){M.textContent=cap(await why(r));return;}"
-    "M.textContent='Rebooting; this page reloads in a few seconds.';"
-    "setTimeout(()=>location.reload(),6000);};"
-    "document.getElementById('xpb').onclick=async()=>{let r;"
-    "try{r=await fetch('/api/v1/settings/export'+(document.getElementById('xps').checked?"
-    "'?secrets=1':''),{headers:hdr()});}catch(e){}"
-    "if(!r||!r.ok){M.textContent='Export failed'+(r?' ('+r.status+')':'')+'.';return;}"
-    "const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());"
-    "a.download=(F.dname.value||'pwrman')+'-settings.json';a.click();"
-    "URL.revokeObjectURL(a.href);M.textContent='Exported.';};"
-    "const IMF=document.getElementById('imf');"
-    "document.getElementById('imb').onclick=()=>IMF.click();"
-    "IMF.onchange=async()=>{const f=IMF.files[0];if(!f)return;const t=await f.text();"
-    "IMF.value='';let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',"
-    "headers:{...hdr(),'Content-Type':'application/json'},body:t});d=await r.json();}catch(e){}"
-    "if(!r||!r.ok){M.textContent='Not imported: '+(d.error||'no response');return;}"
-    "await cfgLoad();M.textContent=d.reboot_required?"
-    "'Imported. Reboot to apply the name, network and broker.':'Imported and applied.';};"
-    "document.getElementById('ul').onclick=()=>{"
-    "sessionStorage.tok=document.getElementById('tok').value;cfgLoad();};"
-    "CFG.ontoggle=()=>{if(CFG.open)cfgLoad();};"
-    "const U=new URL(location),S=U.searchParams.get('s');"
-    "if(S){sessionStorage.tok=S;U.searchParams.delete('s');"
-    "history.replaceState(null,'',U);CFG.open=true;}"
-    "else cfgLoad().then(d=>{if(d&&!d.token_set)CFG.open=true;});"
-    // Console log panel: the ring as text, bottom = newest.
-    "const LG=document.getElementById('lg'),LGP=document.getElementById('lgp'),"
-    "LGM=document.getElementById('lgm');"
-    "async function lgLoad(){let r;try{r=await fetch('/api/v1/log',{headers:hdr()});}"
-    "catch(e){LGM.textContent='No response from the device.';return;}"
-    "if(r.status==401){const w=await why(r);LGM.textContent=w==BT?"
-    "'Unlock the Settings panel with the API token first.':cap(w);LGP.textContent='';return;}"
-    "LGP.textContent=await r.text();LGM.textContent='';LGP.scrollTop=LGP.scrollHeight;}"
-    "LG.ontoggle=()=>{if(LG.open)lgLoad();};document.getElementById('lgr').onclick=lgLoad;"
-    // Fault log panel: newest page of records, human text from the firmware.
-    "const FL=document.getElementById('fl'),FLM=document.getElementById('flm'),"
-    "FLT=document.getElementById('flt');"
-    "const at=f=>f.epoch?new Date(f.epoch*1000).toLocaleString():'up '+f.uptime_s+'s';"
-    "async function flLoad(){let d;try{d=await (await fetch('/api/v1/faults')).json();}"
-    "catch(e){FLM.textContent='No response from the device.';return;}"
-    "if(!d.available){FLM.textContent='No fault log on this board (needs the data partition).';"
-    "FLT.hidden=true;return;}"
-    "FLM.textContent=d.count?`${d.count} record${d.count==1?'':'s'}, newest first`+"
-    "(d.count>d.faults.length?` (showing ${d.faults.length})`:''):'No faults recorded.';"
-    "FLT.hidden=!d.count;FLT.tBodies[0].innerHTML=d.faults.map(f=>`<tr><td>${at(f)}</td>"
-    "<td>${f.port||'chassis'}</td><td>${esc(f.text)}</td><td>${f.type=='boot'?'':"
-    "f.power_w.toFixed(1)+' / '+f.contract_w.toFixed(0)}</td></tr>`).join('');}"
-    "FL.ontoggle=()=>{if(FL.open)flLoad();};setInterval(()=>{if(FL.open)flLoad();},10000);"
-    "document.getElementById('flc').onclick=async()=>{let r;"
-    "try{r=await fetch('/api/v1/faults/clear',{method:'POST',headers:hdr()});}catch(e){}"
-    "if(r&&r.ok){FLM.textContent='Cleared.';flLoad();return;}"
-    "if(r&&r.status==401){const w=await why(r);FLM.textContent=w==BT?"
-    "'Unlock Settings with the API token first.':cap(w);return;}"
-    "FLM.textContent='Clear failed.';};"
-    "</script></body></html>";
+#include "web_index.h"
+    ;
 _Static_assert(sizeof(INDEX_HTML) - 1 <= UINT16_MAX, "conn_t.static_len is 16-bit");
 
 static void conn_free(conn_t *c) {
@@ -544,6 +210,16 @@ static void build_ups_json(char *out, size_t cap) {
     if (off < cap) snprintf(out + off, cap - off, "],\"status\":\"%s\"},", ups_status_str());
 }
 
+// What the chassis light is showing, so the page can draw it: the order
+// render_chassis (led_pattern.c) uses on the flags main.c sends it. Having no
+// network is left out, because a browser that loaded the page has one.
+static const char *chassis_light_name(void) {
+    if (vin_low() || vin_high()) return "bus_fault";
+    if (improv_active()) return "bluetooth";
+    if (http_setup_open(to_ms_since_boot(get_absolute_time()))) return "setup";
+    return "ok";
+}
+
 static void build_status_json(char *out, size_t cap) {
     telemetry_t t;
     ipc_snapshot_read(&t);
@@ -574,6 +250,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
         "\"vin_v\":%s,\"ceiling_ma\":%lu,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
+        "\"chassis_light\":\"%s\","
         "\"blade_fw\":%s,%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
@@ -585,7 +262,7 @@ static void build_status_json(char *out, size_t cap) {
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
         t.warm_start ? "true" : "false", vinf, (unsigned long)bus_cap_ma(),
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
-        led_sched_level(&g_settings, led_sched_current()), bladef, upsf);
+        led_sched_level(&g_settings, led_sched_current()), chassis_light_name(), bladef, upsf);
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];
