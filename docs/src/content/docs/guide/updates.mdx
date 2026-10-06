@@ -7,6 +7,7 @@ sidebar:
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 import Flow from '../../../components/Flow.astro';
+import UpdateTimeline from '../../../components/UpdateTimeline.astro';
 
 Power Manifold checks for new firmware once a day. It never installs an
 update on its own. You decide when.
@@ -41,6 +42,8 @@ Without Home Assistant, you can push the update file yourself with the
 While the controller restarts, the blades keep running with the limits they
 had and their own protection. Power sharing and fault handling resume once
 the controller is back, after a few seconds.
+
+<UpdateTimeline />
 
 ## Blade firmware
 

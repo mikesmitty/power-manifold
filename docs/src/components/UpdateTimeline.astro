@@ -1,0 +1,281 @@
+---
+// What an update looks like over time, three ways: a controller update that
+// is kept, one that is reverted, and a blade being brought up to date. Each
+// is a few stages with one row per part of the chassis; a cell that is the
+// same as the one before it is merged into it. The rules follow
+// firmware/controller/docs/flash-and-updates.md: a trial is kept after 10 s
+// of health and, with Wi-Fi set up, the network coming up once; any restart
+// or the 10-minute deadline before that reverts; no blade is touched while
+// the controller is on trial; a blade updates only on a dark or idle port.
+
+type Kind = 'old' | 'new' | 'trial' | 'restart' | 'bad' | 'on' | 'same' | 'muted';
+type Cell = { text: string; kind: Kind; led?: { colour: string; anim?: 'blink'; off?: boolean } };
+type Scenario = {
+	key: string;
+	title: string;
+	text: string;
+	stages: string[];
+	rows: { name: string; cells: Cell[] }[];
+};
+
+const OLD = '0.12.0';
+const NEW = '0.13.0';
+const ports: Cell = { text: 'On the whole time: devices keep their power', kind: 'on' };
+
+const SCENARIOS: Scenario[] = [
+	{
+		key: 'kept',
+		title: 'An update that works',
+		text: 'The new firmware runs on trial. Once it has run properly for ten seconds and reached the network, it is kept. Only then are the blades brought up to date.',
+		stages: ['Download', 'Restart', 'Trial', 'Kept'],
+		rows: [
+			{ name: 'Controller', cells: [
+				{ text: `${OLD} running`, kind: 'old' },
+				{ text: 'A few seconds', kind: 'restart' },
+				{ text: `${NEW} on trial: 10 s healthy, network up`, kind: 'trial' },
+				{ text: `${NEW} installed`, kind: 'new' },
+			] },
+			{ name: 'Ports', cells: [ports, ports, ports, ports] },
+			{ name: 'Blades', cells: [
+				{ text: 'Unchanged', kind: 'same' },
+				{ text: 'Unchanged', kind: 'same' },
+				{ text: 'Unchanged', kind: 'same' },
+				{ text: 'Updated as each port goes idle', kind: 'new' },
+			] },
+		],
+	},
+	{
+		key: 'reverted',
+		title: 'An update that fails',
+		text: 'If the new firmware restarts, crashes or hasn’t passed within ten minutes, the controller goes back to the firmware it had, with your settings as they were. The blades were never touched.',
+		stages: ['Download', 'Restart', 'Trial', 'Restart', 'Back'],
+		rows: [
+			{ name: 'Controller', cells: [
+				{ text: `${OLD} running`, kind: 'old' },
+				{ text: 'A few seconds', kind: 'restart' },
+				{ text: `${NEW} on trial: crashes, or 10 min pass`, kind: 'bad' },
+				{ text: 'A few seconds', kind: 'restart' },
+				{ text: `${OLD} running, settings as they were`, kind: 'old' },
+			] },
+			{ name: 'Ports', cells: [ports, ports, ports, ports, ports] },
+			{ name: 'Blades', cells: Array(5).fill({ text: 'Unchanged', kind: 'same' }) },
+		],
+	},
+	{
+		key: 'blade',
+		title: 'A blade update',
+		text: 'A blade waits until its port has nothing to power. Here a phone is unplugged; ten seconds later the blade updates, which takes a few seconds, then starts up and is ready again. At power-up the same happens before the port comes on.',
+		stages: ['Charging a phone', 'Unplugged', 'Updating', 'Starting up', 'Ready'],
+		rows: [
+			{ name: 'Port light', cells: [
+				{ text: 'Green', kind: 'muted', led: { colour: '#22c55e' } },
+				{ text: 'White, for 10 s', kind: 'muted', led: { colour: '#e8e8e8' } },
+				{ text: 'Off', kind: 'muted', led: { colour: 'transparent', off: true } },
+				{ text: 'Cyan, blinking', kind: 'muted', led: { colour: '#22d3ee', anim: 'blink' } },
+				{ text: 'White', kind: 'muted', led: { colour: '#e8e8e8' } },
+			] },
+			{ name: 'Web interface', cells: [
+				{ text: 'Delivering 9 V', kind: 'on' },
+				{ text: 'Ready', kind: 'same' },
+				{ text: 'Updating 0–100%', kind: 'trial' },
+				{ text: 'Detecting', kind: 'same' },
+				{ text: 'Ready', kind: 'same' },
+			] },
+			{ name: 'Other ports', cells: Array(5).fill({ text: 'Unaffected', kind: 'on' }) },
+		],
+	},
+];
+
+// Merge each run of identical cells into one, spanning the stages it covers.
+const runs = (cells: Cell[]) => {
+	const out: { cell: Cell; span: number }[] = [];
+	for (const c of cells) {
+		const last = out[out.length - 1];
+		if (last && JSON.stringify(last.cell) === JSON.stringify(c)) last.span++;
+		else out.push({ cell: c, span: 1 });
+	}
+	return out;
+};
+const FIRST = 0;
+---
+
+<figure class="updates not-content" data-mode={SCENARIOS[FIRST].key}>
+	<div class="up-tabs" role="tablist" aria-label="Kinds of update">
+		{SCENARIOS.map((s, i) => (
+			<button type="button" role="tab" aria-selected={i === FIRST ? 'true' : 'false'} data-mode={s.key}>{s.title}</button>
+		))}
+	</div>
+
+	{SCENARIOS.map((s) => (
+		<div class="up-scenario" data-for={s.key}>
+			<p class="up-text">{s.text}</p>
+			<div class="up-scroll">
+			<div class="up-grid" style={`--n:${s.stages.length}`}>
+				<span />
+				{s.stages.map((st, i) => <span class="up-stage"><b>{i + 1}</b>{st}</span>)}
+				{s.rows.map((r) => (
+					<Fragment>
+						<span class="up-row">{r.name}</span>
+						{runs(r.cells).map(({ cell, span }) => (
+							<span class={`up-cell ${cell.kind}`} style={`grid-column: span ${span}`}>
+								{cell.led && (
+									<span
+										class:list={['led', cell.led.anim, { off: cell.led.off }]}
+										style={`--led:${cell.led.colour}`}
+										aria-hidden="true"
+									/>
+								)}
+								{cell.text}
+							</span>
+						))}
+					</Fragment>
+				))}
+			</div>
+			</div>
+		</div>
+	))}
+</figure>
+
+<script>
+	for (const fig of document.querySelectorAll<HTMLElement>('.updates')) {
+		const tabs = [...fig.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+		tabs.forEach((t) =>
+			t.addEventListener('click', () => {
+				fig.dataset.mode = t.dataset.mode;
+				tabs.forEach((u) => u.setAttribute('aria-selected', String(u === t)));
+			}),
+		);
+	}
+</script>
+
+<style>
+	.updates {
+		margin: 1.5rem 0;
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	}
+	.up-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.up-tabs button {
+		padding: 0.3rem 0.75rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 999px;
+		background: transparent;
+		color: var(--sl-color-gray-2);
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		cursor: pointer;
+	}
+	.up-tabs button[aria-selected='true'] {
+		border-color: var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	/* Only the chosen scenario shows. */
+	.updates:not([data-mode='kept']) [data-for='kept'],
+	.updates:not([data-mode='reverted']) [data-for='reverted'],
+	.updates:not([data-mode='blade']) [data-for='blade'] {
+		display: none;
+	}
+	.up-text {
+		min-height: 3em;
+		margin: 0.75rem 0 1rem;
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-sm);
+	}
+	.up-grid {
+		display: grid;
+		grid-template-columns: 6.5rem repeat(var(--n), minmax(0, 1fr));
+		gap: 0.35rem;
+		align-items: stretch;
+		font-size: var(--sl-text-xs);
+	}
+	.up-stage {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding-bottom: 0.2rem;
+		border-bottom: 1px solid var(--sl-color-gray-5);
+		color: var(--sl-color-gray-2);
+		font-weight: 600;
+	}
+	.up-stage b {
+		display: inline-grid;
+		place-items: center;
+		flex: none;
+		width: 1.4em;
+		height: 1.4em;
+		border-radius: 50%;
+		background: var(--sl-color-gray-5);
+		color: var(--sl-color-white);
+		font-size: 0.9em;
+	}
+	.up-row {
+		align-self: center;
+		color: var(--sl-color-gray-3);
+		font-weight: 600;
+	}
+	.up-cell {
+		display: flex;
+		align-items: center;
+		gap: 0.1rem;
+		min-height: 2.4rem;
+		padding: 0.35rem 0.55rem;
+		border-radius: 0.35rem;
+		border: 1px solid transparent;
+		color: var(--sl-color-white);
+		line-height: 1.3;
+	}
+	.up-cell .led {
+		flex: none;
+		margin-inline-end: 0.45em;
+	}
+	.up-cell .led.off::after {
+		box-shadow: none;
+	}
+	.up-cell.old {
+		background: var(--sl-color-gray-6);
+		border-color: var(--sl-color-gray-5);
+	}
+	.up-cell.new {
+		background: var(--sl-color-accent-low);
+		border-color: var(--sl-color-accent);
+		color: var(--sl-color-accent-high);
+	}
+	.up-cell.trial {
+		border: 1.5px dashed var(--sl-color-accent);
+		color: var(--sl-color-accent-high);
+	}
+	.up-cell.bad {
+		border: 1.5px dashed var(--sl-color-red, #ef4444);
+		color: var(--sl-color-red-high, var(--sl-color-red, #ef4444));
+	}
+	.up-cell.restart {
+		background: repeating-linear-gradient(-45deg, transparent 0 5px, var(--sl-color-gray-6) 5px 10px);
+		border-color: var(--sl-color-gray-5);
+		color: var(--sl-color-gray-3);
+	}
+	.up-cell.on {
+		background: color-mix(in srgb, #22c55e 16%, transparent);
+		border-color: color-mix(in srgb, #22c55e 45%, transparent);
+	}
+	.up-cell.same,
+	.up-cell.muted {
+		border-color: var(--sl-color-gray-5);
+		color: var(--sl-color-gray-2);
+	}
+	/* On a phone the timeline keeps its shape and scrolls sideways. */
+	.up-scroll {
+		overflow-x: auto;
+	}
+	@media (max-width: 40rem) {
+		.up-grid {
+			min-width: 34rem;
+		}
+	}
+</style>
