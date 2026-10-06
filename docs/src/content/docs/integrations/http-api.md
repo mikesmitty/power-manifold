@@ -12,9 +12,170 @@ refuses every change until one is set;
 [first-time setup](/power-manifold/setup/first-time-setup/) explains how the
 first one gets in.
 
+## Examples
+
+Set these once in your shell, then copy any example below:
+
 ```sh
-curl -H "Authorization: Bearer $TOKEN" ...
+PM=http://pwrman.local
+TOKEN=your-api-token
 ```
+
+<details>
+<summary>Read the status</summary>
+
+```sh
+curl $PM/api/v1/status
+```
+
+```jsonc
+{
+  "name": "pwrman", "fw": "0.12.0", "slot": "A",
+  "trial": false, "uptime_s": 274620, "rssi": -58,
+  "eth": "100M full, 192.168.1.40",
+  "total_w": 110.42, "reserved_w": 202.0,
+  "budget_w": 240.0, "headroom_w": 38.0,
+  "energy_kwh": 17.850, "fan": "on", "fan_mode": "auto",
+  "alert": false, "ble": "off", "boot": "power-on",
+  "warm_start": false, "vin_v": 24.06, "ceiling_ma": 0,
+  "problem": false, "problems": "",
+  "led_mode": "normal", "led_now": 48,
+  "chassis_light": "ok", "blade_fw": "0.2.0",
+  "ups": {"present": false},
+  "ports": [
+    {"name": "Laptop", "state": "active", "gen": 3,
+     "attached": true, "charged": false, "pdo": 5,
+     "v": 20.021, "i": 2.712, "p": 54.30, "e": 6.211,
+     "contract_w": 65.0, "prio": 2, "limit_ma": 5000,
+     "max_v": 20, "boot": "on", "fault": 0,
+     "t_conv": 54.9, "t_plug": 41.3, "t_mcu": 36.2,
+     "progress": 0, "update_due": false, "silent": false}
+    // ...one entry per port, six in all
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary>Read the fault log</summary>
+
+```sh
+curl $PM/api/v1/faults
+```
+
+```json
+{"available": true, "count": 4, "offset": 0, "faults": [
+  {"seq": 41, "epoch": 1791255690, "uptime_s": 262840, "port": 4,
+   "type": "fault", "code": 256, "arg": 0, "power_w": 26.4,
+   "contract_w": 27.0, "text": "ocp"}
+]}
+```
+
+`epoch` is 0 for entries logged before the controller knew the time.
+
+</details>
+
+<details>
+<summary>Switch a port off, and on again</summary>
+
+```sh
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -d '{"action":"disable"}' $PM/api/v1/port/3
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -d '{"action":"enable"}' $PM/api/v1/port/3
+```
+
+```json
+{"ok": true}
+```
+
+</details>
+
+<details>
+<summary>Set the power budget</summary>
+
+```sh
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -d '{"watts":240}' $PM/api/v1/budget
+```
+
+```json
+{"ok": true}
+```
+
+Outside 15–600 W the reply is `400` with `{"error": "watts out of range"}`.
+
+</details>
+
+<details>
+<summary>Make port 3 the most important</summary>
+
+Port arrays are read in port order, so send all six values. By default
+port 1 has priority 0, port 2 has 1 and so on.
+
+```sh
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -d '{"port_priorities":[1,2,0,3,4,5]}' $PM/api/v1/settings
+```
+
+```json
+{"ok": true, "reboot_required": false}
+```
+
+</details>
+
+<details>
+<summary>Back up and restore every setting</summary>
+
+```sh
+# Back up, passwords included. Keep this file private.
+curl -H "Authorization: Bearer $TOKEN" \
+  "$PM/api/v1/settings/export?secrets=1" -o pwrman-settings.json
+
+# Restore it, for example after a factory reset, then restart to apply
+# the network settings.
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  --data-binary @pwrman-settings.json $PM/api/v1/settings
+curl -X POST -H "Authorization: Bearer $TOKEN" $PM/api/v1/reboot
+```
+
+After a factory reset the controller has no token, so the restore goes in
+through [first-time setup](/power-manifold/setup/first-time-setup/), for
+with **Import…** in the web interface's **Settings**.
+
+</details>
+
+<details>
+<summary>Install an update</summary>
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" \
+  --data-binary @controller.signed.bin $PM/api/v1/update
+```
+
+```json
+{"ok": true, "slot": "B", "bytes": 854580, "version": "0.13.0",
+ "action": "trial reboot in 1s"}
+```
+
+</details>
+
+<details>
+<summary>What a refused request looks like</summary>
+
+A change without the token gets `401`:
+
+```json
+{"error": "bearer token required"}
+```
+
+On a controller with no token yet, the reply is
+`{"error": "no API token set yet: finish first-time setup first"}`.
+A bad value gets `400` with the reason, such as
+`{"error": "port_limits_ma: 500-5000 mA each"}`.
+
+</details>
 
 ## Reading
 
@@ -27,11 +188,11 @@ curl -H "Authorization: Bearer $TOKEN" ...
 | `GET /api/v1/settings/export` | Every setting, ready to import later. Add `?secrets=1` to include passwords. Needs the token. |
 | `GET /metrics` | [Prometheus metrics](#prometheus). |
 
-**Status, per port:** `name`, `state`, `v`, `i`, `p`, `e`, `pdo`,
+**Status, per port:** `name`, `state`, `gen` (blade generation), `v`, `i`, `p`, `e`, `pdo`,
 `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`,
 `fault`, `t_conv`, `t_plug`, `t_mcu`, `progress`, `update_due`, `silent`.
 
-**Status, chassis:** `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
+**Status, chassis:** `name`, `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`,
 `fw`, `blade_fw`, `slot`, `trial`, `boot`, `warm_start`, `vin_v`,
 `ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`,
@@ -81,12 +242,9 @@ the same keys, so you can edit an export and post it back.
 The name, Wi-Fi, MQTT broker and addressing apply after
 `POST /api/v1/reboot`. Everything else applies at once.
 
-Example: give port 1 priority 0 and leave the others as they are.
-
-```sh
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  -d '{"port_priorities":[0,2,3,4,5,6]}' http://pwrman.local/api/v1/settings
-```
+Port arrays are read in port order. An array shorter than six changes only
+the first ports, so to change a later port, send all six values. See
+[Make port 3 the most important](#examples).
 
 ### Installing an update
 
