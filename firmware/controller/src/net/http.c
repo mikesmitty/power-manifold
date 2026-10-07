@@ -13,6 +13,7 @@
 #include "lwip/altcp_tcp.h"
 #include "lwip/altcp_tls.h"
 #include "lwip/netif.h"
+#include "lwip/tcp.h" // SOF_REUSEADDR on the TCP pcb under the 443 listener
 #include "mbedtls/ssl.h"
 #include "pico/rand.h"
 
@@ -82,14 +83,19 @@ typedef struct {
     bool tls;           // came in on port 443
     struct altcp_tls_config *tls_conf; // the configuration it was accepted with
     bool keep_alive;    // another request may follow the response (http_req_keep_alive)
+    bool served;        // has answered a request and is waiting for the next
     uint8_t idle_polls; // poll ticks with no request yet (browser preconnects)
 } conn_t;
 
 static conn_t conns[MAX_CONNS];
 static conn_t *update_conn; // the one connection allowed to stream an update
 static conn_t *tls_upload_conn; // the one connection allowed to send a certificate
-static struct altcp_pcb *tls_listener; // port 443, while HTTPS is on
-static struct altcp_tls_config *tls_listener_conf;
+// Port 443 while HTTPS is on: a plain TCP listener, each connection wrapped
+// in TLS as it is accepted. lwIP's own TLS listener cannot be closed (its
+// close sets a poll callback on the listening socket, which lwIP asserts
+// against), and wrapping at accept time hands each connection the
+// certificate installed at that moment.
+static struct altcp_pcb *tls_listener;
 static uint32_t refused_total; // requests refused since boot (log_refusal)
 
 // The page itself lives in web/index.html; the build turns it into this
@@ -101,6 +107,7 @@ _Static_assert(sizeof(INDEX_HTML) - 1 <= UINT16_MAX, "conn_t.static_len is 16-bi
 
 // Ready for the next request on the same connection
 static void conn_reset_request(conn_t *c) {
+    c->served = true;
     c->req_len = 0;
     c->req[0] = '\0';
     c->resp_len = 0;
@@ -123,6 +130,7 @@ static void conn_free(conn_t *c) {
     c->tls = false;
     c->tls_upload = false;
     c->keep_alive = false;
+    c->served = false;
     c->body_got = 0;
     c->pcb = NULL;
     c->req_len = 0;
@@ -1004,7 +1012,7 @@ static void tls_upload_bytes(conn_t *c, const uint8_t *d, uint32_t n) {
         respond(c, fault ? 500 : 400, fault ? "Internal Server Error" : "Bad Request", "application/json", b);
         return;
     }
-    http_tls_sync(); // new HTTPS connections get the new certificate
+    http_tls_sync(); // opens 443 if HTTPS was on, waiting for a certificate
     static char b[512];
     https_json(b, sizeof(b), net_epoch());
     respond(c, 200, "OK", "application/json", b);
@@ -1435,13 +1443,19 @@ static void err_cb(void *arg, err_t err) {
     if (c) conn_free(c); // pcb already gone
 }
 
-// A connection between requests (or one that has sent none yet) can give
-// its slot to a new one: the browser asks again on another.
+#define PRECONNECT_POLLS 4 // ~2 s without a byte: a spare socket, not a TLS handshake
+
+// A connection waiting between requests, or one that has sent nothing for
+// a while, can give its slot to a new one: the browser asks again on
+// another. One still in its TLS handshake looks idle but is not, and
+// taking its slot only starts another handshake that the next client
+// takes again.
 static conn_t *idle_slot(void) {
     conn_t *best = NULL;
     for (int i = 0; i < MAX_CONNS; i++) {
         conn_t *c = &conns[i];
         if (c->req_len || c->resp_len || c->updating || c->tls_upload) continue;
+        if (!c->served && c->idle_polls < PRECONNECT_POLLS) continue;
         if (!best || c->idle_polls > best->idle_polls) best = c;
     }
     return best;
@@ -1456,12 +1470,23 @@ static err_t accept_cb(void *arg, struct altcp_pcb *newpcb, err_t err) {
     }
     if (!c && (c = idle_slot()) != NULL) conn_close(c);
     if (!c) return ERR_MEM;
+    struct altcp_tls_config *conf = NULL;
+    if (arg) {
+        // the handshake starts with the client's first bytes
+        struct altcp_pcb *tls = (conf = https_config()) ? altcp_tls_wrap(conf, newpcb) : NULL;
+        if (!tls) {
+            printf("http: no memory for another HTTPS connection\n");
+            altcp_abort(newpcb);
+            return ERR_ABRT;
+        }
+        newpcb = tls;
+    }
     conn_free(c);
     c->pcb = newpcb;
-    if (arg) {
+    if (conf) {
         c->tls = true;
-        c->tls_conf = tls_listener_conf;
-        https_conn_opened(c->tls_conf);
+        c->tls_conf = conf;
+        https_conn_opened(conf);
     }
     altcp_arg(newpcb, c);
     altcp_recv(newpcb, recv_cb);
@@ -1474,20 +1499,21 @@ static err_t accept_cb(void *arg, struct altcp_pcb *newpcb, err_t err) {
 void http_tls_sync(void) {
     if (!net_available()) return;
     net_lock();
-    struct altcp_tls_config *want = g_settings.https ? https_config() : NULL;
-    if (tls_listener && tls_listener_conf != want) {
-        // connections already accepted keep their configuration
+    bool want = g_settings.https && https_config();
+    if (tls_listener && !want) {
+        // connections already accepted keep going until they close
         altcp_close(tls_listener);
         tls_listener = NULL;
-        tls_listener_conf = NULL;
     }
     if (want && !tls_listener) {
-        struct altcp_pcb *l = altcp_tls_new(want, IPADDR_TYPE_ANY);
+        struct altcp_pcb *l = altcp_tcp_new_ip_type(IPADDR_TYPE_ANY);
+        // connections from before HTTPS was last turned off may still be in
+        // TIME_WAIT on 443; altcp_tcp keeps the TCP pcb as its state
+        if (l) ip_set_option((struct tcp_pcb *)l->state, SOF_REUSEADDR);
         if (l && altcp_bind(l, IP_ANY_TYPE, HTTPS_PORT) == ERR_OK) {
             struct altcp_pcb *listening = altcp_listen_with_backlog(l, 4);
             if (listening) {
                 tls_listener = listening;
-                tls_listener_conf = want;
                 altcp_arg(listening, (void *)1);
                 altcp_accept(listening, accept_cb);
                 printf("http: HTTPS on port %d for %s; port %d redirects\n", HTTPS_PORT,

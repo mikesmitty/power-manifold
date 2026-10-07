@@ -372,7 +372,11 @@ lives in flash.
 
 The same server runs over lwIP's `altcp` layer, so one set of handlers
 serves plain connections on port 80 and TLS connections on 443
-(`src/net/https.c`, mbedTLS through lwIP's `altcp_tls`). The 443 listener
+(`src/net/https.c`, mbedTLS through lwIP's `altcp_tls`). Port 443 is a plain
+TCP listener whose connections are wrapped in TLS as they are accepted
+(`altcp_tls_wrap`): lwIP's own TLS listener cannot be closed, because its
+close sets a poll callback on the listening socket and lwIP asserts against
+that. The 443 listener
 exists only while the `https` setting (layout version 21) is on and a
 certificate is installed; port 80 then answers every request, after the
 Host check, with `307` to `https://<Host><path>`. A 307 keeps the method and
@@ -392,9 +396,10 @@ redirect.
 - **Configurations.** Each installed certificate gets its own
   `altcp_tls_config` with the server's authentication mode set to none (the
   compiled-in `ALTCP_MBEDTLS_AUTHMODE` is the broker link's "required",
-  which on a server demands a client certificate). A new certificate
-  replaces the listener; connections keep the configuration they were
-  accepted with, which is freed when the last of them closes. Three
+  which on a server demands a client certificate). Each connection is
+  wrapped with the configuration live when it is accepted and keeps it;
+  a replaced configuration is freed when the last of its connections
+  closes. Three
   configurations can exist at once.
 - **Cost.** A full handshake is an ECDHE key exchange and an ECDSA
   signature in lwIP's context, a few hundred milliseconds on the RP2350.

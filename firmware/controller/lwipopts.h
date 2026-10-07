@@ -53,6 +53,10 @@
 #define TCP_SND_BUF                 (4 * TCP_MSS)
 #define TCP_SND_QUEUELEN            ((4 * (TCP_SND_BUF) + (TCP_MSS - 1)) / (TCP_MSS))
 #define LWIP_TCP_KEEPALIVE          1
+// The web server's port-443 listener closes when HTTPS is turned off and
+// binds again when it is turned back on, while the connections it served
+// may still sit in TIME_WAIT on that port (src/net/http.c).
+#define SO_REUSE                    1
 
 #define LWIP_NETIF_STATUS_CALLBACK  1
 #define LWIP_NETIF_LINK_CALLBACK    1
