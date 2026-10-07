@@ -96,15 +96,19 @@ paste several lines and run them together; Shift+Enter starts a new line,
 and the up and down arrows bring back earlier commands. `help` lists them.
 The reply appears under the messages. Passwords and the token show as
 `********` there and in the log. A few commands work only over the serial
-console: `token`, `defaults`, `bootsel`, and updates that are unsigned or
-older than the running firmware.
+console: `token`, `defaults`, `bootsel`, updates that are unsigned or
+older than the running firmware, and the bench tools `stack`, `i2c`, `sim`
+and `button`.
 
 ## Settings
 
 Open the **Settings** tab below the port cards. Its first row, which shows
 without the token, is about the unit itself: the controller firmware and the
 slot it runs from, the blade firmware, how long it has been running, why it
-last started, and whether the lights are dimmed. Enter your API token to
+last started, whether the lights are dimmed, whether an update is out, and
+the MQTT broker connection if one is set up. **Check for updates** asks for
+the newest release now, and **Install** appears when one is available (see
+[Updates](/guide/updates/)). Both need the token. Enter your API token to
 unlock the rest. The settings are grouped into Device, Network, MQTT, Power and
 fan, Status lights, and a Ports table with one row per port. Change what you need and press **Save**.
 

@@ -185,7 +185,6 @@ A bad value gets `400` with the reason, such as
 | `GET /api/v1/status` | Everything the web interface shows. See below. |
 | `GET /api/v1/faults` | The fault log, newest first, eight entries per page. Add `?offset=8` for the next page. |
 | `GET /api/v1/log` | The controller's recent messages as text. Needs the token. |
-| `GET /api/v1/console` | What the last console commands printed, as text. `202` while they are still running. Needs the token. |
 | `GET /api/v1/settings` | Every setting except passwords. Needs the token. |
 | `GET /api/v1/settings/export` | Every setting, ready to import later. Add `?secrets=1` to include passwords. Needs the token. |
 | `GET /metrics` | [Prometheus metrics](#prometheus). |
@@ -198,7 +197,18 @@ A bad value gets `400` with the reason, such as
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `improv`, `uptime_s`,
 `fw`, `blade_fw`, `slot`, `trial`, `boot`, `warm_start`, `vin_v`,
 `ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`,
-`chassis_light`, and a `ups` object.
+`chassis_light`, and the `update`, `net` and `ups` objects.
+
+**Status, `update`:** `available` (a newer release is known), `latest`
+(its version, or `null`), `check` (`off`, `never`, `checking`, `ok` or
+`failed`), `check_age_s` (seconds since the last check finished),
+`installing` and `progress` (percent of the download).
+
+**Status, `net`:** what the controller is using now, which can differ
+from the settings: `up`, `ip`, `netmask`, `gateway`, `dns`, `ntp`,
+`time_synced`, `mqtt` (`off`, `connecting`, `waiting_for_clock` or
+`connected`) and `mqtt_problem` (why a TLS link to the broker cannot
+connect, or `null`). Addresses are `null` while the network is down.
 
 `chassis_light` is what the chassis light shows: `bus_fault` (red, fast
 blink: input voltage out of range), `wifi_setup` (blue: Wi-Fi setup
@@ -216,7 +226,9 @@ All of these need the token.
 | `POST /api/v1/settings` | any of the settings keys below; the reply says whether a reboot is needed |
 | `POST /api/v1/faults/clear` | none; empties the fault log |
 | `POST /api/v1/reboot` | none; restarts the controller without cutting port power |
-| `POST /api/v1/console` | console commands as plain text, one per line, up to 2 KB; see below |
+| `POST /api/v1/update/check` | none; asks the update source for the newest release now. The answer appears in the status `update` object. |
+| `POST /api/v1/update/latest` | none; downloads and installs the newest known release, see [Installing an update](#installing-an-update) |
+| `POST /api/v1/improv` | `{"open": true}` opens Wi-Fi setup for 10 minutes; `{"open": false}` closes it |
 | `POST /api/v1/update` | a signed firmware file, see below |
 
 Example: switch port 3 off.
@@ -224,21 +236,6 @@ Example: switch port 3 off.
 ```sh
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -d '{"action":"disable"}' http://pwrman.local/api/v1/port/3
-```
-
-### Console commands
-
-`POST /api/v1/console` runs [console commands](/developers/controller/console/)
-in order and answers `202`. Poll `GET /api/v1/console` until it answers
-`200`; the body is each command, shown as `web> ` and the command with
-passwords and the token as `********`, followed by what it printed. A
-second batch sent while one is running gets `409`. `token`, `defaults`,
-`bootsel` and `update --unsigned` or `--downgrade` are refused.
-
-```sh
-curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: text/plain" \
-  --data-binary $'status\ninfo' http://pwrman.local/api/v1/console
-curl -H "Authorization: Bearer $TOKEN" http://pwrman.local/api/v1/console
 ```
 
 ### Settings keys
@@ -266,7 +263,17 @@ the first ports, so to change a later port, send all six values. See
 
 ### Installing an update
 
-Download `controller.signed.bin` from a
+To install the newest release the controller knows of, let it download it:
+
+```sh
+curl -X POST -H "Authorization: Bearer $TOKEN" http://pwrman.local/api/v1/update/latest
+```
+
+`409` means no release is known yet: send `POST /api/v1/update/check`
+first, then wait for `update.latest` in the status. While it downloads,
+`update.installing` is `true` and `update.progress` counts up.
+
+Or download `controller.signed.bin` from a
 [release](https://github.com/mikesmitty/power-manifold/releases) and post
 it:
 
@@ -275,9 +282,17 @@ curl -H "Authorization: Bearer $TOKEN" --data-binary @controller.signed.bin \
   http://pwrman.local/api/v1/update
 ```
 
-The controller checks the signature, installs it and restarts on trial,
-exactly as described in [Updates](/guide/updates/). It
+Either way the controller checks the signature, installs it and restarts on
+trial, exactly as described in [Updates](/guide/updates/). It
 refuses unsigned files, files for other hardware and older versions.
+
+## The web console
+
+The web interface's Console tab sends console commands to
+`POST /api/v1/console` and reads the reply from `GET /api/v1/console`. The
+reply is text for people to read, and its wording can change in any
+release. Programs should use the JSON requests above. The commands are
+listed in the [console reference](/developers/controller/console/).
 
 ## Prometheus
 
