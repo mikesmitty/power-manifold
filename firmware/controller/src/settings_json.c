@@ -71,6 +71,7 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_ip(out, cap, off, "dns", s->ip_dns);
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
     off = put_str(out, cap, off, "update_url", s->update_url);
+    off = putf(out, cap, off, "\"update_auto\":%s,", s->update_auto ? "true" : "false");
     off = put_str(out, cap, off, "ntp_server", s->ntp_server);
     off = put_str(out, cap, off, "hostnames", s->hostnames);
     // the certificate goes out as PEM, its line ends already escaped
@@ -264,6 +265,7 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         if (!got_verify) verify = s->mqtt_tls != MQTT_TLS_UNVERIFIED;
         s->mqtt_tls = !tls ? MQTT_TLS_OFF : verify ? MQTT_TLS_VERIFIED : MQTT_TLS_UNVERIFIED;
     }
+    if (json_get_bool(body, "update_auto", &b)) s->update_auto = b;
     if (json_get_bool(body, "blade_auto_update", &b)) s->blade_auto_update = b;
     if (json_get_bool(body, "blade_boot_via_loader", &b)) s->blade_boot_via_loader = b;
     if (json_get_int(body, "blade_watch_s", &v)) {

@@ -75,6 +75,7 @@ int main(void) {
     log_sink_init(); // from here on the console is mirrored for syslog / the API
     flash_map_init();
     settings_load();
+    update_auto_settle(); // a trial that was rolled back is not installed again by itself
     fault_log_init();
     ipc_init();
 
@@ -133,6 +134,7 @@ int main(void) {
         net_poll(now_ms);
         mqtt_poll(now_ms);
         update_check_poll(now_ms);
+        update_auto_poll(now_ms);
         log_sink_poll(now_ms);
         ups_poll(now_ms);
         vin_poll(now_ms);
@@ -298,6 +300,7 @@ int main(void) {
                 if (flash_map_commit_update()) {
                     printf("update: slot %s committed\n", flash_map_slot_name());
                     trial = false;
+                    update_auto_settle();
                 } else {
                     printf("update: commit failed, retrying\n");
                     healthy_since = 0;

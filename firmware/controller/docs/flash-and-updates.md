@@ -97,8 +97,9 @@ minute after the network comes up, and once a day after that, it fetches
 `<update source>/controller/<board>/latest.json`, a pointer of the form
 `{"version":"x.y.z","url":"http://.../controller.signed.bin"}`. A release
 newer than the running one is announced on the console, shows in `info`, and
-turns Home Assistant's update entity to *update available*; nothing installs
-until it is asked for, there or with `update latest`. The update source is
+turns Home Assistant's update entity to *update available*. It installs
+when asked for, there or with `update latest`, or by itself (see
+[Automatic installs](#automatic-installs)). The update source is
 `http://fw.powermanifold.io` unless set otherwise (`update source <url>`,
 `update_url` in the settings, or the page), and `update source off` stops
 the controller asking; `update check` asks at once. That host is a small
@@ -109,6 +110,31 @@ downloads only over HTTPS. The same pointer can instead be published,
 retained, to `pwrman/<name>/update/latest` by something on the LAN; the
 newer of the two is the one that counts. Neither needs to be trusted, as the
 next paragraph explains.
+
+## Automatic installs
+
+With `update_auto` on, the default, a newer release installs without being
+asked (`src/update_auto.c` decides, `update_auto_poll` in
+`src/net/update_check.c` acts):
+
+- When a release first becomes known, the controller draws a wait of 1 to 7
+  days (`get_rand_32`) and stores the version, the wait and the time it was
+  seen (`update_seen`, `update_wait_days`, `update_seen_at`). The wait is
+  counted by the clock, so a restart does not start it again; by uptime when
+  the clock was not set at the time.
+- Once the wait is over, it installs between 03:00 and 05:00 local time
+  (`tz_offset_min`). Without a clock, it installs as soon as the wait is
+  over.
+- A pull that fails before the restart is tried again the next night.
+- Before any restart into a new image, from any surface, the controller
+  stores that image's version in `update_tried`. The next boot that is not
+  a trial compares it with its own version: a match clears it, anything
+  else means the trial was rolled back, and that version goes into
+  `update_skip`, so it does not install by itself again.
+- `update auto postpone` (`POST /api/v1/update/postpone`, the Home Assistant
+  button) sets `update_postpone` to the time 7 days on; it needs the clock.
+  `update auto skip` sets `update_skip` to the newest known release.
+- No automatic install starts during a trial or while another transfer runs.
 
 ## Signed updates
 

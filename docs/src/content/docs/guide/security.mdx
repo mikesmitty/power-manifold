@@ -52,6 +52,10 @@ a trusted network.
 - **Signed updates.** The controller installs only firmware signed by this
   project and built for this hardware, and does not go back to an older
   version unless you ask for it at the serial console.
+- **Automatic updates.** New releases, security fixes included, install by
+  themselves at night, a few days after they come out. You can postpone
+  them, skip a release, or
+  [turn them off](/guide/updates/#turning-automatic-updates-off).
 
 ## Stored settings and passing a controller on
 
@@ -75,8 +79,9 @@ Do not open a public issue. The
 [security policy](https://github.com/mikesmitty/power-manifold/blob/main/SECURITY.md)
 describes what happens next.
 
-Security fixes come out as new controller firmware. Install updates when
-they are offered.
+Security fixes come out as new controller firmware, which installs
+automatically unless you turn that off. See
+[Automatic updates](/guide/updates/#automatic-updates).
 
 <Aside>
 Each firmware release lists the third-party software it contains in a

@@ -21,6 +21,7 @@
 #define PORT_NAME_MAX  23          // bytes, excluding the NUL
 #define MQTT_CA_MAX    2048        // bytes of DER: room for any public root, with a margin
 #define HOSTNAMES_MAX  128         // bytes of the hostnames list, with the NUL
+#define UPDATE_VERSION_MAX 16     // x.y.z with the NUL, as update_latest.h
 // settings mqtt_tls, the broker link's transport (net/mqtt_tls.h)
 #define MQTT_TLS_OFF        0 // plain MQTT
 #define MQTT_TLS_VERIFIED   1 // TLS; the broker's chain must lead to mqtt_ca, or to a built-in Let's Encrypt root when none is installed
@@ -97,6 +98,14 @@ typedef struct {
     uint8_t  port_protect;    // bit N set: power sharing never changes port N's offer once a device is running on it (port_fsm.c)
     // -- added in layout version 19 --
     char     hostnames[HOSTNAMES_MAX]; // extra names the web server answers to, space-separated, lowercase (net/http_req.h)
+    // -- added in layout version 20 --
+    uint32_t update_postpone;  // unix time automatic installs are put off until, 0 = not put off (update_auto.h)
+    uint32_t update_seen_at;   // unix time update_seen became known, 0 = the clock was not set
+    uint8_t  update_auto;      // 1: newer releases install by themselves
+    uint8_t  update_wait_days; // days update_seen waits before it installs
+    char     update_seen[UPDATE_VERSION_MAX]; // the newer release the wait is counted for
+    char     update_skip[UPDATE_VERSION_MAX]; // never installed automatically: skipped, or rolled back
+    char     update_tried[UPDATE_VERSION_MAX]; // the image a restart went into; checked at the next boot
     uint32_t crc; // must remain last
 } settings_t;
 

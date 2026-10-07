@@ -45,6 +45,7 @@ add_executable(engine_tests
     ../src/ups/ups.c
     ../src/vin.c
     ../src/update_image.c
+    ../src/update_auto.c
     ../src/update_latest.c
     ../src/update_sig.c
     ../lib/monocypher/monocypher.c
@@ -74,6 +75,7 @@ add_executable(engine_tests
     test_settings_json.c
     test_sim_inject.c
     test_update_image.c
+    test_update_auto.c
     test_update_latest.c
     test_update_sig.c
     test_ups.c

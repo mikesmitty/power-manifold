@@ -125,6 +125,9 @@ static void print_help(void) {
            "  update check                 ask the update source for the newest release now\n"
            "  update source <http-url>|default|off\n"
            "                               where the daily check asks; 'off' = never ask (then 'save')\n"
+           "  update auto on|off|postpone|skip\n"
+           "                               install newer releases by themselves (then 'save'); put that\n"
+           "                               off for 7 days, or skip the newest release\n"
            "  save | defaults | reboot | bootsel\n",
            NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS,
            NUM_PORTS);
@@ -189,7 +192,12 @@ static void print_info(void) {
     net_lock(); // the MQTT pointer is offered from lwIP callbacks
     if (update_latest_newer_than(FW_VERSION))
         printf("update available: %s ('update latest' installs it)\n", update_latest_version());
+    uint32_t wait_s;
+    const char *autos = update_auto_state(to_ms_since_boot(get_absolute_time()), &wait_s);
     net_unlock();
+    if (!g_settings.update_auto) printf("automatic installs: off\n");
+    else if (wait_s) printf("automatic installs: on, %s for %lu h more\n", autos, (unsigned long)((wait_s + 3599) / 3600));
+    else printf("automatic installs: on, %s%s%s\n", autos, g_settings.update_skip[0] ? ", skipping " : "", g_settings.update_skip);
     printf("device name: %s\n", g_settings.device_name);
 #if PWRMAN_NET_WIFI
     printf("wifi: %s (%s)\n",
@@ -977,6 +985,21 @@ static void run_line(char *l) {
             else printf("update: %s\n", e);
             return;
         }
+        if (first && !strcmp(first, "auto")) {
+            const char *a = strtok_r(NULL, " \t", &save);
+            char e[96];
+            if (a && (!strcmp(a, "on") || !strcmp(a, "off"))) {
+                g_settings.update_auto = !strcmp(a, "on");
+                printf("automatic installs %s ('save' to persist)\n", a);
+            } else if (a && !strcmp(a, "postpone")) {
+                if (!update_auto_postpone(e, sizeof(e))) printf("update: %s\n", e);
+            } else if (a && !strcmp(a, "skip")) {
+                if (!update_auto_skip(e, sizeof(e))) printf("update: %s\n", e);
+            } else {
+                printf("usage: update auto on|off|postpone|skip\n");
+            }
+            return;
+        }
         if (first && !strcmp(first, "source")) {
             const char *base = strtok_r(NULL, " \t", &save);
             if (base && !strcmp(base, "off")) base = "";
@@ -1006,7 +1029,8 @@ static void run_line(char *l) {
         }
         if (bad || !url) {
             printf("usage: update [--unsigned] [--downgrade] <http://host[:port]/controller.signed.bin>|latest\n"
-                   "       update check | update source <http://host[:port][/path]>|default|off\n");
+                   "       update check | update source <http://host[:port][/path]>|default|off\n"
+                   "       update auto on|off|postpone|skip\n");
             return;
         }
         char e[96];

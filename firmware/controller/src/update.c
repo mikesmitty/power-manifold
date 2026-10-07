@@ -400,6 +400,10 @@ bool update_reboot_due(void) {
     return up.reboot_at_ms && (int32_t)(now_ms() - up.reboot_at_ms) >= 0;
 }
 
+bool update_reboot_pending(void) {
+    return up.reboot_at_ms != 0;
+}
+
 void update_reboot_now(void) {
     // Flash-update boot of the freshly written slot: the only boot path that
     // will run a TBYB-flagged image (and what arms the buy-pending flag the

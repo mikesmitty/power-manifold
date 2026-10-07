@@ -53,6 +53,7 @@ static void fill(settings_t *s) {
     s->ip_dns = ip("10.64.0.2");
     strcpy(s->syslog_host, "logs.example");
     strcpy(s->update_url, "http://updates.example:8080/fw");
+    s->update_auto = 0;
     strcpy(s->ntp_server, "ntp.example");
     strcpy(s->hostnames, "pm.home.lan pm.tail1234.ts.net");
     s->syslog_port = 5514;
@@ -96,6 +97,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"tz_offset_min\":-240") != NULL);
     MT_ASSERT(strstr(json, "vin_cal") == NULL); // a backup leaves the trim out
     MT_ASSERT(strstr(json, "\"blade_auto_update\":false") != NULL);
+    MT_ASSERT(strstr(json, "\"update_auto\":false") != NULL);
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
     MT_ASSERT(strstr(json, "\"ntp_server\":\"ntp.example\"") != NULL);

@@ -212,7 +212,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
 
  <div class="pane" id="cfg" hidden>
   <div class="about" id="about" aria-label="About this unit"></div>
-  <div class="actions"><button class="btn sm" id="ucb" type="button">Check for updates</button><button class="btn sm pri" id="uib" type="button" hidden></button></div>
+  <div class="actions"><button class="btn sm" id="ucb" type="button">Check for updates</button><button class="btn sm pri" id="uib" type="button" hidden></button><button class="btn sm" id="upp" type="button" hidden>Postpone 7 days</button><button class="btn sm" id="usk" type="button" hidden>Skip this version</button></div>
   <div class="msg" id="msg"></div>
   <div class="lock" id="lock" hidden><input id="tok" type="password" placeholder="API token"><button class="btn pri" id="ul" type="button">Unlock</button></div>
   <form id="f" hidden autocomplete="off">
@@ -222,6 +222,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     <label>API token<span class="h">Locks the API and this panel</span><input id="atok" name="atok" type="password" maxlength="32"></label>
     <label>UTC offset (minutes)<span class="h">For example &minus;240 for UTC&minus;4</span><input id="tz" name="tz" type="number" min="-720" max="840" required></label>
     <label>Update source<span class="h">Checked once a day for a newer release. Blank means never.</span><input id="upd" name="upd" maxlength="63"></label>
+    <label>Automatic updates<span class="h">A newer release installs by itself 1 to 7 days after it is found, between 03:00 and 05:00. The ports stay on.</span><select id="uauto" name="uauto"><option value="on">On</option><option value="off">Off</option></select></label>
    </fieldset>
    <fieldset><legend>Network</legend>
     <label>Addressing<span class="h">Wired if a W6100 is present, else WiFi. Applies at reboot.</span><select id="ipmode" name="ipmode"><option value="dhcp">DHCP</option><option value="static">Static</option></select></label>
@@ -293,7 +294,10 @@ function quiet(p){return{absent:'No blade in this slot.',probe:'Checking the bla
  disabled:'Power is off.',fault:'Switched off after a fault. See the fault log.',updating:'Blade firmware is updating.'}[p.state];}
 const W=(x,d=1)=>x.toFixed(d);
 // The Updates line in About: an install under way, a newer release, or how the last check went.
-function upd(u){if(u.installing)return'installing, '+u.progress+' %';if(u.available)return u.latest+' available';
+function upd(u){if(u.installing)return'installing, '+u.progress+' %';
+ if(u.available)return u.latest+' available'+({waiting:', installs automatically in '+dur(u.auto_wait_s)+', between 03:00 and 05:00',
+  scheduled:', installs automatically between 03:00 and 05:00',installing:', installs automatically between 03:00 and 05:00',retry:', installs automatically the next night',
+  postponed:', automatic install postponed until '+new Date(u.postponed_until*1000).toLocaleDateString(),skipped:', skipped'}[u.auto]||'');
  const ago=u.check_age_s?' '+dur(u.check_age_s)+' ago':'';
  return{off:'check turned off',never:'not checked yet',checking:'checking',ok:'up to date, checked'+ago,failed:'check failed'+ago}[u.check]||u.check;}
 function dur(s){const d=s/86400|0,h=s/3600%24|0,m=s/60%60|0;return d?d+'d '+h+'h':h?h+'h '+m+'m':m+'m';}
@@ -355,6 +359,7 @@ async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}c
   ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')'],['Updates',upd(d.update)]];if(d.ups&&d.ups.present)A.push(['UPS',d.ups.status]);
  if(d.net.mqtt!='off')A.push(['MQTT broker',d.net.mqtt.replace(/_/g,' ')+(d.net.mqtt_problem?': '+d.net.mqtt_problem:'')]);
  const ub=$('uib');ub.hidden=!d.update.available||d.update.installing;ub.textContent='Install '+d.update.latest;$('ucb').disabled=d.update.check=='checking';
+ const ua=d.update.available&&!d.update.installing&&!['off','none','skipped'].includes(d.update.auto);$('upp').hidden=!ua||d.update.auto=='postponed';$('usk').hidden=!ua;
  $('about').innerHTML=A.map(x=>`<div>${x[0]}<b class="num">${esc(x[1])}</b></div>`).join('');
  d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});if(H[i].length>N)H[i].shift();});draw();}
 tick();setInterval(tick,1000);
@@ -401,14 +406,14 @@ async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr
  if(r.status==401){const w=await why(r);F.hidden=true;LK.hidden=w!=BT;
   M.textContent=w==BT?(sessionStorage.tok?'Token rejected. ':'')+'Enter the API token to edit settings.':cap(w);return null;}
  const d=await r.json();LK.hidden=true;F.hidden=false;
- for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';
+ for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';F.uauto.value=d.update_auto?'on':'off';
  PN.forEach((e,i)=>e.value=d.port_names[i]||'');PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);
  PV.forEach((e,i)=>e.value=d.port_max_v[i]);PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PR.forEach((e,i)=>e.checked=!!d.port_protect[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);
  const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';
  F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;
  M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks the API and this panel, so keep a copy.';return d;}
 F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;
- b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
+ b.update_auto=F.uauto.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
  b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_protect=PR.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
  b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;
  let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});d=await r.json();}catch(e){}
@@ -417,10 +422,13 @@ F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]
  M.textContent=d.reboot_required?'Saved. Reboot to apply the name, broker and addressing.':'Saved and applied.';tick();};
 // Check and Install answer at once; the result shows in About on the next status poll.
 async function updPost(path,what){let r;try{r=await fetch('/api/v1/update/'+path,{method:'POST',headers:hdr()});}catch(e){}
- if(r&&r.ok){M.textContent=path=='latest'?'Installing. The controller restarts into the new firmware when it is done; the ports stay on.':'Asking for the newest release.';return;}
+ if(r&&r.ok){M.textContent={latest:'Installing. The controller restarts into the new firmware when it is done; the ports stay on.',check:'Asking for the newest release.',
+  postpone:'Automatic installs postponed for 7 days.',skip:'This version will not install automatically. Install still installs it.'}[path];tick();return;}
  if(!r){M.textContent='No response from the device.';return;}const w=await why(r);if(r.status==401&&w==BT){unlock(what);return;}M.textContent=cap(w);}
 $('ucb').onclick=()=>updPost('check','check for updates');
 $('uib').onclick=()=>updPost('latest','install the update');
+$('upp').onclick=()=>updPost('postpone','postpone automatic updates');
+$('usk').onclick=()=>updPost('skip','skip this version');
 $('rb').onclick=async()=>{let r;try{r=await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}
  if(r&&r.status==401){M.textContent=cap(await why(r));return;}M.textContent='Rebooting. This page reloads in a few seconds.';setTimeout(()=>location.reload(),6000);};
 $('xpb').onclick=async()=>{let r;try{r=await fetch('/api/v1/settings/export'+($('xps').checked?'?secrets=1':''),{headers:hdr()});}catch(e){}

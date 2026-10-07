@@ -85,6 +85,7 @@ add_executable(controller
     src/update.c
     src/update_image.c
     src/update_sig.c
+    src/update_auto.c
     src/update_latest.c
     lib/monocypher/monocypher.c
     lib/monocypher/monocypher-ed25519.c

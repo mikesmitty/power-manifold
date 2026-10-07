@@ -45,4 +45,5 @@ unsigned    update_key_count(void);   // signing keys built in; 0 = signing not 
 // the trial image (a plain reboot would ignore the TBYB-flagged slot).
 void update_schedule_reboot(uint32_t delay_ms);
 bool update_reboot_due(void);
+bool update_reboot_pending(void); // scheduled, due or not
 void update_reboot_now(void) __attribute__((noreturn));

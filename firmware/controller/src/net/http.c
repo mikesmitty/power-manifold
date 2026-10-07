@@ -45,7 +45,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
-#define STATUS_JSON_MAX 4064 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block, the bus voltage, the chassis light, and the update and net blocks, worst case
+#define STATUS_JSON_MAX 4160 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block, the bus voltage, the chassis light, and the update and net blocks, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -227,21 +227,29 @@ static const char *chassis_light_name(void) {
     return "ok";
 }
 
-// "update":{...}, — the newest release known, the last check, and an
-// install in progress (a pull still connecting counts)
+// "update":{...}, — the newest release known, the last check, an install
+// in progress (a pull still connecting counts), and what automatic installs
+// will do
 static void build_update_json(char *out, size_t cap) {
-    uint32_t age;
-    const char *check = update_check_state(to_ms_since_boot(get_absolute_time()), &age);
+    uint32_t now_ms = to_ms_since_boot(get_absolute_time());
+    uint32_t age, wait_s;
+    const char *check = update_check_state(now_ms, &age);
+    const char *autos = update_auto_state(now_ms, &wait_s);
     const char *latest = update_latest_version(); // x.y.z, checked when it was taken
-    char latestf[UPDATE_LATEST_VERSION_MAX + 2];
+    char latestf[UPDATE_LATEST_VERSION_MAX + 2], skipf[UPDATE_VERSION_MAX + 2];
     if (latest[0]) snprintf(latestf, sizeof(latestf), "\"%s\"", latest);
     else snprintf(latestf, sizeof(latestf), "null");
+    if (g_settings.update_skip[0]) snprintf(skipf, sizeof(skipf), "\"%s\"", g_settings.update_skip);
+    else snprintf(skipf, sizeof(skipf), "null");
+    uint32_t epoch = net_epoch();
+    uint32_t postponed = g_settings.update_postpone > epoch ? g_settings.update_postpone : 0;
     snprintf(out, cap,
              "\"update\":{\"available\":%s,\"latest\":%s,\"check\":\"%s\",\"check_age_s\":%lu,"
-             "\"installing\":%s,\"progress\":%u},",
+             "\"installing\":%s,\"progress\":%u,\"auto\":\"%s\",\"auto_wait_s\":%lu,"
+             "\"postponed_until\":%lu,\"skipped\":%s},",
              update_latest_newer_than(FW_VERSION) ? "true" : "false", latestf, check,
              (unsigned long)age, update_active() || ota_pull_busy() ? "true" : "false",
-             update_percent());
+             update_percent(), autos, (unsigned long)wait_s, (unsigned long)postponed, skipf);
 }
 
 // A JSON string, or null for an empty one.
@@ -298,7 +306,7 @@ static void build_status_json(char *out, size_t cap) {
 #if PWRMAN_NET_ETH
     snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
 #endif
-    static char upsf[320], updf[160], netf[512]; // static: IRQ stack
+    static char upsf[320], updf[288], netf[512]; // static: IRQ stack
     build_ups_json(upsf, sizeof(upsf));
     build_update_json(updf, sizeof(updf));
     build_net_json(netf, sizeof(netf));
@@ -1041,6 +1049,19 @@ static void handle_request(conn_t *c) {
                 char b[64];
                 snprintf(b, sizeof(b), "{\"ok\":true,\"version\":\"%s\"}", update_latest_version());
                 respond(c, 202, "Accepted", "application/json", b);
+            } else {
+                char ee[128], b[160];
+                json_escape(ee, sizeof(ee), e);
+                snprintf(b, sizeof(b), "{\"error\":\"%s\"}", ee);
+                respond(c, 409, "Conflict", "application/json", b);
+            }
+        } else if (!strncmp(c->req, "POST /api/v1/update/postpone", 28) ||
+                   !strncmp(c->req, "POST /api/v1/update/skip", 24)) {
+            // automatic installs only; Install still works
+            char e[96];
+            bool ok = c->req[20] == 'p' ? update_auto_postpone(e, sizeof(e)) : update_auto_skip(e, sizeof(e));
+            if (ok) {
+                respond(c, 200, "OK", "application/json", "{\"ok\":true}");
             } else {
                 char ee[128], b[160];
                 json_escape(ee, sizeof(ee), e);

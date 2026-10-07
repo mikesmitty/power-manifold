@@ -24,6 +24,7 @@
 #include "net.h"
 #include "ota_pull.h"
 #include "settings.h"
+#include "update_check.h"
 #include "update_latest.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
@@ -47,7 +48,7 @@
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
 #define PORT_PROTECT     (PORT_SENSOR_N + 13)
 #define PORT_ENTITIES    (PORT_SENSOR_N + 14)
-#define CHASSIS_ENTITIES 21
+#define CHASSIS_ENTITIES 24
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -140,8 +141,9 @@ static void publish(const char *topic, const char *payload, uint8_t qos,
 static void publish_update_state(void) {
     snprintf(topic_buf, sizeof(topic_buf), "%s/update/state", base);
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"installed_version\":\"%s\",\"latest_version\":\"%s\"}",
-             FW_VERSION, update_latest_newer_than(FW_VERSION) ? update_latest_version() : FW_VERSION);
+             "{\"installed_version\":\"%s\",\"latest_version\":\"%s\",\"auto\":\"%s\"}",
+             FW_VERSION, update_latest_newer_than(FW_VERSION) ? update_latest_version() : FW_VERSION,
+             g_settings.update_auto ? "ON" : "OFF");
     publish(topic_buf, payload_buf, 1, 1);
     latest_seq_sent = update_latest_seq();
 }
@@ -259,13 +261,23 @@ static void handle_command(const char *topic, const char *data) {
         //   {"version":"x.y.z","url":"http://host/controller.signed.bin"}
         update_latest_offer_json(data);
         publish_update_state();
+    } else if (strcmp(sub, "/update/auto/set") == 0) {
+        g_settings.update_auto = !strcasecmp(data, "ON");
+        settings_save_later();
+        publish_update_state();
     } else if (strcmp(sub, "/update/set") == 0) {
+        char e[96];
+        if (!strcasecmp(data, "postpone") || !strcasecmp(data, "skip")) {
+            bool ok = data[0] == 'p' || data[0] == 'P' ? update_auto_postpone(e, sizeof(e))
+                                                       : update_auto_skip(e, sizeof(e));
+            if (!ok) printf("update: %s\n", e);
+            return;
+        }
         if (strcasecmp(data, "install") != 0) return;
         if (!update_latest_url()[0]) {
             printf("update: install requested but no release is known yet\n");
             return;
         }
-        char e[96];
         if (!ota_pull_start(update_latest_url(), 0, e, sizeof(e)))
             printf("update: %s\n", e);
     }
@@ -300,7 +312,7 @@ static const char *const SUBS[] = {
     "port/+/set",     "port/+/priority/set", "port/+/limit/set", "port/+/volt/set",
     "port/+/boot/set", "port/+/autooff/set", "port/+/protect/set", "port/+/sleep/set", "charged_mw/set",
     "charged_min/set", "fan/set",            "budget/set",       "led/set",
-    "update/latest",   "update/set",         "improv/set",
+    "update/latest",   "update/set",         "improv/set",       "update/auto/set",
 };
 #define N_SUBS (sizeof(SUBS) / sizeof(SUBS[0]))
 static unsigned sub_idx;  // next SUBS entry to send
@@ -708,6 +720,30 @@ static void publish_update_entity(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_update_auto_switch(void) {
+    discovery_config_topic("switch", "update_auto");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Automatic updates\",\"uniq_id\":\"pwrman_%s_update_auto\","
+             "\"cmd_t\":\"~/update/auto/set\",\"stat_t\":\"~/update/state\","
+             "\"val_tpl\":\"{{ value_json.auto }}\",\"ic\":\"mdi:update\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
+// Postpone and Skip act on automatic installs only.
+static void publish_update_button(const char *action, const char *name, const char *icon) {
+    char object[24];
+    snprintf(object, sizeof(object), "update_%s", action);
+    discovery_config_topic("button", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"cmd_t\":\"~/update/set\",\"pl_prs\":\"%s\",\"ic\":\"%s\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, name, uid, object, action, icon, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_improv_button(void) {
     discovery_config_topic("button", "improv");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -888,6 +924,15 @@ static void discovery_publish(int i) {
         publish_optional_entity(vin_fitted(), "sensor", "bus_v", "Bus voltage",
                            "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
                            "{{ value_json.vin_v }}");
+        break;
+    case 20:
+        publish_update_auto_switch();
+        break;
+    case 21:
+        publish_update_button("postpone", "Postpone update 7 days", "mdi:update-clock");
+        break;
+    case 22:
+        publish_update_button("skip", "Skip this update", "mdi:debug-step-over");
         break;
     default:
         // retire the fan switch this select replaced from older firmware

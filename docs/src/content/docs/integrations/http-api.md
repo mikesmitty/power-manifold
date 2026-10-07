@@ -207,7 +207,13 @@ A bad value gets `400` with the reason, such as
 **Status, `update`:** `available` (a newer release is known), `latest`
 (its version, or `null`), `check` (`off`, `never`, `checking`, `ok` or
 `failed`), `check_age_s` (seconds since the last check finished),
-`installing` and `progress` (percent of the download).
+`installing` and `progress` (percent of the download), and what
+[automatic updates](/guide/updates/#automatic-updates) will do: `auto`
+(`off`; `none`, no newer release; `waiting`, for `auto_wait_s` more
+seconds; `scheduled`, for 03:00 local time; `retry`, the last attempt
+failed and the next night tries again; `installing`; `postponed`, until
+the unix time `postponed_until`; or `skipped`) and `skipped` (the version
+that does not install automatically, or `null`).
 
 **Status, `net`:** what the controller is using now, which can differ
 from the settings: `up`, `ip`, `netmask`, `gateway`, `dns`, `ntp`,
@@ -233,6 +239,8 @@ All of these need the token.
 | `POST /api/v1/reboot` | none; restarts the controller without cutting port power |
 | `POST /api/v1/update/check` | none; asks the update source for the newest release now. The answer appears in the status `update` object. |
 | `POST /api/v1/update/latest` | none; downloads and installs the newest known release, see [Installing an update](#installing-an-update) |
+| `POST /api/v1/update/postpone` | none; no automatic install for the next 7 days. `409` until the controller has the time. |
+| `POST /api/v1/update/skip` | none; the newest known release does not install automatically. `409` when no newer release is known. |
 | `POST /api/v1/improv` | `{"open": true}` opens Wi-Fi setup for 10 minutes; `{"open": false}` closes it |
 | `POST /api/v1/update` | a signed firmware file, see below |
 
@@ -254,6 +262,7 @@ the same keys, so you can edit an export and post it back.
 | Wi-Fi | `wifi_ssid`, `wifi_pass` |
 | MQTT | `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`, `mqtt_tls_verify`, `mqtt_ca` (PEM) |
 | Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `hostnames`, `syslog_host`, `syslog_port`, `update_url` |
+| Updates | `update_auto` (`true`: new releases install by themselves) |
 | Power | `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`, `charged_mw`, `charged_min` |
 | Lights | `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`, `tz_offset_min` |
 | Ports (arrays of six) | `port_names`, `port_limits_ma`, `port_max_v`, `port_priorities`, `port_boot`, `port_protect`, `port_auto_off`, `port_sleep_min` |

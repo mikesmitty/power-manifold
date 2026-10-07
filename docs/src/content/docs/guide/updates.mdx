@@ -9,10 +9,47 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Flow from '../../../components/Flow.astro';
 import UpdateTimeline from '../../../components/UpdateTimeline.astro';
 
-Power Manifold checks for new firmware once a day. It installs an update
-only when you start the installation.
+Power Manifold checks for new firmware once a day and installs new
+releases by itself. You can also install a release yourself as soon as it
+is out, put automatic installs off, or turn them off.
 
-## Installing an update
+## Automatic updates
+
+When the controller finds a new release, it waits a random 1 to 7 days and
+then installs it between 03:00 and 05:00 local time. The wait spreads each
+release over a week, so a release with a problem can be withdrawn before it
+reaches most controllers. Set the local time with **UTC offset** in the web
+interface's **Settings**. Until the controller has the time from its time
+server, it installs a release once the wait is over, at any hour.
+
+**Your ports stay on** during an automatic update, the same as during one
+you start. See [What happens during an update](#what-happens-during-an-update).
+
+While a release is waiting, the web interface's **Settings** shows when it
+will install, with two buttons:
+
+- **Postpone 7 days** holds back automatic installs for a week. Press it
+  again to postpone further.
+- **Skip this version** stops this release from installing by itself. The
+  next release installs as usual.
+
+Home Assistant has the same two buttons, **Postpone update 7 days** and
+**Skip this update**. **Install** works in either case.
+
+If an update fails its trial and the controller goes back to the previous
+firmware, that release is not installed automatically again. You can still
+install it yourself.
+
+### Turning automatic updates off
+
+Set **Automatic updates** to **Off** in the web interface's **Settings**, or
+turn off the **Automatic updates** switch in Home Assistant. The controller
+still checks once a day and shows new releases, and installs one only when
+you start it. The setting is `update_auto` in the
+[HTTP API](/integrations/http-api/#settings-keys), and `update auto off`
+followed by `save` at the console.
+
+## Installing an update yourself
 
 When a new release is out, Home Assistant's **Firmware update** entity
 shows *update available*. Press **Install**.
@@ -76,12 +113,13 @@ releases.
 	nodes={[
 		{ title: 'GitHub releases', detail: 'Signed by the project' },
 		{ title: 'fw.powermanifold.io', detail: 'Passes them on' },
-		{ title: 'Power Manifold', detail: 'Checks daily, installs when you say', highlight: true },
+		{ title: 'Power Manifold', detail: 'Checks daily, installs automatically or when you say', highlight: true },
 	]}
 	links={[{ label: 'HTTPS' }, { label: ['HTTP', 'signature checked'] }]}
 />
 
 <Aside type="note">
 To stop the daily check, clear **Update source** in the web interface's
-**Settings**. You can still install an update file yourself with the HTTP API.
+**Settings**. Nothing then installs automatically. You can still install an
+update file yourself with the HTTP API.
 </Aside>

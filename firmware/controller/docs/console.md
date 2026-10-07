@@ -66,6 +66,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `export` | every setting as JSON, without passwords |
 | `update [--unsigned] [--downgrade] <http-url>\|latest` | OTA pull into the inactive slot, `latest` being the newest release the controller knows of; the flags let in an unsigned or an older image, which only this console can do |
 | `update check`, `update source <http-url>\|default\|off` | ask the update source for the newest release now; set where the daily check asks, or stop it asking (then `save`) |
+| `update auto on\|off\|postpone\|skip` | turn automatic installs on or off (then `save`), put them off for 7 days, or skip the newest known release |
 | `stack` | per-core stack high-water marks |
 | `i2c scan <ch\|none>`, `i2c read <ch> <addr> <reg> [n]`, `i2c write <ch> <addr> <reg> <val>`, `i2c en <port> on\|off` | bench access to the backplane bus, run on the engine core: scan a mux channel (`none` = the upstream side), read or write a register, drive a blade's EN; a healthy blade segment answers `0x40 0x61 0x70 0x74` |
 | `save`, `defaults`, `reboot`, `bootsel` | settings and lifecycle |
