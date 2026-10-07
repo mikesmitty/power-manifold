@@ -540,12 +540,7 @@ static size_t build_metrics(char *out, size_t cap) {
 }
 
 static bool bearer_present(const conn_t *c, const char *token) {
-    const char *p = strstr(c->req, "Authorization: Bearer ");
-    if (!p) return false;
-    p += 22;
-    size_t n = strlen(token);
-    return n && !strncmp(p, token, n) &&
-           (p[n] == '\r' || p[n] == '\n' || p[n] == ' ' || p[n] == '\0');
+    return http_req_bearer_ok(c->req, token);
 }
 
 // Every change over the network, the console log, the web console and the

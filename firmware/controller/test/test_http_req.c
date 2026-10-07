@@ -93,6 +93,19 @@ static void test_host_refuses_other_names(void) {
     MT_ASSERT(!http_req_host_ok(REQ("Host: .local\r\n", ""), ip, "", ""));
 }
 
+static void test_bearer(void) {
+    MT_ASSERT(http_req_bearer_ok(REQ("Authorization: Bearer s3cret\r\n", ""), "s3cret"));
+    MT_ASSERT(http_req_bearer_ok(REQ("authorization: bearer s3cret\r\n", ""), "s3cret"));
+    MT_ASSERT(!http_req_bearer_ok(REQ("Authorization: Bearer s3creT\r\n", ""), "s3cret"));
+    MT_ASSERT(!http_req_bearer_ok(REQ("Authorization: Bearer s3cre\r\n", ""), "s3cret"));   // a prefix
+    MT_ASSERT(!http_req_bearer_ok(REQ("Authorization: Bearer s3crets\r\n", ""), "s3cret")); // longer
+    MT_ASSERT(!http_req_bearer_ok(REQ("Authorization: Bearer \r\n", ""), "s3cret"));
+    MT_ASSERT(!http_req_bearer_ok(REQ("Authorization: Basic s3cret\r\n", ""), "s3cret"));
+    MT_ASSERT(!http_req_bearer_ok(REQ("", "Authorization: Bearer s3cret\r\n"), "s3cret")); // in the body
+    // no secret stored never matches, even an empty bearer
+    MT_ASSERT(!http_req_bearer_ok(REQ("Authorization: Bearer \r\n", ""), ""));
+}
+
 void run_http_req_tests(void) {
     mt_run("http_req: header lookup", test_header_lookup);
     mt_run("http_req: header lines in the body are ignored", test_body_is_not_headers);
@@ -101,4 +114,5 @@ void run_http_req_tests(void) {
     mt_run("http_req: Host naming anything else is refused", test_host_refuses_other_names);
     mt_run("http_req: the owner's extra names are allowed", test_host_extra_names);
     mt_run("http_req: the hostnames setting is checked and tidied", test_hostnames_parse);
+    mt_run("http_req: the bearer must match the secret exactly", test_bearer);
 }

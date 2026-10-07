@@ -35,6 +35,19 @@ bool http_req_is_json(const char *req) {
     return v[16] == '\0' || v[16] == ';' || v[16] == ' ';
 }
 
+bool http_req_bearer_ok(const char *req, const char *secret) {
+    char v[96];
+    if (!http_req_header(req, "Authorization", v, sizeof(v))) return false;
+    if (strncasecmp(v, "Bearer ", 7)) return false;
+    const char *given = v + 7;
+    size_t n = strlen(secret), g = strlen(given);
+    // every byte of the secret is visited, and differences are only collected
+    unsigned char diff = (unsigned char)(g != n);
+    for (size_t i = 0; i < n; i++)
+        diff |= (unsigned char)((i < g ? given[i] : 0) ^ secret[i]);
+    return n && !diff;
+}
+
 // name (n bytes, any case) is one of the space-separated entries in list
 static bool listed(const char *name, size_t n, const char *list) {
     for (const char *p = list; *p;) {

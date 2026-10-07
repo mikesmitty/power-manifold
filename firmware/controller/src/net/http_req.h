@@ -29,6 +29,12 @@ bool http_req_is_json(const char *req);
 bool http_req_host_ok(const char *req, const char *local_ip, const char *device_name,
                       const char *hostnames);
 
+// The Authorization header is "Bearer <secret>" (scheme in any case) with
+// exactly this secret. The comparison takes the same time wherever the first
+// wrong character is, so response timing cannot reveal the secret a
+// character at a time; only its length shows. False for an empty secret.
+bool http_req_bearer_ok(const char *req, const char *secret);
+
 // The hostnames setting from what the owner typed: names separated by spaces
 // or commas, each a DNS name (letters, digits, hyphens and dots, without a
 // port). Written to out lowercase, single-spaced, with any trailing dot
