@@ -5,11 +5,13 @@ on:
     paths:
       - 'firmware/controller/**'
       - 'firmware/charger-module/**' # its image rides inside the controller's
+      - 'firmware/tools/**'
       - '.github/workflows/firmware.yaml'
   pull_request:
     paths:
       - 'firmware/controller/**'
       - 'firmware/charger-module/**'
+      - 'firmware/tools/**'
       - '.github/workflows/firmware.yaml'
   workflow_dispatch:
   workflow_call:
@@ -110,6 +112,13 @@ jobs:
       - name: Build
         run: ninja -C firmware/controller/build
 
+      # The software bill of materials the Cyber Resilience Act asks for:
+      # what this image and the blade image inside it are built from.
+      - name: Software bill of materials
+        run: >
+          python3 firmware/tools/sbom.py controller --sdk "$HOME/pico-sdk"
+          --out firmware/controller/build/controller.cdx.json
+
       - name: Store firmware
         uses: actions/upload-artifact@v7
         with:
@@ -120,6 +129,7 @@ jobs:
             firmware/controller/build/controller.elf
             firmware/controller/build/controller-factory.bin
             firmware/controller/build/partition_table.uf2
+            firmware/controller/build/controller.cdx.json
 
       # The Pico 2 W on the pcie-breakout: a development stand-in until the
       # card exists. Built and released so a bench board can be updated; it

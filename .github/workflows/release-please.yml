@@ -114,7 +114,7 @@ jobs:
         run: |
           assets=(
             dist/controller.uf2 dist/controller.elf dist/partition_table.uf2
-            dist/controller-factory.bin
+            dist/controller-factory.bin dist/controller.cdx.json
             dist/controller-pico2w.uf2 dist/controller-pico2w.elf dist/partition_table-pico2w.uf2
             dist/controller-pico2w-factory.bin
           )
@@ -153,5 +153,5 @@ jobs:
           TAG: ${{ needs.release-please.outputs.charger-module-tag }}
         run: |
           gh release upload "$TAG" dist/charger-module.elf dist/charger-module.bin \
-            dist/charger-module.hex \
+            dist/charger-module.hex dist/charger-module.cdx.json \
             --repo "$GITHUB_REPOSITORY" --clobber

@@ -4,10 +4,12 @@ on:
       - main
     paths:
       - 'firmware/charger-module/**'
+      - 'firmware/tools/**'
       - '.github/workflows/firmware-charger-module.yaml'
   pull_request:
     paths:
       - 'firmware/charger-module/**'
+      - 'firmware/tools/**'
       - '.github/workflows/firmware-charger-module.yaml'
   workflow_dispatch:
   workflow_call:
@@ -76,6 +78,11 @@ jobs:
       - name: Build
         run: ninja -C firmware/charger-module/build
 
+      - name: Software bill of materials
+        run: >
+          python3 firmware/tools/sbom.py charger-module
+          --out firmware/charger-module/build/charger-module.cdx.json
+
       - name: Store firmware
         uses: actions/upload-artifact@v7
         with:
@@ -84,3 +91,4 @@ jobs:
             firmware/charger-module/build/charger-module.elf
             firmware/charger-module/build/charger-module.bin
             firmware/charger-module/build/charger-module.hex
+            firmware/charger-module/build/charger-module.cdx.json
