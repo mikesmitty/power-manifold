@@ -51,3 +51,12 @@ struct altcp_tls_config *mqtt_tls_config(void);
 // address-literal broker has no name to send or check, so nothing happens.
 struct mqtt_client_s;
 void mqtt_tls_set_hostname(struct mqtt_client_s *client);
+
+// The last attempt's verdict on the broker's certificate: start clears what
+// this attempt has noted, end shows it (or clears it when the link came up).
+void mqtt_tls_attempt_start(void);
+void mqtt_tls_attempt_end(bool connected);
+
+// Why the last attempt refused the broker's certificate ("broker
+// certificate does not carry the broker's name"), or NULL
+const char *mqtt_tls_refusal(void);

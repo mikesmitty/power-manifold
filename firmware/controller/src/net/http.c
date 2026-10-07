@@ -340,7 +340,7 @@ static void build_net_json(char *out, size_t cap) {
     const char *t = net_ntp_str();
     json_str_or_null(ntp, sizeof(ntp), strcmp(t, "none") ? t : "");
     bool broker = g_settings.mqtt_host[0] != '\0';
-    json_str_or_null(problem, sizeof(problem), broker ? mqtt_tls_blocker() : NULL);
+    json_str_or_null(problem, sizeof(problem), mqtt_problem());
     const char *mqtt = !broker                   ? "off"
                      : mqtt_is_connected()       ? "connected"
                      : mqtt_waiting_for_clock()  ? "waiting_for_clock"

@@ -223,7 +223,8 @@ that does not install automatically, or `null`).
 from the settings: `up`, `ip`, `netmask`, `gateway`, `dns`, `ntp`,
 `time_synced`, `mqtt` (`off`, `connecting`, `waiting_for_clock` or
 `connected`) and `mqtt_problem` (why a TLS link to the broker cannot
-connect, or `null`). Addresses are `null` while the network is down.
+connect, such as a broker certificate that does not carry the broker's
+name, or `null`). Addresses are `null` while the network is down.
 
 `chassis_light` is what the chassis light shows: `bus_fault` (red, fast
 blink: input voltage out of range), `wifi_setup` (blue: Wi-Fi setup

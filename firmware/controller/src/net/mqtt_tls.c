@@ -109,6 +109,11 @@ static bool le_roots_ready(void) {
 // What "not trusted" means for the configuration in use, for the log below
 static const char *untrusted_why = "is not trusted";
 
+// Why the broker's certificate was refused: noted during an attempt, shown
+// once the attempt ends, cleared by one that connects
+static char attempt_refused[96];
+static char shown_refused[96];
+
 // mbedTLS reports each certificate it refuses here before the handshake
 // fails, so the console says why rather than just "disconnected".
 static int verify_cb(void *arg, mbedtls_x509_crt *crt, int depth, uint32_t *flags) {
@@ -121,7 +126,20 @@ static int verify_cb(void *arg, mbedtls_x509_crt *crt, int depth, uint32_t *flag
                     : *flags & MBEDTLS_X509_BADCERT_FUTURE      ? "is not valid yet"
                                                                  : "was refused";
     printf("mqtt: broker certificate (depth %d) %s (flags 0x%lx)\n", depth, why, (unsigned long)*flags);
+    snprintf(attempt_refused, sizeof(attempt_refused), "broker certificate %s", why);
     return 0;
+}
+
+void mqtt_tls_attempt_start(void) {
+    attempt_refused[0] = '\0';
+}
+
+void mqtt_tls_attempt_end(bool connected) {
+    strcpy(shown_refused, connected ? "" : attempt_refused);
+}
+
+const char *mqtt_tls_refusal(void) {
+    return shown_refused[0] ? shown_refused : NULL;
 }
 
 // Two generations of configuration: a connection that is still closing may

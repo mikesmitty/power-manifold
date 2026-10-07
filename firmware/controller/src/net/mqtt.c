@@ -341,6 +341,7 @@ static bool subscribed(void) {
 static void connection_cb(mqtt_client_t *c, void *arg,
                           mqtt_connection_status_t status) {
     (void)c; (void)arg;
+    if (g_settings.mqtt_tls != MQTT_TLS_OFF) mqtt_tls_attempt_end(status == MQTT_CONNECT_ACCEPTED);
     if (status == MQTT_CONNECT_ACCEPTED) {
         state = ST_UP;
         discovery_idx = 0;
@@ -384,6 +385,7 @@ static void try_connect(void) {
         }
     }
 
+    if (g_settings.mqtt_tls != MQTT_TLS_OFF) mqtt_tls_attempt_start();
     state = ST_CONNECTING;
     if (mqtt_client_connect(client, &broker_ip, g_settings.mqtt_port,
                             connection_cb, NULL, &ci) != ERR_OK) {
@@ -944,6 +946,14 @@ static void discovery_publish(int i) {
 
 void mqtt_reconnect(void) {
     reconnect_wanted = true;
+}
+
+const char *mqtt_problem(void) {
+    if (!g_settings.mqtt_host[0]) return NULL;
+    const char *blocked = mqtt_tls_blocker();
+    if (blocked) return blocked;
+    if (state == ST_UP || g_settings.mqtt_tls == MQTT_TLS_OFF) return NULL;
+    return mqtt_tls_refusal();
 }
 
 bool mqtt_waiting_for_clock(void) {

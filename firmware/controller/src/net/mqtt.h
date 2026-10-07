@@ -39,6 +39,11 @@ void mqtt_reconnect(void);
 // A verified TLS link is held back until SNTP has set the clock
 bool mqtt_waiting_for_clock(void);
 
+// Why the broker link is not coming up, for the status and `info`: the
+// settings block it (mqtt_tls_blocker) or the last attempt refused the
+// broker's certificate. NULL when there is nothing to say.
+const char *mqtt_problem(void);
+
 // Publish one engine event to base/event; dropped when the broker is down.
 // Called from the main loop's event drain (see main.c), which also feeds the
 // persistent fault log so logging never depends on broker health.

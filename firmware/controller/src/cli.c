@@ -244,7 +244,7 @@ static void print_info(void) {
            g_settings.mqtt_host[0] ? g_settings.mqtt_host : "(disabled)",
            g_settings.mqtt_port, mqtt_is_connected() ? "connected" : "down", mqtt_tls_mode_str(),
            mqtt_waiting_for_clock() ? ", waiting for the clock" : "");
-    if (g_settings.mqtt_host[0] && mqtt_tls_blocker()) printf("  not connecting: %s\n", mqtt_tls_blocker());
+    if (mqtt_problem()) printf("  not connecting: %s\n", mqtt_problem());
     char night[16], tz[8];
     night_format(night, sizeof(night), g_settings.led_night_start, g_settings.led_night_end);
     printf("leds: brightness %u, boot %s, dim %u; night %s; idle %s", g_settings.led_brightness,
