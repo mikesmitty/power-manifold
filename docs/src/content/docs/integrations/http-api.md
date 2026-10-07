@@ -173,6 +173,9 @@ A change without the token gets `401`:
 
 On a controller with no token yet, the reply is
 `{"error": "no API token set yet: finish first-time setup first"}`.
+During first-time setup, a settings request must address the controller by
+its IP address or its name (`Host` header), or it gets `403`. A settings
+change must be sent with `Content-Type: application/json`, or it gets `415`.
 A bad value gets `400` with the reason, such as
 `{"error": "port_limits_ma: 500-5000 mA each"}`.
 

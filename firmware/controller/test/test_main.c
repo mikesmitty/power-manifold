@@ -9,6 +9,7 @@ void run_button_tests(void);
 void run_cli_line_tests(void);
 void run_event_tests(void);
 void run_fan_tests(void);
+void run_http_req_tests(void);
 void run_improv_tests(void);
 void run_jsonlite_tests(void);
 void run_led_sched_tests(void);
@@ -40,6 +41,7 @@ int main(void) {
     run_cli_line_tests();
     run_event_tests();
     run_fan_tests();
+    run_http_req_tests();
     run_improv_tests();
     run_jsonlite_tests();
     run_led_sched_tests();

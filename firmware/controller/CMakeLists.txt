@@ -103,6 +103,7 @@ add_executable(controller
     src/net/mqtt.c
     src/net/mqtt_tls.c
     src/net/http.c
+    src/net/http_req.c
     src/net/jsonlite.c
     src/net/ota_pull.c
     src/net/http_url.c

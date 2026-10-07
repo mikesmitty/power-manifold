@@ -37,6 +37,7 @@ add_executable(engine_tests
     ../src/engine/sim/sim_blades.c
     ../src/engine/sim/sim_inject.c
     ../src/net/improv_proto.c
+    ../src/net/http_req.c
     ../src/net/http_url.c
     ../src/net/jsonlite.c
     ../src/net/w6100.c
@@ -57,6 +58,7 @@ add_executable(engine_tests
     test_cli_line.c
     test_events.c
     test_fan.c
+    test_http_req.c
     test_improv.c
     test_jsonlite.c
     test_led_sched.c

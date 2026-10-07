@@ -1,4 +1,5 @@
 #include "http.h"
+#include "http_req.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -646,6 +647,28 @@ static void respond_settings_locked(conn_t *c) {
     respond(c, 401, "Unauthorized", "application/json", b);
 }
 
+// A request let in by a setup door carries no credential, so it must also
+// show that it came from the controller's own page and not from a web page on
+// another site that the owner happens to have open (see http_req.h). Its Host
+// must name the controller, which refuses a page that points its own domain
+// at the controller's address, and a POST must declare a JSON body, which a
+// page on another site cannot send here. True once refused and answered.
+static bool setup_request_refused(conn_t *c) {
+    char ip[IP4ADDR_STRLEN_MAX] = "";
+    if (c->pcb) ip4addr_ntoa_r(ip_2_ip4(&c->pcb->local_ip), ip, sizeof(ip));
+    if (!http_req_host_ok(c->req, ip, g_settings.device_name)) {
+        respond(c, 403, "Forbidden", "application/json",
+                "{\"error\":\"during first-time setup, open the controller by its address or its name\"}");
+        return true;
+    }
+    if (c->req[0] == 'P' && !http_req_is_json(c->req)) {
+        respond(c, 415, "Unsupported Media Type", "application/json",
+                "{\"error\":\"settings must be sent as application/json\"}");
+        return true;
+    }
+    return false;
+}
+
 static uint32_t reboot_at_ms; // 0 = none requested
 
 bool http_reboot_due(uint32_t now_ms) {
@@ -914,6 +937,7 @@ static void handle_request(conn_t *c) {
             respond_settings_locked(c);
             return;
         }
+        if (via_setup && setup_request_refused(c)) return;
         bool secrets = !strncmp(c->req + 27, "?secrets=1 ", 11);
         if (secrets && via_setup) { // the setup doors never give out stored passwords
             respond(c, 401, "Unauthorized", "application/json",
@@ -933,6 +957,7 @@ static void handle_request(conn_t *c) {
             respond_settings_locked(c);
             return;
         }
+        if (via_setup && setup_request_refused(c)) return;
         if (c->req[0] == 'G') {
             if (settings_busy()) {
                 respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
