@@ -185,6 +185,7 @@ A bad value gets `400` with the reason, such as
 | `GET /api/v1/status` | Everything the web interface shows. See below. |
 | `GET /api/v1/faults` | The fault log, newest first, eight entries per page. Add `?offset=8` for the next page. |
 | `GET /api/v1/log` | The controller's recent messages as text. Needs the token. |
+| `GET /api/v1/console` | What the last console commands printed, as text. `202` while they are still running. Needs the token. |
 | `GET /api/v1/settings` | Every setting except passwords. Needs the token. |
 | `GET /api/v1/settings/export` | Every setting, ready to import later. Add `?secrets=1` to include passwords. Needs the token. |
 | `GET /metrics` | [Prometheus metrics](#prometheus). |
@@ -215,6 +216,7 @@ All of these need the token.
 | `POST /api/v1/settings` | any of the settings keys below; the reply says whether a reboot is needed |
 | `POST /api/v1/faults/clear` | none; empties the fault log |
 | `POST /api/v1/reboot` | none; restarts the controller without cutting port power |
+| `POST /api/v1/console` | console commands as plain text, one per line, up to 2 KB; see below |
 | `POST /api/v1/update` | a signed firmware file, see below |
 
 Example: switch port 3 off.
@@ -222,6 +224,21 @@ Example: switch port 3 off.
 ```sh
 curl -X POST -H "Authorization: Bearer $TOKEN" \
   -d '{"action":"disable"}' http://pwrman.local/api/v1/port/3
+```
+
+### Console commands
+
+`POST /api/v1/console` runs [console commands](/developers/controller/console/)
+in order and answers `202`. Poll `GET /api/v1/console` until it answers
+`200`; the body is each command, shown as `web> ` and the command with
+passwords and the token as `********`, followed by what it printed. A
+second batch sent while one is running gets `409`. `token`, `defaults`,
+`bootsel` and `update --unsigned` or `--downgrade` are refused.
+
+```sh
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: text/plain" \
+  --data-binary $'status\ninfo' http://pwrman.local/api/v1/console
+curl -H "Authorization: Bearer $TOKEN" http://pwrman.local/api/v1/console
 ```
 
 ### Settings keys
