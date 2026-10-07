@@ -121,6 +121,29 @@ static void hard_reset_and_detach(void) {
     MT_ASSERT_EQ(live.contract_mv, 0);
 }
 
+static void hard_resets_are_counted(void) {
+    port_init();
+    (void)port_set_limits(3000, BLADE_MAX_MV_ALL);
+    port_attach();
+    (void)port_request(fixed_rdo(5, 3000));
+    port_delivered();
+
+    port_hard_reset(false);
+    MT_ASSERT(port_contract() == NULL);
+    port_hard_reset(true);
+    port_hard_reset(true);
+    port_detach(); // the counts outlast the sink
+    regmap_live_t live = {0};
+    port_report(&live);
+    MT_ASSERT_EQ(live.hr_sent, 1);
+    MT_ASSERT_EQ(live.hr_received, 2);
+
+    port_init(); // a restart starts them over
+    port_report(&live);
+    MT_ASSERT_EQ(live.hr_sent, 0);
+    MT_ASSERT_EQ(live.hr_received, 0);
+}
+
 void run_port_tests(void) {
     mt_run("port: nothing to offer until configured", nothing_to_offer_until_configured);
     mt_run("port: the same limits change nothing", same_limits_change_nothing);
@@ -130,4 +153,5 @@ void run_port_tests(void) {
     mt_run("port: a rejected request keeps the contract", rejected_request_keeps_the_contract);
     mt_run("port: a PPS contract is reported", pps_contract_is_reported);
     mt_run("port: hard reset and detach", hard_reset_and_detach);
+    mt_run("port: hard resets are counted", hard_resets_are_counted);
 }

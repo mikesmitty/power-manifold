@@ -47,6 +47,13 @@
 #define BLADE_REG_FAULT       0x12 // u16, BLADE_FAULT_*, latched until BLADE_CMD_CLEAR_FAULTS
 #define BLADE_REG_CONTRACT_MV 0x14 // u16
 #define BLADE_REG_CONTRACT_MA 0x16 // u16, the operating current the sink asked for
+// PD hard resets since the MCU started, each count wrapping at 256. Sent:
+// the blade's policy engine gave up on the sink (no answer to new source
+// capabilities in time, a protocol error). Received: the sink sent one.
+// Either one switches VBUS off for a moment. A blade from before these
+// counters reads 0 in both.
+#define BLADE_REG_HR_SENT     0x18 // u8
+#define BLADE_REG_HR_RECEIVED 0x19 // u8
 
 // telemetry, read-only
 #define BLADE_REG_VBUS_MV     0x20 // u16, at the receptacle

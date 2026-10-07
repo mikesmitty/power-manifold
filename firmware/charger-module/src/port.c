@@ -9,6 +9,7 @@ static pdo_table_t table;
 static bool attached;
 static bool have_pending, have_contract;
 static pdo_request_t pending, contract;
+static uint8_t hr_sent, hr_received; // since the MCU started, wrapping
 
 static bool rebuild(void) {
     pdo_table_t was = table;
@@ -22,6 +23,7 @@ void port_init(void) {
     table.count = 0;
     attached = false;
     have_pending = have_contract = false;
+    hr_sent = hr_received = 0;
 }
 
 bool port_set_limits(uint16_t max_ma, uint16_t max_mv) {
@@ -82,11 +84,19 @@ void port_contract_lost(void) {
     have_pending = have_contract = false;
 }
 
+void port_hard_reset(bool by_sink) {
+    if (by_sink) hr_received++;
+    else hr_sent++;
+    port_contract_lost();
+}
+
 void port_report(regmap_live_t *live) {
     live->status &= (uint8_t)~(BLADE_ST_ATTACHED | BLADE_ST_CONTRACT | BLADE_ST_PPS | BLADE_ST_CABLE_5A);
     live->pdo = 0;
     live->contract_mv = 0;
     live->contract_ma = 0;
+    live->hr_sent = hr_sent;
+    live->hr_received = hr_received;
     if (!attached) return;
     live->status |= BLADE_ST_ATTACHED;
     if (limits.cable_ma >= 5000) live->status |= BLADE_ST_CABLE_5A;

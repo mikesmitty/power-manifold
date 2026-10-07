@@ -30,7 +30,8 @@ const pdo_request_t *port_pending(void);  // NULL: none
 void port_delivered(void);
 const pdo_request_t *port_contract(void); // NULL: none
 void port_contract_lost(void);            // hard reset: back to the implicit 5 V
+void port_hard_reset(bool by_sink);       // counts one for BLADE_REG_HR_SENT / HR_RECEIVED
 
-// BLADE_ST_ATTACHED / CONTRACT / PPS / CABLE_5A, the PDO position and the
-// contract's figures
+// BLADE_ST_ATTACHED / CONTRACT / PPS / CABLE_5A, the PDO position, the
+// contract's figures and the hard-reset counts
 void port_report(regmap_live_t *live);

@@ -15,6 +15,8 @@ typedef struct {
     uint8_t  pdo;
     uint16_t contract_mv;
     uint16_t contract_ma;
+    uint8_t  hr_sent;      // BLADE_REG_HR_SENT
+    uint8_t  hr_received;  // BLADE_REG_HR_RECEIVED
     uint16_t vbus_mv;
     uint16_t iout_ma;
     uint16_t vout_mv;

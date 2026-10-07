@@ -91,8 +91,10 @@ void USBPD_DPM_Notification(uint8_t PortNum, USBPD_NotifyEventValue_TypeDef Even
     (void)PortNum;
     switch (EventVal) {
     case USBPD_NOTIFY_HARDRESET_RX:
+        port_hard_reset(true);
+        break;
     case USBPD_NOTIFY_HARDRESET_TX:
-        port_contract_lost();
+        port_hard_reset(false);
         break;
     default:
         break;

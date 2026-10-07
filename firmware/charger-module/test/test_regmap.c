@@ -91,6 +91,7 @@ static void telemetry(void) {
     regmap_live_t live = {
         .status = BLADE_ST_ATTACHED | BLADE_ST_CONTRACT | BLADE_ST_VBUS_ON | BLADE_ST_EN,
         .pdo = 5, .contract_mv = 20000, .contract_ma = 3250,
+        .hr_sent = 2, .hr_received = 7,
         .vbus_mv = 19876, .iout_ma = 3011, .vout_mv = 19950,
         .temp_conv_dc = 612, .temp_plug_dc = -35, .temp_mcu_dc = 480,
     };
@@ -98,6 +99,8 @@ static void telemetry(void) {
     MT_ASSERT_EQ(read8(BLADE_REG_PDO), 5);
     MT_ASSERT_EQ(read16(BLADE_REG_CONTRACT_MV), 20000);
     MT_ASSERT_EQ(read16(BLADE_REG_CONTRACT_MA), 3250);
+    MT_ASSERT_EQ(read8(BLADE_REG_HR_SENT), 2);
+    MT_ASSERT_EQ(read8(BLADE_REG_HR_RECEIVED), 7);
     MT_ASSERT_EQ(read16(BLADE_REG_VBUS_MV), 19876);
     MT_ASSERT_EQ(read16(BLADE_REG_IOUT_MA), 3011);
     MT_ASSERT_EQ(read16(BLADE_REG_VOUT_MV), 19950);

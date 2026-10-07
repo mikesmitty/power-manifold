@@ -143,6 +143,8 @@ void regmap_publish(const regmap_live_t *live) {
     img[BLADE_REG_PDO] = live->pdo;
     put16(BLADE_REG_CONTRACT_MV, live->contract_mv);
     put16(BLADE_REG_CONTRACT_MA, live->contract_ma);
+    img[BLADE_REG_HR_SENT] = live->hr_sent;
+    img[BLADE_REG_HR_RECEIVED] = live->hr_received;
     put16(BLADE_REG_VBUS_MV, live->vbus_mv);
     put16(BLADE_REG_IOUT_MA, live->iout_ma);
     put16(BLADE_REG_VOUT_MV, live->vout_mv);
