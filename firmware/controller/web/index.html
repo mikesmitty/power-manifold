@@ -207,11 +207,12 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
   <div class="msg" id="lgm"></div>
   <pre id="lgp"></pre>
   <div class="cmd"><textarea id="cin" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Console command" placeholder="A command, or several lines pasted at once"></textarea><button class="btn pri" id="crun" type="button">Run</button></div>
-  <div class="actions"><button class="btn sm" id="lgr" type="button">Refresh</button><span class="mute" style="font-size:.78rem">The last 4 KB the firmware printed, newest at the bottom; replies to commands run here follow it. Enter runs, Shift+Enter adds a line, and help lists the commands. token, defaults, bootsel and unsigned or older updates work only on the serial console.</span></div>
+  <div class="actions"><button class="btn sm" id="lgr" type="button">Refresh</button><span class="mute" style="font-size:.78rem">The last 4 KB the firmware printed, newest at the bottom; replies to commands run here follow it. Enter runs, Shift+Enter adds a line, and help lists the commands. token, defaults, bootsel, unsigned or older updates, and the bench tools stack, i2c, sim and button work only on the serial console.</span></div>
  </div>
 
  <div class="pane" id="cfg" hidden>
   <div class="about" id="about" aria-label="About this unit"></div>
+  <div class="actions"><button class="btn sm" id="ucb" type="button">Check for updates</button><button class="btn sm pri" id="uib" type="button" hidden></button></div>
   <div class="msg" id="msg"></div>
   <div class="lock" id="lock" hidden><input id="tok" type="password" placeholder="API token"><button class="btn pri" id="ul" type="button">Unlock</button></div>
   <form id="f" hidden autocomplete="off">
@@ -290,6 +291,10 @@ function label(p){switch(p.state){case'absent':return'Empty slot';case'probe':re
 function quiet(p){return{absent:'No blade in this slot.',probe:'Checking the blade.',idle:'Nothing plugged in.'+(p.contract_w?' Holds '+W(p.contract_w,0)+' W for the next device.':''),
  disabled:'Power is off.',fault:'Switched off after a fault. See the fault log.',updating:'Blade firmware is updating.'}[p.state];}
 const W=(x,d=1)=>x.toFixed(d);
+// The Updates line in About: an install under way, a newer release, or how the last check went.
+function upd(u){if(u.installing)return'installing, '+u.progress+' %';if(u.available)return u.latest+' available';
+ const ago=u.check_age_s?' '+dur(u.check_age_s)+' ago':'';
+ return{off:'check turned off',never:'not checked yet',checking:'checking',ok:'up to date, checked'+ago,failed:'check failed'+ago}[u.check]||u.check;}
 function dur(s){const d=s/86400|0,h=s/3600%24|0,m=s/60%60|0;return d?d+'d '+h+'h':h?h+'h '+m+'m':m+'m';}
 
 function spark(s,k,c,w,h,grid){const n=s.length,m=Math.max(...s.map(x=>x[k]),1e-9),
@@ -338,7 +343,7 @@ function draw(){if(!last)return;const d=last,P=d.ports,g=$('grid'),
 async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}catch(e){$('line').textContent='No response from the device.';return;}
  last=d;document.title=d.name;$('dn').textContent=d.name;
  const fan=d.fan=='on'?'on':'off',L=[d.vin_v!=null&&['',W(d.vin_v,2)+' V',' in'],['Fan ',fan,d.fan_mode=='auto'?', automatic':''],
-  ['',W(d.energy_kwh,2)+' kWh',' delivered'],['Firmware ',d.fw,d.trial?', on trial':'']];
+  ['',W(d.energy_kwh,2)+' kWh',' delivered'],['Firmware ',d.fw,(d.trial?', on trial':'')+(d.update.available?', '+d.update.latest+' available':'')]];
  $('line').innerHTML=L.filter(x=>x).map(x=>`<span>${x[0]}<b class="num">${esc(x[1])}</b>${x[2]}</span>`).join('');
  $('tw').innerHTML=W(d.total_w)+'<small> W</small>';$('rw').innerHTML=W(d.reserved_w,0)+'<small> W</small>';
  $('fw').innerHTML=W(d.headroom_w,0)+'<small> W</small>';$('bw').textContent=W(d.budget_w,0)+' W';
@@ -346,7 +351,9 @@ async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}c
  const CL={bus_fault:['red fast','bus voltage out of range'],wifi_setup:['blue breathe','Wi-Fi setup open'],setup:['amber breathe','first-time setup open']}[d.chassis_light]||['green dim','all clear'];
  $('cl').className='led '+CL[0];$('cl').title='Chassis light: '+CL[1];
  const A=[['Firmware',d.fw+', slot '+d.slot+(d.trial?', on trial':'')],['Blade firmware',d.blade_fw||'\u2013'],['Running for',dur(d.uptime_s)],['Last start',d.boot],
-  ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')']];if(d.ups&&d.ups.present)A.push(['UPS',d.ups.status]);
+  ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')'],['Updates',upd(d.update)]];if(d.ups&&d.ups.present)A.push(['UPS',d.ups.status]);
+ if(d.net.mqtt!='off')A.push(['MQTT broker',d.net.mqtt.replace(/_/g,' ')+(d.net.mqtt_problem?': '+d.net.mqtt_problem:'')]);
+ const ub=$('uib');ub.hidden=!d.update.available||d.update.installing;ub.textContent='Install '+d.update.latest;$('ucb').disabled=d.update.check=='checking';
  $('about').innerHTML=A.map(x=>`<div>${x[0]}<b class="num">${esc(x[1])}</b></div>`).join('');
  d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});if(H[i].length>N)H[i].shift();});draw();}
 tick();setInterval(tick,1000);
@@ -407,6 +414,12 @@ F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]
  if(!r||!r.ok){M.textContent='Not saved: '+(d.error||'no response');return;}
  if(b.token)sessionStorage.tok=b.token;F.mpass.value=F.atok.value='';await cfgLoad();
  M.textContent=d.reboot_required?'Saved. Reboot to apply the name, broker and addressing.':'Saved and applied.';tick();};
+// Check and Install answer at once; the result shows in About on the next status poll.
+async function updPost(path,what){let r;try{r=await fetch('/api/v1/update/'+path,{method:'POST',headers:hdr()});}catch(e){}
+ if(r&&r.ok){M.textContent=path=='latest'?'Installing. The controller restarts into the new firmware when it is done; the ports stay on.':'Asking for the newest release.';return;}
+ if(!r){M.textContent='No response from the device.';return;}const w=await why(r);if(r.status==401&&w==BT){unlock(what);return;}M.textContent=cap(w);}
+$('ucb').onclick=()=>updPost('check','check for updates');
+$('uib').onclick=()=>updPost('latest','install the update');
 $('rb').onclick=async()=>{let r;try{r=await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}
  if(r&&r.status==401){M.textContent=cap(await why(r));return;}M.textContent='Rebooting. This page reloads in a few seconds.';setTimeout(()=>location.reload(),6000);};
 $('xpb').onclick=async()=>{let r;try{r=await fetch('/api/v1/settings/export'+($('xps').checked?'?secrets=1':''),{headers:hdr()});}catch(e){}

@@ -57,6 +57,7 @@ static struct {
     unsigned     allow;      // UPDATE_ALLOW_*: what this transfer's caller waived
     uint32_t     stream_len; // as declared at begin
     uint32_t     stream_pos; // raw-image bytes taken so far
+    uint32_t     taken;      // stream bytes received so far, either format
     uint32_t     target_off, target_size;
     flash_slot_t target_slot;
     uint32_t     cursor;    // next logical image byte (streams are contiguous)
@@ -210,6 +211,7 @@ static bool bin_bytes(const uint8_t *data, uint32_t len, char *err, size_t errle
 
 bool update_write(const uint8_t *data, size_t len, char *err, size_t errlen) {
     if (!up.active) return eout(err, errlen, "no update in progress");
+    up.taken += (uint32_t)len;
     if (up.fmt == FMT_BIN) return bin_bytes(data, (uint32_t)len, err, errlen);
 
     // UF2 until proven otherwise: reassemble 512-byte frames across TCP
@@ -369,6 +371,12 @@ uint32_t update_age_ms(void) {
 
 uint32_t update_bytes(void) {
     return up.cursor;
+}
+
+unsigned update_percent(void) {
+    if (!up.active || !up.stream_len) return 0;
+    uint64_t pct = (uint64_t)up.taken * 100u / up.stream_len;
+    return pct > 100 ? 100 : (unsigned)pct;
 }
 
 const char *update_slot_name(void) {

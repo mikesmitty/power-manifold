@@ -29,10 +29,14 @@
 #include "log_ring.h"
 #include "log_sink.h"
 #include "mqtt.h"
+#include "mqtt_tls.h"
 #include "net.h"
+#include "ota_pull.h"
+#include "update_check.h"
 #include "settings.h"
 #include "settings_json.h"
 #include "update.h"
+#include "update_latest.h"
 #include "ups/lad_proto.h"
 #include "ups/ups.h"
 #include "vin.h"
@@ -40,7 +44,7 @@
 #define HTTP_PORT       80
 #define MAX_CONNS       4
 #define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
-#define STATUS_JSON_MAX 3488 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block, the bus voltage and the chassis light, worst case
+#define STATUS_JSON_MAX 4064 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block, the bus voltage, the chassis light, and the update and net blocks, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -221,6 +225,63 @@ static const char *chassis_light_name(void) {
     return "ok";
 }
 
+// "update":{...}, — the newest release known, the last check, and an
+// install in progress (a pull still connecting counts)
+static void build_update_json(char *out, size_t cap) {
+    uint32_t age;
+    const char *check = update_check_state(to_ms_since_boot(get_absolute_time()), &age);
+    const char *latest = update_latest_version(); // x.y.z, checked when it was taken
+    char latestf[UPDATE_LATEST_VERSION_MAX + 2];
+    if (latest[0]) snprintf(latestf, sizeof(latestf), "\"%s\"", latest);
+    else snprintf(latestf, sizeof(latestf), "null");
+    snprintf(out, cap,
+             "\"update\":{\"available\":%s,\"latest\":%s,\"check\":\"%s\",\"check_age_s\":%lu,"
+             "\"installing\":%s,\"progress\":%u},",
+             update_latest_newer_than(FW_VERSION) ? "true" : "false", latestf, check,
+             (unsigned long)age, update_active() || ota_pull_busy() ? "true" : "false",
+             update_percent());
+}
+
+// A JSON string, or null for an empty one.
+static void json_str_or_null(char *out, size_t cap, const char *s) {
+    if (!s || !s[0]) {
+        snprintf(out, cap, "null");
+        return;
+    }
+    out[0] = '"';
+    size_t n = json_escape(out + 1, cap - 2, s);
+    out[1 + n] = '"';
+    out[2 + n] = '\0';
+}
+
+// "net":{...}, — what the controller is using now, as opposed to what is
+// configured: the address, gateway, resolver and time server in use, whether
+// the clock is set, and the broker link with what keeps a TLS link down
+static void build_net_json(char *out, size_t cap) {
+    // static: IRQ stack. Each address is copied out at once, because
+    // net_ip_str and net_dns_str share lwIP's single static buffer.
+    static char ip[20], mask[20], gw[20], dns[20], ntp[120], problem[240];
+    bool up = net_up();
+    json_str_or_null(ip, sizeof(ip), up ? net_ip_str() : "");
+    json_str_or_null(mask, sizeof(mask), up ? net_mask_str() : "");
+    json_str_or_null(gw, sizeof(gw), up ? net_gw_str() : "");
+    const char *d = net_dns_str();
+    json_str_or_null(dns, sizeof(dns), strcmp(d, "none") ? d : "");
+    const char *t = net_ntp_str();
+    json_str_or_null(ntp, sizeof(ntp), strcmp(t, "none") ? t : "");
+    bool broker = g_settings.mqtt_host[0] != '\0';
+    json_str_or_null(problem, sizeof(problem), broker ? mqtt_tls_blocker() : NULL);
+    const char *mqtt = !broker                   ? "off"
+                     : mqtt_is_connected()       ? "connected"
+                     : mqtt_waiting_for_clock()  ? "waiting_for_clock"
+                                                 : "connecting";
+    snprintf(out, cap,
+             "\"net\":{\"up\":%s,\"ip\":%s,\"netmask\":%s,\"gateway\":%s,\"dns\":%s,\"ntp\":%s,"
+             "\"time_synced\":%s,\"mqtt\":\"%s\",\"mqtt_problem\":%s},",
+             up ? "true" : "false", ip, mask, gw, dns, ntp, net_epoch() ? "true" : "false", mqtt,
+             problem);
+}
+
 static void build_status_json(char *out, size_t cap) {
     telemetry_t t;
     ipc_snapshot_read(&t);
@@ -235,8 +296,10 @@ static void build_status_json(char *out, size_t cap) {
 #if PWRMAN_NET_ETH
     snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
 #endif
-    static char upsf[320]; // static: IRQ stack
+    static char upsf[320], updf[160], netf[512]; // static: IRQ stack
     build_ups_json(upsf, sizeof(upsf));
+    build_update_json(updf, sizeof(updf));
+    build_net_json(netf, sizeof(netf));
     char vinf[16]; // a number, or null on a board without the divider
     if (vin_fitted()) snprintf(vinf, sizeof(vinf), "%.2f", vin_mv() / 1000.0);
     else snprintf(vinf, sizeof(vinf), "null");
@@ -252,7 +315,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"fan_mode\":\"%s\",\"alert\":%s,\"improv\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
         "\"vin_v\":%s,\"ceiling_ma\":%lu,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
         "\"chassis_light\":\"%s\","
-        "\"blade_fw\":%s,%s\"ports\":[",
+        "\"blade_fw\":%s,%s%s%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -263,7 +326,8 @@ static void build_status_json(char *out, size_t cap) {
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
         t.warm_start ? "true" : "false", vinf, (unsigned long)bus_cap_ma(),
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
-        led_sched_level(&g_settings, led_sched_current()), chassis_light_name(), bladef, upsf);
+        led_sched_level(&g_settings, led_sched_current()), chassis_light_name(), bladef, upsf,
+        updf, netf);
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
         const port_telemetry_t *p = &t.port[i];
@@ -925,6 +989,52 @@ static void handle_request(conn_t *c) {
             } else {
                 respond(c, 202, "Accepted", "application/json", "{\"ok\":true}");
             }
+        } else if (!strncmp(c->req, "POST /api/v1/update/check", 25)) {
+            // the answer lands in the status JSON's update block
+            char e[96];
+            if (update_check_now(e, sizeof(e))) {
+                respond(c, 202, "Accepted", "application/json", "{\"ok\":true}");
+            } else {
+                char ee[128], b[160];
+                json_escape(ee, sizeof(ee), e);
+                snprintf(b, sizeof(b), "{\"error\":\"%s\"}", ee);
+                respond(c, 409, "Conflict", "application/json", b);
+            }
+        } else if (!strncmp(c->req, "POST /api/v1/update/latest", 26)) {
+            // pull the release the check or the MQTT pointer named, under the
+            // same signature and version rules as an upload; progress shows in
+            // the status JSON and the controller reboots into it when done
+            const char *url = update_latest_url();
+            char e[96];
+            if (!url[0]) {
+                respond(c, 409, "Conflict", "application/json",
+                        "{\"error\":\"no release is known yet: ask with POST /api/v1/update/check\"}");
+            } else if (ota_pull_start(url, 0, e, sizeof(e))) {
+                char b[64];
+                snprintf(b, sizeof(b), "{\"ok\":true,\"version\":\"%s\"}", update_latest_version());
+                respond(c, 202, "Accepted", "application/json", b);
+            } else {
+                char ee[128], b[160];
+                json_escape(ee, sizeof(ee), e);
+                snprintf(b, sizeof(b), "{\"error\":\"%s\"}", ee);
+                respond(c, 409, "Conflict", "application/json", b);
+            }
+        } else if (!strncmp(c->req, "POST /api/v1/improv", 19)) {
+            // {"open": true} opens Wi-Fi setup for IMPROV_WINDOW_MS, false closes it
+            bool open;
+            if (!json_get_bool(body, "open", &open)) {
+                respond(c, 400, "Bad Request", "application/json",
+                        "{\"error\":\"send {\\\"open\\\": true} or false\"}");
+            } else if (!improv_available()) {
+                respond(c, 503, "Service Unavailable", "application/json",
+                        "{\"error\":\"Wi-Fi setup is not available on this controller\"}");
+            } else {
+                if (open) improv_open(IMPROV_WINDOW_MS, "web");
+                else improv_close();
+                char b[64];
+                snprintf(b, sizeof(b), "{\"ok\":true,\"improv\":\"%s\"}", improv_state_str());
+                respond(c, 200, "OK", "application/json", b);
+            }
         } else if (!strncmp(c->req, "POST /api/v1/faults/clear", 25)) {
             if (!fault_log_available()) {
                 respond(c, 503, "Service Unavailable", "application/json",
@@ -1004,7 +1114,9 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
         c->req[c->req_len] = '\0';
 
         char *hdr_end = strstr(c->req, "\r\n\r\n");
-        if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19)) {
+        // the image upload only: /api/v1/update/check and /latest are requests
+        if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19) &&
+            (c->req[19] == ' ' || c->req[19] == '?')) {
             update_post_start(c, hdr_end + 4);
             // body bytes past what fit in req[] are still in this pbuf
             if (c->updating && copied < p->tot_len) update_feed(c, p, copied);

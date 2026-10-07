@@ -500,8 +500,8 @@ static void run_i2c_diag(char **save) {
 // Every command reaches the web console too (run_web_batch), behind only the
 // API token. A command that must stay behind the serial console - one that
 // sets or clears the token, gets past the update signing or downgrade rules,
-// wipes the settings, or stops the firmware so only someone at the box can
-// bring it back - goes on the refusal list in cli_line_web_refusal (cli_line.c) and in
+// wipes the settings, stops the firmware so only someone at the box can
+// bring it back, or is a bench or test tool - goes on the refusal list in cli_line_web_refusal (cli_line.c) and in
 // test_web_refusal in the same change. A command with a password or token
 // argument gets its masking in cli_line_mask.
 static void run_line(char *l) {

@@ -45,6 +45,10 @@ static void test_web_refusal(void) {
     MT_ASSERT(!strcmp(cli_line_web_refusal(" token clear"), "token"));
     MT_ASSERT(!strcmp(cli_line_web_refusal("bootsel"), "bootsel"));
     MT_ASSERT(!strcmp(cli_line_web_refusal("defaults"), "defaults"));
+    MT_ASSERT(!strcmp(cli_line_web_refusal("stack"), "stack"));
+    MT_ASSERT(!strcmp(cli_line_web_refusal("i2c scan 0"), "i2c"));
+    MT_ASSERT(!strcmp(cli_line_web_refusal("sim fault 1 ocp"), "sim"));
+    MT_ASSERT(!strcmp(cli_line_web_refusal("button long"), "button"));
     MT_ASSERT(!strcmp(cli_line_web_refusal("update --unsigned http://h/c.bin"), "update --unsigned"));
     MT_ASSERT(!strcmp(cli_line_web_refusal("update http://h/c.bin --downgrade"), "update --downgrade"));
     // a flag far down a long line is still found
@@ -55,6 +59,8 @@ static void test_web_refusal(void) {
     MT_ASSERT(cli_line_web_refusal("status") == NULL);
     MT_ASSERT(cli_line_web_refusal("tokens") == NULL);
     MT_ASSERT(cli_line_web_refusal("save") == NULL);
+    MT_ASSERT(cli_line_web_refusal("ups") == NULL);
+    MT_ASSERT(cli_line_web_refusal("simulate") == NULL);
     MT_ASSERT(cli_line_web_refusal("") == NULL);
 }
 

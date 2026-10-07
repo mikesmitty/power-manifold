@@ -144,6 +144,13 @@ bool update_check_now(char *err, size_t errlen) {
     return start(err, errlen);
 }
 
+const char *update_check_state(uint32_t now_ms, uint32_t *age_s) {
+    *age_s = last == RES_NONE ? 0 : (now_ms - last_ms) / 1000u;
+    if (!g_settings.update_url[0]) return "off";
+    if (busy) return "checking";
+    return last == RES_OK ? "ok" : last == RES_FAILED ? "failed" : "never";
+}
+
 void update_check_status(uint32_t now_ms, char *out, size_t cap) {
     if (!g_settings.update_url[0]) {
         snprintf(out, cap, "off");

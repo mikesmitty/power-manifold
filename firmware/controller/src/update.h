@@ -35,6 +35,7 @@ void update_abort(void);
 bool        update_active(void);
 uint32_t    update_age_ms(void);      // ms since the stream last made progress
 uint32_t    update_bytes(void);       // logical image bytes placed so far
+unsigned    update_percent(void);     // share of the declared stream received, 0-100
 const char *update_slot_name(void);   // target slot, "A"/"B"
 const char *update_version_str(void); // incoming image version, after finish
 unsigned    update_key_count(void);   // signing keys built in; 0 = signing not enforced
