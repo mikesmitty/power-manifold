@@ -97,8 +97,8 @@ and the up and down arrows bring back earlier commands. `help` lists them.
 The reply appears under the messages. Passwords and the token show as
 `********` there and in the log. A few commands work only over the serial
 console: `token`, `defaults`, `bootsel`, updates that are unsigned or
-older than the running firmware, and the bench tools `stack`, `i2c`, `sim`
-and `button`.
+older than the running firmware, the input voltage trim `vin cal`, and the
+bench tools `stack`, `i2c`, `sim` and `button`.
 
 ## Settings
 
@@ -141,7 +141,8 @@ At the bottom of **Settings**:
 
 - **Export** downloads every setting as a JSON file. Your Wi-Fi password,
   MQTT password and API token are left out unless you tick the box to
-  include them.
+  include them. The input voltage calibration is never included: it is
+  specific to the controller card and is set only over the serial console.
 - **Import…** loads a file you exported earlier.
 
 If the file leaves out the passwords, importing it keeps the passwords
