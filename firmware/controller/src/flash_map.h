@@ -50,10 +50,8 @@ bool flash_map_update_pending(void);
 bool flash_map_commit_update(void);
 
 // A/B slot an incoming OTA image should be written into: the pair partner of
-// the slot the bootrom would pick right now (per
-// rom_pick_ab_partition_during_update, which also verifies the picked image
-// and leaves any in-flight update state intact). False when there is no A/B
-// pair or the bootrom refuses.
+// the slot the running image booted from. False when there is no A/B pair or
+// the running image did not boot from either slot.
 bool flash_map_update_target(uint32_t *offset, uint32_t *size, flash_slot_t *slot);
 
 // Translation-proof pointer for memory-mapped reads of a storage offset

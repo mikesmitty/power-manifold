@@ -128,11 +128,14 @@ bool flash_map_update_target(uint32_t *offset, uint32_t *size, flash_slot_t *slo
     }
     if (a < 0 || b < 0) return false;
 
-    int picked = rom_pick_ab_partition_during_update((uint32_t *)workarea,
-                                                     sizeof(workarea), (uint)a);
-    if (picked < 0) return false;
+    // The slot the running image did not boot from. Not the bootrom's
+    // rom_pick_ab_partition_during_update: it refuses (NOT_FOUND) whenever
+    // slot B holds no image, which is how a factory-programmed board starts.
+    int target;
+    if (boot_partition == a) target = b;
+    else if (boot_partition == b) target = a;
+    else return false;
 
-    int target = picked == a ? b : a;
     *offset = parts[target].offset;
     *size = parts[target].size;
     *slot = target == a ? FLASH_SLOT_A : FLASH_SLOT_B;
