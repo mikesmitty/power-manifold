@@ -14,8 +14,6 @@ documentation site.
 - [Integrations](https://docs.powermanifold.io/integrations/mqtt/): MQTT,
   Home Assistant and the HTTP API
 - [Hardware architecture](https://docs.powermanifold.io/developers/architecture/)
-- [Building the controller firmware](https://docs.powermanifold.io/developers/controller/building/)
-  and the [charger blade firmware](https://docs.powermanifold.io/developers/charger-module/overview/)
 
 ## Repository layout
 
@@ -34,7 +32,6 @@ documentation site.
 | `firmware/charger-module` | Charger blade firmware (STM32G071) and its host tests |
 | `firmware/update-proxy` | Cloudflare Worker that serves controller update images |
 | `docs` | The documentation site (Astro and Starlight) |
-| `cases` | Earlier 3D-printed cases |
 
 Each firmware directory has a short README with build commands. Its full
 developer documentation is in its `docs/` directory and is published on the
