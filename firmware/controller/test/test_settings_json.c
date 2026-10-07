@@ -93,7 +93,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"port_protect\":[0,1,0,0,0,1]") != NULL);
     MT_ASSERT(strstr(json, "\"led_night\":\"22:00-06:30\"") != NULL);
     MT_ASSERT(strstr(json, "\"tz_offset_min\":-240") != NULL);
-    MT_ASSERT(strstr(json, "\"vin_cal\":1023") != NULL);
+    MT_ASSERT(strstr(json, "vin_cal") == NULL); // a backup leaves the trim out
     MT_ASSERT(strstr(json, "\"blade_auto_update\":false") != NULL);
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
@@ -107,8 +107,11 @@ static void test_round_trip(void) {
     MT_ASSERT(err == NULL);
     MT_ASSERT(ap.fan_mode_given && ap.fan_manual_on);
     // compare field by field: the record's on-flash header and the
-    // runtime off-mask are not carried by the JSON
+    // runtime off-mask are not carried by the JSON, and neither is the
+    // bus-voltage trim (serial console only)
+    MT_ASSERT_EQ(dst.vin_cal, 0);
     dst.port_off_mask = src.port_off_mask;
+    dst.vin_cal = src.vin_cal;
     MT_ASSERT(!memcmp(&src.wifi_ssid, &dst.wifi_ssid,
                       offsetof(settings_t, crc) - offsetof(settings_t, wifi_ssid)));
 }
@@ -123,6 +126,7 @@ static void test_secrets_off_by_default(void) {
     MT_ASSERT(strstr(json, "tok-123") == NULL);
     MT_ASSERT(strstr(json, "\"token_set\":true") != NULL);
     MT_ASSERT(strstr(json, "\"format\"") == NULL);
+    MT_ASSERT(strstr(json, "\"vin_cal\":1023") != NULL); // shown, though never backed up
     // ...and importing such an export keeps the secrets the box already has
     settings_t dst = src;
     strcpy(dst.wifi_pass, "keep-me");
@@ -169,7 +173,8 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"port_protect\":[1,0,1]}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"led_night\":\"22:00\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"tz_offset_min\":900}", false) != NULL);
-    MT_ASSERT(apply_fresh("{\"vin_cal\":1200}", false) != NULL);
+    // the bus-voltage trim is serial-console only: accepted and ignored
+    MT_ASSERT(apply_fresh("{\"vin_cal\":1200}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"vin_cal\":950}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"blade_watch_s\":300}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"blade_watch_s\":60,\"blade_auto_update\":true,\"blade_boot_via_loader\":false}", false) == NULL);

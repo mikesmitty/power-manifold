@@ -91,8 +91,10 @@ These are refused there and work only on the serial console:
 | `update --unsigned`, `update --downgrade` | the update signing and no-downgrade rules hold for everything that arrives over the network |
 | `defaults` | it clears the token along with every other setting |
 | `bootsel` | it stops the firmware until someone reaches the box |
+| `vin cal` | the bus-sag cap acts on the trimmed reading; trim it against a meter at the box (`vin` alone is allowed) |
 | `stack`, `i2c`, `sim`, `button` | bench and test tools; `i2c` writes go around the port engine |
 
 A new command that sets the token, gets past the update rules, clears the
-settings, stops the firmware or is a bench or test tool goes on this list, in
+settings, stops the firmware, trims a reading a safety cut-off acts on, or
+is a bench or test tool goes on this list, in
 `cli_line_web_refusal` (`src/cli_line.c`) and its test.

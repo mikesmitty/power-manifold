@@ -231,7 +231,10 @@ about 10 mV a count. The ADC's reference is the card's 3.3 V rail and the
 divider uses 1 % parts, so the reading can be off by about 2 %. To correct
 it, measure the bus with a meter and run `vin cal 24.13` (then `save`) to
 store the gain trim that makes them agree, in the `vin_cal` setting
-(permille, 900 to 1100; `vin cal reset` clears it). The reading is `vin_v` in the status
+(permille, 900 to 1100; `vin cal reset` clears it). The bus-sag cap acts on
+the trimmed reading, so the trim is set only here: `vin cal` is refused on
+the web console, `POST /api/v1/settings` ignores `vin_cal`, and a settings
+export leaves it out. The reading is `vin_v` in the status
 JSON and the MQTT status, a *Bus voltage* sensor in Home Assistant,
 `pwrman_bus_volts` on `/metrics`, part of the chassis summary on the page,
 `vin` and a line in `info` and `status` on the console. The hardware is

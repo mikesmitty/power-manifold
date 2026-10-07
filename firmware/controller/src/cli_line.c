@@ -56,8 +56,8 @@ void cli_line_mask(const char *in, char *out, size_t cap) {
 // The commands only the serial console may run. When a console command is
 // added or changed, decide whether it belongs here: anything that sets the
 // API token, lets an unsigned or older image in, resets the settings, stops
-// the firmware so only someone at the box can bring it back, or is a bench
-// or test tool. Add each one to test_web_refusal as well.
+// the firmware so only someone at the box can bring it back, trims a
+// reading a safety cut-off acts on, or is a bench or test tool. Add each one to test_web_refusal as well.
 static const char *const serial_only[] = {
     "token", "bootsel", "defaults",        // protected
     "stack", "i2c", "sim", "button",       // bench and test tools
@@ -68,6 +68,10 @@ const char *cli_line_web_refusal(const char *line) {
     size_t wl = next_word(&p, &word);
     for (size_t i = 0; i < sizeof(serial_only) / sizeof(serial_only[0]); i++)
         if (word_is(word, wl, serial_only[i])) return serial_only[i];
+    if (word_is(word, wl, "vin")) { // the reading is fine; the trim moves the bus-sag cap
+        if ((wl = next_word(&p, &word)) != 0 && word_is(word, wl, "cal")) return "vin cal";
+        return NULL;
+    }
     if (word_is(word, wl, "update")) {
         while ((wl = next_word(&p, &word)) != 0) {
             if (word_is(word, wl, "--unsigned")) return "update --unsigned";

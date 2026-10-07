@@ -79,10 +79,13 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
         off = n ? off + n : cap; // 0 = it did not fit: the check at the end reports that
     }
     off = putf(out, cap, off, "\",");
-    off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,"
-               "\"vin_cal\":%u,\"blade_auto_update\":%s,\"blade_boot_via_loader\":%s,"
-               "\"blade_watch_s\":%u,\"port_names\":[", s->syslog_port, s->charged_mw, s->charged_min,
-               s->vin_cal, s->blade_auto_update ? "true" : "false",
+    off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,",
+               s->syslog_port, s->charged_mw, s->charged_min);
+    // the bus-voltage trim belongs to this unit's divider: shown, never backed up
+    if (!o->export) off = putf(out, cap, off, "\"vin_cal\":%u,", s->vin_cal);
+    off = putf(out, cap, off, "\"blade_auto_update\":%s,\"blade_boot_via_loader\":%s,"
+               "\"blade_watch_s\":%u,\"port_names\":[",
+               s->blade_auto_update ? "true" : "false",
                s->blade_boot_via_loader ? "true" : "false", s->blade_watch_s);
     for (int i = 0; i < NUM_PORTS; i++) {
         off = putf(out, cap, off, "%s\"", i ? "," : "");
@@ -238,10 +241,9 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         if (v < 1 || v > 255) return "charged_min: 1-255";
         s->charged_min = (uint8_t)v;
     }
-    if (json_get_int(body, "vin_cal", &v)) {
-        if (v < VIN_CAL_MIN || v > VIN_CAL_MAX) return "vin_cal: " STR(VIN_CAL_MIN) "-" STR(VIN_CAL_MAX) " (permille)";
-        s->vin_cal = (uint16_t)v;
-    }
+    // vin_cal is left as it is: the bus-sag cap acts on the trimmed
+    // reading, so the trim is set only from the serial console, against a
+    // meter. Exports leave it out, and a file that names it changes nothing.
     bool b;
     // Two booleans spell the three link states. A file that names only one
     // keeps the other half of the state; mqtt_tls_verify is true unless the
