@@ -87,8 +87,39 @@ entity IDs don't change.
 | **Open Wi-Fi setup** | Opens Wi-Fi setup for ten minutes to [change Wi-Fi](/setup/wifi-provisioning/#changing-wi-fi-later). |
 | **Firmware update** | Shows when a new release is out. Press **Install** to update. See [Updates](/guide/updates/). |
 | **Automatic updates** | On: new releases install by themselves. See [Automatic updates](/guide/updates/#automatic-updates). |
-| **Postpone update 7 days**, **Skip this update** | Hold back automatic installs for a week, or for the release now offered. |
+| **Postpone update 7 days**, **Skip this update** | Hold back automatic installs for a week, or for the release now offered. The card's own **Skip** does not reach the controller; see [Skipping an update](#skipping-an-update). |
 | **UPS** sensors | Only with a [UPS power supply](/integrations/ups/) connected, which is unofficial. |
+
+## Skipping an update
+
+The **Firmware update** card has its own **Skip** button. That Skip stays
+inside Home Assistant: it hides the update, but the controller is not told,
+and still [installs the release automatically](/guide/updates/#automatic-updates)
+a few days later. To stop a release from installing, press the
+controller's **Skip this update** button instead.
+
+To make the card's **Skip** do the same, add this automation. It presses
+**Skip this update** whenever a version is skipped on the card. Replace
+`pwrman` with your device name.
+
+```yaml
+alias: Pass Power Manifold update skips to the controller
+triggers:
+  - trigger: state
+    entity_id: update.pwrman_firmware
+    attribute: skipped_version
+conditions:
+  - condition: template
+    value_template: "{{ trigger.to_state.attributes.skipped_version is not none }}"
+actions:
+  - action: button.press
+    target:
+      entity_id: button.pwrman_skip_this_update
+```
+
+**Clear skipped** on the card does not undo the controller's skip. The
+skipped release can still be installed with **Install**, and the next
+release installs automatically as usual.
 
 ## Automations
 
