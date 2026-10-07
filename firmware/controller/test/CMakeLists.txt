@@ -65,6 +65,7 @@ add_executable(engine_tests
     test_blade3.c
     test_blade_update.c
     test_priority.c
+    test_protect.c
     test_settings.c
     test_settings_json.c
     test_sim_inject.c

@@ -45,7 +45,8 @@
 // switch config)
 #define PORT_SENSOR_N    5
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
-#define PORT_ENTITIES    (PORT_SENSOR_N + 13)
+#define PORT_PROTECT     (PORT_SENSOR_N + 13)
+#define PORT_ENTITIES    (PORT_SENSOR_N + 14)
 #define CHASSIS_ENTITIES 21
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
@@ -180,6 +181,12 @@ static void handle_command(const char *topic, const char *data) {
         if (on) g_settings.port_auto_off |= bit;
         else g_settings.port_auto_off &= (uint8_t)~bit;
         settings_save_later();
+    } else if (sscanf(sub, "/port/%u/protect/set", &port) == 1 &&
+        strstr(sub, "/protect/set") != NULL && port >= 1 && port <= NUM_PORTS) {
+        uint8_t bit = (uint8_t)(1u << (port - 1));
+        if (on) g_settings.port_protect |= bit;
+        else g_settings.port_protect &= (uint8_t)~bit;
+        settings_save_later();
     } else if (sscanf(sub, "/port/%u/sleep/set", &port) == 1 &&
         strstr(sub, "/sleep/set") != NULL && port >= 1 && port <= NUM_PORTS) {
         int min = atoi(data); // HA sends the box value, possibly as "30.0"
@@ -291,7 +298,7 @@ static void indata_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
 // line every time). Discovery waits until they are all in.
 static const char *const SUBS[] = {
     "port/+/set",     "port/+/priority/set", "port/+/limit/set", "port/+/volt/set",
-    "port/+/boot/set", "port/+/autooff/set", "port/+/sleep/set", "charged_mw/set",
+    "port/+/boot/set", "port/+/autooff/set", "port/+/protect/set", "port/+/sleep/set", "charged_mw/set",
     "charged_min/set", "fan/set",            "budget/set",       "led/set",
     "update/latest",   "update/set",         "improv/set",
 };
@@ -595,6 +602,20 @@ static void publish_port_autooff_switch(unsigned port) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+static void publish_port_protect_switch(unsigned port) {
+    char object[32];
+    snprintf(object, sizeof(object), "p%u_protect", port);
+    discovery_config_topic("switch", object);
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"%s protect running device\",\"uniq_id\":\"pwrman_%s_%s\","
+             "\"cmd_t\":\"~/port/%u/protect/set\",\"stat_t\":\"~/port/%u/telemetry\","
+             "\"val_tpl\":\"{{ 'ON' if value_json.protect else 'OFF' }}\","
+             "\"ic\":\"mdi:shield-check\",\"ent_cat\":\"config\","
+             "\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, port_label(port), uid, object, port, port, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_port_sleep_number(unsigned port) {
     char object[32];
     snprintf(object, sizeof(object), "p%u_sleep", port);
@@ -789,6 +810,7 @@ static void discovery_publish(int i) {
         else if (e == PORT_SENSOR_N + 8) publish_port_autooff_switch(port);
         else if (e == PORT_SENSOR_N + 9) publish_port_sleep_number(port);
         else if (e == PORT_SENSOR_N + 10) publish_port_volt_select(port);
+        else if (e == PORT_PROTECT) publish_port_protect_switch(port);
         else publish_port_temp(port, e - PORT_TEMP_FIRST);
         return;
     }
@@ -961,7 +983,7 @@ static void publish_telemetry(void) {
         snprintf(payload_buf, sizeof(payload_buf),
                  "{\"state\":\"%s\",\"gen\":%u,\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
                  "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"max_v\":%u,"
-                 "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
+                 "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"protect\":%s,\"sleep_min\":%u,"
                  "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu,"
                  "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u,"
                  "\"update_due\":%s,\"silent\":%s}",
@@ -973,6 +995,7 @@ static void publish_telemetry(void) {
                  settings_port_boot_name(g_settings.port_boot[i]),
                  p->charged ? "true" : "false",
                  (g_settings.port_auto_off >> i) & 1 ? "true" : "false",
+                 (g_settings.port_protect >> i) & 1 ? "true" : "false",
                  g_settings.port_sleep_min[i], p->fault_bits, lf_text, (unsigned long)lf_at,
                  tc, tp, tm, p->update_pct,
                  p->update_due ? "true" : "false", p->silent ? "true" : "false");
@@ -1012,14 +1035,15 @@ static const char *evt_name(evt_type_t t) {
     case EVT_CHARGE:       return "charge";
     case EVT_UPDATE:       return "update";
     case EVT_BUS:          return "bus";
+    case EVT_PD_RESET:     return "pd_reset";
     default:               return "?";
     }
 }
 
 void mqtt_event(const engine_evt_t *e) {
     if (!mqtt_is_connected()) return; // transient events aren't queued
-    char text[48] = "";
-    if (e->type == EVT_FAULT || e->type == EVT_PROBE_FAIL || e->type == EVT_BUS) {
+    char text[64] = "";
+    if (e->type == EVT_FAULT || e->type == EVT_PROBE_FAIL || e->type == EVT_BUS || e->type == EVT_PD_RESET) {
         fault_rec_t r = {.port = e->port, .type = e->type, .code = e->code, .arg = e->arg};
         fault_text(&r, text, sizeof(text)); // plain words: no escaping needed
     } else if (e->type == EVT_CHARGE && e->code == CHARGE_AUTO_OFF) {

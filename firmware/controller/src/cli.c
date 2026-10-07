@@ -82,6 +82,7 @@ static void print_help(void) {
            "  port <1-%d> boot on|off|last    state at power-up (last = as switched)\n"
            "  port <1-%d> autooff on|off      switch off once the sink is charged\n"
            "  port <1-%d> sleep <min>|off     switch off this long after a sink attaches\n"
+           "  port <1-%d> protect on|off      power sharing never changes a running device's power\n"
            "  charged <mW> <minutes>       charged = draw under mW for minutes (0 mW = off)\n"
            "  blades                       the bundled gen-3 blade firmware and the update policy\n"
            "  blades auto on|off           rewrite blades running another version (default on)\n"
@@ -112,7 +113,8 @@ static void print_help(void) {
            "  update source <http-url>|default|off\n"
            "                               where the daily check asks; 'off' = never ask (then 'save')\n"
            "  save | defaults | reboot | bootsel\n",
-           NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS);
+           NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS, NUM_PORTS,
+           NUM_PORTS);
 }
 
 static void print_status(void) {
@@ -148,8 +150,9 @@ static void print_status(void) {
     printf("charged: under %umW for %umin", g_settings.charged_mw, g_settings.charged_min);
     if (!g_settings.charged_mw) printf(" (detection off)");
     for (int i = 0; i < NUM_PORTS; i++) {
-        if (!((g_settings.port_auto_off >> i) & 1) && !g_settings.port_sleep_min[i]) continue;
-        printf("; port %d:%s", i + 1, (g_settings.port_auto_off >> i) & 1 ? " off when charged" : "");
+        bool off = (g_settings.port_auto_off >> i) & 1, prot = (g_settings.port_protect >> i) & 1;
+        if (!off && !prot && !g_settings.port_sleep_min[i]) continue;
+        printf("; port %d:%s%s", i + 1, prot ? " protected" : "", off ? " off when charged" : "");
         if (g_settings.port_sleep_min[i]) printf(" sleep %umin", g_settings.port_sleep_min[i]);
     }
     printf("\n");
@@ -681,7 +684,17 @@ static void run_line(char *l) {
         const char *n = strtok_r(NULL, " \t", &save);
         const char *op = strtok_r(NULL, " \t", &save);
         uint8_t port;
-        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|update|priority|name|limit|volt|boot|autooff|sleep\n", NUM_PORTS); return; }
+        if (!n || !op || !port_arg(n, &port)) { printf("usage: port <1-%d> on|off|reset|srccap|update|priority|name|limit|volt|boot|autooff|sleep|protect\n", NUM_PORTS); return; }
+        if (!strcmp(op, "protect")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (!v || (strcmp(v, "on") && strcmp(v, "off"))) { printf("usage: port <1-%d> protect on|off\n", NUM_PORTS); return; }
+            uint8_t bit = (uint8_t)(1u << port);
+            if (!strcmp(v, "on")) g_settings.port_protect |= bit;
+            else g_settings.port_protect &= (uint8_t)~bit;
+            printf("port %u %s from the next device plugged in ('save' to persist)\n", port + 1,
+                   !strcmp(v, "on") ? "protected" : "not protected");
+            return;
+        }
         if (!strcmp(op, "autooff")) {
             const char *v = strtok_r(NULL, " \t", &save);
             if (!v || (strcmp(v, "on") && strcmp(v, "off"))) { printf("usage: port <1-%d> autooff on|off\n", NUM_PORTS); return; }

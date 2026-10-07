@@ -183,7 +183,14 @@ typedef enum {
     EVT_CHARGE,       // code = CHARGE_*, arg: minutes since attach (DONE/RESUMED) or AUTO_OFF_*
     EVT_UPDATE,       // code = UPDATE_*, arg = the blade firmware version now running, major << 16 | minor << 8 | patch
     EVT_BUS,          // core 0 only, fault-log record: the DC bus crossed the low flag; code = BUS_*, arg = bus mV
+    EVT_PD_RESET,     // fault-log record: a PD hard reset on the port; code = PD_RESET_*, arg = ms since new capabilities went to the sink, PD_RESET_NO_READV if none did while it was attached
 } evt_type_t;
+
+// EVT_PD_RESET codes: which side sent the hard reset. Either way VBUS goes
+// off for a moment and the sink starts over.
+#define PD_RESET_SENT      0 // the blade gave up on the sink (no answer to new capabilities, a protocol error)
+#define PD_RESET_RECEIVED  1 // the sink sent it
+#define PD_RESET_NO_READV  0xFFFFFFFFu
 
 // EVT_BUS codes. The low flag is VIN_LOW_MV in vin.h (19 V). About a volt
 // below that the backplane switches the whole bus off, controller included,

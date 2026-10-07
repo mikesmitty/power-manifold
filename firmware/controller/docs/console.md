@@ -49,6 +49,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `port <n> limit <500-5000>` | advertised current ceiling in mA, every PDO |
 | `port <n> volt 5\|9\|12\|15\|20` | voltage cap: the highest PDO advertised (20 = the whole table) |
 | `port <n> boot on\|off\|last` | state at power-up |
+| `port <n> protect on\|off` | protect running device: the offer is settled at plug-in and never changed by power sharing while the sink stays attached |
 | `port <n> autooff on\|off` | switch off once the sink is charged |
 | `port <n> sleep <min>\|off` | switch off this long after a sink attaches |
 | `charged <mW> <minutes>` | charge-complete thresholds; 0 mW switches detection off |

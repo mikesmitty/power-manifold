@@ -53,6 +53,13 @@
 #define UNTHROTTLE_STEP_MIN_MW     5000
 #define UNTHROTTLE_STEP_HOLDOFF_MS 1000
 
+// No offer in either blade's table is above 100 W (USB PD SPR)
+#define PORT_TABLE_MAX_MW 100000
+
+// Hard resets reported from one poll at most: a blade that counted more
+// than this between two polls is in a loop, and a few events say so.
+#define PD_RESET_EVENTS_MAX 4
+
 typedef struct {
     port_state_t state;
     blade_gen_t gen;         // which generation answered the probe
@@ -83,12 +90,19 @@ typedef struct {
     uint32_t contract_mw;
     uint32_t denied_mw;      // contract that budget refused; unthrottle target
     uint32_t granted_ma;     // current ceiling currently programmed
+    bool     protect;        // settings port_protect, taken when the device plugged in: power sharing leaves the port alone until it is unplugged
+    uint32_t protect_mw;     // ...the power set aside for everything the port offers
+    uint32_t protect_ma;     // ...and the current ceiling of that offer
+    uint32_t readv_ms;       // when the attached sink was last sent new capabilities, 0 = not since it attached
+    bool     hr_seen;        // the blade's hard-reset counts below are a baseline (cleared by a new probe)
+    uint8_t  hr_sent, hr_received;
     blade_status_t st;       // what the blade last reported
 } port_ctx_t;
 
 static port_ctx_t ctx[NUM_PORTS];
 static bool hold_updates; // port_fsm_hold_updates
 static uint32_t ceiling_ma; // chassis-wide current ceiling from port_fsm_set_ceiling, 0 = none
+static uint32_t clock_ms;   // the time of the tick in progress, or of the last one for a command
 
 // The current limit port i should be programmed with right now: the port's
 // own setting, unless the chassis-wide ceiling is lower. Core 0 sets the
@@ -97,6 +111,45 @@ static uint32_t ceiling_ma; // chassis-wide current ceiling from port_fsm_set_ce
 static uint32_t limit_for(uint8_t i) {
     uint32_t ma = g_settings.port_limit_ma[i];
     return ceiling_ma && ceiling_ma < ma ? ceiling_ma : ma;
+}
+
+// The ceiling port i should have when the budget is not clamping it:
+// limit_for, or less on a protected port whose offer was trimmed when its
+// device plugged in (protect_claim).
+static uint32_t ceiling_for(uint8_t i) {
+    uint32_t ma = limit_for(i);
+    return ctx[i].protect && ctx[i].protect_ma < ma ? ctx[i].protect_ma : ma;
+}
+
+// Program the blade's limits. With a sink attached a gen-3 blade sends it
+// new capabilities whenever its table changes (a gen-2 part when asked to),
+// and the moment is kept: a hard reset soon after it is reported against it.
+static bool set_limits(uint8_t i, uint32_t ma, uint32_t mv, bool readvertise) {
+    if (ctx[i].st.attached) ctx[i].readv_ms = clock_ms ? clock_ms : 1;
+    return blade_set_limits(ctx[i].gen, ma, mv, readvertise);
+}
+
+// Top voltage of the port's table under its voltage cap, as the blades
+// build it (blade_regs.h BLADE_MAX_MV_ALL): 5 V always, the fixed levels up
+// to the cap, the PPS range to 11 V from an 11 V cap, and everything, the
+// 21 V PPS range included, from 20 V.
+static uint32_t table_top_mv(uint32_t cap_mv) {
+    if (cap_mv >= BLADE_MAX_MV_ALL) return 21000;
+    if (cap_mv >= 15000) return 15000;
+    if (cap_mv >= 12000) return 12000;
+    if (cap_mv >= 11000) return 11000;
+    if (cap_mv >= 9000) return 9000;
+    return 5000;
+}
+
+// The largest offer in a table with this current ceiling and voltage cap
+static uint32_t table_mw(uint32_t ma, uint32_t cap_mv) {
+    uint32_t mw = ma * table_top_mv(cap_mv) / 1000;
+    return mw < PORT_TABLE_MAX_MW ? mw : PORT_TABLE_MAX_MW;
+}
+
+static bool protect_setting(uint8_t i) {
+    return (g_settings.port_protect >> i) & 1u;
 }
 
 const char *port_state_name(port_state_t s) {
@@ -128,6 +181,7 @@ static void power_down(uint8_t i, port_state_t next) {
     tca9539_set_en(i, false);
     budget_release(i);
     ctx[i].contract_mw = 0;
+    ctx[i].protect = false;
     ctx[i].silent = false;
     memset(&ctx[i].st, 0, sizeof(ctx[i].st));
     if (next == PORT_STATE_ABSENT) {
@@ -162,6 +216,7 @@ static void start_probe(uint8_t i) {
     ctx[i].en_on_ms = 0;
     ctx[i].denied_mw = 0; // stale asks must not inflate a new throttle epoch
     ctx[i].step_after_ms = 0;
+    ctx[i].hr_seen = false; // the blade may have restarted: its counts start over
     enter(i, PORT_STATE_PROBE); // ctx.warm stands until the probe concludes
 }
 
@@ -275,6 +330,7 @@ static void warm_probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
     if (p->silent || ++p->probe_attempts < PROBE_MAX_ATTEMPTS) return;
     emit(EVT_PROBE_FAIL, i, fail, p->probe_attempts);
     p->silent = true;
+    p->protect = false;
     budget_force_reserve(i, BUDGET_BASE_RESERVE_MW); // what it draws is not known; it is not nothing
 }
 
@@ -283,7 +339,10 @@ static void warm_probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
 // a new fault (the usual path: EN off, cooldown, re-probe). The blade's
 // configuration is checked against the settings and rewritten — and
 // re-advertised to an attached sink — only when it differs, so a live
-// contract is normally not interrupted. Its firmware is left alone
+// contract is normally not interrupted. A protected port with a device
+// running on it keeps the offer the blade already holds, whatever the
+// settings say, and has that offer's power set aside again: the restart
+// must not be what changes it. Its firmware is left alone
 // here whatever the controller would change about it: that waits for the
 // port to be idle (blade_wants). A blade that will not answer stays
 // powered too (warm_probe_failed).
@@ -293,6 +352,8 @@ static void warm_probe(uint8_t i, uint32_t now_ms) {
         ctx[i].silent_check_ms = now_ms + SILENT_RECHECK_MS;
     }
     uint16_t fail = 0;
+    uint32_t ma = limit_for(i), mv = g_settings.port_max_mv[i];
+    bool keep = false;
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
     } else {
@@ -302,7 +363,8 @@ static void warm_probe(uint8_t i, uint32_t now_ms) {
             read_identity(i);
             if (ctx[i].id_ok && !blade_wants(i)) ctx[i].update_rounds = 0; // running what it should
         }
-        fail = blade_adopt(ctx[i].gen, limit_for(i), g_settings.port_max_mv[i], &ctx[i].st);
+        keep = protect_setting(i) && blade_running_limits(ctx[i].gen, &ma, &mv);
+        fail = blade_adopt(ctx[i].gen, ma, mv, &ctx[i].st);
         if (!fail && ctx[i].st.fault_bits) {
             ctx[i].warm = false;
             ctx[i].silent = false;
@@ -317,8 +379,15 @@ static void warm_probe(uint8_t i, uint32_t now_ms) {
     }
     ctx[i].warm = false;
     ctx[i].silent = false;
-    ctx[i].granted_ma = limit_for(i);
-    budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
+    ctx[i].granted_ma = ma;
+    ctx[i].protect = keep;
+    if (keep) {
+        ctx[i].protect_ma = ma;
+        ctx[i].protect_mw = table_mw(ma, mv);
+        budget_force_reserve(i, ctx[i].protect_mw); // the device is drawing on it already
+    } else {
+        budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
+    }
     go_idle(i, now_ms); // an attached sink moves it on to ACTIVE next tick
 }
 
@@ -399,7 +468,7 @@ static void apply_throttle(uint8_t i, uint32_t grant_mw, uint32_t want_mw,
     // contract: skip it. The port stays throttled and tries again later.
     if (evt_code == THROTTLE_STEP && ma <= ctx[i].granted_ma) return;
 
-    blade_set_limits(ctx[i].gen, ma, g_settings.port_max_mv[i], true);
+    set_limits(i, ma, g_settings.port_max_mv[i], true);
     ctx[i].granted_ma = ma;
     budget_force_reserve(i, grant_mw);
     ctx[i].contract_mw = grant_mw;
@@ -419,8 +488,9 @@ static void throttle(uint8_t i, uint32_t want_mw) {
 
 // Make room for claimant's want_mw by clamping strictly lower-priority powered
 // ports, worst priority first (ties: biggest reservation first). Equal
-// priority never sheds — first come, first served among peers. Victims keep
-// their original ask in denied_mw and recover through the same path as a
+// priority never sheds — first come, first served among peers — and a
+// protected port is never a victim, whatever its priority. Victims keep their
+// original ask in denied_mw and recover through the same path as a
 // self-clamped port. Restores the claimant's mux channel before returning.
 static void shed_lower_priority(uint8_t claimant, uint32_t want_mw) {
     uint32_t others = budget_reserved() - budget_port_reservation(claimant);
@@ -436,6 +506,7 @@ static void shed_lower_priority(uint8_t claimant, uint32_t want_mw) {
                 ctx[j].state != PORT_STATE_THROTTLED)
                 continue;
             if (ctx[j].silent) continue; // cannot be told anything
+            if (ctx[j].protect) continue; // its device is never renegotiated
             if (prio(j) <= prio(claimant)) continue;
             if (budget_port_reservation(j) <= BUDGET_BASE_RESERVE_MW) continue;
             if (v < 0 || prio(j) > prio((uint8_t)v) ||
@@ -458,6 +529,33 @@ static void shed_lower_priority(uint8_t claimant, uint32_t want_mw) {
     tca9548a_select(claimant);
 }
 
+// A device has just plugged into a protected port. Everything the port
+// offers is set aside, so that nothing the device asks for later needs the
+// offer changed. Lower-priority ports are turned down first if that makes
+// room, as for any other port, and only what is still missing is trimmed
+// from this port's own offer, now, while the device is still starting up.
+// From here on power sharing leaves the port alone until the device is
+// unplugged. Also called when the port's limits are changed by hand while
+// a device is on it. The caller has the port's mux channel selected.
+static void protect_claim(uint8_t i) {
+    port_ctx_t *p = &ctx[i];
+    uint32_t mv = g_settings.port_max_mv[i];
+    uint32_t want = table_mw(limit_for(i), mv);
+    shed_lower_priority(i, want);
+    uint32_t have = budget_headroom() + budget_port_reservation(i);
+    uint32_t grant = want < have ? want : have;
+    if (grant < BUDGET_BASE_RESERVE_MW) grant = BUDGET_BASE_RESERVE_MW;
+    p->protect = true;
+    p->protect_mw = grant;
+    p->protect_ma = grant >= want ? limit_for(i) : grant * 1000 / table_top_mv(mv);
+    budget_force_reserve(i, grant);
+    if (p->granted_ma != ceiling_for(i)) {
+        set_limits(i, ceiling_for(i), mv, true);
+        p->granted_ma = ceiling_for(i);
+        emit(EVT_THROTTLE, i, THROTTLE_CLAMPED, grant);
+    }
+}
+
 // Any strictly higher-priority throttled port that still wants more goes
 // first: since recovery can happen in partial steps, it can use whatever
 // headroom exists, so freed watts always flow top-down by priority.
@@ -475,9 +573,9 @@ static bool recovery_should_yield(uint8_t i) {
 static void unthrottle(uint8_t i) {
     // (unless the chassis ceiling already holds the port at that limit: then
     // the table is right as it is, and only the state changes)
-    if (ctx[i].granted_ma != limit_for(i)) {
-        blade_set_limits(ctx[i].gen, limit_for(i), g_settings.port_max_mv[i], true);
-        ctx[i].granted_ma = limit_for(i);
+    if (ctx[i].granted_ma != ceiling_for(i)) {
+        set_limits(i, ceiling_for(i), g_settings.port_max_mv[i], true);
+        ctx[i].granted_ma = ceiling_for(i);
     }
     emit(EVT_THROTTLE, i, THROTTLE_RESTORED, ctx[i].contract_mw);
     enter(i, PORT_STATE_ACTIVE);
@@ -493,6 +591,7 @@ static void auto_off(uint8_t i, uint32_t why) {
 
 static void attach_begin(uint8_t i, uint32_t now_ms) {
     ctx[i].attached_at_ms = now_ms;
+    ctx[i].readv_ms = 0;
     ctx[i].side_since_ms = now_ms;
     ctx[i].low_side = false;
     ctx[i].charged = false;
@@ -557,6 +656,26 @@ static void blade_silent(uint8_t i, uint32_t now_ms) {
     p->silent_check_ms = now_ms + SILENT_RECHECK_MS;
 }
 
+// Report the PD hard resets the blade counted since the last poll, each
+// with how long after new capabilities went to the sink it came. That
+// answers whether renegotiating is what costs a sink its power. The first
+// poll after a probe only takes the counts as they stand.
+static void note_hard_resets(uint8_t i, uint32_t now_ms) {
+    port_ctx_t *p = &ctx[i];
+    uint8_t sent = (uint8_t)(p->st.hr_sent - p->hr_sent);
+    uint8_t received = (uint8_t)(p->st.hr_received - p->hr_received);
+    bool seen = p->hr_seen;
+    p->hr_sent = p->st.hr_sent;
+    p->hr_received = p->st.hr_received;
+    p->hr_seen = true;
+    if (!seen) return;
+    uint32_t since = p->readv_ms ? now_ms - p->readv_ms : PD_RESET_NO_READV;
+    for (uint8_t n = 0; n < sent && n < PD_RESET_EVENTS_MAX; n++)
+        emit(EVT_PD_RESET, i, PD_RESET_SENT, since);
+    for (uint8_t n = 0; n < received && n < PD_RESET_EVENTS_MAX; n++)
+        emit(EVT_PD_RESET, i, PD_RESET_RECEIVED, since);
+}
+
 // Shared telemetry + fault polling for powered states. Returns false if the
 // port just faulted, was depowered, went back to PROBE, or is silent (the
 // state stands, on nothing newer than its last answer).
@@ -595,9 +714,11 @@ static bool poll_powered(uint8_t i, bool present, uint32_t now_ms) {
     if (!ctx[i].st.configured) {
         budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
         ctx[i].contract_mw = 0;
+        ctx[i].protect = false;
         start_probe(i);
         return false;
     }
+    note_hard_resets(i, now_ms);
     return true;
 }
 
@@ -606,6 +727,15 @@ static void track_contract(uint8_t i) {
     if (want < BUDGET_BASE_RESERVE_MW) want = BUDGET_BASE_RESERVE_MW;
     if (want == ctx[i].contract_mw) return;
 
+    if (ctx[i].protect) {
+        // Everything it offers is set aside already, so the contract is
+        // only recorded. The table's currents round down, so no contract
+        // can need more than that; one read just before a trim at plug-in
+        // can show more, and is not a reason to take more.
+        ctx[i].contract_mw = want;
+        emit(EVT_CONTRACT, i, ctx[i].st.selected_pdo, want);
+        return;
+    }
     if (!budget_try_reserve(i, want)) {
         shed_lower_priority(i, want);
         if (!budget_try_reserve(i, want)) {
@@ -635,20 +765,22 @@ void port_fsm_set_ceiling(uint32_t ma) {
 }
 
 // Called every tick for a powered port. If the limit the port should have
-// (limit_for) differs from the one programmed into the blade, reprogram it.
-// That happens when the port's limit setting changes or when the chassis
-// ceiling goes on or off. One exception: a port throttled by the budget is
-// already below the limit it should have, and raising it is the job of the
-// recovery code in port_fsm_tick, not this function. When a sink is attached
-// the blade re-sends its source capabilities and the sink picks a contract
-// within the new limit. The caller has already selected the port's mux
-// channel (poll_powered does).
+// (ceiling_for) differs from the one programmed into the blade, reprogram
+// it. That happens when the port's limit setting changes or when the
+// chassis ceiling goes on or off. The ceiling is a safety rule, so it
+// reaches protected ports too. One
+// exception: a port throttled by the budget is already below the limit it
+// should have, and raising it is the job of the recovery code in
+// port_fsm_tick, not this function. When a sink is attached the blade
+// re-sends its source capabilities and the sink picks a contract within the
+// new limit. The caller has already selected the port's mux channel
+// (poll_powered does).
 static void sync_limit(uint8_t i) {
     port_ctx_t *p = &ctx[i];
-    uint32_t want = limit_for(i);
+    uint32_t want = ceiling_for(i);
     if (p->granted_ma == want) return;
     if (p->state == PORT_STATE_THROTTLED && p->granted_ma < want) return;
-    blade_set_limits(p->gen, want, g_settings.port_max_mv[i], p->st.attached);
+    set_limits(i, want, g_settings.port_max_mv[i], p->st.attached);
     p->granted_ma = want;
 }
 
@@ -701,6 +833,7 @@ uint8_t port_fsm_boot_inventory(const bool *present, uint8_t powered, uint32_t n
 void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
                    port_telemetry_t *out) {
     port_ctx_t *p = &ctx[i];
+    clock_ms = now_ms;
 
     switch (p->state) {
     case PORT_STATE_ABSENT:
@@ -722,6 +855,9 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         if (p->st.attached) {
             attach_begin(i, now_ms);
             enter(i, PORT_STATE_ACTIVE);
+            // (a port adopted at a warm start with its device running is
+            // protected already, on the offer it had)
+            if (!p->protect && protect_setting(i)) protect_claim(i);
             track_contract(i);
         } else if (now_ms - p->idle_since_ms >= UPDATE_IDLE_MS) {
             // nothing plugged in for a while: the moment for whatever the
@@ -736,6 +872,7 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         if (!poll_powered(i, present, now_ms)) break;
         if (!p->st.attached) {
             budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
+            p->protect = false;
             p->contract_mw = 0;
             p->denied_mw = 0;
             sync_limit(i); // the sink is gone, so any budget clamp is over: back to the full limit
@@ -818,7 +955,9 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     out->bus_mv = p->st.bus_mv;
     out->current_ma = p->st.current_ma;
     out->power_mw = p->st.power_mw;
-    out->contract_mw = budget_port_reservation(i);
+    // what the port holds, except that a protected port shows its device's
+    // contract rather than all it has set aside
+    out->contract_mw = p->protect && p->st.attached ? p->contract_mw : budget_port_reservation(i);
     out->temp_conv_dc = p->st.has_temps ? p->st.temp_conv_dc : PORT_TEMP_NONE;
     out->temp_plug_dc = p->st.has_temps ? p->st.temp_plug_dc : PORT_TEMP_NONE;
     out->temp_mcu_dc = p->st.has_temps ? p->st.temp_mcu_dc : PORT_TEMP_NONE;
@@ -874,25 +1013,35 @@ void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {
         if (powered && tca9548a_select(i)) blade_hard_reset(ctx[i].gen);
         break;
     case CMD_PORT_SRC_CAP:
-        if (powered && tca9548a_select(i)) blade_send_src_cap(ctx[i].gen);
+        if (!powered || !tca9548a_select(i)) break;
+        if (ctx[i].st.attached) ctx[i].readv_ms = clock_ms ? clock_ms : 1;
+        blade_send_src_cap(ctx[i].gen);
         break;
     case CMD_PORT_LIMIT: {
         // core 0 stored the new setting first; a port that is not powered
         // picks it up when it next probes. The INA226 trip stays put.
-        uint32_t limit = limit_for(i); // the new setting, or the chassis ceiling if that is lower
         if (!powered || !tca9548a_select(i)) break;
+        if (ctx[i].protect) {
+            // a change asked for by hand reaches a protected port too, as a
+            // fresh claim on the new limit
+            protect_claim(i);
+            break;
+        }
+        uint32_t limit = limit_for(i); // the new setting, or the chassis ceiling if that is lower
         if (ctx[i].state == PORT_STATE_THROTTLED && ctx[i].granted_ma <= limit)
             break; // the budget clamp is tighter; recovery restores to the new limit
         // renegotiated now when a sink is on
-        blade_set_limits(ctx[i].gen, limit, g_settings.port_max_mv[i], ctx[i].st.attached);
+        set_limits(i, limit, g_settings.port_max_mv[i], ctx[i].st.attached);
         ctx[i].granted_ma = limit;
         break;
     }
     case CMD_PORT_VOLT:
         // same shape: stored by core 0, re-advertised now if the port is
-        // powered; the current ceiling in force (a budget clamp included) stays
+        // powered; the current ceiling in force (a budget clamp included)
+        // stays, except that a protected port claims afresh for its new cap
         if (!powered || !tca9548a_select(i)) break;
-        blade_set_limits(ctx[i].gen, ctx[i].granted_ma, cmd->arg, ctx[i].st.attached);
+        if (ctx[i].protect) protect_claim(i);
+        set_limits(i, ctx[i].granted_ma, cmd->arg, ctx[i].st.attached);
         break;
     default:
         break;

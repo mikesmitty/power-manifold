@@ -41,6 +41,7 @@ const uint8_t *sim_blade_flash(uint8_t slot);
 uint32_t sim_blade_flash_version(uint8_t slot); // major << 16 | minor << 8 | patch, 0xFFFFFFFF without an image
 void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma); // sink plugs in
 void sim_detach(uint8_t slot);
+void sim_pd_hard_reset(uint8_t slot, bool by_sink); // gen 3: a PD hard reset, counted the way the blade counts it
 
 // fault injection
 void sim_set_mpq_fault(uint8_t slot, uint8_t fault_bits); // gen 2: sticky until cleared

@@ -68,7 +68,7 @@ entity IDs don't change.
 | **State** | `idle`, `active`, `throttled`, `fault` and so on. Its attributes include the most recent fault and when it happened. |
 | **Charging** | On while a device is plugged in and still charging. |
 | **Converter temperature**, **plug temperature** | Blade temperatures. They read *unknown* while the port is off. |
-| **Priority**, **current limit**, **voltage cap**, **power-up state**, **switch off when charged**, **sleep timer** | The [port settings](/guide/port-settings/). |
+| **Priority**, **current limit**, **voltage cap**, **power-up state**, **protect running device**, **switch off when charged**, **sleep timer** | The [port settings](/guide/port-settings/). |
 | **Hard reset** | Briefly cuts the port so the device starts its connection over. |
 | **Re-announce** | Sends the device the port's offer again. |
 | **Events** | Fires on plug-in, unplug, charged, faults and more. See below. |
@@ -104,6 +104,7 @@ Its event types are:
 | `inserted` / `removed` / `ready` | The controller found a port, lost contact with it, or the port finished starting up. |
 | `contract` | The device switched to a different voltage or current. |
 | `probe_failed` | A blade didn't respond while starting up. |
+| `pd_reset` | The port or the device reset the USB-C connection, which briefly cuts the device's power. The `text` attribute says which side did it and, if the port's offer had changed since the device was plugged in, how long before. |
 | `updated` | The blade's firmware was updated. |
 
 **Example: get a notification when a port faults.**

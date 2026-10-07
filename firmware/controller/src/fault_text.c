@@ -75,6 +75,15 @@ size_t fault_text(const fault_rec_t *r, char *buf, size_t cap) {
         n = put(buf, cap, n, r->code == BUS_LOW ? "bus low: " : "bus recovered: ");
         return put(buf, cap, n, v);
     }
+    case EVT_PD_RESET: {
+        n = put(buf, cap, n, r->code == PD_RESET_RECEIVED ? "PD hard reset by the device"
+                                                          : "PD hard reset by the port");
+        if (r->arg == PD_RESET_NO_READV) return n;
+        char t[32];
+        snprintf(t, sizeof(t), ", %lu.%02lu s after new offer", (unsigned long)r->arg / 1000,
+                 (unsigned long)(r->arg % 1000) / 10);
+        return put(buf, cap, n, t);
+    }
     case EVT_BOOT: {
         boot_cause_t b = {.reason = (boot_reason_t)(r->code & 0xFF),
                          .core = (uint8_t)(r->code >> 8),

@@ -143,7 +143,9 @@ static bool commit(fault_rec_t *rec) {
 }
 
 void fault_log_event(const engine_evt_t *e) {
-    if (e->type != EVT_FAULT && e->type != EVT_PROBE_FAIL && e->type != EVT_BUS) return;
+    if (e->type != EVT_FAULT && e->type != EVT_PROBE_FAIL && e->type != EVT_BUS &&
+        e->type != EVT_PD_RESET)
+        return;
 
     fault_rec_t rec;
     record_init(&rec, e->port, e->type, e->code, e->arg);
@@ -152,8 +154,10 @@ void fault_log_event(const engine_evt_t *e) {
         ipc_snapshot_read(&t);
         rec.power_mw = t.port[e->port].power_mw;
         rec.contract_mw = t.port[e->port].contract_mw;
-        last[e->port] = rec; // every event, even the ones the ring rate-limits away
-        have_last[e->port] = true;
+        if (e->type == EVT_FAULT || e->type == EVT_PROBE_FAIL) {
+            last[e->port] = rec; // every one, even those the ring rate-limits away
+            have_last[e->port] = true;
+        }
     }
     if (!available) return;
 

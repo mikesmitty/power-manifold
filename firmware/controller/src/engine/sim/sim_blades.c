@@ -70,6 +70,7 @@ typedef struct {
     uint8_t  flash[SIM_FLASH_SIZE];
     uint32_t src_caps;
     uint32_t hard_resets;
+    uint8_t  hr_sent, hr_received; // gen 3: the blade's PD hard-reset counters (BLADE_REG_HR_*)
     uint32_t en_changes;   // every time EN actually moved
 } sim_slot_t;
 
@@ -200,6 +201,7 @@ static void mcu_reset(sim_slot_t *s, bool from_go) {
     s->adv_ma = 0;
     s->adv_mv = 0;
     s->faults = BLADE_FAULT_RESET;
+    s->hr_sent = s->hr_received = 0;
     s->busy_polls = 0;
     s->loader = !from_go && (s->boot_via_loader || flash_page0_empty(s));
     s->locked_up = false;
@@ -300,6 +302,13 @@ void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma) {
     s->req_mv = req_mv;
     s->req_ma = req_ma;
     renegotiate(s);
+}
+
+void sim_pd_hard_reset(uint8_t slot, bool by_sink) {
+    sim_slot_t *s = &slots[slot];
+    if (by_sink) s->hr_received++;
+    else s->hr_sent++;
+    renegotiate(s); // the sink starts over and asks for the same again
 }
 
 void sim_detach(uint8_t slot) {
@@ -631,6 +640,8 @@ bool blade3_read_status(blade3_status_t *st) {
     st->faults = s->faults;
     st->contract_mv = contract ? s->con_mv : 0;
     st->contract_ma = contract ? (uint16_t)s->con_ma : 0;
+    st->hr_sent = s->hr_sent;
+    st->hr_received = s->hr_received;
     if (!up || !s->attached) {
         st->vbus_mv = 0;
         st->iout_ma = 0;
@@ -682,6 +693,7 @@ bool blade3_command(uint8_t cmd) {
         break;
     case BLADE_CMD_HARD_RESET:
         s->hard_resets++;
+        s->hr_sent++;
         break;
     case BLADE_CMD_CLEAR_FAULTS:
         s->clears++;

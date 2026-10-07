@@ -104,6 +104,9 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = putf(out, cap, off, "],\"port_auto_off\":[");
     for (int i = 0; i < NUM_PORTS; i++)
         off = putf(out, cap, off, "%s%u", i ? "," : "", (s->port_auto_off >> i) & 1);
+    off = putf(out, cap, off, "],\"port_protect\":[");
+    for (int i = 0; i < NUM_PORTS; i++)
+        off = putf(out, cap, off, "%s%u", i ? "," : "", (s->port_protect >> i) & 1);
     off = putf(out, cap, off, "],\"port_sleep_min\":[");
     for (int i = 0; i < NUM_PORTS; i++)
         off = putf(out, cap, off, "%s%u", i ? "," : "", s->port_sleep_min[i]);
@@ -361,6 +364,11 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
             if (v < 0 || v > 1) return "port_auto_off: 0 or 1 each";
             if (v) s->port_auto_off |= (uint8_t)(1u << i);
             else s->port_auto_off &= (uint8_t)~(1u << i);
+        }
+        if (json_get_int_at(body, "port_protect", (unsigned)i, &v)) {
+            if (v < 0 || v > 1) return "port_protect: 0 or 1 each";
+            if (v) s->port_protect |= (uint8_t)(1u << i);
+            else s->port_protect &= (uint8_t)~(1u << i);
         }
         if (json_get_int_at(body, "port_sleep_min", (unsigned)i, &v)) {
             if (v < 0 || v > PORT_SLEEP_MAX_MIN) return "port_sleep_min: 0-" STR(PORT_SLEEP_MAX_MIN) " each";

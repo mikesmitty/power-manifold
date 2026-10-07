@@ -58,6 +58,7 @@ static void fill(settings_t *s) {
     s->charged_mw = 750;
     s->charged_min = 20;
     s->port_auto_off = 0x15;
+    s->port_protect = 0x22;
     s->led_dim = 3;
     s->led_night_start = 22 * 60;
     s->led_night_end = 6 * 60 + 30;
@@ -89,6 +90,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"ip\":\"10.100.55.202\"") != NULL);
     MT_ASSERT(strstr(json, "\"port_priorities\":[5,4,3,2,1,0]") != NULL);
     MT_ASSERT(strstr(json, "\"port_auto_off\":[1,0,1,0,1,0]") != NULL);
+    MT_ASSERT(strstr(json, "\"port_protect\":[0,1,0,0,0,1]") != NULL);
     MT_ASSERT(strstr(json, "\"led_night\":\"22:00-06:30\"") != NULL);
     MT_ASSERT(strstr(json, "\"tz_offset_min\":-240") != NULL);
     MT_ASSERT(strstr(json, "\"vin_cal\":1023") != NULL);
@@ -163,6 +165,8 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"port_sleep_min\":[0,1441]}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"charged_min\":0}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"port_auto_off\":[2]}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"port_protect\":[0,2]}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"port_protect\":[1,0,1]}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"led_night\":\"22:00\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"tz_offset_min\":900}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"vin_cal\":1200}", false) != NULL);

@@ -92,6 +92,8 @@ typedef struct {
     uint8_t  mqtt_tls;        // MQTT_TLS_OFF, _VERIFIED or _UNVERIFIED (above; net/mqtt_tls.h)
     uint16_t mqtt_ca_len;     // bytes of mqtt_ca in use, 0 = none installed
     uint8_t  mqtt_ca[MQTT_CA_MAX]; // one DER certificate: the broker's CA, or the broker's own self-signed one
+    // -- added in layout version 18 --
+    uint8_t  port_protect;    // bit N set: power sharing never changes port N's offer once a device is running on it (port_fsm.c)
     uint32_t crc; // must remain last
 } settings_t;
 

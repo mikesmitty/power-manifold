@@ -47,6 +47,10 @@ typedef struct {
     uint16_t bus_mv;
     int32_t  current_ma;
     uint32_t power_mw;
+    // PD hard resets since the blade's MCU started, each count wrapping
+    // (gen 3; a gen-2 blade has no counters and leaves them 0)
+    uint8_t  hr_sent;     // the blade gave up on the sink
+    uint8_t  hr_received; // the sink asked for one
     // Temperatures, 0.1 degC, valid once a gen-3 blade has been polled (a
     // gen-2 blade has no thermometer the controller can read). PORT_TEMP_NONE
     // is what the blade itself reports for an open or shorted NTC.
@@ -80,6 +84,11 @@ uint16_t blade_setup(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv);
 // its configuration against ours and rewrite it — re-advertising to an
 // attached sink — only when it differs, so a live contract is not interrupted.
 uint16_t blade_adopt(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv, blade_status_t *st);
+// The limits a gen-3 blade holds while a device is on its port and the
+// blade still has the configuration it was given: what a restarted
+// controller leaves alone on a protected port. False otherwise, and always
+// for a gen-2 blade, whose limits are not read back.
+bool blade_running_limits(blade_gen_t gen, uint32_t *ma, uint32_t *mv);
 
 // Telemetry, contract and faults. `alert` also reads the latch only the
 // alert sweep clears (a gen-2 blade's INA226). False: the blade did not

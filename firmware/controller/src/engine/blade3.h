@@ -19,6 +19,8 @@ typedef struct {
     uint16_t faults;      // BLADE_FAULT_*, latched on the blade
     uint16_t contract_mv;
     uint16_t contract_ma; // the operating current the sink asked for
+    uint8_t  hr_sent;     // PD hard resets the blade sent, wrapping (0 on a blade without the counters)
+    uint8_t  hr_received; // ...and the sink sent
     uint16_t vbus_mv;
     uint16_t iout_ma;
     uint16_t vout_mv;     // converter output ahead of the VBUS switch

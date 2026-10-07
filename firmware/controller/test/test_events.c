@@ -35,6 +35,8 @@ static void test_other_events(void) {
     MT_ASSERT(!strcmp(kind(EVT_CHARGE, CHARGE_DONE, 42), "charged"));
     MT_ASSERT(!strcmp(kind(EVT_CHARGE, CHARGE_RESUMED, 50), "charging"));
     MT_ASSERT(!strcmp(kind(EVT_CHARGE, CHARGE_AUTO_OFF, AUTO_OFF_SLEEP), "auto_off"));
+    MT_ASSERT(!strcmp(kind(EVT_PD_RESET, PD_RESET_SENT, 30), "pd_reset"));
+    MT_ASSERT(!strcmp(kind(EVT_PD_RESET, PD_RESET_RECEIVED, PD_RESET_NO_READV), "pd_reset"));
     MT_ASSERT(!strcmp(kind(EVT_BOOT, 0, 0), "")); // never reaches MQTT anyway
 }
 
@@ -50,7 +52,7 @@ static void test_every_kind_is_published(void) {
             MT_ASSERT(strstr(EVENT_KINDS_JSON, quoted) != NULL);
         }
     }
-    const uint8_t types[] = {EVT_FAULT, EVT_CONTRACT, EVT_PROBE_FAIL, EVT_THROTTLE, EVT_CHARGE};
+    const uint8_t types[] = {EVT_FAULT, EVT_CONTRACT, EVT_PROBE_FAIL, EVT_THROTTLE, EVT_CHARGE, EVT_PD_RESET};
     for (size_t i = 0; i < sizeof(types); i++) {
         for (uint16_t code = 0; code < 3; code++) {
             const char *k = kind(types[i], code, 0);

@@ -49,6 +49,8 @@ static bool poll3(blade_status_t *st) {
     st->bus_mv       = s.vbus_mv;
     st->current_ma   = s.iout_ma;
     st->power_mw     = ((uint32_t)s.vbus_mv * s.iout_ma) / 1000;
+    st->hr_sent      = s.hr_sent;
+    st->hr_received  = s.hr_received;
     st->has_temps    = true;
     st->temp_conv_dc = s.temp_conv_dc;
     st->temp_plug_dc = s.temp_plug_dc;
@@ -76,6 +78,17 @@ static uint16_t adopt3(uint32_t max_ma, uint32_t max_mv, blade_status_t *st) {
                 have.watch_s == want.watch_s;
     if (!same && !blade3_write_config(&want)) return PROBE_FAIL_BLADE;
     return 0;
+}
+
+static bool running3(uint32_t *ma, uint32_t *mv) {
+    blade3_status_t s;
+    blade3_config_t c;
+    if (!blade3_read_status(&s) || !blade3_read_config(&c)) return false;
+    if (!(s.status & BLADE_ST_ATTACHED) || !(s.status & BLADE_ST_CONFIGURED) || !c.port_en)
+        return false;
+    *ma = c.max_ma;
+    *mv = c.max_mv;
+    return true;
 }
 
 // ---- gen 2 -----------------------------------------------------------------
@@ -177,6 +190,10 @@ uint16_t blade_adopt(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv, blade_st
     case BLADE_GEN_3: return adopt3(max_ma, max_mv, st);
     default:          return PROBE_FAIL_NONE;
     }
+}
+
+bool blade_running_limits(blade_gen_t gen, uint32_t *ma, uint32_t *mv) {
+    return gen == BLADE_GEN_3 && running3(ma, mv);
 }
 
 bool blade_poll(blade_gen_t gen, bool alert, blade_status_t *st) {

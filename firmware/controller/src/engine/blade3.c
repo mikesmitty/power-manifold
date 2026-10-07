@@ -46,6 +46,8 @@ bool blade3_read_status(blade3_status_t *s) {
     s->faults       = u16(b + BLADE_REG_FAULT - BLADE_REG_STATUS);
     s->contract_mv  = u16(b + BLADE_REG_CONTRACT_MV - BLADE_REG_STATUS);
     s->contract_ma  = u16(b + BLADE_REG_CONTRACT_MA - BLADE_REG_STATUS);
+    s->hr_sent      = b[BLADE_REG_HR_SENT - BLADE_REG_STATUS];
+    s->hr_received  = b[BLADE_REG_HR_RECEIVED - BLADE_REG_STATUS];
     s->vbus_mv      = u16(b + BLADE_REG_VBUS_MV - BLADE_REG_STATUS);
     s->iout_ma      = u16(b + BLADE_REG_IOUT_MA - BLADE_REG_STATUS);
     s->vout_mv      = u16(b + BLADE_REG_VOUT_MV - BLADE_REG_STATUS);

@@ -306,7 +306,8 @@ static void build_faults_json(char *out, size_t cap, int offset) {
         const char *type = r.type == EVT_FAULT ? "fault"
                          : r.type == EVT_PROBE_FAIL ? "probe_fail"
                          : r.type == EVT_BOOT ? "boot"
-                         : r.type == EVT_BUS ? "bus" : "?";
+                         : r.type == EVT_BUS ? "bus"
+                         : r.type == EVT_PD_RESET ? "pd_reset" : "?";
         bool port_rec = r.type != EVT_BOOT; // boot records reuse the mW fields
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"seq\":%lu,\"epoch\":%lu,\"uptime_s\":%lu,\"port\":%u,"

@@ -134,6 +134,12 @@ static void test_fault_text(void) {
     r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = 9};
     fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "probe: stopped answering"));
+    r = (fault_rec_t){.type = EVT_PD_RESET, .code = PD_RESET_RECEIVED, .arg = PD_RESET_NO_READV};
+    fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "PD hard reset by the device"));
+    r = (fault_rec_t){.type = EVT_PD_RESET, .code = PD_RESET_SENT, .arg = 1234};
+    fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "PD hard reset by the port, 1.23 s after new offer"));
     r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = 99};
     fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "probe: ?"));

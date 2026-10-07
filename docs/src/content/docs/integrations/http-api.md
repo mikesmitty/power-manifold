@@ -237,7 +237,7 @@ the same keys, so you can edit an export and post it back.
 | Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `syslog_host`, `syslog_port`, `update_url` |
 | Power | `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`, `charged_mw`, `charged_min` |
 | Lights | `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`, `tz_offset_min` |
-| Ports (arrays of six) | `port_names`, `port_limits_ma`, `port_max_v`, `port_priorities`, `port_boot`, `port_auto_off`, `port_sleep_min` |
+| Ports (arrays of six) | `port_names`, `port_limits_ma`, `port_max_v`, `port_priorities`, `port_boot`, `port_protect`, `port_auto_off`, `port_sleep_min` |
 | Input voltage | `vin_cal` |
 
 The name, Wi-Fi, MQTT broker and addressing apply after
