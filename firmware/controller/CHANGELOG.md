@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.15.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.14.0...controller-firmware-v0.15.0) (2026-10-07)
+
+
+### Features
+
+* **controller:** call the radio setup path "Wi-Fi setup" instead of Bluetooth ([1fe6332](https://github.com/mikesmitty/power-manifold/commit/1fe6332c3b7bf130ceecb9b35956c0a2c88b029b))
+* **controller:** protect running devices from renegotiation ([9e4f559](https://github.com/mikesmitty/power-manifold/commit/9e4f559a0b26ae9a26aa5cedf5dc17336549ac1e))
+
+
+### Bug Fixes
+
+* **controller:** announce the blade "updated" event to Home Assistant ([2481aee](https://github.com/mikesmitty/power-manifold/commit/2481aee970cd8108212bd32246ec7bc6dffbe2c7))
+* **controller:** use US wording in the page, console and Home Assistant ([0cc130f](https://github.com/mikesmitty/power-manifold/commit/0cc130f87fa020b362b499ff01ce5a7ea38063b1))
+
 ## [0.14.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.13.0...controller-firmware-v0.14.0) (2026-10-06)
 
 
