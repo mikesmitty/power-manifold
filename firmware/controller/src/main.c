@@ -285,7 +285,7 @@ int main(void) {
 
             int saved = settings_save_poll(now_ms);
             if (saved) {
-                printf(saved > 0 ? "settings: saved (remote change)\n"
+                printf(saved > 0 ? "settings: saved\n"
                                  : "settings: save failed\n");
             }
         }

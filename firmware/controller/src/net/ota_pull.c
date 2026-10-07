@@ -55,16 +55,33 @@ static err_t headers_cb(httpc_state_t *c, void *arg, struct pbuf *hdr,
     return ERR_OK;
 }
 
+// Why a download ended early, in words for the console
+static const char *result_text(httpc_result_t res) {
+    switch (res) {
+    case HTTPC_RESULT_ERR_CONNECT:     return "could not connect to the server";
+    case HTTPC_RESULT_ERR_HOSTNAME:    return "the server's name did not resolve";
+    case HTTPC_RESULT_ERR_CLOSED:      return "the server closed the connection";
+    case HTTPC_RESULT_ERR_TIMEOUT:     return "the server stopped sending";
+    case HTTPC_RESULT_ERR_SVR_RESP:    return "the server sent an error";
+    case HTTPC_RESULT_ERR_MEM:         return "out of memory";
+    case HTTPC_RESULT_LOCAL_ABORT:     return "aborted";
+    case HTTPC_RESULT_ERR_CONTENT_LEN: return "the download ended before the image did";
+    default:                           return "unknown error";
+    }
+}
+
 static void result_cb(void *arg, httpc_result_t res, u32_t rx_len,
                       u32_t srv_res, err_t err) {
-    (void)arg; (void)rx_len;
+    (void)arg; (void)err;
     busy = false;
     conn = NULL;
     if (feed_failed) return; // already reported and aborted
     if (res != HTTPC_RESULT_OK || srv_res != 200) {
         update_abort();
-        printf("update: pull failed (result %d, http %lu, err %d)\n",
-               (int)res, (unsigned long)srv_res, (int)err);
+        if (srv_res && srv_res != 200)
+            printf("update: pull failed: the server answered HTTP %lu\n", (unsigned long)srv_res);
+        else
+            printf("update: pull failed after %lu bytes: %s\n", (unsigned long)rx_len, result_text(res));
         return;
     }
     char e[96];
