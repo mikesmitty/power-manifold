@@ -13,4 +13,4 @@ const char *event_kind(const engine_evt_t *e);
 #define EVENT_KINDS_JSON                                                       \
     "[\"inserted\",\"ready\",\"attached\",\"detached\",\"removed\",\"enabled\"," \
     "\"disabled\",\"contract\",\"throttled\",\"restored\",\"fault\",\"probe_failed\"," \
-    "\"charged\",\"charging\",\"auto_off\",\"pd_reset\"]"
+    "\"charged\",\"charging\",\"auto_off\",\"updated\",\"pd_reset\"]"

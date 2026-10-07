@@ -61,6 +61,9 @@ static void test_every_kind_is_published(void) {
             MT_ASSERT(strstr(EVENT_KINDS_JSON, quoted) != NULL);
         }
     }
+    // a blade update only becomes an event when the bundle was written
+    MT_ASSERT(!strcmp(kind(EVT_UPDATE, UPDATE_WRITTEN, 0), "updated"));
+    MT_ASSERT(strstr(EVENT_KINDS_JSON, "\"updated\"") != NULL);
 }
 
 void run_event_tests(void) {
