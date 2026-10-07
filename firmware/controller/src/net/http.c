@@ -53,6 +53,7 @@
 #define REBOOT_DELAY_MS 300  // API reboot: let the response leave first
 #define SETUP_SECRET_TTL_MS (10 * 60 * 1000) // Improv redirect secret
 #define SETUP_ETH_WINDOW_MS (60 * 60 * 1000) // first hour on Ethernet with no token stored
+#define HOST_NAMES_DOCS "https://docs.powermanifold.io/integrations/network/#host-names"
 #define STR_(x) #x
 #define STR(x) STR_(x)
 
@@ -647,6 +648,12 @@ static void respond_settings_locked(conn_t *c) {
 // site that points its own domain at the controller's address (DNS
 // rebinding) sends that domain instead, so it can neither read the status
 // pages nor use a setup door (see http_req.h).
+static const char WRONG_HOST_HTML[] =
+    "<!doctype html><meta charset=utf-8><meta name=viewport content=\"width=device-width\">"
+    "<title>Not this name</title><p>This controller does not answer to this name.</p>"
+    "<p>Open it by its IP address, then add the name under Settings, Network, Host names. "
+    "See <a href=\"" HOST_NAMES_DOCS "\">" HOST_NAMES_DOCS "</a>.</p>\n";
+
 static bool host_allowed(const conn_t *c) {
     char ip[IP4ADDR_STRLEN_MAX] = "";
     if (c->pcb) ip4addr_ntoa_r(ip_2_ip4(&c->pcb->local_ip), ip, sizeof(ip));
@@ -1136,9 +1143,7 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
 
         char *hdr_end = strstr(c->req, "\r\n\r\n");
         if (hdr_end && !host_allowed(c)) {
-            respond(c, 403, "Forbidden", "text/plain",
-                    "This controller does not answer to this name. Open it by its IP address "
-                    "and add the name to the hostnames setting.\n");
+            respond(c, 403, "Forbidden", "text/html", WRONG_HOST_HTML);
         } else if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19) &&
                    (c->req[19] == ' ' || c->req[19] == '?')) {
             // the image upload only: /api/v1/update/check and /latest are requests
