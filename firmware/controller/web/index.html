@@ -228,6 +228,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     <div class="three"><label>IP address<input id="ip" name="ip" placeholder="10.0.0.20"></label><label>Netmask<input id="mask" name="mask" placeholder="255.255.255.0"></label><label>Gateway<input id="gw" name="gw" placeholder="10.0.0.1"></label></div>
     <div class="two"><label>DNS server<span class="h">Blank: from DHCP</span><input id="dns" name="dns" placeholder="10.0.0.1"></label><label>Time server<span class="h">Blank: DHCP's, else {{NET_NTP_DEFAULT}}</span><input id="ntp" name="ntp" maxlength="63"></label></div>
     <div class="two"><label>Syslog host<span class="h">Blank: off</span><input id="slh" name="slh" maxlength="63"></label><label>Syslog port<input id="slp" name="slp" type="number" min="1" max="65535"></label></div>
+    <label>Host names<span class="h">Other names this page is opened by, such as a DNS or tailnet name, separated by spaces. The IP address and the device name with .local always work.</span><input id="hosts" name="hosts" maxlength="255"></label>
    </fieldset>
    <fieldset><legend>MQTT</legend>
     <div class="two"><label>Broker<span class="h">Blank: MQTT off</span><input id="mhost" name="mhost" maxlength="63"></label><label>Port<input id="mport" name="mport" type="number" min="1" max="65535"></label></div>
@@ -391,7 +392,7 @@ $('pt').innerHTML=[1,2,3,4,5,6].map(n=>`<tr><td>${n}</td><td><input name="pn${n}
 const Q=p=>[...F.querySelectorAll(`[name^=${p}]`)],PN=Q('pn'),PL=Q('pl'),PB=Q('pb'),PV=Q('pv'),PA=Q('pa'),PR=Q('pr'),PS=Q('ps'),
 KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',
  led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',gw:'gateway',dns:'dns',ntp:'ntp_server',mca:'mqtt_ca',slh:'syslog_host',
- slp:'syslog_port',upd:'update_url',chmw:'charged_mw',chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},
+ slp:'syslog_port',upd:'update_url',hosts:'hostnames',chmw:'charged_mw',chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},
 NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1},
 hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{},
 BT='bearer token required',cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1)+'.':'Not allowed.';

@@ -39,6 +39,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `ip dhcp` / `ip static <addr> <mask> <gw>` | addressing: the wired link if a W6100 is present, else WiFi |
 | `dns <addr>\|auto` | resolver override |
 | `ntp <host>\|auto` | time server override |
+| `hostnames <name>...\|clear` | more names the web server answers to; its IP address and `<name>.local` always work |
 | `syslog <host> [port]` / `syslog off` | mirror the console to a UDP syslog host |
 | `name <device-name>` | hostname and topic id |
 | `token <t>\|clear` | API bearer token; with none stored the network API refuses every change until one is set here, through Improv, or in the first hour on Ethernet |

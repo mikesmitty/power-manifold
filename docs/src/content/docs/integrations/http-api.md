@@ -173,9 +173,11 @@ A change without the token gets `401`:
 
 On a controller with no token yet, the reply is
 `{"error": "no API token set yet: finish first-time setup first"}`.
-During first-time setup, a settings request must address the controller by
-its IP address or its name (`Host` header), or it gets `403`. A settings
-change must be sent with `Content-Type: application/json`, or it gets `415`.
+A request whose `Host` header is not the controller's IP address, its
+device name, the device name with `.local`, or one of its
+[host names](/integrations/network/#host-names) gets `403`. During
+first-time setup, a settings change must be sent with
+`Content-Type: application/json`, or it gets `415`.
 A bad value gets `400` with the reason, such as
 `{"error": "port_limits_ma: 500-5000 mA each"}`.
 
@@ -251,7 +253,7 @@ the same keys, so you can edit an export and post it back.
 | Device | `name`, `token` |
 | Wi-Fi | `wifi_ssid`, `wifi_pass` |
 | MQTT | `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`, `mqtt_tls_verify`, `mqtt_ca` (PEM) |
-| Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `syslog_host`, `syslog_port`, `update_url` |
+| Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `hostnames`, `syslog_host`, `syslog_port`, `update_url` |
 | Power | `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`, `charged_mw`, `charged_min` |
 | Lights | `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`, `tz_offset_min` |
 | Ports (arrays of six) | `port_names`, `port_limits_ma`, `port_max_v`, `port_priorities`, `port_boot`, `port_protect`, `port_auto_off`, `port_sleep_min` |

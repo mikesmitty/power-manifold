@@ -20,6 +20,7 @@
 #define SETTINGS_MAGIC 0x504D4643u // "PMFC"
 #define PORT_NAME_MAX  23          // bytes, excluding the NUL
 #define MQTT_CA_MAX    2048        // bytes of DER: room for any public root, with a margin
+#define HOSTNAMES_MAX  128         // bytes of the hostnames list, with the NUL
 // settings mqtt_tls, the broker link's transport (net/mqtt_tls.h)
 #define MQTT_TLS_OFF        0 // plain MQTT
 #define MQTT_TLS_VERIFIED   1 // TLS; the broker's chain must lead to mqtt_ca, or to a built-in Let's Encrypt root when none is installed
@@ -94,6 +95,8 @@ typedef struct {
     uint8_t  mqtt_ca[MQTT_CA_MAX]; // one DER certificate: the broker's CA, or the broker's own self-signed one
     // -- added in layout version 18 --
     uint8_t  port_protect;    // bit N set: power sharing never changes port N's offer once a device is running on it (port_fsm.c)
+    // -- added in layout version 19 --
+    char     hostnames[HOSTNAMES_MAX]; // extra names the web server answers to, space-separated, lowercase (net/http_req.h)
     uint32_t crc; // must remain last
 } settings_t;
 

@@ -23,6 +23,14 @@ bool http_req_header(const char *req, const char *name, char *out, size_t cap);
 bool http_req_is_json(const char *req);
 
 // Host names the controller itself: its address on the connection (dotted
-// IPv4 text), its device name, or the device name under .local, with an
-// optional :80. False when Host is absent or names anything else.
-bool http_req_host_ok(const char *req, const char *local_ip, const char *device_name);
+// IPv4 text), its device name, the device name under .local, or one of the
+// owner's extra names (the hostnames setting: lowercase, space-separated),
+// with an optional :80. False when Host is absent or names anything else.
+bool http_req_host_ok(const char *req, const char *local_ip, const char *device_name,
+                      const char *hostnames);
+
+// The hostnames setting from what the owner typed: names separated by spaces
+// or commas, each a DNS name (letters, digits, hyphens and dots, without a
+// port). Written to out lowercase, single-spaced, with any trailing dot
+// dropped; empty input clears the list. NULL on success, else the reason.
+const char *http_req_hostnames_parse(const char *in, char *out, size_t cap);

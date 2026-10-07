@@ -1,6 +1,6 @@
 ---
 title: Network settings
-description: Fixed IP addresses, DNS, the time server, an encrypted MQTT connection, syslog and the update source.
+description: Fixed IP addresses, DNS, host names, the time server, an encrypted MQTT connection, syslog and the update source.
 sidebar:
   order: 3
 ---
@@ -19,6 +19,23 @@ stays on DHCP. Without Ethernet it goes on Wi-Fi.
 
 **DNS server** overrides the one your router hands out. Leave it blank to
 use your router's, or the gateway's when the address is fixed.
+
+## Host names
+
+The controller answers only to its IP address and to its device name, such
+as `pwrman.local`. A request that uses any other name gets a page saying the
+controller does not answer to that name. This stops a website you visit from
+reaching the controller through a DNS name of its own.
+
+To open the controller by another name, add that name to **Host names**.
+Examples include a name your router registers (such as `pwrman.lan` or
+`pwrman.home.arpa`), a DNS record you created, a Tailscale MagicDNS name, or
+the name of a reverse proxy that passes the original name through.
+Separate several names with spaces. The IP address always works, so a
+missing name can be added by opening the controller by its address.
+
+Monitoring tools and scripts that reach the controller by name, such as a
+Prometheus scrape of `/metrics`, need that name in **Host names** as well.
 
 ## Time server
 

@@ -40,25 +40,57 @@ static void test_json_content_type(void) {
 
 static void test_host_names_the_controller(void) {
     const char *ip = "192.168.1.50", *name = "pwrman";
-    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50\r\n", ""), ip, name));
-    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50:80\r\n", ""), ip, name));
-    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman\r\n", ""), ip, name));
-    MT_ASSERT(http_req_host_ok(REQ("Host: PwrMan.local\r\n", ""), ip, name));
-    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local.\r\n", ""), ip, name));
+    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50\r\n", ""), ip, name, ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50:80\r\n", ""), ip, name, ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman\r\n", ""), ip, name, ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: PwrMan.local\r\n", ""), ip, name, ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local.\r\n", ""), ip, name, ""));
+}
+
+// The owner's own names for the controller: a LAN DNS record, a tailnet
+// name, a proxy that passes Host through
+static void test_host_extra_names(void) {
+    const char *ip = "192.168.1.50", *name = "pwrman", *list = "pm.home.lan pm.tail1234.ts.net";
+    MT_ASSERT(http_req_host_ok(REQ("Host: pm.home.lan\r\n", ""), ip, name, list));
+    MT_ASSERT(http_req_host_ok(REQ("Host: PM.Tail1234.ts.net.:80\r\n", ""), ip, name, list));
+    // the address and the device name stay allowed whatever the list holds
+    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50\r\n", ""), ip, name, list));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local\r\n", ""), ip, name, list));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pm.home\r\n", ""), ip, name, list));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: home.lan\r\n", ""), ip, name, list));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: x.pm.home.lan\r\n", ""), ip, name, list));
+}
+
+static void test_hostnames_parse(void) {
+    char out[64];
+    MT_ASSERT(http_req_hostnames_parse(" PM.Home.LAN, pm.tail1234.ts.net. ,,", out, sizeof(out)) == NULL);
+    MT_ASSERT(!strcmp(out, "pm.home.lan pm.tail1234.ts.net"));
+    MT_ASSERT(http_req_hostnames_parse("", out, sizeof(out)) == NULL);
+    MT_ASSERT(!strcmp(out, ""));
+    MT_ASSERT(http_req_hostnames_parse("pm.home.lan:8080", out, sizeof(out)) != NULL);
+    MT_ASSERT(http_req_hostnames_parse("pm_home", out, sizeof(out)) != NULL);
+    MT_ASSERT(http_req_hostnames_parse("pm..lan", out, sizeof(out)) != NULL);
+    MT_ASSERT(http_req_hostnames_parse(".lan", out, sizeof(out)) != NULL);
+    MT_ASSERT(http_req_hostnames_parse("-pm.lan", out, sizeof(out)) != NULL);
+    MT_ASSERT(http_req_hostnames_parse("pm.-x", out, sizeof(out)) != NULL);
+    MT_ASSERT(http_req_hostnames_parse("http://pm.lan", out, sizeof(out)) != NULL);
+    // a list that does not fit is refused whole
+    MT_ASSERT(http_req_hostnames_parse("aaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbb cccccccccccccccccccc dddd",
+                                       out, sizeof(out)) != NULL);
 }
 
 // A rebinding page's requests name its own domain.
 static void test_host_refuses_other_names(void) {
     const char *ip = "192.168.1.50", *name = "pwrman";
-    MT_ASSERT(!http_req_host_ok(REQ("Host: evil.example\r\n", ""), ip, name));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrman.evil.example\r\n", ""), ip, name));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrmanx.local\r\n", ""), ip, name));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.5\r\n", ""), ip, name));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.50:8080\r\n", ""), ip, name));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: \r\n", ""), ip, name));
-    MT_ASSERT(!http_req_host_ok(REQ("", ""), ip, name));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: evil.example\r\n", ""), ip, name, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrman.evil.example\r\n", ""), ip, name, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrmanx.local\r\n", ""), ip, name, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.5\r\n", ""), ip, name, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.50:8080\r\n", ""), ip, name, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: \r\n", ""), ip, name, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("", ""), ip, name, ""));
     // an empty device name never matches a bare .local
-    MT_ASSERT(!http_req_host_ok(REQ("Host: .local\r\n", ""), ip, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: .local\r\n", ""), ip, "", ""));
 }
 
 void run_http_req_tests(void) {
@@ -67,4 +99,6 @@ void run_http_req_tests(void) {
     mt_run("http_req: only application/json counts as JSON", test_json_content_type);
     mt_run("http_req: Host may name the controller", test_host_names_the_controller);
     mt_run("http_req: Host naming anything else is refused", test_host_refuses_other_names);
+    mt_run("http_req: the owner's extra names are allowed", test_host_extra_names);
+    mt_run("http_req: the hostnames setting is checked and tidied", test_hostnames_parse);
 }

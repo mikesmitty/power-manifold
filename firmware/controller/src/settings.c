@@ -13,7 +13,7 @@
 // this against a pair of sectors in RAM.
 
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    18
+#define SETTINGS_VERSION    19
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -37,6 +37,7 @@
 #define SETTINGS_V15_PAYLOAD ALIGN4(offsetof(settings_t, ntp_server))
 #define SETTINGS_V16_PAYLOAD ALIGN4(offsetof(settings_t, mqtt_tls))
 #define SETTINGS_V17_PAYLOAD ALIGN4(offsetof(settings_t, port_protect))
+#define SETTINGS_V18_PAYLOAD ALIGN4(offsetof(settings_t, hostnames))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -58,7 +59,8 @@ _Static_assert(SETTINGS_V14_PAYLOAD == 664, "settings v14 layout moved");
 _Static_assert(SETTINGS_V15_PAYLOAD == 728, "settings v15 layout moved");
 _Static_assert(SETTINGS_V16_PAYLOAD == 792, "settings v16 layout moved");
 _Static_assert(SETTINGS_V17_PAYLOAD == 2844, "settings v17 layout moved");
-_Static_assert(offsetof(settings_t, crc) == 2848, "settings v18 layout moved");
+_Static_assert(SETTINGS_V18_PAYLOAD == 2848, "settings v18 layout moved");
+_Static_assert(offsetof(settings_t, crc) == 2976, "settings v19 layout moved");
 _Static_assert(sizeof(settings_t) <= SETTINGS_SECTOR_SIZE, "settings record outgrew its sector");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
@@ -113,6 +115,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t record_payload_len(const settings_t *s) {
     switch (s->version) {
     case SETTINGS_VERSION: return payload_len();
+    case 18:               return SETTINGS_V18_PAYLOAD;
     case 17:               return SETTINGS_V17_PAYLOAD;
     case 16:               return SETTINGS_V16_PAYLOAD;
     case 15:               return SETTINGS_V15_PAYLOAD;
@@ -262,6 +265,7 @@ void settings_load(void) {
             memset(g_settings.mqtt_ca, 0, sizeof(g_settings.mqtt_ca));
         }
         if (g_settings.version < 18) g_settings.port_protect = 0;
+        if (g_settings.version < 19) memset(g_settings.hostnames, 0, sizeof(g_settings.hostnames));
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();

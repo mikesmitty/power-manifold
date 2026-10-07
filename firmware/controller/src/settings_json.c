@@ -6,6 +6,7 @@
 
 #include "ip4_text.h"
 #include "led_sched.h"
+#include "net/http_req.h"
 #include "net/jsonlite.h"
 #include "net/mqtt_tls.h"
 #include "pem.h"
@@ -71,6 +72,7 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_str(out, cap, off, "syslog_host", s->syslog_host);
     off = put_str(out, cap, off, "update_url", s->update_url);
     off = put_str(out, cap, off, "ntp_server", s->ntp_server);
+    off = put_str(out, cap, off, "hostnames", s->hostnames);
     // the certificate goes out as PEM, its line ends already escaped
     off = putf(out, cap, off, "\"mqtt_tls\":%s,\"mqtt_tls_verify\":%s,\"mqtt_ca\":\"",
                s->mqtt_tls != MQTT_TLS_OFF ? "true" : "false", s->mqtt_tls != MQTT_TLS_UNVERIFIED ? "true" : "false");
@@ -217,6 +219,12 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
             memset(s->mqtt_ca + n, 0, sizeof(s->mqtt_ca) - n);
             s->mqtt_ca_len = (uint16_t)n;
         }
+    }
+    char names[2 * HOSTNAMES_MAX];
+    int got_names = json_get_str(body, "hostnames", names, sizeof(names));
+    if (got_names) {
+        if (got_names < 0) return "hostnames: the list is too long";
+        if ((err = http_req_hostnames_parse(names, s->hostnames, sizeof(s->hostnames)))) return err;
     }
     char source[sizeof(s->update_url) + 8];
     int got = json_get_str(body, "update_url", source, sizeof(source));

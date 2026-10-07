@@ -1,5 +1,6 @@
 #include "http_req.h"
 
+#include <ctype.h>
 #include <string.h>
 #include <strings.h>
 
@@ -34,8 +35,21 @@ bool http_req_is_json(const char *req) {
     return v[16] == '\0' || v[16] == ';' || v[16] == ' ';
 }
 
-bool http_req_host_ok(const char *req, const char *local_ip, const char *device_name) {
-    char host[96];
+// name (n bytes, any case) is one of the space-separated entries in list
+static bool listed(const char *name, size_t n, const char *list) {
+    for (const char *p = list; *p;) {
+        while (*p == ' ') p++;
+        const char *e = p;
+        while (*e && *e != ' ') e++;
+        if ((size_t)(e - p) == n && n && !strncasecmp(p, name, n)) return true;
+        p = e;
+    }
+    return false;
+}
+
+bool http_req_host_ok(const char *req, const char *local_ip, const char *device_name,
+                      const char *hostnames) {
+    char host[256];
     if (!http_req_header(req, "Host", host, sizeof(host))) return false;
     char *colon = strchr(host, ':');
     if (colon) {
@@ -46,7 +60,37 @@ bool http_req_host_ok(const char *req, const char *local_ip, const char *device_
     if (n && host[n - 1] == '.') host[--n] = '\0'; // a fully qualified name may end in a dot
     if (!n) return false;
     if (!strcmp(host, local_ip)) return true;
+    if (listed(host, n, hostnames)) return true;
     size_t d = strlen(device_name);
     if (!d || strncasecmp(host, device_name, d)) return false;
     return host[d] == '\0' || !strcasecmp(host + d, ".local");
+}
+
+const char *http_req_hostnames_parse(const char *in, char *out, size_t cap) {
+    size_t off = 0;
+    out[0] = '\0';
+    for (const char *p = in; *p;) {
+        while (*p == ' ' || *p == ',') p++;
+        if (!*p) break;
+        const char *e = p;
+        while (*e && *e != ' ' && *e != ',') e++;
+        size_t n = (size_t)(e - p);
+        if (p[n - 1] == '.') n--; // a fully qualified name may end in a dot
+        if (!n) return "hostnames: an entry is empty";
+        for (size_t i = 0; i < n; i++) {
+            char c = p[i];
+            if (c == ':') return "hostnames: give names without a port";
+            if (!isalnum((unsigned char)c) && c != '-' && c != '.')
+                return "hostnames: letters, digits, hyphens and dots only";
+            // every dot-separated label is non-empty and starts with a letter or digit
+            if ((i == 0 || p[i - 1] == '.') && (c == '.' || c == '-'))
+                return "hostnames: an entry is not a valid name";
+        }
+        if (off + (off ? 1 : 0) + n >= cap) return "hostnames: the list is too long";
+        if (off) out[off++] = ' ';
+        for (size_t i = 0; i < n; i++) out[off++] = (char)tolower((unsigned char)p[i]);
+        out[off] = '\0';
+        p = e;
+    }
+    return NULL;
 }

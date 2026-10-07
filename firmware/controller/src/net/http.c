@@ -647,20 +647,21 @@ static void respond_settings_locked(conn_t *c) {
     respond(c, 401, "Unauthorized", "application/json", b);
 }
 
-// A request let in by a setup door carries no credential, so it must also
-// show that it came from the controller's own page and not from a web page on
-// another site that the owner happens to have open (see http_req.h). Its Host
-// must name the controller, which refuses a page that points its own domain
-// at the controller's address, and a POST must declare a JSON body, which a
-// page on another site cannot send here. True once refused and answered.
-static bool setup_request_refused(conn_t *c) {
+// Every request must name the controller in Host: its address, its device
+// name, name.local, or one of the owner's hostnames. A web page on another
+// site that points its own domain at the controller's address (DNS
+// rebinding) sends that domain instead, so it can neither read the status
+// pages nor use a setup door (see http_req.h).
+static bool host_allowed(const conn_t *c) {
     char ip[IP4ADDR_STRLEN_MAX] = "";
     if (c->pcb) ip4addr_ntoa_r(ip_2_ip4(&c->pcb->local_ip), ip, sizeof(ip));
-    if (!http_req_host_ok(c->req, ip, g_settings.device_name)) {
-        respond(c, 403, "Forbidden", "application/json",
-                "{\"error\":\"during first-time setup, open the controller by its address or its name\"}");
-        return true;
-    }
+    return http_req_host_ok(c->req, ip, g_settings.device_name, g_settings.hostnames);
+}
+
+// A request let in by a setup door carries no credential, so a POST must
+// also declare a JSON body, which a web page on another site cannot send
+// here. True once refused and answered.
+static bool setup_request_refused(conn_t *c) {
     if (c->req[0] == 'P' && !http_req_is_json(c->req)) {
         respond(c, 415, "Unsupported Media Type", "application/json",
                 "{\"error\":\"settings must be sent as application/json\"}");
@@ -1139,9 +1140,13 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
         c->req[c->req_len] = '\0';
 
         char *hdr_end = strstr(c->req, "\r\n\r\n");
-        // the image upload only: /api/v1/update/check and /latest are requests
-        if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19) &&
-            (c->req[19] == ' ' || c->req[19] == '?')) {
+        if (hdr_end && !host_allowed(c)) {
+            respond(c, 403, "Forbidden", "text/plain",
+                    "This controller does not answer to this name. Open it by its IP address "
+                    "and add the name to the hostnames setting.\n");
+        } else if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19) &&
+                   (c->req[19] == ' ' || c->req[19] == '?')) {
+            // the image upload only: /api/v1/update/check and /latest are requests
             update_post_start(c, hdr_end + 4);
             // body bytes past what fit in req[] are still in this pbuf
             if (c->updating && copied < p->tot_len) update_feed(c, p, copied);

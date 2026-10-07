@@ -54,6 +54,7 @@ static void fill(settings_t *s) {
     strcpy(s->syslog_host, "logs.example");
     strcpy(s->update_url, "http://updates.example:8080/fw");
     strcpy(s->ntp_server, "ntp.example");
+    strcpy(s->hostnames, "pm.home.lan pm.tail1234.ts.net");
     s->syslog_port = 5514;
     s->charged_mw = 750;
     s->charged_min = 20;
@@ -98,6 +99,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
     MT_ASSERT(strstr(json, "\"ntp_server\":\"ntp.example\"") != NULL);
+    MT_ASSERT(strstr(json, "\"hostnames\":\"pm.home.lan pm.tail1234.ts.net\"") != NULL);
     MT_ASSERT(strstr(json, "\"mqtt_tls\":true,\"mqtt_tls_verify\":false") != NULL);
     MT_ASSERT(strstr(json, "\"mqtt_ca\":\"-----BEGIN CERTIFICATE-----\\n") != NULL);
 
@@ -161,6 +163,9 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"update_url\":\"\"}", false) == NULL); // empty = never ask
     MT_ASSERT(apply_fresh("{\"ntp_server\":\"bad host\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"ntp_server\":\"\"}", false) == NULL); // empty = automatic
+    MT_ASSERT(apply_fresh("{\"hostnames\":\"pm.home.lan:8080\"}", false) != NULL);
+    MT_ASSERT(apply_fresh("{\"hostnames\":\"pm.home.lan, pm.ts.net\"}", false) == NULL);
+    MT_ASSERT(apply_fresh("{\"hostnames\":\"\"}", false) == NULL); // empty = the address and name only
     MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"not base64!\"}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"MIIB\"}", false) != NULL); // base64, but no certificate shape
     MT_ASSERT(apply_fresh("{\"mqtt_ca\":\"\"}", false) == NULL);     // empty = none installed

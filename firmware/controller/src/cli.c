@@ -30,6 +30,7 @@
 #include "log_sink.h"
 #include "manifold.h"
 #include "net/eth.h"
+#include "net/http_req.h"
 #include "net/improv.h"
 #include "net/mqtt.h"
 #include "net/mqtt_tls.h"
@@ -79,6 +80,7 @@ static void print_help(void) {
            "                               addressing (wired link if a W6100 is fitted, else WiFi)\n"
            "  dns <addr>|auto              resolver override (auto: DHCP's, or the gateway when static)\n"
            "  ntp <host>|auto              time server (auto: DHCP's, else " NET_NTP_DEFAULT ")\n"
+           "  hostnames <name>...|clear    more names the web server answers to (always: its address, name.local)\n"
            "  syslog <host> [port] | syslog off\n"
            "                               mirror the console to a UDP syslog host (RFC 5424)\n"
            "  name <device-name>           hostname / topic id\n"
@@ -215,6 +217,8 @@ static void print_info(void) {
     }
     printf("dns: %s%s\n", net_dns_str(), g_settings.ip_dns ? " (configured)" : "");
     printf("ntp: %s\n", net_ntp_str());
+    printf("hostnames: %s.local%s%s\n", g_settings.device_name,
+           g_settings.hostnames[0] ? " " : "", g_settings.hostnames);
     printf("syslog: %s", log_sink_status());
     if (g_settings.syslog_host[0])
         printf(" (%s:%u)", g_settings.syslog_host, g_settings.syslog_port);
@@ -656,6 +660,22 @@ static void run_line(char *l) {
         if (!strcmp(h, "auto")) h = "";
         snprintf(g_settings.ntp_server, sizeof(g_settings.ntp_server), "%s", h);
         printf("ntp: %s ('save' to persist; applies at once)\n", h[0] ? h : "auto");
+    } else if (!strcmp(cmd, "hostnames")) {
+        const char *rest = save ? save : "";
+        while (*rest == ' ' || *rest == '\t') rest++;
+        if (!*rest) {
+            printf("usage: hostnames <name> [<name>...] | hostnames clear\n");
+            return;
+        }
+        if (!strcmp(rest, "clear")) rest = "";
+        char names[HOSTNAMES_MAX];
+        const char *err = http_req_hostnames_parse(rest, names, sizeof(names));
+        if (err) {
+            printf("%s\n", err);
+            return;
+        }
+        strcpy(g_settings.hostnames, names);
+        printf("hostnames: %s ('save' to persist; applies at once)\n", names[0] ? names : "none");
     } else if (!strcmp(cmd, "syslog")) {
         const char *host = strtok_r(NULL, " \t", &save);
         const char *port = strtok_r(NULL, " \t", &save);
