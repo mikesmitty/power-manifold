@@ -241,7 +241,7 @@ hysteresis either way) raises the problem indicator and logs a line; the
 crossing of the 19 V flag, either way, also goes into the fault log, since
 the cut a volt further down restarts the controller and would otherwise
 leave no trace. The Pico 2 W carrier has no path from VIN to an ADC pin, so
-there the monitor reports *not fitted* and every surface leaves it out.
+there the monitor reports *not present* and every surface leaves it out.
 
 **Bus-sag cap.** Before the bus gets near that cut, the firmware takes
 load off it: while the bus reads under 20.0 V every port's advertised
@@ -309,14 +309,14 @@ the supply's V−. The link is the LAD manual's own frame — read 0x55 / write
 0xAA, a length byte, a 16-bit address, data, CRC-8 (polynomial 0x07,
 checked against the manual's worked examples) — not Modbus. The firmware
 probes the header every 5 s until something answers, then reads the status
-word, mains voltage, load current and battery voltage every second and the
+word, AC voltage, load current and battery voltage every second and the
 per-block voltages and undervoltage cutoff every ten, spacing requests the
 20 ms the supply asks for and giving up on a reply after 100 ms; five
 missed replies in a row or five silent seconds mark it absent again. What
 comes back is the `ups` block in the status JSON, the `ups_*` fields and
 Home Assistant entities over MQTT, `pwrman_ups_*` on `/metrics`, the UPS
 part of the chassis summary on the page, `ups` and a line in `info` on the
-console, and log lines for mains lost/restored, battery full and battery
+console, and log lines for AC power lost/restored, battery full and battery
 faults. Running on battery, or a battery fault (missing, reversed,
 under/overvoltage, unbalanced, discharge overload, a bad block), raises the
 problem indicator. `ups buzzer off` silences the supply's alarm; the

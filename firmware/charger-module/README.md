@@ -27,7 +27,7 @@ Developer documentation lives in [`docs/`](docs/) and is published on the
 *For developers*:
 
 - [Overview](docs/overview.md): what the blade is, its protection, how the
-  port runs, pin map, source layout, ST's stack and its licence, building,
+  port runs, pin map, source layout, ST's stack and its license, building,
   flashing and the console.
 - [Register map and updates](docs/register-map.md): the backplane register
   map and how the controller programs the blade through the ROM bootloader.

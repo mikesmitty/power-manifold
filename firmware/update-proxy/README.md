@@ -11,7 +11,7 @@ downloads are HTTPS-only behind a redirect; this sits between the two.
 
 Nothing else is served. The newest version is read from this repository's
 `.release-please-manifest.json`; images are fetched from GitHub once and
-answered from Cloudflare's cache afterwards, the pointer for ten minutes at a
+answered from Cloudflare's cache after that, the pointer for ten minutes at a
 time. The Worker does not need to be trusted: a controller installs an image
 only when its signature checks out and it is no older than what it runs (see
 "Signed updates" in the controller README).

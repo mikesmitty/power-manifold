@@ -136,7 +136,7 @@ the host tests.
 Fetched at configure time, none of it kept in this repository
 (`cmake/st_usbpd.cmake`), at the versions X-CUBE-TCPP 4.2.0 ships together:
 
-| Component | Version | Licence |
+| Component | Version | License |
 | --- | --- | --- |
 | `stm32-mw-usbpd-core`, the policy engine and protocol layer, a binary library | 5.3.0, `PD3_CONFIG_SPR` | SLA0044: ST microcontrollers only |
 | `stm32-mw-usbpd-device-g0`, the UCPD device layer | 3.5.2 | SLA0044 |

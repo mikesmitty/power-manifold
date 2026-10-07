@@ -9,7 +9,7 @@
 // the controller is on trial; a blade updates only on a dark or idle port.
 
 type Kind = 'old' | 'new' | 'trial' | 'restart' | 'bad' | 'on' | 'same' | 'muted';
-type Cell = { text: string; kind: Kind; led?: { colour: string; anim?: 'blink'; off?: boolean } };
+type Cell = { text: string; kind: Kind; led?: { color: string; anim?: 'blink'; off?: boolean } };
 type Scenario = {
 	key: string;
 	title: string;
@@ -68,11 +68,11 @@ const SCENARIOS: Scenario[] = [
 		stages: ['Charging a phone', 'Unplugged', 'Updating', 'Starting up', 'Ready'],
 		rows: [
 			{ name: 'Port light', cells: [
-				{ text: 'Green', kind: 'muted', led: { colour: '#22c55e' } },
-				{ text: 'White, for 10 s', kind: 'muted', led: { colour: '#e8e8e8' } },
-				{ text: 'Off', kind: 'muted', led: { colour: 'transparent', off: true } },
-				{ text: 'Cyan, blinking', kind: 'muted', led: { colour: '#22d3ee', anim: 'blink' } },
-				{ text: 'White', kind: 'muted', led: { colour: '#e8e8e8' } },
+				{ text: 'Green', kind: 'muted', led: { color: '#22c55e' } },
+				{ text: 'White, for 10 s', kind: 'muted', led: { color: '#e8e8e8' } },
+				{ text: 'Off', kind: 'muted', led: { color: 'transparent', off: true } },
+				{ text: 'Cyan, blinking', kind: 'muted', led: { color: '#22d3ee', anim: 'blink' } },
+				{ text: 'White', kind: 'muted', led: { color: '#e8e8e8' } },
 			] },
 			{ name: 'Web interface', cells: [
 				{ text: 'Delivering 9 V', kind: 'on' },
@@ -121,7 +121,7 @@ const FIRST = 0;
 								{cell.led && (
 									<span
 										class:list={['led', cell.led.anim, { off: cell.led.off }]}
-										style={`--led:${cell.led.colour}`}
+										style={`--led:${cell.led.color}`}
 										aria-hidden="true"
 									/>
 								)}

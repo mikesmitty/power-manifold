@@ -2,7 +2,7 @@
 // The chassis front panel, traced from the enclosure's front view.
 //
 // lights: up to seven entries, left to right: the chassis light, then ports
-// 1 to 6. Each entry is a colour name from COLOURS, optionally followed by
+// 1 to 6. Each entry is a color name from COLORS, optionally followed by
 // one of "dim", "blink" (2 Hz), "fast" (5 Hz), "pulse" (1 s) or "breathe"
 // (2 s), for example "red fast", or null for an unlit light. The rates are
 // the firmware's (firmware/controller/src/engine/led_pattern.c).
@@ -21,7 +21,7 @@ interface Props {
 }
 const { lights = [], sequence, labels = !sequence && lights.length === 0, title = 'Power Manifold front panel', caption } = Astro.props;
 
-const COLOURS: Record<string, string> = {
+const COLORS: Record<string, string> = {
 	white: '#e8e8e8',
 	cyan: '#22d3ee',
 	amber: '#f59e0b',
@@ -33,7 +33,7 @@ const COLOURS: Record<string, string> = {
 // are a few percent of full drive, which an LED shows as a faint glow.
 const DIM = 0.4;
 
-// x centres of the chassis light and ports 1 to 6
+// x centers of the chassis light and ports 1 to 6
 const LIGHT_X = [450, 617, 784, 950, 1117, 1284, 1451];
 const PORT_X = LIGHT_X.slice(1);
 const pins = Array.from({ length: 8 }, (_, i) => 172 + i * 10);
@@ -41,7 +41,7 @@ const pins = Array.from({ length: 8 }, (_, i) => 172 + i * 10);
 // Several panels can share a page, so their filter and animation names must not collide.
 const uid = 'fp' + Math.random().toString(36).slice(2, 8);
 
-type Frame = Record<string, number>[]; // per light: colour name -> level 0 to 1
+type Frame = Record<string, number>[]; // per light: color name -> level 0 to 1
 
 const base = LIGHT_X.map((_, i) => {
 	const spec = lights[i];
@@ -86,7 +86,7 @@ const SEQUENCES: Record<string, { period: number; still: number; at: (t: number)
 	},
 };
 
-// One layer per light and colour. A sequence animates each layer's opacity
+// One layer per light and color. A sequence animates each layer's opacity
 // through keyframes sampled from its function; a run of samples on one
 // straight line collapses to its two ends.
 const pct = (t: number, period: number) => +((t / period) * 100).toFixed(3);
@@ -95,7 +95,7 @@ const layers = LIGHT_X.map((x, i) => {
 	if (!sequence) {
 		const b = base[i];
 		if (!b) return [];
-		return [{ colour: COLOURS[b.name] ?? b.name, cls: `fp-lit ${b.mode}`, level: b.dim ? DIM : 1 }];
+		return [{ color: COLORS[b.name] ?? b.name, cls: `fp-lit ${b.mode}`, level: b.dim ? DIM : 1 }];
 	}
 	const seq = SEQUENCES[sequence];
 	const step = 10;
@@ -109,7 +109,7 @@ const layers = LIGHT_X.map((x, i) => {
 		const cls = `${uid}-${i}-${name}`;
 		css += `@keyframes ${cls}{${stops.join('')}}.${cls}{animation:${cls} ${seq.period}ms linear infinite}`;
 		css += `@media (prefers-reduced-motion:reduce){.${cls}{animation-play-state:paused;animation-delay:-${seq.still}ms}}`;
-		return { colour: COLOURS[name] ?? name, cls: `fp-lit ${cls}`, level: v[0] };
+		return { color: COLORS[name] ?? name, cls: `fp-lit ${cls}`, level: v[0] };
 	});
 });
 
@@ -159,8 +159,8 @@ const height = labels ? 80 + 610 : timeline ? 640 : 458;
 		{LIGHT_X.map((x, i) => (
 			<g>
 				<circle class="fp-line fp-hole" cx={x} cy="87" r="10" />
-				{layers[i].map(({ colour, cls, level }) => (
-					<g class={cls} style={`--led:${colour};opacity:${level}`}>
+				{layers[i].map(({ color, cls, level }) => (
+					<g class={cls} style={`--led:${color};opacity:${level}`}>
 						<circle cx={x} cy="87" r="20" filter={`url(#${uid}-glow)`} />
 						<circle cx={x} cy="87" r="10" />
 					</g>
@@ -224,7 +224,7 @@ const height = labels ? 80 + 610 : timeline ? 640 : 458;
 		width: 100%;
 		height: auto;
 	}
-	/* The faceplate is black hard-anodised aluminium with white UV-printed text,
+	/* The faceplate is black hard-anodized aluminum with white UV-printed text,
 	   so it is drawn the same in light and dark mode. */
 	.front-panel {
 		--fp-face: #141517;

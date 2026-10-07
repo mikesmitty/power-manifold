@@ -266,7 +266,7 @@ refuses unsigned files, files for other hardware and older versions.
 
 `GET /metrics` serves Prometheus text format with no login. It includes the
 chassis totals, the input voltage, UPS readings when one is connected, and
-every port metric labelled with `port` and `name`. Blade temperatures are
+every port metric labeled with `port` and `name`. Blade temperatures are
 `pwrman_port_temperature_celsius` with a `sensor` label (`converter`,
 `plug`, `mcu`).
 

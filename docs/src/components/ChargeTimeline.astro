@@ -39,8 +39,8 @@ const MODES = [
 		text: 'The phone charges, then draws next to nothing. Ten minutes under 0.5 W later the port shows charged and its light turns white. The port stays on, so the phone is kept topped up.',
 		end: HOURS,
 		lights: [
-			{ from: 0, to: CHARGED, colour: GREEN, label: 'Green' },
-			{ from: CHARGED, to: HOURS, colour: WHITE, label: 'White' },
+			{ from: 0, to: CHARGED, color: GREEN, label: 'Green' },
+			{ from: CHARGED, to: HOURS, color: WHITE, label: 'White' },
 		],
 		marks: [{ t: CHARGED, label: 'Charged' }],
 	},
@@ -50,8 +50,8 @@ const MODES = [
 		text: 'The same until the phone counts as charged. At that moment the port switches off, and it stays off until you switch it on again.',
 		end: CHARGED,
 		lights: [
-			{ from: 0, to: CHARGED, colour: GREEN, label: 'Green' },
-			{ from: CHARGED, to: HOURS, colour: null, label: 'Off' },
+			{ from: 0, to: CHARGED, color: GREEN, label: 'Green' },
+			{ from: CHARGED, to: HOURS, color: null, label: 'Off' },
 		],
 		marks: [{ t: CHARGED, label: 'Charged, switched off' }],
 	},
@@ -61,8 +61,8 @@ const MODES = [
 		text: 'The timer counts from when the phone is plugged in. Two hours later the port switches off, whether the phone has finished charging or not.',
 		end: SLEEP,
 		lights: [
-			{ from: 0, to: SLEEP, colour: GREEN, label: 'Green' },
-			{ from: SLEEP, to: HOURS, colour: null, label: 'Off' },
+			{ from: 0, to: SLEEP, color: GREEN, label: 'Green' },
+			{ from: SLEEP, to: HOURS, color: null, label: 'Off' },
 		],
 		marks: [{ t: SLEEP, label: 'Timer ends, switched off' }],
 	},
@@ -112,8 +112,8 @@ const FIRST = 1;
 				{m.lights.map((l) => (
 					<g class="tl-light">
 						<rect class="tl-plate" x={x(l.from)} y={y(0) + 16} width={x(l.to) - x(l.from)} height="22" />
-						{l.colour && <rect class="tl-glow" x={x(l.from) + 3} y={y(0) + 19} width={x(l.to) - x(l.from) - 6} height="16" rx="3" style={`fill:${l.colour}`} />}
-						<text class:list={['tl-lightlabel', { lit: l.colour }]} x={x(l.from) + 8} y={y(0) + 30.5}>{l.label}</text>
+						{l.color && <rect class="tl-glow" x={x(l.from) + 3} y={y(0) + 19} width={x(l.to) - x(l.from) - 6} height="16" rx="3" style={`fill:${l.color}`} />}
+						<text class:list={['tl-lightlabel', { lit: l.color }]} x={x(l.from) + 8} y={y(0) + 30.5}>{l.label}</text>
 					</g>
 				))}
 			</g>

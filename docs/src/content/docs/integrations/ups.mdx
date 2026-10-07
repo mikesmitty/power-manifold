@@ -1,6 +1,6 @@
 ---
 title: UPS power supply
-description: Unofficial support for running Power Manifold from a Mean Well LAD-U battery-backed supply and seeing mains and battery status in Home Assistant.
+description: Unofficial support for running Power Manifold from a Mean Well LAD-U battery-backed supply and seeing AC power and battery status in Home Assistant.
 sidebar:
   order: 4
   badge:
@@ -19,16 +19,16 @@ verified only against a simulated supply.
 </Aside>
 
 Power Manifold can run from a Mean Well **LAD-xxxU** security power supply,
-which charges a battery and switches to it when mains power fails. Only
+which charges a battery and switches to it when AC power fails. Only
 the models ending in **U** have the serial port Power Manifold needs.
 
 ## Connecting it
 
 <Flow
 	nodes={[
-		{ title: 'Mains' },
-		{ title: 'Mean Well LAD-xxxU', detail: 'Runs from its battery when mains fails' },
-		{ title: 'Power Manifold', detail: 'Shows mains and battery', highlight: true },
+		{ title: 'AC power' },
+		{ title: 'Mean Well LAD-xxxU', detail: 'Runs from its battery when AC power fails' },
+		{ title: 'Power Manifold', detail: 'Shows AC power and battery', highlight: true },
 	]}
 	links={[{ label: 'AC' }, { label: ['24 V to the XT60', 'CN2 to the UPS header'] }]}
 />
@@ -42,9 +42,9 @@ within a few seconds.
 
 Once the supply answers, the controller shows:
 
-- whether mains power is on, whether it's running on battery and whether
+- whether AC power is on, whether it's running on battery and whether
   the battery is charging;
-- battery voltage, mains voltage and load current.
+- battery voltage, AC voltage and load current.
 
 These appear in the web interface's chassis line, in Home Assistant as *UPS AC
 input*, *UPS on battery* and *UPS charging* plus three sensors, in the

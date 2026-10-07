@@ -1,6 +1,6 @@
 ---
 // Before and after: six devices on six adapters and a power strip, then the
-// same six on one supply and Power Manifold. Line art in the page's greys,
+// same six on one supply and Power Manifold. Line art in the page's grays,
 // like the front panel drawing.
 
 // The six devices along the top, bottoms on one line: left edge, width, kind
@@ -13,7 +13,7 @@ const DEVICES = [
 	{ x: 378, w: 96, kind: 'laptop' },
 	{ x: 520, w: 60, kind: 'minipc' },
 ];
-const centre = (d: (typeof DEVICES)[number]) => d.x + d.w / 2;
+const center = (d: (typeof DEVICES)[number]) => d.x + d.w / 2;
 
 // Before: the strip's outlets left to right, the adapter in each and the
 // device it feeds, in no particular order, as these things end up.
@@ -38,7 +38,7 @@ const WANDER = [
 ];
 const cords = ADAPTERS.map((a, i) => {
 	const start = a.brick ? [a.brick.x + a.brick.w, a.brick.y + a.brick.h / 2] : [a.x, STRIP.y - a.h];
-	const end = [centre(DEVICES[a.to]), BOTTOM];
+	const end = [center(DEVICES[a.to]), BOTTOM];
 	const { via, bend } = WANDER[i];
 	return `M${start[0]} ${start[1]} C${start[0] + bend} ${start[1] - 40} ${via[0] - bend} ${via[1] + 60} ${via[0]} ${via[1]} S${end[0] + bend / 2} ${end[1] + 70} ${end[0]} ${end[1]}`;
 });
@@ -55,7 +55,7 @@ const LIGHTS = ['#22c55e', '#22c55e', '#22c55e', '#22c55e', '#3b82f6', '#3b82f6'
 const cables = DEVICES.map((d, i) => {
 	const px = PORT_X[i];
 	const top = PM.y + 186 * s;
-	return `M${px} ${top} C${px} ${top - 70} ${centre(d)} ${BOTTOM + 90} ${centre(d)} ${BOTTOM}`;
+	return `M${px} ${top} C${px} ${top - 70} ${center(d)} ${BOTTOM + 90} ${center(d)} ${BOTTOM}`;
 });
 const PSU = { x: 400, y: 368, w: 150, h: 36 };
 
@@ -205,7 +205,7 @@ const devicesSvg = () => DEVICES.map(device).join('');
 		stroke-width: 3;
 		stroke-dasharray: 1.5 2.5;
 	}
-	/* Power Manifold's black anodised front, as in the front panel drawing */
+	/* Power Manifold's black anodized front, as in the front panel drawing */
 	.clutter .cl-face {
 		fill: #141517;
 		stroke: #4a4d54;

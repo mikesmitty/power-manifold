@@ -1,6 +1,6 @@
 ---
 title: Front panel and lights
-description: Port numbering, what each port light colour means, and what the front-panel button does.
+description: Port numbering, what each port light color means, and what the front-panel button does.
 sidebar:
   order: 1
 ---
@@ -25,7 +25,7 @@ slot is empty.
 <FrontPanel
 	lights={['green dim', 'blue', 'green', 'white', 'blue pulse', 'red fast', 'amber dim']}
 	title="Front panel with ports showing different states"
-	caption="For example: port 1 powering a laptop, port 2 a phone, port 3 idle, port 4 turned down for the budget, port 5 faulted and no port fitted at 6."
+	caption="For example: port 1 powering a laptop, port 2 a phone, port 3 idle, port 4 turned down for the budget, port 5 faulted and no port installed at 6."
 />
 
 | Light | Meaning |
@@ -36,7 +36,7 @@ slot is empty.
 | <span class="led blink" style="--led:#22d3ee"></span>Cyan, blinking | The blade is starting up. |
 | <span class="led pulse" style="--led:#3b82f6"></span>Slow pulse (blue or green) | Powering a device, but turned down because the chassis is at its power budget. See [Sharing power](/guide/sharing-power/). |
 | <span class="led blink" style="--led:#ef4444"></span>Red, fast blink | The port shut itself off because of a fault. It tries again after 5 seconds. See [Troubleshooting](/guide/troubleshooting/#a-port-blinks-red). |
-| <span class="led" style="--led:#f59e0b;--lvl:.4"></span>Dim amber | No port fitted in this position. |
+| <span class="led" style="--led:#f59e0b;--lvl:.4"></span>Dim amber | No port installed in this position. |
 | Off | The port is switched off. |
 
 ## The chassis light

@@ -1,10 +1,10 @@
 ---
 // The top of the Troubleshooting page: pick what you see, read one line on
-// what it means and follow the link to the fix. Light colours and patterns
+// what it means and follow the link to the fix. Light colors and patterns
 // match the tables on the Front panel page.
 
 type Symptom = {
-	led?: { colour: string; anim?: 'blink' | 'pulse'; off?: boolean };
+	led?: { color: string; anim?: 'blink' | 'pulse'; off?: boolean };
 	title: string;
 	means: string;
 	href: string;
@@ -15,20 +15,20 @@ const GROUPS: { name: string; items: Symptom[] }[] = [
 	{
 		name: 'A port light',
 		items: [
-			{ led: { colour: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The port shut itself off after a fault.', href: `${T}#a-port-blinks-red` },
-			{ led: { colour: '#e8e8e8' }, title: 'White with a device plugged in', means: 'The port doesn’t see the device, or it has finished charging.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
-			{ led: { colour: 'transparent', off: true }, title: 'Off', means: 'The port is switched off.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
-			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Pulsing slowly', means: 'Turned down: the chassis is at its power budget.', href: '/guide/sharing-power/' },
-			{ led: { colour: '#22d3ee', anim: 'blink' }, title: 'Cyan, blinking', means: 'The blade is starting up, usually after an update. Nothing to fix.', href: '/guide/updates/' },
+			{ led: { color: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The port shut itself off after a fault.', href: `${T}#a-port-blinks-red` },
+			{ led: { color: '#e8e8e8' }, title: 'White with a device plugged in', means: 'The port doesn’t see the device, or it has finished charging.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
+			{ led: { color: 'transparent', off: true }, title: 'Off', means: 'The port is switched off.', href: `${T}#a-device-doesnt-charge-or-charges-slowly` },
+			{ led: { color: '#3b82f6', anim: 'pulse' }, title: 'Pulsing slowly', means: 'Turned down: the chassis is at its power budget.', href: '/guide/sharing-power/' },
+			{ led: { color: '#22d3ee', anim: 'blink' }, title: 'Cyan, blinking', means: 'The blade is starting up, usually after an update. Nothing to fix.', href: '/guide/updates/' },
 		],
 	},
 	{
 		name: 'The chassis light, left of port 1',
 		items: [
-			{ led: { colour: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The input voltage is out of range.', href: `${T}#bus-voltage-out-of-range` },
-			{ led: { colour: '#ef4444', anim: 'pulse' }, title: 'Red, breathing', means: 'No network connection.', href: `${T}#no-network` },
-			{ led: { colour: '#f59e0b', anim: 'pulse' }, title: 'Amber, breathing', means: 'No API token yet: setup is open.', href: '/setup/first-time-setup/' },
-			{ led: { colour: '#3b82f6', anim: 'pulse' }, title: 'Blue, breathing', means: 'Waiting for Wi-Fi setup.', href: '/setup/wifi-provisioning/' },
+			{ led: { color: '#ef4444', anim: 'blink' }, title: 'Red, fast blink', means: 'The input voltage is out of range.', href: `${T}#bus-voltage-out-of-range` },
+			{ led: { color: '#ef4444', anim: 'pulse' }, title: 'Red, breathing', means: 'No network connection.', href: `${T}#no-network` },
+			{ led: { color: '#f59e0b', anim: 'pulse' }, title: 'Amber, breathing', means: 'No API token yet: setup is open.', href: '/setup/first-time-setup/' },
+			{ led: { color: '#3b82f6', anim: 'pulse' }, title: 'Blue, breathing', means: 'Waiting for Wi-Fi setup.', href: '/setup/wifi-provisioning/' },
 		],
 	},
 	{
@@ -55,7 +55,7 @@ const GROUPS: { name: string; items: Symptom[] }[] = [
 							{s.led && (
 								<span
 									class:list={['led', s.led.anim, { off: s.led.off }]}
-									style={`--led:${s.led.colour}${s.led.anim === 'pulse' ? ';animation-duration:2s' : ''}`}
+									style={`--led:${s.led.color}${s.led.anim === 'pulse' ? ';animation-duration:2s' : ''}`}
 									aria-hidden="true"
 								/>
 							)}

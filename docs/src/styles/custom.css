@@ -1,4 +1,4 @@
-/* Accent: a calm blue on Starlight's neutral greys. */
+/* Accent: a calm blue on Starlight's neutral grays. */
 :root {
 	--sl-color-accent-low: #1a2a44;
 	--sl-color-accent: #5b9cf5;
@@ -57,7 +57,7 @@
 
 /* A port-light swatch, drawn as the light in a patch of the dark faceplate:
    <span class="led" style="--led: #2f7cf6"></span>. The faceplate is black
-   anodised, in either theme. --lvl dims the light alone, for the dim states. */
+   anodized, in either theme. --lvl dims the light alone, for the dim states. */
 .led {
 	position: relative;
 	display: inline-block;
