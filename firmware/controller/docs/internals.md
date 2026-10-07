@@ -338,9 +338,10 @@ holds them (the drain waits until the receiver's MAC is known, because lwIP
 keeps a single packet per unresolved ARP entry; lines that waited in the
 ring carry the time they were sent, not printed). A receiver that fell too
 far behind gets one `log: N line(s) lost` line in place of what the ring
-dropped. What is typed at the console is never mirrored, so a `wifi` or
-`mqtt` line's password stays off the wire; the firmware's own output never
-includes secrets. `info` shows the sink's state (off, resolving, the
+dropped. Each console command is logged once, as `console> ` or `web> `
+and the command with its passwords and token shown as `********` (the keys
+as typed are never mirrored), and the firmware's own output never includes
+secrets. `info` shows the sink's state (off, resolving, the
 address in use, or an unresolvable host).
 
 ## Boot reason

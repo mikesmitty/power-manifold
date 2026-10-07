@@ -14,6 +14,7 @@
 #include "boot_reason_hw.h"
 #include "button.h"
 #include "civil_time.h"
+#include "cli_line.h"
 #include "engine/blade_bundle.h"
 #include "engine/engine.h"
 #include "engine/i2c_diag.h"
@@ -49,6 +50,16 @@
 
 static char line[CLI_LINE_MAX];
 static size_t line_len;
+
+// The web console's batch and its transcript. The HTTP handler (an
+// interrupt on core 0) writes web_in only while the state is idle or done,
+// and the main loop touches both buffers only while it is queued or running,
+// so the two never write at once.
+static char web_in[CLI_WEB_IN_MAX];
+static char web_out[CLI_WEB_OUT_MAX];
+static size_t web_out_len;
+static bool web_out_cut;
+static volatile cli_web_state_t web_state;
 
 #ifdef PWRMAN_FAKE_BLADES
 static bool sim_paused; // core 0's view of the demo script (the engine owns the sim)
@@ -486,6 +497,13 @@ static void run_i2c_diag(char **save) {
 #endif
 }
 
+// Every command reaches the web console too (run_web_batch), behind only the
+// API token. A command that must stay behind the serial console - one that
+// sets or clears the token, gets past the update signing or downgrade rules,
+// wipes the settings, or stops the firmware so only someone at the box can
+// bring it back - goes on the refusal list in cli_line_web_refusal (cli_line.c) and in
+// test_web_refusal in the same change. A command with a password or token
+// argument gets its masking in cli_line_mask.
 static void run_line(char *l) {
     char *save = NULL;
     const char *cmd = strtok_r(l, " \t", &save);
@@ -1050,18 +1068,84 @@ void cli_init(void) {
     line_len = 0;
 }
 
+bool cli_web_submit(const char *text, size_t len) {
+    if (web_state == CLI_WEB_QUEUED || web_state == CLI_WEB_RUNNING || len >= sizeof(web_in))
+        return false;
+    memcpy(web_in, text, len);
+    web_in[len] = '\0';
+    __compiler_memory_barrier();
+    web_state = CLI_WEB_QUEUED;
+    return true;
+}
+
+cli_web_state_t cli_web_state(void) {
+    return web_state;
+}
+
+const char *cli_web_output(size_t *len) {
+    *len = web_out_len;
+    return web_out;
+}
+
+// The queued batch, line by line. Each line is printed first, masked, so the
+// transcript and the log show what ran; blank lines and lines starting with
+// '#' are skipped, which lets a pasted script carry comments.
+static void run_web_batch(void) {
+    static const char cut_note[] = "[output cut: it did not fit in 8 KB]\n";
+    static char cmd[CLI_LINE_MAX]; // static: the console runs on core 0's small stack
+    static char masked[CLI_LINE_MAX + sizeof(CLI_LINE_MASK)];
+    web_state = CLI_WEB_RUNNING;
+    log_sink_capture(web_out, sizeof(web_out) - sizeof(cut_note), &web_out_len, &web_out_cut);
+    for (char *p = web_in, *end; p; p = end ? end + 1 : NULL) {
+        end = strchr(p, '\n');
+        if (end) *end = '\0';
+        size_t n = strlen(p);
+        if (n && p[n - 1] == '\r') p[--n] = '\0';
+        while (*p == ' ' || *p == '\t') p++, n--;
+        if (!n || *p == '#') continue;
+        if (n >= sizeof(cmd)) {
+            printf("web> (a line of %u characters: %u at most)\n", (unsigned)n,
+                   (unsigned)sizeof(cmd) - 1);
+            continue;
+        }
+        cli_line_mask(p, masked, sizeof(masked));
+        printf("web> %s\n", masked);
+        const char *refused = cli_line_web_refusal(p);
+        if (refused) {
+            printf("'%s' works only on the serial console\n", refused);
+            continue;
+        }
+        memcpy(cmd, p, n + 1);
+        run_line(cmd);
+    }
+    log_sink_capture(NULL, 0, NULL, NULL);
+    if (web_out_cut) {
+        memcpy(web_out + web_out_len, cut_note, sizeof(cut_note));
+        web_out_len += sizeof(cut_note) - 1;
+    }
+    __compiler_memory_barrier();
+    web_state = CLI_WEB_DONE;
+}
+
 void cli_poll(void) {
+    if (web_state == CLI_WEB_QUEUED) run_web_batch();
     for (;;) {
         int c = getchar_timeout_us(0);
         if (c == PICO_ERROR_TIMEOUT) return;
         // the echo of what is typed (and the prompt) stays out of the log
-        // sink: a `wifi` or `mqtt` line carries a password
+        // sink; the finished line goes in once, its secrets masked
         if (c == '\r' || c == '\n') {
             log_sink_pause(true);
             printf("\n");
             log_sink_pause(false);
             line[line_len] = '\0';
-            if (line_len) run_line(line);
+            if (line_len) {
+                static char note[sizeof("console> ") + CLI_LINE_MAX + sizeof(CLI_LINE_MASK)];
+                memcpy(note, "console> ", 9);
+                cli_line_mask(line, note + 9, sizeof(note) - 9);
+                if (note[9]) log_sink_note(note);
+                run_line(line);
+            }
             line_len = 0;
             log_sink_pause(true);
             printf("> ");

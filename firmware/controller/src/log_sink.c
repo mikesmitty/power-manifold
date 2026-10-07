@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "pico/critical_section.h"
+#include "pico/platform.h"
 #include "pico/stdio/driver.h"
 #include "pico/time.h"
 
@@ -32,8 +33,26 @@ static uint32_t next_resolve_ms; // 0 = now
 static uint32_t next_arp_ms;
 static char status_buf[64];
 
+static char *cap_buf; // log_sink_capture's destination, NULL when none
+static size_t cap_size, *cap_len;
+static bool *cap_cut;
+
+static void capture(const char *buf, int len) {
+    if (!cap_buf || get_core_num() != 0 || __get_current_exception()) return;
+    for (int i = 0; i < len; i++) {
+        if (buf[i] == '\r') continue;
+        if (*cap_len + 1 >= cap_size) {
+            *cap_cut = true;
+            return;
+        }
+        cap_buf[(*cap_len)++] = buf[i];
+    }
+    cap_buf[*cap_len] = '\0';
+}
+
 static void out_chars(const char *buf, int len) {
     if (paused || len <= 0) return;
+    capture(buf, len);
     critical_section_enter_blocking(&cs);
     log_ring_write(buf, (size_t)len);
     critical_section_exit(&cs);
@@ -48,6 +67,25 @@ void log_sink_init(void) {
 
 void log_sink_pause(bool p) {
     paused = p;
+}
+
+void log_sink_note(const char *line) {
+    critical_section_enter_blocking(&cs);
+    log_ring_write(line, strlen(line));
+    log_ring_write("\n", 1);
+    critical_section_exit(&cs);
+}
+
+void log_sink_capture(char *buf, size_t cap, size_t *len, bool *cut) {
+    cap_len = len;
+    cap_cut = cut;
+    cap_size = cap;
+    if (buf) {
+        *len = 0;
+        *cut = false;
+        buf[0] = '\0';
+    }
+    cap_buf = buf;
 }
 
 size_t log_sink_snapshot(char *out, size_t cap) {

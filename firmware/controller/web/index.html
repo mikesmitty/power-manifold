@@ -164,6 +164,8 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
 .ptab td{padding:.3rem .35rem}.ptab input,.ptab select{padding:.3rem .4rem}
 .ptab td:first-child{font:600 .9rem var(--fig);color:var(--mute);white-space:nowrap}
 .actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.cmd{display:flex;gap:.5rem;align-items:flex-start}
+.cmd textarea{flex:1}
 .actions .sp{flex:1}
 .lock{display:flex;gap:.5rem;flex-wrap:wrap}.lock input{max-width:16rem}
 </style></head><body>
@@ -204,7 +206,8 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
  <div class="pane" id="lg" hidden>
   <div class="msg" id="lgm"></div>
   <pre id="lgp"></pre>
-  <div class="actions"><button class="btn sm" id="lgr" type="button">Refresh</button><span class="mute" style="font-size:.78rem">The last 4 KB the firmware printed, newest at the bottom.</span></div>
+  <div class="cmd"><textarea id="cin" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Console command" placeholder="A command, or several lines pasted at once"></textarea><button class="btn pri" id="crun" type="button">Run</button></div>
+  <div class="actions"><button class="btn sm" id="lgr" type="button">Refresh</button><span class="mute" style="font-size:.78rem">The last 4 KB the firmware printed, newest at the bottom; replies to commands run here follow it. Enter runs, Shift+Enter adds a line, and help lists the commands. token, defaults, bootsel and unsigned or older updates work only on the serial console.</span></div>
  </div>
 
  <div class="pane" id="cfg" hidden>
@@ -428,6 +431,23 @@ async function lgLoad(){let r;try{r=await fetch('/api/v1/log',{headers:hdr()});}
  if(r.status==401){const w=await why(r);$('lgp').textContent='';if(w==BT){$('lgm').textContent='';unlock('read the console');}else $('lgm').textContent=cap(w);return;}
  const P=$('lgp');P.textContent=await r.text();$('lgm').textContent='';P.scrollTop=P.scrollHeight;}
 $('lgr').onclick=lgLoad;
+// Commands run in a batch on the device; its reply is polled for, then added below the log.
+const CH=[];let chi=0;
+async function cRun(){const T=$('cin'),B=$('crun'),t=T.value.trim(),M2=$('lgm');if(!t||B.disabled)return;
+ if(CH[CH.length-1]!=t)CH.push(t);chi=CH.length;T.value='';B.disabled=true;
+ let r;try{r=await fetch('/api/v1/console',{method:'POST',headers:{...hdr(),'Content-Type':'text/plain'},body:t});}catch(e){}
+ if(!r||r.status!=202){B.disabled=false;T.value=t;if(!r){M2.textContent='No response from the device.';return;}
+  const w=await why(r);if(r.status==401&&w==BT){M2.textContent='';unlock('use the console');return;}M2.textContent=cap(w);return;}
+ let o=null;for(let k=0;k<120&&o==null;k++){await new Promise(z=>setTimeout(z,250));
+  try{const g=await fetch('/api/v1/console',{headers:hdr()});if(g.status==200)o=await g.text();}catch(e){}}
+ B.disabled=false;if(o==null){M2.textContent='No reply. A reboot or an update takes the device away for a while; Refresh shows the log.';return;}
+ const P=$('lgp');M2.textContent='';P.textContent+=(P.textContent&&!P.textContent.endsWith('\n')?'\n':'')+o;P.scrollTop=P.scrollHeight;T.focus();}
+$('crun').onclick=cRun;
+// Enter runs and Shift+Enter adds a line; Up and Down step through earlier commands while the box holds one line or an unedited earlier batch.
+$('cin').onkeydown=e=>{const T=e.target;
+ if(e.key=='Enter'&&!e.shiftKey){e.preventDefault();cRun();}
+ else if((e.key=='ArrowUp'||e.key=='ArrowDown')&&CH.length&&(!T.value.includes('\n')||T.value==CH[chi])){e.preventDefault();
+  chi=Math.max(0,Math.min(CH.length,chi+(e.key=='ArrowUp'?-1:1)));T.value=CH[chi]||'';}};
 
 // fault log
 const at=f=>f.epoch?new Date(f.epoch*1000).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'up '+f.uptime_s+' s';

@@ -89,6 +89,7 @@ add_executable(controller
     lib/monocypher/monocypher.c
     lib/monocypher/monocypher-ed25519.c
     src/cli.c
+    src/cli_line.c
     src/engine/engine.c
     src/engine/fan_policy.c
     src/engine/port_fsm.c

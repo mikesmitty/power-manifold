@@ -6,6 +6,7 @@ void run_boot_tests(void);
 void run_budget_tests(void);
 void run_bus_cap_tests(void);
 void run_button_tests(void);
+void run_cli_line_tests(void);
 void run_event_tests(void);
 void run_fan_tests(void);
 void run_improv_tests(void);
@@ -36,6 +37,7 @@ int main(void) {
     run_budget_tests();
     run_bus_cap_tests();
     run_button_tests();
+    run_cli_line_tests();
     run_event_tests();
     run_fan_tests();
     run_improv_tests();

@@ -14,6 +14,7 @@
 
 #include "boot_reason_hw.h"
 #include "bus_cap.h"
+#include "cli.h"
 #include "engine/blade_bundle.h"
 #include "fault_log.h"
 #include "fault_text.h"
@@ -344,6 +345,16 @@ static bool log_busy(void) {
     return false;
 }
 
+// GET /api/v1/console streams the CLI's transcript buffer, which a new
+// batch would overwrite: no batch starts while one is still being sent
+static bool console_busy(void) {
+    size_t n;
+    const char *out = cli_web_output(&n);
+    for (int i = 0; i < MAX_CONNS; i++)
+        if (conns[i].pcb && conns[i].static_body == out) return true;
+    return false;
+}
+
 // GET /api/v1/settings and its export: with a broker certificate installed
 // the object outgrows resp[], so it streams from here the same way
 static char settings_buf[SETTINGS_JSON_MAX];
@@ -472,10 +483,10 @@ static bool bearer_present(const conn_t *c, const char *token) {
            (p[n] == '\r' || p[n] == '\n' || p[n] == ' ' || p[n] == '\0');
 }
 
-// Every change over the network, the console log and the OTA push need the
-// API token. A controller with no token stored refuses them all; the only
-// thing it accepts is the settings save that sets the first token, through
-// one of the setup doors below.
+// Every change over the network, the console log, the web console and the
+// OTA push need the API token. A controller with no token stored refuses
+// them all; the only thing it accepts is the settings save that sets the
+// first token, through one of the setup doors below.
 static bool authorized(const conn_t *c) {
     return g_settings.api_token[0] && bearer_present(c, g_settings.api_token);
 }
@@ -812,6 +823,21 @@ static void handle_request(conn_t *c) {
             size_t n = log_sink_snapshot(log_buf, sizeof(log_buf));
             respond_static(c, 200, "OK", "text/plain; charset=utf-8", log_buf, n, true);
         }
+    } else if (!strncmp(c->req, "GET /api/v1/console", 19)) {
+        // 202 while the batch runs; then its transcript (empty before the first)
+        if (!authorized(c)) {
+            respond_unauthorized(c);
+            return;
+        }
+        cli_web_state_t st = cli_web_state();
+        size_t n;
+        const char *out = cli_web_output(&n);
+        if (st == CLI_WEB_QUEUED || st == CLI_WEB_RUNNING)
+            respond(c, 202, "Accepted", "text/plain", "");
+        else if (st == CLI_WEB_IDLE || !n)
+            respond(c, 200, "OK", "text/plain", "");
+        else
+            respond_static(c, 200, "OK", "text/plain; charset=utf-8", out, n, true);
     } else if (!strncmp(c->req, "GET /api/v1/faults", 18)) {
         int offset = 0;
         const char *q = strstr(c->req, "?offset=");
@@ -881,6 +907,24 @@ static void handle_request(conn_t *c) {
                 settings_save_later(); // the "last" boot policy keeps it
             if (queued) respond(c, 200, "OK", "application/json", "{\"ok\":true}");
             else respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
+        } else if (!strncmp(c->req, "POST /api/v1/console", 20)) {
+            // command lines as text, one per line; the main loop runs them
+            size_t n = strlen(body);
+            long cl = content_length(c->req);
+            if (cl > 0 && (size_t)cl != n) { // cut short by req[]: never run part of a batch
+                respond(c, 413, "Payload Too Large", "application/json",
+                        "{\"error\":\"send under " STR(CLI_WEB_IN_MAX) " bytes of commands at a time\"}");
+            } else if (!n) {
+                respond(c, 400, "Bad Request", "application/json", "{\"error\":\"no command\"}");
+            } else if (n >= CLI_WEB_IN_MAX) {
+                respond(c, 413, "Payload Too Large", "application/json",
+                        "{\"error\":\"send under " STR(CLI_WEB_IN_MAX) " bytes of commands at a time\"}");
+            } else if (console_busy() || !cli_web_submit(body, n)) {
+                respond(c, 409, "Conflict", "application/json",
+                        "{\"error\":\"the last commands are still running\"}");
+            } else {
+                respond(c, 202, "Accepted", "application/json", "{\"ok\":true}");
+            }
         } else if (!strncmp(c->req, "POST /api/v1/faults/clear", 25)) {
             if (!fault_log_available()) {
                 respond(c, 503, "Service Unavailable", "application/json",

@@ -69,5 +69,29 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `i2c scan <ch\|none>`, `i2c read <ch> <addr> <reg> [n]`, `i2c write <ch> <addr> <reg> <val>`, `i2c en <port> on\|off` | bench access to the backplane bus, run on the engine core: scan a mux channel (`none` = the upstream side), read or write a register, drive a blade's EN; a healthy blade segment answers `0x40 0x61 0x70 0x74` |
 | `save`, `defaults`, `reboot`, `bootsel` | settings and lifecycle |
 
-What is typed at the console is never mirrored to the log ring or a syslog
-host, so a `wifi` or `mqtt` line's password stays off the wire.
+Each command goes into the log ring, and on to a syslog host, as one line:
+`console> ` and the command, with the password of `wifi` and `mqtt` and the
+value of `token` shown as `********`. The mask is always eight characters,
+whatever the secret's length. The keys as they are typed never reach the log.
+
+## From the web page
+
+The page's **Console** tab, and `POST /api/v1/console`, run the same
+commands behind the API token. A batch of up to 2 KB, one command per
+line, runs in order from the main loop; blank lines and lines starting
+with `#` are skipped. Each line is logged and echoed as `web> ` and the
+command, masked as above, followed by what it printed. The reply holds up
+to 8 KB.
+
+These are refused there and work only on the serial console:
+
+| Refused on the web | Why |
+| --- | --- |
+| `token` | the web console already runs behind the token |
+| `update --unsigned`, `update --downgrade` | the update signing and no-downgrade rules hold for everything that arrives over the network |
+| `defaults` | it clears the token along with every other setting |
+| `bootsel` | it stops the firmware until someone reaches the box |
+
+A new command that sets the token, gets past the update rules, clears the
+settings or stops the firmware goes on this list, in
+`cli_line_web_refusal` (`src/cli_line.c`) and its test.

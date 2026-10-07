@@ -16,6 +16,7 @@ add_executable(engine_tests
     ../src/boot_reason.c
     ../src/bus_cap.c
     ../src/button.c
+    ../src/cli_line.c
     ../src/civil_time.c
     ../src/event_kind.c
     ../src/fault_text.c
@@ -53,6 +54,7 @@ add_executable(engine_tests
     test_budget.c
     test_bus_cap.c
     test_button.c
+    test_cli_line.c
     test_events.c
     test_fan.c
     test_improv.c
