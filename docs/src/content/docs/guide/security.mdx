@@ -1,0 +1,85 @@
+---
+title: Security
+description: The network Power Manifold is designed for, what is and is not encrypted, how the controller protects itself, and how to report a security problem.
+sidebar:
+  order: 7
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Use it on a trusted local network
+
+Power Manifold is designed for a local network where you trust the devices
+and the people on it, such as a home or office network.
+
+- Do not make the controller reachable from the internet. Do not forward a
+  router port to it or put it in a DMZ.
+- For access from outside, use a VPN into your network, such as Tailscale or
+  WireGuard. Add the name you use over the VPN to
+  [Host names](/integrations/network/#host-names).
+- On a network shared with devices you do not control, such as a guest
+  network, put the controller on its own network or VLAN.
+
+## What is encrypted
+
+| Connection | Encrypted | Notes |
+| --- | --- | --- |
+| Web interface and HTTP API | No | The API token is sent unencrypted on your local network with each change. |
+| MQTT | Only with TLS | Unencrypted unless your broker supports TLS and you turn it on. See [MQTT security](/integrations/network/#mqtt-security). |
+| Wi-Fi setup over Bluetooth | No | Run setup only when no untrusted person is near the chassis. See [Wi-Fi setup](/setup/wifi-provisioning/). |
+| Firmware updates | No | Each release is signed, and the controller installs only signed firmware. Encryption is not needed to keep an update from being altered. See [Firmware updates](/guide/updates/#security). |
+| Syslog | No | Messages go to your syslog server as plain UDP. |
+
+Anyone who can read traffic on your network can read the API token and,
+with plain MQTT, the broker password. This is why the controller belongs on
+a trusted network.
+
+## How the controller protects itself
+
+- **The API token.** Every change over the network needs the API token:
+  settings, port switching, updates, restarts and the web console. Reading
+  the settings or the console log needs it too. Reading the status, the
+  fault log and the Prometheus metrics does not.
+- **No token, no changes.** A controller with no API token refuses every
+  change until [first-time setup](/setup/first-time-setup/) sets one. Setup
+  is open only for ten minutes after Wi-Fi setup, or for the first hour after
+  power-up over Ethernet.
+- **Other websites cannot reach it.** A website you visit cannot use your
+  browser to read from or change the controller. The controller answers
+  only to its own IP address, its device name and the names in
+  [Host names](/integrations/network/#host-names), and during first-time
+  setup it accepts only the requests its own page sends.
+- **Signed updates.** The controller installs only firmware signed by this
+  project and built for this hardware, and does not go back to an older
+  version unless you ask for it at the serial console.
+
+## Stored settings and passing a controller on
+
+Settings are stored unencrypted on the controller, including the Wi-Fi
+password, the API token and the MQTT password. Someone with the controller
+in hand and the right tools can read them.
+
+Before you give away, sell or return a controller, do a
+[factory reset](/guide/front-panel/#the-button). It erases every stored copy
+of the settings, including the credentials.
+
+A [settings export](/guide/web-interface/#backing-up-your-settings) made with
+passwords included holds them as plain text. Keep that file somewhere safe.
+
+## Reporting a security problem
+
+Report security problems privately to **security@powermanifold.io**, or
+through **Report a vulnerability** on the project's
+[GitHub Security tab](https://github.com/mikesmitty/power-manifold/security).
+Do not open a public issue. The
+[security policy](https://github.com/mikesmitty/power-manifold/blob/main/SECURITY.md)
+describes what happens next.
+
+Security fixes come out as new controller firmware. Install updates when
+they are offered.
+
+<Aside>
+Each firmware release lists the third-party software it contains in a
+software bill of materials, `controller.cdx.json`, attached to the
+[release](https://github.com/mikesmitty/power-manifold/releases).
+</Aside>

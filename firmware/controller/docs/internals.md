@@ -328,6 +328,34 @@ says of every write. The driver is tested against an emulated supply in
 the host tests (`test_ups.c`) and is as yet untested with a real LAD
 supply.
 
+## Web server request checks
+
+The HTTP server (`src/net/http.c`) applies these checks before routing. The
+header parsing and comparisons live in `src/net/http_req.c`, which is
+host-tested.
+
+- **Host.** Every request must name the controller in `Host`: the address
+  the connection arrived on, the device name, `<name>.local`, or an entry in
+  the `hostnames` setting (lowercase, space-separated, up to 127 bytes,
+  layout version 19), with an optional `:80`. Anything else gets `403` and a
+  short HTML page linking to the Host names docs. This stops DNS rebinding:
+  a page whose own domain resolves to the controller still sends that
+  domain in `Host`. The address and the `.local` name cannot be removed, so
+  a wrong list never locks the owner out.
+- **Token.** Changes, the settings, the console log and the web console need
+  `Authorization: Bearer <token>`. The comparison takes the same time
+  wherever the first wrong character is. The server sends no CORS headers,
+  so a page on another site cannot get a browser to send the header.
+- **Setup doors.** While no token is stored, the settings routes accept the
+  Improv setup secret as the bearer, or no credential at all over the
+  Ethernet window. A settings `POST` let in that way must carry
+  `Content-Type: application/json` or it gets `415`. Browsers send a
+  cross-site POST without a CORS preflight only with a form or `text/plain`
+  type, so this keeps another site from setting the first token.
+
+Status, faults and `/metrics` need no token and are protected by the Host
+check alone.
+
 ## Console log
 
 Everything the firmware prints is mirrored into a 4 KB ring (boot banner,

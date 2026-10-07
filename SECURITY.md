@@ -40,6 +40,8 @@ A problem found in a third-party component is reported to that component's maint
 The controller is designed for use on a trusted local network. Its web page, API and MQTT
 connection are not intended to be reachable from the internet. Reports that need access to the
 local network are in scope. This design affects how severe a problem is rated.
+The [Security](https://docs.powermanifold.io/guide/security/) page of the documentation
+describes this design for owners.
 
 ## Supported versions
 
