@@ -24,15 +24,15 @@ and the people on it, such as a home or office network.
 
 | Connection | Encrypted | Notes |
 | --- | --- | --- |
-| Web interface and HTTP API | No | The API token is sent unencrypted on your local network with each change. |
+| Web interface and HTTP API | Only with HTTPS | Plain HTTP unless you install a certificate and turn HTTPS on. On plain HTTP the API token is sent unencrypted with each change. See [HTTPS](/integrations/https/). |
 | MQTT | Only with TLS | Unencrypted unless your broker supports TLS and you turn it on. See [MQTT security](/integrations/network/#mqtt-security). |
 | Wi-Fi setup over Bluetooth | No | Run setup only when no untrusted person is near the chassis. See [Wi-Fi setup](/setup/wifi-provisioning/). |
 | Firmware updates | No | Each release is signed, and the controller installs only signed firmware. Encryption is not needed to keep an update from being altered. See [Firmware updates](/guide/updates/#security). |
 | Syslog | No | Messages go to your syslog server as plain UDP. |
 
-Anyone who can read traffic on your network can read the API token and,
-with plain MQTT, the broker password. This is why the controller belongs on
-a trusted network.
+Anyone who can read traffic on your network can read the API token unless
+HTTPS is on, and the broker password with plain MQTT. This is why the
+controller belongs on a trusted network.
 
 ## How the controller protects itself
 
@@ -70,7 +70,8 @@ in hand and the right tools can read them.
 
 Before you give away, sell or return a controller, do a
 [factory reset](/guide/front-panel/#the-button). It erases every stored copy
-of the settings, including the credentials.
+of the settings, including the credentials, and the HTTPS certificate and
+its key.
 
 A [settings export](/guide/web-interface/#backing-up-your-settings) made with
 passwords included holds them as plain text. Keep that file somewhere safe.

@@ -37,6 +37,9 @@ missing name can be added by opening the controller by its address.
 Monitoring tools and scripts that reach the controller by name, such as a
 Prometheus scrape of `/metrics`, need that name in **Host names** as well.
 
+The names an installed [HTTPS](/integrations/https/) certificate covers are
+accepted without being listed.
+
 ## Time server
 
 The controller needs the time for the lights' night window, timestamps in

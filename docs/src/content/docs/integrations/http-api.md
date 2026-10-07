@@ -12,6 +12,9 @@ refuses every change until one is set.
 [First-time setup](/setup/first-time-setup/) describes how to
 set the first token.
 
+With [HTTPS](/integrations/https/) on, use `https://` and the name on the
+certificate. Port 80 then answers every request with a redirect.
+
 ## Examples
 
 Set these once in your shell, then copy any example below:
@@ -192,6 +195,7 @@ A bad value gets `400` with the reason, such as
 | `GET /api/v1/log` | The controller's recent messages as text. Needs the token. |
 | `GET /api/v1/settings` | Every setting except passwords. Needs the token. |
 | `GET /api/v1/settings/export` | Every setting, ready to import later. Add `?secrets=1` to include passwords. Needs the token. |
+| `GET /api/v1/tls` | The HTTPS certificate: `enabled`, `active`, `installed`, then `names`, `issuer`, `expires`, `days_left` and `sha256` when one is installed. |
 | `GET /metrics` | [Prometheus metrics](#prometheus). |
 
 **Status, per port:** `name`, `state`, `gen` (blade generation), `v`, `i`, `p`, `e`, `pdo`,
@@ -243,6 +247,8 @@ All of these need the token.
 | `POST /api/v1/update/skip` | none; the newest known release does not install automatically. `409` when no newer release is known. |
 | `POST /api/v1/improv` | `{"open": true}` opens Wi-Fi setup for 10 minutes; `{"open": false}` closes it |
 | `POST /api/v1/update` | a signed firmware file, see below |
+| `POST /api/v1/tls` | the private key and certificate chain as PEM text; replies like `GET /api/v1/tls`. See [HTTPS](/integrations/https/). |
+| `POST /api/v1/tls/remove` | none; removes the certificate. `409` while HTTPS is on. |
 
 Example: switch port 3 off.
 
@@ -261,7 +267,7 @@ the same keys, so you can edit an export and post it back.
 | Device | `name`, `token` |
 | Wi-Fi | `wifi_ssid`, `wifi_pass` |
 | MQTT | `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`, `mqtt_tls_verify`, `mqtt_ca` (PEM) |
-| Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `hostnames`, `syslog_host`, `syslog_port`, `update_url` |
+| Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `hostnames`, `syslog_host`, `syslog_port`, `update_url`, `https` |
 | Updates | `update_auto` (`true`: new releases install by themselves) |
 | Power | `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`, `charged_mw`, `charged_min` |
 | Lights | `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`, `tz_offset_min` |
@@ -273,6 +279,10 @@ own measuring circuit and is set only from the serial console with
 `vin cal`, against a meter, because the
 [3 A cap on a sagging input](/guide/troubleshooting/#ports-capped-at-3-a)
 acts on the trimmed reading.
+
+`https` also appears in `GET /api/v1/settings` but not in exports, because
+the certificate it needs stays on the controller. Setting it to `true`
+returns `400` until a certificate is installed.
 
 The name, Wi-Fi, MQTT broker and addressing apply after
 `POST /api/v1/reboot`. Everything else applies at once.
@@ -322,7 +332,9 @@ every port metric labeled with `port` and `name`. Blade temperatures are
 `pwrman_port_temperature_celsius` with a `sensor` label (`converter`,
 `plug`, `mcu`). `pwrman_http_refused_total` counts the requests refused
 since the controller started (see [What a refused request looks
-like](#examples)).
+like](#examples)). With a certificate installed,
+`pwrman_https_certificate_expiry_seconds` is when it expires, as a Unix
+time.
 
 ```yaml
 scrape_configs:

@@ -114,6 +114,9 @@ and the API are unavailable.
 - Try the IP address from your router instead of `pwrman.local`. Some
   networks and older Android phones don't resolve `.local` names.
 - If you renamed the device, the address is `http://<new-name>.local/`.
+- With [HTTPS](/integrations/https/) on, use the name on the certificate.
+  If that name no longer resolves or the certificate is broken, type
+  `https off` and then `save` on the serial console.
 
 ## Forgot the API token
 
@@ -130,6 +133,8 @@ settings export that includes secrets, you can import it after the reset.
 | *wired link down* | The Ethernet cable is unplugged or the switch is off. Wi-Fi is carrying traffic for now. |
 | *on battery* / UPS battery fault | Your [UPS power supply](/integrations/ups/) lost AC power or reports a battery problem. |
 | *bus voltage* out of range | The input voltage is outside the rated range. See [Bus voltage out of range](#bus-voltage-out-of-range). |
+| *HTTPS certificate expires in N days* / *expired* | The certificate renewal has stopped. Check the acme.sh or certbot job. See [HTTPS](/integrations/https/#expiry). |
+| *HTTPS on but no certificate* | The stored certificate is missing or does not load, so the controller serves plain HTTP. Install it again. |
 
 <Aside type="tip" title="Reporting a problem">
 [Open an issue](https://github.com/mikesmitty/power-manifold/issues) with a

@@ -136,6 +136,9 @@ The settings and the pages that describe them:
   [Front panel and lights](/guide/front-panel/#brightness-and-dimming).
 - **Addressing, DNS, time server, syslog, MQTT security, update source**:
   see [Network settings](/integrations/network/).
+- **HTTPS** and **Install certificate…**: see [HTTPS](/integrations/https/).
+  With HTTPS on, the page is at `https://` and the name on the
+  certificate, and asks for the API token once more there.
 - **Automatic updates**: see
   [Firmware updates](/guide/updates/#automatic-updates).
 
@@ -147,6 +150,7 @@ At the bottom of **Settings**:
   MQTT password and API token are left out unless you tick the box to
   include them. The input voltage calibration is never included: it is
   specific to the controller card and is set only over the serial console.
+  Nor are the HTTPS certificate and the HTTPS setting.
 - **Import…** loads a file you exported earlier.
 
 If the file leaves out the passwords, importing it keeps the passwords
