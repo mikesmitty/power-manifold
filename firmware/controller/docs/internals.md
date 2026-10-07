@@ -389,7 +389,7 @@ redirect.
   `https_install` then parses it with mbedTLS, requires an EC key that
   matches the first certificate and at least one DNS name, refuses expired
   certificates once SNTP has the time, and saves it. Storage is two 8 KB
-  copies (key, up to four certificates, CRC32, sequence number) after the
+  copies (key, up to six certificates, CRC32, sequence number) after the
   fault ring in the data partition, at sectors 18 to 21, written
   alternately. The record is never exported; `https_wipe` erases both on a
   factory reset.

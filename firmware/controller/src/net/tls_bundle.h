@@ -13,7 +13,9 @@
 // fullchain files read when joined. It is stored as DER in one flash
 // record of TLS_RECORD_MAX bytes.
 
-#define TLS_CERTS_MAX  4    // leaf, intermediates, and a cross-signed root
+// Let's Encrypt's ECDSA chain is four today (leaf, YE1, Root YE cross-signed
+// by X2, X2 cross-signed by X1); two more leave room for another cross-sign
+#define TLS_CERTS_MAX  6
 #define TLS_RECORD_MAX 8192 // one record: header, key and chain
 
 typedef struct {

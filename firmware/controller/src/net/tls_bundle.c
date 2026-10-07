@@ -6,7 +6,7 @@
 #include "pem.h"
 
 #define RECORD_MAGIC   0x4C544D50u // "PMTL"
-#define RECORD_VERSION 1
+#define RECORD_VERSION 2 // 1 held up to four certificates (never released)
 
 typedef struct {
     uint32_t magic;
@@ -19,7 +19,7 @@ typedef struct {
     uint32_t crc; // over this header up to here, then the payload
 } record_hdr_t;
 
-_Static_assert(sizeof(record_hdr_t) == 28, "TLS record header moved");
+_Static_assert(sizeof(record_hdr_t) == 32, "TLS record header moved");
 
 static uint32_t crc32_update(uint32_t crc, const uint8_t *data, size_t len) {
     for (size_t i = 0; i < len; i++) {
@@ -84,7 +84,7 @@ const char *tls_bundle_parse(const char *pem, size_t len, uint8_t *der, size_t c
         if (!cert && !key) continue; // EC PARAMETERS and the like
         if (find_text(body, body_end, "Proc-Type:", 10))
             return "the private key is encrypted: send it without a passphrase";
-        if (cert && b->n_certs == TLS_CERTS_MAX) return "more than 4 certificates";
+        if (cert && b->n_certs == TLS_CERTS_MAX) return "more than 6 certificates";
         if (key && b->key) return "more than one private key";
 
         size_t n = pem_base64_decode(body, (size_t)(body_end - body), der + used, cap - used);
