@@ -39,6 +39,14 @@ static ip4_addr_t ntp_applied_dhcp;
 static bool wifi_link;
 static bool wifi_mdns;
 static uint32_t last_connect_ms;
+// Read every RSSI_INTERVAL_MS from the main loop, never from a network
+// callback: the chip's ioctl wait passes arriving packets up to lwIP, so a
+// status request answered inside it would start a nested ioctl that takes
+// the outer one's reply, leaving it to time out after 500 ms.
+#define RSSI_INTERVAL_MS 5000
+static int32_t rssi_dbm;
+static uint32_t rssi_ms;
+static bool rssi_read;
 
 static void start_connect(void) {
     cyw43_arch_wifi_connect_async(g_settings.wifi_ssid,
@@ -184,6 +192,18 @@ void net_poll(uint32_t now_ms) {
         wifi_link = up;
         if (up) wifi_n = wifi_netif();
 
+        if (!up) {
+            rssi_dbm = 0;
+            rssi_read = false;
+        } else if (!rssi_read || now_ms - rssi_ms >= RSSI_INTERVAL_MS) {
+            int32_t r;
+            net_lock();
+            if (cyw43_wifi_get_rssi(&cyw43_state, &r) == 0) rssi_dbm = r;
+            net_unlock();
+            rssi_ms = now_ms;
+            rssi_read = true;
+        }
+
         // retry on explicit failure or lingering downtime
         if (!up && (status < 0 || now_ms - last_connect_ms > RECONNECT_INTERVAL_MS)) {
             last_connect_ms = now_ms;
@@ -314,11 +334,11 @@ const char *net_gw_str(void) {
 }
 
 int32_t net_rssi(void) {
-    int32_t rssi = 0;
 #if PWRMAN_NET_WIFI
-    if (wifi_up()) cyw43_wifi_get_rssi(&cyw43_state, &rssi);
+    return wifi_up() ? rssi_dbm : 0;
+#else
+    return 0;
 #endif
-    return rssi;
 }
 
 void net_reconnect(void) {
