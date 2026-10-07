@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.3.0...charger-module-firmware-v0.4.0) (2026-10-07)
+
+
+### Features
+
+* **charger-module:** count PD hard resets ([174cee5](https://github.com/mikesmitty/power-manifold/commit/174cee51109bf054efab80131634793ddfadf7ca))
+
 ## [0.3.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.2.0...charger-module-firmware-v0.3.0) (2026-10-05)
 
 
