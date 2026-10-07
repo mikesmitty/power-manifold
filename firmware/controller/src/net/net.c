@@ -101,7 +101,7 @@ void net_init(void) {
     if (g_settings.wifi_ssid[0]) {
         start_connect();
     } else {
-        printf("net: no WiFi credentials; use CLI 'wifi <ssid> [pass]' or Improv over BLE\n");
+        printf("net: no WiFi credentials; use CLI 'wifi <ssid> [pass]' or Improv Wi-Fi setup\n");
     }
     last_connect_ms = 0;
 

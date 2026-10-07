@@ -23,8 +23,8 @@ The firmware runs on two cores. **Only core 1 accesses the backplane.**
   address), MQTT (optionally over TLS) with Home Assistant discovery,
   embedded web UI + JSON API
   and a Prometheus endpoint, USB CDC maintenance console mirrored to a log
-  ring and optionally a syslog host, Improv Wi-Fi provisioning over BLE
-  (BTstack on the same CYW43).
+  ring and optionally a syslog host, Improv Wi-Fi setup
+  on the same CYW43 radio.
 - **Between them** (`src/ipc.c`): a command queue, an event queue, and a
   seqlock telemetry snapshot. Every management surface is a thin transport
   over the same command/telemetry interface.
@@ -53,7 +53,7 @@ see [Boards](building.md#boards)).
 | ETH_INT# | GP21 | GP21 | W6100 interrupt, level-low while a frame waits |
 | BUTTON | GP22 (a wire to GND) | GP22 | front-panel button, see [Front-panel button](https://docs.powermanifold.io/guide/front-panel/) |
 | VIN_SENSE | — | GP28 / ADC2 | DC bus voltage through 120 kΩ / 10 kΩ, see [Bus voltage](#bus-voltage) |
-| RM2 radio | — | GP23/24/25/29 | the Pico 2 W's own CYW43 wiring, so the WiFi and BLE code carries over unchanged |
+| RM2 radio | — | GP23/24/25/29 | the Pico 2 W's own CYW43 wiring, so the radio code carries over unchanged |
 
 The two reset lines differ in more than pin number. Both parts run on
 the backplane's 5 V and want 3.5 V for a high, so the carrier never

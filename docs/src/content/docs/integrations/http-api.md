@@ -36,7 +36,7 @@ curl $PM/api/v1/status
   "total_w": 110.42, "reserved_w": 202.0,
   "budget_w": 240.0, "headroom_w": 38.0,
   "energy_kwh": 17.850, "fan": "on", "fan_mode": "auto",
-  "alert": false, "ble": "off", "boot": "power-on",
+  "alert": false, "improv": "off", "boot": "power-on",
   "warm_start": false, "vin_v": 24.06, "ceiling_ma": 0,
   "problem": false, "problems": "",
   "led_mode": "normal", "led_now": 48,
@@ -194,13 +194,13 @@ A bad value gets `400` with the reason, such as
 `fault`, `t_conv`, `t_plug`, `t_mcu`, `progress`, `update_due`, `silent`.
 
 **Status, chassis:** `name`, `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
-`energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `ble`, `uptime_s`,
+`energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `improv`, `uptime_s`,
 `fw`, `blade_fw`, `slot`, `trial`, `boot`, `warm_start`, `vin_v`,
 `ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`,
 `chassis_light`, and a `ups` object.
 
 `chassis_light` is what the chassis light shows: `bus_fault` (red, fast
-blink: input voltage out of range), `bluetooth` (blue: Bluetooth setup
+blink: input voltage out of range), `wifi_setup` (blue: Wi-Fi setup
 open), `setup` (amber: first-time setup open) or `ok` (dim green).
 
 ## Commands

@@ -215,7 +215,7 @@ static void build_ups_json(char *out, size_t cap) {
 // network is left out, because a browser that loaded the page has one.
 static const char *chassis_light_name(void) {
     if (vin_low() || vin_high()) return "bus_fault";
-    if (improv_active()) return "bluetooth";
+    if (improv_active()) return "wifi_setup";
     if (http_setup_open(to_ms_since_boot(get_absolute_time()))) return "setup";
     return "ok";
 }
@@ -248,7 +248,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
-        "\"fan_mode\":\"%s\",\"alert\":%s,\"ble\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
+        "\"fan_mode\":\"%s\",\"alert\":%s,\"improv\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
         "\"vin_v\":%s,\"ceiling_ma\":%lu,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
         "\"chassis_light\":\"%s\","
         "\"blade_fw\":%s,%s\"ports\":[",
@@ -563,7 +563,7 @@ static void respond_settings_locked(conn_t *c) {
         why = "setup window closed: power-cycle the controller or press its button once, "
               "then set an API token within an hour";
     else
-        why = "no API token yet: finish Wi-Fi setup over Bluetooth to unlock settings, "
+        why = "no API token yet: finish Wi-Fi setup to unlock settings, "
               "or connect Ethernet";
     char b[192];
     snprintf(b, sizeof(b), "{\"error\":\"%s\"}", why);

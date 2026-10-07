@@ -17,7 +17,7 @@ set(PICO_MBEDTLS_CONFIG_FILE "pwrman_mbedtls_config.h")
 pico_sdk_init()
 
 option(FAKE_BLADES "Simulate the backplane and blades; runs on a bare board" OFF)
-option(NET_WIFI "CYW43 WiFi + Improv BLE provisioning (Pico 2 W, RM2)" ON)
+option(NET_WIFI "CYW43 WiFi + Improv Wi-Fi setup (Pico 2 W, RM2)" ON)
 option(NET_ETH "WIZnet W6100 wired Ethernet on SPI0 GP16-21, probed at boot" ON)
 option(CARRIER_INTERNAL_PULLUPS
     "Bench only: Pico 2 W on the pcie-breakout without the three 4.7k resistors; RP2350 internal pull-ups on SDA/SCL/ALERT# and a 100 kHz bus" OFF)

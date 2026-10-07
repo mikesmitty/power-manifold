@@ -1,6 +1,6 @@
 ---
 title: Wi-Fi setup
-description: Send Power Manifold your Wi-Fi details over Bluetooth from this page or from the Home Assistant app.
+description: Send Power Manifold your Wi-Fi details from this page or from the Home Assistant app.
 sidebar:
   order: 2
 ---
@@ -8,19 +8,20 @@ sidebar:
 import { Aside, Steps } from '@astrojs/starlight/components';
 import ImprovProvisioner from '../../../components/ImprovProvisioner.astro';
 
-Power Manifold gets its Wi-Fi details over Bluetooth, using the
-[Improv Wi-Fi](https://www.improv-wifi.com/) standard. You can do it from
-this page or from the Home Assistant app. The setup runs in your browser and
-connects directly to the controller, so your Wi-Fi password is sent only to
-the controller.
+Power Manifold gets its Wi-Fi details over a short-range wireless link,
+using the [Improv Wi-Fi](https://www.improv-wifi.com/) standard. You can do
+it from this page or from the Home Assistant app. The setup runs in your
+browser and connects directly to the controller, so your Wi-Fi password is
+sent only to the controller. Your phone or computer must be near the
+chassis.
 
 <ImprovProvisioner />
 
 <Aside type="note" title="Which browser?">
-This page needs Web Bluetooth, which works in Chrome and Edge on desktop and
-Android. It does not work in Safari or Firefox, or in any browser on an
-iPhone or iPad. On those, use the Home Assistant app: go to **Settings →
-Devices & services → Add integration → Improv via BLE**. The app also shows a
+This page works in Chrome and Edge on desktop and Android. It does not work
+in Safari or Firefox, or in any browser on an iPhone or iPad. On those, use
+the Home Assistant app: go to **Settings → Devices & services → Add
+integration** and search for **Improv**. The app also shows a
 notification by itself when it finds a Power Manifold waiting for setup.
 </Aside>
 
@@ -53,18 +54,18 @@ notification by itself when it finds a Power Manifold waiting for setup.
 
 ## Changing Wi-Fi later
 
-The controller listens over Bluetooth only while it is waiting for setup.
+The controller's setup link is open only while it is waiting for setup.
 It starts waiting by itself when it has no Wi-Fi details, or when it has
 been off the network for five minutes. To change networks on a controller
 that is working, open a ten-minute setup window in either of these ways:
 
 - Hold the front-panel button for 3 seconds, then let go before 10 seconds.
   See [the button](/guide/front-panel/#the-button).
-- Press **Open BLE provisioning** in Home Assistant.
+- Press **Open Wi-Fi setup** in Home Assistant.
 
-Then follow the steps above. Bluetooth is off at all other times.
+Then follow the steps above. The setup link is off at all other times.
 
 <Aside type="caution">
-The Bluetooth link is not encrypted. Run setup only when no untrusted
-person is within Bluetooth range.
+The setup link is not encrypted. Run setup only when no untrusted person
+is near the chassis.
 </Aside>

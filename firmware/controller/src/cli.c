@@ -60,7 +60,7 @@ static void print_help(void) {
            "  status                       port table + chassis power\n"
            "  info                         firmware/network/broker state\n"
            "  wifi <ssid> [pass]           set WiFi credentials\n"
-           "  improv [on|off]              BLE provisioning window (Improv Wi-Fi)\n"
+           "  improv [on|off]              Wi-Fi setup window (Improv Wi-Fi)\n"
            "  mqtt <host> [port user pass] set MQTT broker (empty host disables)\n"
            "  mqtt tls on|off|unverified   TLS to the broker: verified against the installed certificate, else Let's Encrypt\n"
            "  mqtt ca [clear]              the installed broker certificate (install one from the web UI)\n"
@@ -229,11 +229,11 @@ static void print_info(void) {
     }
     if (improv_available()) {
         uint32_t left = improv_window_left_s(to_ms_since_boot(get_absolute_time()));
-        printf("ble: improv %s", improv_state_str());
+        printf("improv: %s", improv_state_str());
         if (left) printf(" (closes in %lus)", (unsigned long)left);
         printf("\n");
     } else {
-        printf("ble: unavailable\n");
+        printf("improv: unavailable\n");
     }
     telemetry_t t;
     ipc_snapshot_read(&t);
@@ -550,7 +550,7 @@ static void run_line(char *l) {
         if (!op) {
             printf("improv: %s\n", improv_available() ? improv_state_str() : "unavailable");
         } else if (!strcmp(op, "on")) {
-            if (!improv_open(IMPROV_WINDOW_MS, "console")) printf("BLE unavailable\n");
+            if (!improv_open(IMPROV_WINDOW_MS, "console")) printf("Wi-Fi setup unavailable\n");
         } else if (!strcmp(op, "off")) {
             improv_close();
             printf("improv: off (automatic windows disabled until 'improv on' or reboot)\n");

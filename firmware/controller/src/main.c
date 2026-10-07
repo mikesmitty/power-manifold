@@ -188,8 +188,8 @@ int main(void) {
         }
         case BUTTON_LONG:
             printf(improv_open(IMPROV_WINDOW_MS, "button")
-                       ? "button: BLE provisioning window open\n"
-                       : "button: BLE unavailable on this build\n");
+                       ? "button: Wi-Fi setup window open\n"
+                       : "button: Wi-Fi setup unavailable on this build\n");
             break;
         case BUTTON_VERY_LONG: {
             engine_cmd_t c = {.op = CMD_LED_HOLD, .arg = 255};

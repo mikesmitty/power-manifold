@@ -5,7 +5,7 @@ How to build the controller firmware for each board, run it without a backplane,
 ## Building
 
 Requires the [pico-sdk](https://github.com/raspberrypi/pico-sdk) (2.x) with
-its `lib/btstack` (BLE provisioning) and `lib/mbedtls` (MQTT TLS) submodules
+its `lib/btstack` (Wi-Fi setup) and `lib/mbedtls` (MQTT TLS) submodules
 checked out, an `arm-none-eabi` toolchain, and Python 3 (BTstack's
 `compile_gatt.py` turns `src/net/improv_profile.gatt` into a header at build
 time).
@@ -69,7 +69,7 @@ ninja -C build-pull
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `NET_WIFI` | ON | CYW43 WiFi + Improv BLE provisioning; needs a CYW43 board (`pico2_w`, the card) |
+| `NET_WIFI` | ON | CYW43 WiFi + Improv Wi-Fi setup; needs a CYW43 board (`pico2_w`, the card) |
 | `NET_ETH` | ON | W6100 wired Ethernet on SPI0 GP16–21, probed once at boot |
 
 Both on is the production shape (RM2 radio + W6100). A Pico 2 W with nothing

@@ -690,9 +690,9 @@ static void publish_update_entity(void) {
 static void publish_improv_button(void) {
     discovery_config_topic("button", "improv");
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"~\":\"%s\",\"name\":\"Open BLE provisioning\","
+             "{\"~\":\"%s\",\"name\":\"Open Wi-Fi setup\","
              "\"uniq_id\":\"pwrman_%s_improv\",\"cmd_t\":\"~/improv/set\","
-             "\"pl_prs\":\"open\",\"ic\":\"mdi:bluetooth-settings\","
+             "\"pl_prs\":\"open\",\"ic\":\"mdi:wifi-cog\","
              "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);

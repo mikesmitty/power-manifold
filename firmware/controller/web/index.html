@@ -340,7 +340,7 @@ async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}c
  $('tw').innerHTML=W(d.total_w)+'<small> W</small>';$('rw').innerHTML=W(d.reserved_w,0)+'<small> W</small>';
  $('fw').innerHTML=W(d.headroom_w,0)+'<small> W</small>';$('bw').textContent=W(d.budget_w,0)+' W';
  const pr=$('prob');pr.hidden=!d.problems;pr.textContent=d.problems?d.problems.charAt(0).toUpperCase()+d.problems.slice(1)+'.':'';
- const CL={bus_fault:['red fast','bus voltage out of range'],bluetooth:['blue breathe','Bluetooth setup open'],setup:['amber breathe','first-time setup open']}[d.chassis_light]||['green dim','all clear'];
+ const CL={bus_fault:['red fast','bus voltage out of range'],wifi_setup:['blue breathe','Wi-Fi setup open'],setup:['amber breathe','first-time setup open']}[d.chassis_light]||['green dim','all clear'];
  $('cl').className='led '+CL[0];$('cl').title='Chassis light: '+CL[1];
  const A=[['Firmware',d.fw+', slot '+d.slot+(d.trial?', on trial':'')],['Blade firmware',d.blade_fw||'\u2013'],['Running for',dur(d.uptime_s)],['Last start',d.boot],
   ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')']];if(d.ups&&d.ups.present)A.push(['UPS',d.ups.status]);

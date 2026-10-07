@@ -8,7 +8,7 @@ discovery, and a serial console.
 
 The production target is the `hardware/controller` card in the backplane's
 management socket: an RP2350A with a WIZnet W6100 for wired Ethernet and a
-Raspberry Pi RM2 for Wi-Fi and Bluetooth.
+Raspberry Pi RM2 for Wi-Fi.
 
 ## Quick start
 

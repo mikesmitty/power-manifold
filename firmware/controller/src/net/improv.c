@@ -334,7 +334,7 @@ static void open_locked(uint32_t window_ms, open_reason_t why, const char *label
     } else if (hci_working) {
         start_advertising();
     }
-    printf("improv: BLE provisioning open (%s)", label);
+    printf("improv: Wi-Fi setup open (%s)", label);
     if (window_ms) printf(", closes in %lu min", (unsigned long)(window_ms / 60000));
     printf("\n");
 }
@@ -351,7 +351,7 @@ static void close_locked(const char *why) {
         hci_working = false;
         hci_power_control(HCI_POWER_OFF);
     }
-    printf("improv: BLE provisioning closed (%s)\n", why);
+    printf("improv: Wi-Fi setup closed (%s)\n", why);
 }
 
 // ---- public API ------------------------------------------------------------
@@ -363,7 +363,7 @@ void improv_init(void) {
     // out WiFi ioctls in flight (seen as [CYW43] do_ioctl timeouts).
     if (cyw43_bluetooth_hci_init() != 0) {
         net_unlock();
-        printf("improv: BT controller init failed; BLE provisioning unavailable\n");
+        printf("improv: radio init failed; Wi-Fi setup unavailable\n");
         return;
     }
     l2cap_init();

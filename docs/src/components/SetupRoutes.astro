@@ -2,7 +2,7 @@
 // The two ways onto the network during first-time setup, side by side,
 // meeting at the API token. Each step shows the chassis light at that point
 // (render_chassis in firmware/controller/src/engine/led_pattern.c): blue
-// while Bluetooth waits, amber while settings are open with no token, dim
+// while Wi-Fi setup waits, amber while settings are open with no token, dim
 // green once a token is saved.
 
 type Step = { light: string; lvl?: number; anim?: 'pulse'; title: string; detail: string };
@@ -22,7 +22,7 @@ const ROUTES: { name: string; steps: Step[] }[] = [
 	{
 		name: 'Wi-Fi',
 		steps: [
-			{ light: BLUE, anim: 'pulse', title: 'Power up', detail: 'After about 15 seconds it waits for setup over Bluetooth.' },
+			{ light: BLUE, anim: 'pulse', title: 'Power up', detail: 'After about 15 seconds it waits for Wi-Fi setup.' },
 			{ light: BLUE, anim: 'pulse', title: 'Run Wi-Fi setup', detail: 'From the Wi-Fi setup page or the Home Assistant app.' },
 			{ light: AMBER, anim: 'pulse', title: 'Press Next', detail: 'Opens the web interface with settings open for ten minutes.' },
 		],
