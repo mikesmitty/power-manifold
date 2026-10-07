@@ -6,6 +6,8 @@
         "firmware/controller": {
             "component": "controller-firmware",
             "include-component-in-tag": true,
+            "draft": true,
+            "force-tag-creation": true,
             "extra-files": [
                 "src/manifold.h"
             ]
@@ -13,6 +15,8 @@
         "firmware/charger-module": {
             "component": "charger-module-firmware",
             "include-component-in-tag": true,
+            "draft": true,
+            "force-tag-creation": true,
             "initial-version": "0.1.0",
             "extra-files": [
                 "src/blade.h"

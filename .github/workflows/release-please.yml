@@ -125,6 +125,17 @@ jobs:
           fi
           gh release upload "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
 
+      # Firmware releases are created as drafts (release-please-config.json)
+      # and published only once every file is attached: an immutable release
+      # cannot take files after publishing, and the update server never sees
+      # a release without its signed image. A failed run leaves the draft to
+      # fix and re-run.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.controller-tag }}
+        run: gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
+
   build-charger-module-firmware:
     name: Build charger module firmware
     needs: release-please
@@ -155,3 +166,10 @@ jobs:
           gh release upload "$TAG" dist/charger-module.elf dist/charger-module.bin \
             dist/charger-module.hex dist/charger-module.cdx.json \
             --repo "$GITHUB_REPOSITORY" --clobber
+
+      # A draft until its files are attached, as for the controller above.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.charger-module-tag }}
+        run: gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
