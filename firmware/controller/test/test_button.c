@@ -143,7 +143,7 @@ static void test_very_long_press(void) {
 }
 
 void run_button_tests(void) {
-    mt_run("button: not fitted", test_not_fitted);
+    mt_run("button: not present", test_not_fitted);
     mt_run("button: short press on release", test_short_press);
     mt_run("button: bounces are ignored", test_bounce_ignored);
     mt_run("button: long press on release", test_long_press);

@@ -10,7 +10,7 @@
 // eight conversions every 100 ms, reported as a one-second moving average,
 // about 10 mV a count. The reference is the card's 3.3 V rail and the
 // divider is 1 % parts, so settings vin_cal (permille) trims the gain from
-// one meter reading. Hardware-free above vin_hw.h; "not fitted" on a
+// one meter reading. Hardware-free above vin_hw.h; "not present" on a
 // board without the divider.
 
 #define VIN_CAL_DEFAULT 1000
@@ -42,5 +42,5 @@ bool     vin_high(void); // over VIN_HIGH_MV (with hysteresis)
 // the bus); clamped to VIN_CAL_MIN..MAX. 0 when there is no reading yet.
 uint16_t vin_cal_for(uint32_t measured_mv);
 
-// "24.13 V", "18.70 V LOW", "33.40 V HIGH", "no sample yet", "not fitted"
+// "24.13 V", "18.70 V LOW", "33.40 V HIGH", "no sample yet", "not present"
 const char *vin_status_str(void);

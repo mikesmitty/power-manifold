@@ -48,7 +48,7 @@ static void test_not_fitted(void) {
     MT_ASSERT_EQ(vin_mv(), 0);
     MT_ASSERT_EQ(emu_reads, 0);
     MT_ASSERT(!vin_low() && !vin_high());
-    MT_ASSERT(!strcmp(vin_status_str(), "not fitted"));
+    MT_ASSERT(!strcmp(vin_status_str(), "not present"));
     MT_ASSERT_EQ(vin_cal_for(24000), 0);
 }
 
@@ -136,7 +136,7 @@ static void test_high_with_hysteresis(void) {
 }
 
 void run_vin_tests(void) {
-    mt_run("vin: not fitted", test_not_fitted);
+    mt_run("vin: not present", test_not_fitted);
     mt_run("vin: scale and cadence", test_scale);
     mt_run("vin: calibration from a meter reading", test_calibration);
     mt_run("vin: averaging and settling", test_averaging);

@@ -73,7 +73,7 @@ static void log_status_change(uint16_t was, uint16_t now) {
     uint16_t diff = was ^ now;
     if (diff & LAD_ST_ON_BATTERY)
         printf(now & LAD_ST_ON_BATTERY ? "ups: AC input lost, load on battery\n"
-                                       : "ups: back on mains\n");
+                                       : "ups: back on AC power\n");
     else if (diff & LAD_ST_AC_OK)
         printf(now & LAD_ST_AC_OK ? "ups: AC input normal\n" : "ups: AC input abnormal\n");
     if (diff & LAD_ST_CHG_FULL && (now & LAD_ST_CHG_FULL)) printf("ups: battery full\n");
@@ -215,7 +215,7 @@ const char *ups_status_str(void) {
                      : (st.status_l & LAD_ST_CHG_FULL) ? "full"
                      : (st.status_l & LAD_ST_CHARGING) ? "charging" : "idle";
     snprintf(status_buf, sizeof(status_buf), "%s %u.%u V, battery %u.%02u V %s, load %u.%02u A",
-             (st.status_l & LAD_ST_ON_BATTERY) ? "ON BATTERY, mains" : "on mains",
+             (st.status_l & LAD_ST_ON_BATTERY) ? "ON BATTERY, AC" : "on AC",
              st.mains_dv / 10, st.mains_dv % 10, st.batt_cv / 100, st.batt_cv % 100, batt,
              st.load_ca / 100, st.load_ca % 100);
     return status_buf;

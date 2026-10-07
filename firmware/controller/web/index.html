@@ -3,14 +3,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Power Manifold</title>
 <script>
-// Colour theme: "auto" follows the device, "light" or "dark" is the choice
-// stored in this browser. The page's colours key off data-theme only.
+// Color theme: "auto" follows the device, "light" or "dark" is the choice
+// stored in this browser. The page's colors key off data-theme only.
 const MQ=matchMedia('(prefers-color-scheme:dark)');let theme='auto';try{theme=localStorage.theme||'auto';}catch(e){}
 function paint(){document.documentElement.dataset.theme=theme=='auto'?(MQ.matches?'dark':'light'):theme;}
 paint();MQ.addEventListener('change',paint);
 </script>
 <style>
-/* The page is the front of the box: a black anodised faceplate with white print on an aluminium (light) or graphite (dark) shell. Readings use a DIN face, as on bench instruments; everything else is the system face. Layout: name, faceplate, one status line, the power budget, the six ports as cells like the slots, then tabs for faults, console and settings. */
+/* The page is the front of the box: a black anodized faceplate with white print on an aluminum (light) or graphite (dark) shell. Readings use a DIN face, as on bench instruments; everything else is the system face. Layout: name, faceplate, one status line, the power budget, the six ports as cells like the slots, then tabs for faults, console and settings. */
 :root{
 --bg:#d8dbdc;--panel:#eef0f0;--panel2:#e2e5e6;--line:#bfc5c8;--fg:#15181a;--mute:#555f66;--ink:#15181a;
 --plate:#000;--plate-edge:#34373a;--plate-ink:#f1f1ec;
@@ -36,7 +36,7 @@ button{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:4px}
 
-/* faceplate: black anodised, white print, one light per port. The print is the one place with capitals, as on the real plate. */
+/* faceplate: black anodized, white print, one light per port. The print is the one place with capitals, as on the real plate. */
 .plate{background:var(--plate);border:1px solid var(--plate-edge);border-radius:6px;padding:1rem 1.25rem;
 display:flex;align-items:center;gap:1.25rem;overflow-x:auto;color:var(--plate-ink)}
 .brand{font-size:.62rem;letter-spacing:.2em;line-height:1.5;flex:none;display:flex;align-items:center;gap:.6rem}
@@ -169,7 +169,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
 </style></head><body>
 <div class="wrap">
 
-<header class="top"><h1 id="dn">Power Manifold</h1><button class="btn sm" id="thm" type="button" title="Colour theme"></button></header>
+<header class="top"><h1 id="dn">Power Manifold</h1><button class="btn sm" id="thm" type="button" title="Color theme"></button></header>
 
 <div class="plate" aria-label="Front panel lights">
  <div class="brand"><span class="led" id="cl" title="Chassis light"></span><span>POWER<br>MANIFOLD</span></div>
@@ -220,7 +220,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     <label>Update source<span class="h">Checked once a day for a newer release. Blank means never.</span><input id="upd" name="upd" maxlength="63"></label>
    </fieldset>
    <fieldset><legend>Network</legend>
-    <label>Addressing<span class="h">Wired if a W6100 is fitted, else WiFi. Applies at reboot.</span><select id="ipmode" name="ipmode"><option value="dhcp">DHCP</option><option value="static">Static</option></select></label>
+    <label>Addressing<span class="h">Wired if a W6100 is present, else WiFi. Applies at reboot.</span><select id="ipmode" name="ipmode"><option value="dhcp">DHCP</option><option value="static">Static</option></select></label>
     <div class="three"><label>IP address<input id="ip" name="ip" placeholder="10.0.0.20"></label><label>Netmask<input id="mask" name="mask" placeholder="255.255.255.0"></label><label>Gateway<input id="gw" name="gw" placeholder="10.0.0.1"></label></div>
     <div class="two"><label>DNS server<span class="h">Blank: from DHCP</span><input id="dns" name="dns" placeholder="10.0.0.1"></label><label>Time server<span class="h">Blank: DHCP's, else {{NET_NTP_DEFAULT}}</span><input id="ntp" name="ntp" maxlength="63"></label></div>
     <div class="two"><label>Syslog host<span class="h">Blank: off</span><input id="slh" name="slh" maxlength="63"></label><label>Syslog port<input id="slp" name="slp" type="number" min="1" max="65535"></label></div>
@@ -273,7 +273,7 @@ THB.onclick=()=>{theme=theme=='auto'?'light':theme=='light'?'dark':'auto';try{lo
 const $=s=>document.getElementById(s),N=600,H=[],esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
 let last,sel=-1,ask=-1;
 const COL={green:'var(--green)',blue:'var(--blue)',white:'var(--mute)',amber:'var(--amber)',red:'var(--red)',cyan:'var(--cyan)',off:'var(--off)'};
-// The same colours and rates the chassis lights use (led_pattern.c).
+// The same colors and rates the chassis lights use (led_pattern.c).
 // A port whose blade is updating is dark, as on the chassis, and blinks
 // cyan once the blade starts up again.
 function led(p){const a=p.v>=11?'blue':'green';switch(p.state){

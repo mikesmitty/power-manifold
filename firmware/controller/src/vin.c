@@ -94,7 +94,7 @@ uint16_t vin_cal_for(uint32_t measured_mv) {
 }
 
 const char *vin_status_str(void) {
-    if (!fitted) return "not fitted";
+    if (!fitted) return "not present";
     if (!ring_n) return "no sample yet";
     uint32_t mv = vin_mv();
     snprintf(status_buf, sizeof(status_buf), "%lu.%02lu V%s", (unsigned long)mv / 1000,

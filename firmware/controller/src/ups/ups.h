@@ -36,7 +36,7 @@ const ups_state_t *ups_state(void);
 unsigned ups_fault_text(char *buf, unsigned cap);
 
 // One line for `info` / the page: "absent", or e.g.
-// "on mains 230.2 V, battery 47.9 V charging, load 6.57 A"
+// "on AC 230.2 V, battery 47.9 V charging, load 6.57 A"
 const char *ups_status_str(void);
 
 // Queue a buzzer on/off write (volatile on the supply: lost when it restarts).

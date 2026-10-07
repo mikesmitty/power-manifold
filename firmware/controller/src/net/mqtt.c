@@ -853,7 +853,7 @@ static void discovery_publish(int i) {
                            "{{ value_json.ups_batt_v }}");
         break;
     case 17:
-        publish_optional_entity(ups_present(), "sensor", "ups_mains_v", "UPS mains voltage",
+        publish_optional_entity(ups_present(), "sensor", "ups_mains_v", "UPS AC voltage",
                            "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
                            "{{ value_json.ups_mains_v }}");
         break;

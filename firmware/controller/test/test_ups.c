@@ -241,7 +241,7 @@ static void test_detect_and_read(void) {
     MT_ASSERT(!ups_on_battery());
     MT_ASSERT(!ups_fault());
     MT_ASSERT(!strcmp(ups_status_str(),
-                      "on mains 230.2 V, battery 47.90 V charging, load 6.57 A"));
+                      "on AC 230.2 V, battery 47.90 V charging, load 6.57 A"));
 
     // cadence: the four fast registers once a second, the slow two every 10 s
     int before = requests;

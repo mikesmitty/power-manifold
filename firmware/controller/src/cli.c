@@ -180,7 +180,7 @@ static void print_info(void) {
            g_settings.wifi_ssid[0] ? g_settings.wifi_ssid : "(unset)",
            net_link_status() == CYW43_LINK_UP ? "up" : "down");
 #else
-    printf("wifi: not fitted\n");
+    printf("wifi: not present\n");
 #endif
 #if PWRMAN_NET_ETH
     printf("eth: %s\n", eth_status_str());
@@ -397,7 +397,7 @@ static void print_ups(void) {
     ups_fault_text(fault, sizeof(fault));
     printf("  status %04x/%04x: AC %s, %s, %s%s%s%s%s\n", s->status_h, s->status_l,
            (s->status_l & LAD_ST_AC_OK) ? "ok" : "ABNORMAL",
-           (s->status_l & LAD_ST_ON_BATTERY) ? "on battery" : "on mains",
+           (s->status_l & LAD_ST_ON_BATTERY) ? "on battery" : "on AC power",
            (s->status_l & LAD_ST_CHG_FULL) ? "battery full" :
            (s->status_l & LAD_ST_CHARGING) ? "charging" : "not charging",
            (s->status_l & LAD_ST_FORCED) ? ", forced start" : "",
