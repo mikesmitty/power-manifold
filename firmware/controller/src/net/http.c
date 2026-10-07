@@ -80,6 +80,7 @@ typedef struct {
     bool tls_upload;    // headers done, body streams into the certificate buffer
     uint32_t body_left; // update or certificate body bytes still expected
     uint32_t body_got;  // certificate body bytes taken so far
+    uint32_t discard;   // body bytes of a refused upload still to read before closing
     bool tls;           // came in on port 443
     struct altcp_tls_config *tls_conf; // the configuration it was accepted with
     bool keep_alive;    // another request may follow the response (http_req_keep_alive)
@@ -118,6 +119,7 @@ static void conn_reset_request(conn_t *c) {
     c->static_copy = false;
     c->body_left = 0;
     c->body_got = 0;
+    c->discard = 0;
     c->idle_polls = 0;
 }
 
@@ -142,6 +144,7 @@ static void conn_free(conn_t *c) {
     c->static_copy = false;
     c->updating = false;
     c->body_left = 0;
+    c->discard = 0;
     c->idle_polls = 0;
 }
 
@@ -203,6 +206,7 @@ static void send_more(conn_t *c) {
     altcp_output(c->pcb);
     if (!done) return;
     if (c->keep_alive) conn_reset_request(c);
+    else if (c->discard) c->resp_len = 0; // recv_cb closes once the refused body is in
     else if (!tls_unsent(c)) conn_close(c); // else sent_cb or poll_cb comes back here
 }
 
@@ -944,6 +948,16 @@ static void update_feed(conn_t *c, struct pbuf *p, uint16_t skip) {
     }
 }
 
+// A refused upload is answered at once. Closing while its body still
+// arrives makes the client's TCP stack reset the connection, often before it
+// has read the answer, so the rest of the body is read and dropped first.
+// extra: body bytes received past what req[] holds.
+static void discard_body(conn_t *c, const char *body_start, uint32_t extra) {
+    long cl = content_length(c->req);
+    long have = (long)(c->req_len - (uint16_t)(body_start - c->req)) + (long)extra;
+    c->discard = cl > have ? (uint32_t)(cl - have) : 0;
+}
+
 static void update_post_start(conn_t *c, const char *body_start) {
     c->keep_alive = false; // a refusal leaves the body unread
     if (!authorized(c)) {
@@ -1353,6 +1367,13 @@ static err_t recv_cb(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err
     altcp_recved(pcb, p->tot_len);
     c->idle_polls = 0;
 
+    if (c->discard) {
+        c->discard -= p->tot_len < c->discard ? p->tot_len : c->discard;
+        pbuf_free(p);
+        if (!c->discard && !c->resp_len && !tls_unsent(c)) conn_close(c);
+        return ERR_OK;
+    }
+
     if (c->resp_len) {
         // response still in flight: a client that sends its next request
         // before this one is answered gets the connection closed after it,
@@ -1380,12 +1401,17 @@ static err_t recv_cb(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err
         } else if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19) &&
                    (c->req[19] == ' ' || c->req[19] == '?')) {
             // the image upload only: /api/v1/update/check and /latest are requests
+            // counted before the start, whose refusal may finish sending at once
+            discard_body(c, hdr_end + 4, p->tot_len - copied);
             update_post_start(c, hdr_end + 4);
+            if (c->updating) c->discard = 0;
             // body bytes past what fit in req[] are still in this pbuf
             if (c->updating && copied < p->tot_len) update_feed(c, p, copied);
         } else if (hdr_end && !strncmp(c->req, "POST /api/v1/tls", 16) &&
                    (c->req[16] == ' ' || c->req[16] == '?')) {
+            discard_body(c, hdr_end + 4, p->tot_len - copied);
             tls_post_start(c, hdr_end + 4);
+            if (c->tls_upload) c->discard = 0;
             if (c->tls_upload && copied < p->tot_len) tls_upload_feed(c, p, copied);
         } else if (hdr_end) {
             // non-update bodies are small and usually ride in with the
