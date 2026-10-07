@@ -11,10 +11,6 @@ hero:
     - text: Get started
       link: /setup/first-time-setup/
       icon: right-arrow
-    - text: Front panel and lights
-      link: /guide/front-panel/
-      icon: open-book
-      variant: minimal
     - text: Source on GitHub
       link: https://github.com/mikesmitty/power-manifold
       icon: external
@@ -24,18 +20,47 @@ hero:
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 import AdapterClutter from '../../components/AdapterClutter.astro';
 
-Power Manifold powers a stack of Raspberry Pis, mini PCs, phones and
-laptops from one DC power supply. It replaces the separate power adapter for
-each device, the power strip and the cables between them. Each of its six
-USB-C ports supports USB Power Delivery, so every device gets the voltage it
-requests, and a built-in controller monitors every port.
+<CardGrid>
+	<LinkCard
+		title="Set up your ports"
+		description="Names, on/off at power-up, voltage and current limits, auto-off when charged."
+		href="/guide/port-settings/"
+	/>
+	<LinkCard
+		title="Share power between ports"
+		description="Set the power budget and port priorities for a supply smaller than 600 W."
+		href="/guide/sharing-power/"
+	/>
+	<LinkCard
+		title="Add it to Home Assistant"
+		description="Connect it to your MQTT broker and every port appears automatically."
+		href="/guide/home-assistant/"
+	/>
+	<LinkCard
+		title="Read the lights"
+		description="What each port light and the chassis light mean, and what the button does."
+		href="/guide/front-panel/"
+	/>
+	<LinkCard
+		title="Troubleshooting"
+		description="What a red light or a problem warning means, and what to do about it."
+		href="/guide/troubleshooting/"
+	/>
+	<LinkCard
+		title="Hardware and firmware"
+		description="Architecture, building the firmware and the serial console, for developers."
+		href="/developers/architecture/"
+	/>
+</CardGrid>
+
+## What it does
 
 <AdapterClutter />
 
 <div class="features">
 	<div class="feature">
 		<h3>Six ports, up to 100 W each</h3>
-		<p>Each port offers 5, 9, 12, 15 and 20 V plus PPS, and up to 5 A with a 5 A cable.</p>
+		<p>Powers Raspberry Pis, phones, mini PCs and laptops at 5, 9, 12, 15 or 20 V, or PPS, with up to 5 A on a 5 A cable.</p>
 	</div>
 	<div class="feature">
 		<h3>Shares power by priority</h3>
@@ -47,31 +72,6 @@ requests, and a built-in controller monitors every port.
 	</div>
 	<div class="feature">
 		<h3>Status lights and live readings</h3>
-		<p>A light under each port shows what it is doing, and the built-in web interface shows live power for every port.</p>
+		<p>A light above each port shows what it is doing, and the built-in web interface shows live power for every port.</p>
 	</div>
 </div>
-
-## Where to go next
-
-<CardGrid>
-	<LinkCard
-		title="Set it up"
-		description="Connect power, get it on your network and choose a password."
-		href="/setup/first-time-setup/"
-	/>
-	<LinkCard
-		title="Set up your ports"
-		description="Names, on/off at power-up, voltage and current limits, auto-off when charged."
-		href="/guide/port-settings/"
-	/>
-	<LinkCard
-		title="Add it to Home Assistant"
-		description="Connect it to your MQTT broker and every port appears automatically."
-		href="/guide/home-assistant/"
-	/>
-	<LinkCard
-		title="Troubleshooting"
-		description="What a red light or a problem warning means, and what to do about it."
-		href="/guide/troubleshooting/"
-	/>
-</CardGrid>
