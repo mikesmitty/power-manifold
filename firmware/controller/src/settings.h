@@ -106,6 +106,8 @@ typedef struct {
     char     update_seen[UPDATE_VERSION_MAX]; // the newer release the wait is counted for
     char     update_skip[UPDATE_VERSION_MAX]; // never installed automatically: skipped, or rolled back
     char     update_tried[UPDATE_VERSION_MAX]; // the image a restart went into; checked at the next boot
+    // -- added in layout version 21 --
+    uint8_t  https;            // 1: the web server listens on 443 and port 80 only redirects (net/https.h)
     uint32_t crc; // must remain last
 } settings_t;
 

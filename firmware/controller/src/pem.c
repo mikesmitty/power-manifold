@@ -44,6 +44,30 @@ size_t pem_to_der(const char *text, uint8_t *out, size_t cap) {
     return any ? n : 0;
 }
 
+size_t pem_base64_decode(const char *text, size_t len, uint8_t *out, size_t cap) {
+    size_t n = 0;
+    uint32_t acc = 0;
+    int bits = 0;
+    bool any = false;
+    for (size_t i = 0; i < len; i++) {
+        char c = text[i];
+        if (c == ' ' || c == '\t' || c == '\r' || c == '\n') continue;
+        if (c == '=') break; // padding: the base64 is complete
+        int v = b64_value(c);
+        if (v < 0) return 0;
+        acc = (acc << 6) | (uint32_t)v;
+        bits += 6;
+        any = true;
+        if (bits >= 8) {
+            bits -= 8;
+            if (n >= cap) return 0;
+            out[n++] = (uint8_t)(acc >> bits);
+            acc &= (1u << bits) - 1u;
+        }
+    }
+    return any ? n : 0;
+}
+
 size_t der_to_pem(const uint8_t *der, size_t len, char *out, size_t cap, const char *eol) {
     static const char head[] = "-----BEGIN CERTIFICATE-----", tail[] = "-----END CERTIFICATE-----";
     size_t eol_len = strlen(eol);

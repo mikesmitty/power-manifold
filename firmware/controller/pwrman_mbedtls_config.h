@@ -1,10 +1,10 @@
 #pragma once
 
-// mbedTLS 3.6 for the broker link only (src/net/mqtt_tls.c): a TLS 1.2
-// client that trusts the one certificate in the settings, or nothing in the
-// unverified state. The update client stays on plain HTTP by design, with
+// mbedTLS 3.6 for the broker link (src/net/mqtt_tls.c), a TLS 1.2 client,
+// and the web server's HTTPS (src/net/https.c), a TLS 1.2 server with an
+// ECDSA certificate. The update client stays on plain HTTP by design, with
 // firmware authenticity on the image signature. Measured 2026-10-04 against
-// the same SDK: this selection adds about 105 KB of code and 9 KB of RAM.
+// the same SDK: the client alone added about 105 KB of code and 9 KB of RAM.
 
 #define MBEDTLS_ALLOW_PRIVATE_ACCESS // the SDK's lwIP glue reaches into mbedTLS structs
 
@@ -30,17 +30,27 @@
 
 #define MBEDTLS_SSL_TLS_C
 #define MBEDTLS_SSL_CLI_C
+#define MBEDTLS_SSL_SRV_C
 #define MBEDTLS_SSL_PROTO_TLS1_2
 #define MBEDTLS_SSL_SERVER_NAME_INDICATION
-// The receive buffer must hold the broker's whole certificate chain as one
-// handshake message: a leaf plus one intermediate with RSA keys is about
-// 4 KB. Nothing the controller sends over MQTT comes near the send buffer.
-#define MBEDTLS_SSL_IN_CONTENT_LEN  8192
-#define MBEDTLS_SSL_OUT_CONTENT_LEN 4096
+// Session tickets let a browser resume a session without the key exchange
+// and signature, which cost the controller a few hundred milliseconds each
+// (lwipopts.h ALTCP_MBEDTLS_USE_SESSION_TICKETS).
+#define MBEDTLS_SSL_SESSION_TICKETS
+#define MBEDTLS_SSL_TICKET_C
+// Buffers are per connection and sized for the largest record each way.
+// Browsers and curl send records of up to 16 KB (a firmware upload does)
+// and TLS 1.2 gives a server no way to ask for less, so receiving takes the
+// full 16 KB. Sending must hold the server's whole certificate chain as one
+// handshake message: up to 8 KB of it (net/tls_bundle.h TLS_RECORD_MAX).
+// The broker link has the same sizes, which also covers a broker's chain.
+#define MBEDTLS_SSL_IN_CONTENT_LEN  16384
+#define MBEDTLS_SSL_OUT_CONTENT_LEN 8192
 
 // Key exchange and signatures: ECDHE with either an ECDSA or an RSA
 // certificate, P-256 and P-384. RSA costs 22 KB and stays because most
-// home-rolled CAs are RSA.
+// home-rolled CAs are RSA; the web server accepts ECDSA keys only, since
+// an RSA signature would take it over a second per connection.
 #define MBEDTLS_BIGNUM_C
 #define MBEDTLS_ECP_C
 #define MBEDTLS_ECDH_C

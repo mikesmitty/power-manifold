@@ -15,6 +15,11 @@
 // no base64, holds a character that is not base64, or does not fit cap.
 size_t pem_to_der(const char *text, uint8_t *out, size_t cap);
 
+// Decode the base64 in text[0..len) into out, skipping whitespace and
+// stopping at padding. Returns the byte count, or 0 when the text holds no
+// base64, holds a character that is not base64, or does not fit cap.
+size_t pem_base64_decode(const char *text, size_t len, uint8_t *out, size_t cap);
+
 // Encode DER as PEM text: the CERTIFICATE armour around base64 wrapped at 64
 // columns, every line ended with eol. eol is "\n" for a file and "\\n" (the
 // two characters) when writing straight into a JSON string. Returns the

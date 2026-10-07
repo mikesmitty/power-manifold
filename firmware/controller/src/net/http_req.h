@@ -24,11 +24,22 @@ bool http_req_header(const char *req, const char *name, char *out, size_t cap);
 bool http_req_is_json(const char *req);
 
 // Host names the controller itself: its address on the connection (dotted
-// IPv4 text), its device name, the device name under .local, or one of the
+// IPv4 text), its device name, the device name under .local, one of the
 // owner's extra names (the hostnames setting: lowercase, space-separated),
-// with an optional :80. False when Host is absent or names anything else.
-bool http_req_host_ok(const char *req, const char *local_ip, const char *device_name,
-                      const char *hostnames);
+// or a name the HTTPS certificate covers (space-separated, "*.rest" for a
+// wildcard; "" with none), with an optional :port for the port the request
+// came in on. False when Host is absent or names anything else.
+bool http_req_host_ok(const char *req, uint16_t port, const char *local_ip,
+                      const char *device_name, const char *hostnames, const char *cert_names);
+
+// The connection may carry another request after this one: HTTP/1.1
+// without "Connection: close", or HTTP/1.0 asking for keep-alive.
+bool http_req_keep_alive(const char *req);
+
+// Where a plain-HTTP request goes once HTTPS is on: https://, the Host
+// without its port, then the request target as sent. False when Host or
+// the target is missing, or the result does not fit cap.
+bool http_req_https_location(const char *req, char *out, size_t cap);
 
 // The Authorization header is "Bearer <secret>" (scheme in any case) with
 // exactly this secret. The comparison takes the same time wherever the first

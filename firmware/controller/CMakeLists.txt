@@ -11,7 +11,8 @@ include(pico_sdk_import.cmake)
 project(power_manifold_controller C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 
-# mbedTLS options for the broker link (src/net/mqtt_tls.c); the SDK reads
+# mbedTLS options for the broker link (src/net/mqtt_tls.c) and the web
+# server's HTTPS (src/net/https.c); the SDK reads
 # this variable while it sets up, so it comes first
 set(PICO_MBEDTLS_CONFIG_FILE "pwrman_mbedtls_config.h")
 pico_sdk_init()
@@ -105,6 +106,8 @@ add_executable(controller
     src/net/mqtt_tls.c
     src/net/http.c
     src/net/http_req.c
+    src/net/https.c
+    src/net/tls_bundle.c
     src/net/jsonlite.c
     src/net/ota_pull.c
     src/net/http_url.c
@@ -221,7 +224,7 @@ target_link_libraries(controller
     hardware_watchdog
     hardware_adc
     pico_lwip_mqtt
-    pico_lwip_mbedtls # TLS on the broker link
+    pico_lwip_mbedtls # TLS on the broker link and the web server
     pico_mbedtls
     pico_lwip_mdns
     pico_lwip_sntp

@@ -230,6 +230,8 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     <div class="two"><label>DNS server<span class="h">Blank: from DHCP</span><input id="dns" name="dns" placeholder="10.0.0.1"></label><label>Time server<span class="h">Blank: DHCP's, else {{NET_NTP_DEFAULT}}</span><input id="ntp" name="ntp" maxlength="63"></label></div>
     <div class="two"><label>Syslog host<span class="h">Blank: off</span><input id="slh" name="slh" maxlength="63"></label><label>Syslog port<input id="slp" name="slp" type="number" min="1" max="65535"></label></div>
     <label>Host names<span class="h">Other names this page is opened by, such as a DNS or tailnet name, separated by spaces. The IP address and the device name with .local always work.</span><input id="hosts" name="hosts" maxlength="255"></label>
+    <label>HTTPS<span class="h" id="tlsi">No certificate installed.</span><select id="https" name="https"><option value="off">Off</option><option value="on">On: port 80 redirects</option></select></label>
+    <div class="actions"><button class="btn sm" id="tlb" type="button">Install certificate&hellip;</button><button class="btn sm" id="tlr" type="button" hidden>Remove certificate</button><input type="file" id="tlf" multiple hidden></div>
    </fieldset>
    <fieldset><legend>MQTT</legend>
     <div class="two"><label>Broker<span class="h">Blank: MQTT off</span><input id="mhost" name="mhost" maxlength="63"></label><label>Port<input id="mport" name="mport" type="number" min="1" max="65535"></label></div>
@@ -407,18 +409,23 @@ async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr
   M.textContent=w==BT?(sessionStorage.tok?'Token rejected. ':'')+'Enter the API token to edit settings.':cap(w);return null;}
  const d=await r.json();LK.hidden=true;F.hidden=false;
  for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';F.uauto.value=d.update_auto?'on':'off';
+ F.https.value=d.https?'on':'off';tlsLoad();
  PN.forEach((e,i)=>e.value=d.port_names[i]||'');PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);
  PV.forEach((e,i)=>e.value=d.port_max_v[i]);PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PR.forEach((e,i)=>e.checked=!!d.port_protect[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);
  const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';
  F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;
  M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks the API and this panel, so keep a copy.';return d;}
 F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;
- b.update_auto=F.uauto.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
+ b.update_auto=F.uauto.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
  b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_protect=PR.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
  b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;
  let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});d=await r.json();}catch(e){}
  if(!r||!r.ok){M.textContent='Not saved: '+(d.error||'no response');return;}
- if(b.token)sessionStorage.tok=b.token;F.mpass.value=F.atok.value='';await cfgLoad();
+ if(b.token)sessionStorage.tok=b.token;F.mpass.value=F.atok.value='';
+ // HTTPS switched: carry on at the other address (the token is asked for again there)
+ if(b.https!=(location.protocol=='https:')){M.textContent='Saved. Opening the page over '+(b.https?'HTTPS':'HTTP')+'.';
+  setTimeout(()=>location.href=(b.https?'https://':'http://')+location.hostname+'/',800);return;}
+ await cfgLoad();
  M.textContent=d.reboot_required?'Saved. Reboot to apply the name, broker and addressing.':'Saved and applied.';tick();};
 // Check and Install answer at once; the result shows in About on the next status poll.
 async function updPost(path,what){let r;try{r=await fetch('/api/v1/update/'+path,{method:'POST',headers:hdr()});}catch(e){}
@@ -439,6 +446,19 @@ IMF.onchange=async()=>{const f=IMF.files[0];if(!f)return;const t=await f.text();
  try{r=await fetch('/api/v1/settings',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:t});d=await r.json();}catch(e){}
  if(!r||!r.ok){M.textContent='Not imported: '+(d.error||'no response');return;}await cfgLoad();
  M.textContent=d.reboot_required?'Imported. Reboot to apply the name, network and broker.':'Imported and applied.';};
+// HTTPS certificate: shown under the HTTPS setting, installed from the
+// key and chain files (acme.sh's .key and fullchain.cer), removed while off
+async function tlsLoad(){let d;try{d=await(await fetch('/api/v1/tls')).json();}catch(e){return;}
+ $('tlsi').textContent=d.installed?d.names.join(', ')+', by '+d.issuer+', expires '+d.expires+(d.days_left!=null?' ('+d.days_left+' days)':'')+'.':'No certificate installed. Install the key and certificate chain first.';
+ $('tlr').hidden=!d.installed;}
+const TLF=$('tlf');$('tlb').onclick=()=>TLF.click();
+TLF.onchange=async()=>{let t='';for(const f of TLF.files)t+=await f.text()+'\n';TLF.value='';if(!t.trim())return;let r,d={};
+ try{r=await fetch('/api/v1/tls',{method:'POST',headers:{...hdr(),'Content-Type':'application/x-pem-file'},body:t});d=await r.json();}catch(e){}
+ if(r&&r.status==401){unlock('install a certificate');return;}
+ M.textContent=r&&r.ok?'Certificate installed.':'Not installed: '+(d.error||'no response');tlsLoad();};
+$('tlr').onclick=async()=>{let r,d={};try{r=await fetch('/api/v1/tls/remove',{method:'POST',headers:hdr()});d=await r.json();}catch(e){}
+ if(r&&r.status==401){unlock('remove the certificate');return;}
+ M.textContent=r&&r.ok?'Certificate removed.':'Not removed: '+(d.error||'no response');tlsLoad();};
 $('ul').onclick=()=>{sessionStorage.tok=$('tok').value;cfgLoad();};
 $('tok').onkeydown=e=>{if(e.key=='Enter')$('ul').click();};
 // Something needed the token: open Settings at the token field and say what for.

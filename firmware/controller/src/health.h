@@ -8,7 +8,8 @@
 // binary sensor, the status JSON, the page and `info`: any port in FAULT,
 // the engine stalled, a trial firmware image not yet committed, or the
 // wired link down while WiFi carries the traffic, the UPS running on its
-// battery or reporting a battery fault. Core 0. Writes a short
+// battery or reporting a battery fault, HTTPS on without a certificate or
+// with one about to expire. Core 0. Writes a short
 // description ("faults: Port 2, Desk; trial firmware uncommitted", empty
 // when healthy) and returns the number of problems found.
 unsigned health_problems(const telemetry_t *t, char *buf, size_t cap);

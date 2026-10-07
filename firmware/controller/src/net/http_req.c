@@ -2,7 +2,11 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
+
+#include "tls_bundle.h"
 
 bool http_req_header(const char *req, const char *name, char *out, size_t cap) {
     size_t nlen = strlen(name);
@@ -60,13 +64,27 @@ static bool listed(const char *name, size_t n, const char *list) {
     return false;
 }
 
-bool http_req_host_ok(const char *req, const char *local_ip, const char *device_name,
-                      const char *hostnames) {
+// name (n bytes) is covered by one of the space-separated certificate names
+static bool cert_covers(const char *name, size_t n, const char *list) {
+    for (const char *p = list; *p;) {
+        while (*p == ' ') p++;
+        const char *e = p;
+        while (*e && *e != ' ') e++;
+        if (tls_name_match(p, (size_t)(e - p), name, n)) return true;
+        p = e;
+    }
+    return false;
+}
+
+bool http_req_host_ok(const char *req, uint16_t port, const char *local_ip,
+                      const char *device_name, const char *hostnames, const char *cert_names) {
     char host[256];
     if (!http_req_header(req, "Host", host, sizeof(host))) return false;
     char *colon = strchr(host, ':');
     if (colon) {
-        if (strcmp(colon, ":80")) return false;
+        char want[8];
+        snprintf(want, sizeof(want), ":%u", (unsigned)port);
+        if (strcmp(colon, want)) return false;
         *colon = '\0';
     }
     size_t n = strlen(host);
@@ -74,9 +92,49 @@ bool http_req_host_ok(const char *req, const char *local_ip, const char *device_
     if (!n) return false;
     if (!strcmp(host, local_ip)) return true;
     if (listed(host, n, hostnames)) return true;
+    if (cert_names && cert_covers(host, n, cert_names)) return true;
     size_t d = strlen(device_name);
     if (!d || strncasecmp(host, device_name, d)) return false;
     return host[d] == '\0' || !strcasecmp(host + d, ".local");
+}
+
+// "close" or "keep-alive" among the Connection header's comma-separated tokens
+static bool connection_says(const char *req, const char *token) {
+    char v[64];
+    if (!http_req_header(req, "Connection", v, sizeof(v))) return false;
+    size_t n = strlen(token);
+    for (const char *p = v; *p;) {
+        while (*p == ' ' || *p == ',') p++;
+        const char *e = p;
+        while (*e && *e != ',') e++;
+        const char *t = e;
+        while (t > p && t[-1] == ' ') t--;
+        if ((size_t)(t - p) == n && !strncasecmp(p, token, n)) return true;
+        p = e;
+    }
+    return false;
+}
+
+bool http_req_keep_alive(const char *req) {
+    const char *eol = strstr(req, "\r\n");
+    if (!eol || eol - req < 8) return false;
+    if (!strncmp(eol - 8, "HTTP/1.1", 8)) return !connection_says(req, "close");
+    return !strncmp(eol - 8, "HTTP/1.0", 8) && connection_says(req, "keep-alive");
+}
+
+bool http_req_https_location(const char *req, char *out, size_t cap) {
+    char host[256];
+    if (!http_req_header(req, "Host", host, sizeof(host))) return false;
+    char *colon = strchr(host, ':');
+    if (colon) *colon = '\0';
+    if (!host[0]) return false;
+    const char *t = strchr(req, ' ');
+    if (!t || t[1] != '/') return false;
+    t++;
+    size_t n = 0;
+    while (t[n] && t[n] != ' ' && t[n] != '\r' && t[n] != '\n') n++;
+    int w = snprintf(out, cap, "https://%s%.*s", host, (int)n, t);
+    return w > 0 && (size_t)w < cap;
 }
 
 const char *http_req_hostnames_parse(const char *in, char *out, size_t cap) {

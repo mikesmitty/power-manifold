@@ -15,7 +15,7 @@ typedef struct {
     bool fan_on;  // the engine's live fan state, reported as fan_mode when manual
     bool setup;   // the request came in on the first-time setup secret
     bool secrets; // include wifi_pass, mqtt_pass and token
-    bool export;  // add "format" and "fw", leave out vin_cal
+    bool export;  // add "format" and "fw", leave out vin_cal and https
 } settings_json_opts_t;
 
 // Room for the whole object with a broker certificate installed, PEM and

@@ -40,6 +40,8 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `dns <addr>\|auto` | resolver override |
 | `ntp <host>\|auto` | time server override |
 | `hostnames <name>...\|clear` | more names the web server answers to; its IP address and `<name>.local` always work |
+| `https` / `https on\|off` | the HTTPS state and the installed certificate; `on` needs a certificate (installed with `POST /api/v1/tls` or from the page) and makes port 80 redirect |
+| `https remove` | remove the certificate; refused while HTTPS is on |
 | `syslog <host> [port]` / `syslog off` | mirror the console to a UDP syslog host |
 | `name <device-name>` | hostname and topic id |
 | `token <t>\|clear` | API bearer token; with none stored the network API refuses every change until one is set here, through Improv, or in the first hour on Ethernet |

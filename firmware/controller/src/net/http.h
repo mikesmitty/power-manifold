@@ -21,6 +21,14 @@
 //   POST /api/v1/reboot       plain reboot shortly after the response
 //   POST /api/v1/update       OTA: body = firmware image (uf2 or bin); writes
 //                             the inactive A/B slot, then reboots into a trial
+//   GET  /api/v1/tls          the HTTPS certificate: names, issuer, expiry
+//   POST /api/v1/tls          body = PEM key and certificate chain: install
+//   POST /api/v1/tls/remove   remove it (with settings https off)
+//
+// With settings https on and a certificate installed, the same server also
+// listens on 443 and port 80 answers every request with a redirect there.
+// Responses keep the connection open for the next request (HTTP/1.1
+// keep-alive), so a page polling over HTTPS pays for one handshake.
 //
 // Every POST, the console log and the settings need "Authorization: Bearer
 // <token>". With no token stored the controller refuses them all, except
@@ -29,7 +37,12 @@
 // the first hour after power-up for a request arriving over Ethernet. A
 // request let in that way must set a token, which closes both doors.
 
-void http_init(void); // also starts the Ethernet setup hour
+void http_init(void); // also starts the Ethernet setup hour, and loads the HTTPS certificate
+
+// Open or close the port-443 listener to match settings https and the
+// installed certificate (net/https.h). After either changes; takes the
+// network lock.
+void http_tls_sync(void);
 
 // Mint the setup secret (good for 10 minutes, or until a token exists).
 // Improv calls this with the network lock held; returns static storage.

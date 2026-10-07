@@ -17,6 +17,7 @@
 #include "log_sink.h"
 #include "manifold.h"
 #include "net/http.h"
+#include "net/https.h"
 #include "net/improv.h"
 #include "net/mqtt.h"
 #include "net/net.h"
@@ -61,6 +62,7 @@ static void factory_reset(void) {
     printf("button: factory reset — restoring defaults and rebooting\n");
     sleep_ms(300);
     if (!settings_wipe()) printf("settings: wipe failed\n");
+    if (!https_wipe()) printf("https: wipe failed\n");
     fault_log_clear();
     sleep_ms(20);
     boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);

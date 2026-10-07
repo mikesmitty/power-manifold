@@ -7,6 +7,7 @@
 #include "flash_map.h"
 #include "ipc.h"
 #include "net/eth.h"
+#include "net/https.h"
 #include "net/net.h"
 #include "settings.h"
 #include "ups/ups.h"
@@ -69,6 +70,12 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
         n = put(buf, cap, n, count ? "; " : "");
         n = put(buf, cap, n, "UPS battery: ");
         n = put(buf, cap, n, text);
+        count++;
+    }
+    const char *tls = https_problem(net_epoch());
+    if (tls) {
+        n = put(buf, cap, n, count ? "; " : "");
+        n = put(buf, cap, n, tls);
         count++;
     }
     if (vin_low() || vin_high() || bus_cap_on()) {

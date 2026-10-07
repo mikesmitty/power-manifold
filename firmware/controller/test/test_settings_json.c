@@ -67,6 +67,7 @@ static void fill(settings_t *s) {
     s->led_idle_min = 45;
     s->tz_offset_min = -240;
     s->vin_cal = 1023;
+    s->https = 1;
     for (int i = 0; i < NUM_PORTS; i++) {
         snprintf(s->port_name[i], sizeof(s->port_name[i]), "Slot %d <b>&", i + 1);
         s->port_limit_ma[i] = 1000u + 500u * (uint32_t)i;
@@ -96,6 +97,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"led_night\":\"22:00-06:30\"") != NULL);
     MT_ASSERT(strstr(json, "\"tz_offset_min\":-240") != NULL);
     MT_ASSERT(strstr(json, "vin_cal") == NULL); // a backup leaves the trim out
+    MT_ASSERT(strstr(json, "\"https\"") == NULL); // and HTTPS, whose certificate stays behind
     MT_ASSERT(strstr(json, "\"blade_auto_update\":false") != NULL);
     MT_ASSERT(strstr(json, "\"update_auto\":false") != NULL);
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
@@ -112,10 +114,13 @@ static void test_round_trip(void) {
     MT_ASSERT(ap.fan_mode_given && ap.fan_manual_on);
     // compare field by field: the record's on-flash header and the
     // runtime off-mask are not carried by the JSON, and neither is the
-    // bus-voltage trim (serial console only)
+    // bus-voltage trim (serial console only) or HTTPS (it needs this unit's
+    // certificate)
     MT_ASSERT_EQ(dst.vin_cal, 0);
+    MT_ASSERT_EQ(dst.https, 0);
     dst.port_off_mask = src.port_off_mask;
     dst.vin_cal = src.vin_cal;
+    dst.https = src.https;
     MT_ASSERT(!memcmp(&src.wifi_ssid, &dst.wifi_ssid,
                       offsetof(settings_t, crc) - offsetof(settings_t, wifi_ssid)));
 }
@@ -131,6 +136,7 @@ static void test_secrets_off_by_default(void) {
     MT_ASSERT(strstr(json, "\"token_set\":true") != NULL);
     MT_ASSERT(strstr(json, "\"format\"") == NULL);
     MT_ASSERT(strstr(json, "\"vin_cal\":1023") != NULL); // shown, though never backed up
+    MT_ASSERT(strstr(json, "\"https\":true") != NULL);
     // ...and importing such an export keeps the secrets the box already has
     settings_t dst = src;
     strcpy(dst.wifi_pass, "keep-me");
@@ -183,6 +189,7 @@ static void test_rejects(void) {
     // the bus-voltage trim is serial-console only: accepted and ignored
     MT_ASSERT(apply_fresh("{\"vin_cal\":1200}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"vin_cal\":950}", false) == NULL);
+    MT_ASSERT(apply_fresh("{\"https\":false}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"blade_watch_s\":300}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"blade_watch_s\":60,\"blade_auto_update\":true,\"blade_boot_via_loader\":false}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"led_night\":\"\",\"led_idle_min\":60}", false) == NULL);

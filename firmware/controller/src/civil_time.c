@@ -15,6 +15,17 @@ void civil_from_days(uint32_t days, unsigned *y, unsigned *m, unsigned *d) {
     *y = (unsigned)(yoe + era * 400) + (*m <= 2);
 }
 
+// Howard Hinnant's days_from_civil
+uint32_t civil_days(unsigned y, unsigned m, unsigned d) {
+    int64_t yy = (int64_t)y - (m <= 2);
+    int64_t era = (yy >= 0 ? yy : yy - 399) / 400;
+    unsigned yoe = (unsigned)(yy - era * 400);
+    unsigned doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
+    unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    int64_t days = era * 146097 + (int64_t)doe - 719468;
+    return days < 0 ? 0 : (uint32_t)days;
+}
+
 static uint32_t shifted(uint32_t epoch, int16_t tz_offset_min) {
     int64_t t = (int64_t)epoch + (int64_t)tz_offset_min * 60;
     return t < 0 ? 0 : (uint32_t)t;

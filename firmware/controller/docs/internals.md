@@ -335,9 +335,11 @@ header parsing and comparisons live in `src/net/http_req.c`, which is
 host-tested.
 
 - **Host.** Every request must name the controller in `Host`: the address
-  the connection arrived on, the device name, `<name>.local`, or an entry in
+  the connection arrived on, the device name, `<name>.local`, an entry in
   the `hostnames` setting (lowercase, space-separated, up to 127 bytes,
-  layout version 19), with an optional `:80`. Anything else gets `403` and a
+  layout version 19), or a DNS name in the installed HTTPS certificate
+  (a `*.` wildcard covers one label), with an optional `:80` or `:443`
+  matching the port the request came in on. Anything else gets `403` and a
   short HTML page linking to the Host names docs. This stops DNS rebinding:
   a page whose own domain resolves to the controller still sends that
   domain in `Host`. The address and the `.local` name cannot be removed, so
@@ -365,6 +367,52 @@ logged a minute; the rest are counted, and the count is printed with the
 next line that is logged. `pwrman_http_refused_total` in `/metrics` counts
 every refusal since boot. Refusals are not written to the fault log, which
 lives in flash.
+
+## HTTPS
+
+The same server runs over lwIP's `altcp` layer, so one set of handlers
+serves plain connections on port 80 and TLS connections on 443
+(`src/net/https.c`, mbedTLS through lwIP's `altcp_tls`). The 443 listener
+exists only while the `https` setting (layout version 21) is on and a
+certificate is installed; port 80 then answers every request, after the
+Host check, with `307` to `https://<Host><path>`. A 307 keeps the method and
+is not cached, so turning HTTPS off is not undone by browsers that saw the
+redirect.
+
+- **Certificate.** `POST /api/v1/tls` takes the PEM key (SEC1 or PKCS#8)
+  and chain in any block order, streamed into its own 12 KB buffer like an
+  OTA body. `src/net/tls_bundle.c` (host-tested) splits it into DER;
+  `https_install` then parses it with mbedTLS, requires an EC key that
+  matches the first certificate and at least one DNS name, refuses expired
+  certificates once SNTP has the time, and saves it. Storage is two 8 KB
+  copies (key, up to four certificates, CRC32, sequence number) after the
+  fault ring in the data partition, at sectors 18 to 21, written
+  alternately. The record is never exported; `https_wipe` erases both on a
+  factory reset.
+- **Configurations.** Each installed certificate gets its own
+  `altcp_tls_config` with the server's authentication mode set to none (the
+  compiled-in `ALTCP_MBEDTLS_AUTHMODE` is the broker link's "required",
+  which on a server demands a client certificate). A new certificate
+  replaces the listener; connections keep the configuration they were
+  accepted with, which is freed when the last of them closes. Three
+  configurations can exist at once.
+- **Cost.** A full handshake is an ECDHE key exchange and an ECDSA
+  signature in lwIP's context, a few hundred milliseconds on the RP2350.
+  Responses carry `Connection: keep-alive` and the page polls on one
+  connection; session tickets (`ALTCP_MBEDTLS_USE_SESSION_TICKETS`) let a
+  new connection resume without the key exchange. With all four connection
+  slots taken, a new connection evicts the one idle longest.
+- **Buffers.** mbedTLS takes 16 KB in and 8 KB out per TLS connection: TLS
+  1.2 gives a server no way to ask a browser for smaller records, and the
+  certificate chain goes out as one handshake message. `TCP_WND` is 16
+  segments, because lwIP's TLS layer opens the window only as whole records
+  complete and a smaller window stalls a 16 KB record. The MQTT client
+  shares these sizes.
+
+The health line reports HTTPS on without a usable certificate (port 80 then
+serves plain HTTP rather than redirect to nothing), and a certificate
+within 7 days of expiry. `pwrman_https_certificate_expiry_seconds` in
+`/metrics` gives the expiry time.
 
 ## Console log
 

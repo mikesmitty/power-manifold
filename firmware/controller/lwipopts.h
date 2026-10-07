@@ -44,7 +44,10 @@
 // else. 1200 clears every common encapsulation and costs the LAN under a
 // percent of throughput.
 #define TCP_MSS                     1200
-#define TCP_WND                     (8 * TCP_MSS)
+// The receive window must take one whole TLS record of up to 16 KB plus its
+// overhead: lwIP's TLS layer opens the window only as records complete, so
+// a smaller one stalls an HTTPS upload for good (pwrman_mbedtls_config.h).
+#define TCP_WND                     (16 * TCP_MSS)
 // Per-connection unacknowledged data. Four segments is plenty on a LAN and
 // caps how much heap a connection whose peer stops acknowledging can hold.
 #define TCP_SND_BUF                 (4 * TCP_MSS)
@@ -78,17 +81,21 @@
 // port samples every second (seen on the bench 2026-09-04).
 #define MQTT_REQ_MAX_IN_FLIGHT      16
 
-// TLS for the broker link (src/net/mqtt_tls.c): lwIP's application-layer
-// TCP abstraction with its mbedTLS adapter. Every MQTT connection, plain or
-// not, and every HTTP client connection then goes through altcp, and a TLS
-// connection takes two of its control blocks. The compiled-in verification
-// mode is "required"; the unverified state relaxes it on its own
-// configuration object.
+// TLS for the broker link (src/net/mqtt_tls.c) and the web server
+// (src/net/https.c): lwIP's application-layer TCP abstraction with its
+// mbedTLS adapter. Every MQTT connection, plain or not, every HTTP client
+// connection and every web server connection then goes through altcp, and
+// a TLS connection takes two of its control blocks: the web server's four
+// connections and two listeners, MQTT, the update and check clients. The
+// compiled-in verification mode is "required"; the unverified MQTT state
+// relaxes it on its own configuration object, the web server on its own
+// (a server would otherwise demand a client certificate).
 #define LWIP_ALTCP                  1
 #define LWIP_ALTCP_TLS              1
 #define LWIP_ALTCP_TLS_MBEDTLS      1
-#define MEMP_NUM_ALTCP_PCB          6
+#define MEMP_NUM_ALTCP_PCB          20
 #define ALTCP_MBEDTLS_AUTHMODE      MBEDTLS_SSL_VERIFY_REQUIRED
+#define ALTCP_MBEDTLS_USE_SESSION_TICKETS 1
 
 // Source-based routing (lwip_hooks.h): with WiFi and Ethernet on one
 // subnet, replies leave via the netif that owns their source address

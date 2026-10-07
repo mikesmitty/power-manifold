@@ -40,25 +40,65 @@ static void test_json_content_type(void) {
 
 static void test_host_names_the_controller(void) {
     const char *ip = "192.168.1.50", *name = "pwrman";
-    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50\r\n", ""), ip, name, ""));
-    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50:80\r\n", ""), ip, name, ""));
-    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman\r\n", ""), ip, name, ""));
-    MT_ASSERT(http_req_host_ok(REQ("Host: PwrMan.local\r\n", ""), ip, name, ""));
-    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local.\r\n", ""), ip, name, ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50:80\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: PwrMan.local\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local.\r\n", ""), 80, ip, name, "", ""));
 }
 
 // The owner's own names for the controller: a LAN DNS record, a tailnet
 // name, a proxy that passes Host through
 static void test_host_extra_names(void) {
     const char *ip = "192.168.1.50", *name = "pwrman", *list = "pm.home.lan pm.tail1234.ts.net";
-    MT_ASSERT(http_req_host_ok(REQ("Host: pm.home.lan\r\n", ""), ip, name, list));
-    MT_ASSERT(http_req_host_ok(REQ("Host: PM.Tail1234.ts.net.:80\r\n", ""), ip, name, list));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pm.home.lan\r\n", ""), 80, ip, name, list, ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: PM.Tail1234.ts.net.:80\r\n", ""), 80, ip, name, list, ""));
     // the address and the device name stay allowed whatever the list holds
-    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50\r\n", ""), ip, name, list));
-    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local\r\n", ""), ip, name, list));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: pm.home\r\n", ""), ip, name, list));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: home.lan\r\n", ""), ip, name, list));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: x.pm.home.lan\r\n", ""), ip, name, list));
+    MT_ASSERT(http_req_host_ok(REQ("Host: 192.168.1.50\r\n", ""), 80, ip, name, list, ""));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local\r\n", ""), 80, ip, name, list, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pm.home\r\n", ""), 80, ip, name, list, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: home.lan\r\n", ""), 80, ip, name, list, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: x.pm.home.lan\r\n", ""), 80, ip, name, list, ""));
+}
+
+// A port-443 request, and the names the HTTPS certificate covers
+static void test_host_https(void) {
+    const char *ip = "192.168.1.50", *name = "pwrman", *cert = "pm.home.example.com *.lab.example.com";
+    MT_ASSERT(http_req_host_ok(REQ("Host: pm.home.example.com\r\n", ""), 443, ip, name, "", cert));
+    MT_ASSERT(http_req_host_ok(REQ("Host: PM.Home.Example.com:443\r\n", ""), 443, ip, name, "", cert));
+    MT_ASSERT(http_req_host_ok(REQ("Host: pwrman.local:443\r\n", ""), 443, ip, name, "", cert));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrman.local:80\r\n", ""), 443, ip, name, "", cert));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrman.local:443\r\n", ""), 80, ip, name, "", cert));
+    // a wildcard covers one label, no more and no fewer
+    MT_ASSERT(http_req_host_ok(REQ("Host: pm.lab.example.com\r\n", ""), 443, ip, name, "", cert));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: lab.example.com\r\n", ""), 443, ip, name, "", cert));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: a.pm.lab.example.com\r\n", ""), 443, ip, name, "", cert));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: home.example.com\r\n", ""), 443, ip, name, "", cert));
+    // certificate names count on port 80 too: its redirect names them
+    MT_ASSERT(http_req_host_ok(REQ("Host: pm.home.example.com\r\n", ""), 80, ip, name, "", cert));
+}
+
+static void test_keep_alive(void) {
+    MT_ASSERT(http_req_keep_alive("GET / HTTP/1.1\r\nHost: x\r\n\r\n"));
+    MT_ASSERT(!http_req_keep_alive("GET / HTTP/1.1\r\nConnection: close\r\n\r\n"));
+    MT_ASSERT(!http_req_keep_alive("GET / HTTP/1.1\r\nconnection: Upgrade, Close\r\n\r\n"));
+    MT_ASSERT(!http_req_keep_alive("GET / HTTP/1.0\r\n\r\n"));
+    MT_ASSERT(http_req_keep_alive("GET / HTTP/1.0\r\nConnection: keep-alive\r\n\r\n"));
+    MT_ASSERT(!http_req_keep_alive("GET /\r\n\r\n"));
+    // a header in the body does not count
+    MT_ASSERT(http_req_keep_alive("POST /x HTTP/1.1\r\nHost: x\r\n\r\nConnection: close\r\n"));
+}
+
+static void test_https_location(void) {
+    char out[96];
+    MT_ASSERT(http_req_https_location("GET /api/v1/status?x=1 HTTP/1.1\r\nHost: pm.example.com:80\r\n\r\n",
+                                      out, sizeof(out)));
+    MT_ASSERT(!strcmp(out, "https://pm.example.com/api/v1/status?x=1"));
+    MT_ASSERT(http_req_https_location("GET / HTTP/1.1\r\nHost: 192.168.1.50\r\n\r\n", out, sizeof(out)));
+    MT_ASSERT(!strcmp(out, "https://192.168.1.50/"));
+    MT_ASSERT(!http_req_https_location("GET / HTTP/1.1\r\n\r\n", out, sizeof(out)));
+    MT_ASSERT(!http_req_https_location("GET * HTTP/1.1\r\nHost: a\r\n\r\n", out, sizeof(out)));
+    MT_ASSERT(!http_req_https_location("GET / HTTP/1.1\r\nHost: a\r\n\r\n", out, 10));
 }
 
 static void test_hostnames_parse(void) {
@@ -82,15 +122,15 @@ static void test_hostnames_parse(void) {
 // A rebinding page's requests name its own domain.
 static void test_host_refuses_other_names(void) {
     const char *ip = "192.168.1.50", *name = "pwrman";
-    MT_ASSERT(!http_req_host_ok(REQ("Host: evil.example\r\n", ""), ip, name, ""));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrman.evil.example\r\n", ""), ip, name, ""));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrmanx.local\r\n", ""), ip, name, ""));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.5\r\n", ""), ip, name, ""));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.50:8080\r\n", ""), ip, name, ""));
-    MT_ASSERT(!http_req_host_ok(REQ("Host: \r\n", ""), ip, name, ""));
-    MT_ASSERT(!http_req_host_ok(REQ("", ""), ip, name, ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: evil.example\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrman.evil.example\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: pwrmanx.local\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.5\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: 192.168.1.50:8080\r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: \r\n", ""), 80, ip, name, "", ""));
+    MT_ASSERT(!http_req_host_ok(REQ("", ""), 80, ip, name, "", ""));
     // an empty device name never matches a bare .local
-    MT_ASSERT(!http_req_host_ok(REQ("Host: .local\r\n", ""), ip, "", ""));
+    MT_ASSERT(!http_req_host_ok(REQ("Host: .local\r\n", ""), 80, ip, "", "", ""));
 }
 
 static void test_bearer(void) {
@@ -140,6 +180,9 @@ void run_http_req_tests(void) {
     mt_run("http_req: Host may name the controller", test_host_names_the_controller);
     mt_run("http_req: Host naming anything else is refused", test_host_refuses_other_names);
     mt_run("http_req: the owner's extra names are allowed", test_host_extra_names);
+    mt_run("http_req: HTTPS ports and certificate names", test_host_https);
+    mt_run("http_req: keep-alive follows the HTTP version and Connection", test_keep_alive);
+    mt_run("http_req: the HTTPS redirect target", test_https_location);
     mt_run("http_req: the hostnames setting is checked and tidied", test_hostnames_parse);
     mt_run("http_req: the bearer must match the secret exactly", test_bearer);
     mt_run("http_req: the request line is cleaned for the log", test_line_text);

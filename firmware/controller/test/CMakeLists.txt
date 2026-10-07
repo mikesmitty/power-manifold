@@ -39,6 +39,7 @@ add_executable(engine_tests
     ../src/net/improv_proto.c
     ../src/net/http_req.c
     ../src/net/http_url.c
+    ../src/net/tls_bundle.c
     ../src/net/jsonlite.c
     ../src/net/w6100.c
     ../src/ups/lad_proto.c
@@ -73,6 +74,7 @@ add_executable(engine_tests
     test_protect.c
     test_settings.c
     test_settings_json.c
+    test_tls_bundle.c
     test_sim_inject.c
     test_update_image.c
     test_update_auto.c

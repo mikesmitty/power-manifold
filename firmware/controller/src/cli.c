@@ -30,7 +30,9 @@
 #include "log_sink.h"
 #include "manifold.h"
 #include "net/eth.h"
+#include "net/http.h"
 #include "net/http_req.h"
+#include "net/https.h"
 #include "net/improv.h"
 #include "net/mqtt.h"
 #include "net/mqtt_tls.h"
@@ -81,6 +83,7 @@ static void print_help(void) {
            "  dns <addr>|auto              resolver override (auto: DHCP's, or the gateway when static)\n"
            "  ntp <host>|auto              time server (auto: DHCP's, else " NET_NTP_DEFAULT ")\n"
            "  hostnames <name>...|clear    more names the web server answers to (always: its address, name.local)\n"
+           "  https [on|off|remove]        HTTPS with the installed certificate (install it over the API)\n"
            "  syslog <host> [port] | syslog off\n"
            "                               mirror the console to a UDP syslog host (RFC 5424)\n"
            "  name <device-name>           hostname / topic id\n"
@@ -227,6 +230,12 @@ static void print_info(void) {
     printf("ntp: %s\n", net_ntp_str());
     printf("hostnames: %s.local%s%s\n", g_settings.device_name,
            g_settings.hostnames[0] ? " " : "", g_settings.hostnames);
+    {
+        char d[224];
+        printf("https: %s", g_settings.https ? (https_enforced() ? "on" : "on, but no certificate") : "off");
+        if (https_describe(d, sizeof(d))) printf(" (%s)", d);
+        printf("\n");
+    }
     printf("syslog: %s", log_sink_status());
     if (g_settings.syslog_host[0])
         printf(" (%s:%u)", g_settings.syslog_host, g_settings.syslog_port);
@@ -684,6 +693,31 @@ static void run_line(char *l) {
         }
         strcpy(g_settings.hostnames, names);
         printf("hostnames: %s ('save' to persist; applies at once)\n", names[0] ? names : "none");
+    } else if (!strcmp(cmd, "https")) {
+        const char *op = strtok_r(NULL, " \t", &save);
+        char d[224];
+        if (!op) {
+            printf("https: %s\n", g_settings.https ? "on" : "off");
+            if (https_describe(d, sizeof(d))) printf("certificate: %s\n", d);
+            else printf("certificate: none (install one with POST /api/v1/tls, see the docs)\n");
+        } else if (!strcmp(op, "on")) {
+            if (!https_config()) {
+                printf("https: install a certificate first\n");
+                return;
+            }
+            g_settings.https = 1;
+            http_tls_sync();
+            printf("https: on, port 80 redirects ('save' to persist)\n");
+        } else if (!strcmp(op, "off")) {
+            g_settings.https = 0;
+            http_tls_sync();
+            printf("https: off, plain HTTP on port 80 ('save' to persist)\n");
+        } else if (!strcmp(op, "remove")) {
+            const char *err = https_remove();
+            printf("https: %s\n", err ? err : "certificate removed");
+        } else {
+            printf("usage: https [on|off|remove]\n");
+        }
     } else if (!strcmp(cmd, "syslog")) {
         const char *host = strtok_r(NULL, " \t", &save);
         const char *port = strtok_r(NULL, " \t", &save);

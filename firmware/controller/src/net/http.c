@@ -9,8 +9,11 @@
 #include <ctype.h>
 
 
+#include "lwip/altcp.h"
+#include "lwip/altcp_tcp.h"
+#include "lwip/altcp_tls.h"
 #include "lwip/netif.h"
-#include "lwip/tcp.h"
+#include "mbedtls/ssl.h"
 #include "pico/rand.h"
 
 #include "boot_reason_hw.h"
@@ -19,6 +22,7 @@
 #include "engine/blade_bundle.h"
 #include "fault_log.h"
 #include "fault_text.h"
+#include "https.h"
 #include "flash_map.h"
 #include "health.h"
 #include "ipc.h"
@@ -43,13 +47,14 @@
 #include "vin.h"
 
 #define HTTP_PORT       80
+#define HTTPS_PORT      443
 #define MAX_CONNS       4
 #define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
 #define STATUS_JSON_MAX 4160 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block, the bus voltage, the chassis light, and the update and net blocks, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
-#define IDLE_POLLS      20   // drop a connection that sends no request in ~10s
+#define IDLE_POLLS      20   // drop a connection that sends no request in ~10s, the first or the next
 #define REBOOT_DELAY_MS 300  // API reboot: let the response leave first
 #define SETUP_SECRET_TTL_MS (10 * 60 * 1000) // Improv redirect secret
 #define SETUP_ETH_WINDOW_MS (60 * 60 * 1000) // first hour on Ethernet with no token stored
@@ -58,7 +63,7 @@
 #define STR(x) STR_(x)
 
 typedef struct {
-    struct tcp_pcb *pcb;
+    struct altcp_pcb *pcb;
     char req[REQ_MAX];
     uint16_t req_len;
     char resp[RESP_MAX]; // headers, plus any small dynamic body
@@ -71,12 +76,20 @@ typedef struct {
     uint16_t static_sent;
     bool static_copy;   // body is a reusable RAM buffer: lwIP must copy it
     bool updating;      // headers done, body streams into update_write()
-    uint32_t body_left; // update body bytes still expected
+    bool tls_upload;    // headers done, body streams into the certificate buffer
+    uint32_t body_left; // update or certificate body bytes still expected
+    uint32_t body_got;  // certificate body bytes taken so far
+    bool tls;           // came in on port 443
+    struct altcp_tls_config *tls_conf; // the configuration it was accepted with
+    bool keep_alive;    // another request may follow the response (http_req_keep_alive)
     uint8_t idle_polls; // poll ticks with no request yet (browser preconnects)
 } conn_t;
 
 static conn_t conns[MAX_CONNS];
 static conn_t *update_conn; // the one connection allowed to stream an update
+static conn_t *tls_upload_conn; // the one connection allowed to send a certificate
+static struct altcp_pcb *tls_listener; // port 443, while HTTPS is on
+static struct altcp_tls_config *tls_listener_conf;
 static uint32_t refused_total; // requests refused since boot (log_refusal)
 
 // The page itself lives in web/index.html; the build turns it into this
@@ -86,9 +99,31 @@ static const char INDEX_HTML[] =
     ;
 _Static_assert(sizeof(INDEX_HTML) - 1 <= UINT16_MAX, "conn_t.static_len is 16-bit");
 
+// Ready for the next request on the same connection
+static void conn_reset_request(conn_t *c) {
+    c->req_len = 0;
+    c->req[0] = '\0';
+    c->resp_len = 0;
+    c->resp_sent = 0;
+    c->static_body = NULL;
+    c->static_len = 0;
+    c->static_sent = 0;
+    c->static_copy = false;
+    c->body_left = 0;
+    c->body_got = 0;
+    c->idle_polls = 0;
+}
+
 static void conn_free(conn_t *c) {
     if (c->updating) update_abort(); // transfer died with its connection
     if (update_conn == c) update_conn = NULL;
+    if (tls_upload_conn == c) tls_upload_conn = NULL;
+    if (c->tls_conf) https_conn_closed(c->tls_conf);
+    c->tls_conf = NULL;
+    c->tls = false;
+    c->tls_upload = false;
+    c->keep_alive = false;
+    c->body_got = 0;
     c->pcb = NULL;
     c->req_len = 0;
     c->resp_len = 0;
@@ -104,12 +139,12 @@ static void conn_free(conn_t *c) {
 
 static void conn_close(conn_t *c) {
     if (c->pcb) {
-        tcp_arg(c->pcb, NULL);
-        tcp_recv(c->pcb, NULL);
-        tcp_sent(c->pcb, NULL);
-        tcp_poll(c->pcb, NULL, 0);
-        tcp_err(c->pcb, NULL);
-        if (tcp_close(c->pcb) != ERR_OK) tcp_abort(c->pcb);
+        altcp_arg(c->pcb, NULL);
+        altcp_recv(c->pcb, NULL);
+        altcp_sent(c->pcb, NULL);
+        altcp_poll(c->pcb, NULL, 0);
+        altcp_err(c->pcb, NULL);
+        if (altcp_close(c->pcb) != ERR_OK) altcp_abort(c->pcb);
     }
     conn_free(c);
 }
@@ -127,11 +162,11 @@ static bool send_span(conn_t *c, const char *data, uint16_t len, uint16_t *sent,
                       uint8_t flags) {
     while (*sent < len) {
         uint16_t chunk = len - *sent;
-        uint16_t room = tcp_sndbuf(c->pcb);
+        uint16_t room = altcp_sndbuf(c->pcb); // less the record overhead on TLS
         if (room == 0) return false;
         if (chunk > room) chunk = room;
         if (chunk > TCP_MSS) chunk = TCP_MSS;
-        err_t err = tcp_write(c->pcb, data + *sent, chunk, flags);
+        err_t err = altcp_write(c->pcb, data + *sent, chunk, flags);
         if (err != ERR_OK) {
             printf("http: tcp_write %d at %u/%u, retrying on poll\n", (int)err,
                    (unsigned)*sent, (unsigned)len);
@@ -142,18 +177,30 @@ static bool send_span(conn_t *c, const char *data, uint16_t len, uint16_t *sent,
     return true;
 }
 
+// mbedTLS holds an encrypted record it could not hand to TCP yet. lwIP's
+// TLS layer pushes it out from its sent and poll callbacks, so a connection
+// waits for that before it closes, or the end of the response is lost.
+static bool tls_unsent(conn_t *c) {
+    if (!c->tls) return false;
+    mbedtls_ssl_context *ssl = (mbedtls_ssl_context *)altcp_tls_context(c->pcb);
+    return ssl && ssl->out_left;
+}
+
 static void send_more(conn_t *c) {
     // resp[] is reused per request, so lwIP must copy it; a static body may
     // be referenced in place where the netif allows it (see send_span)
     bool done = send_span(c, c->resp, c->resp_len, &c->resp_sent, TCP_WRITE_FLAG_COPY) &&
                 send_span(c, c->static_body, c->static_len, &c->static_sent,
                           c->static_copy ? TCP_WRITE_FLAG_COPY : 0);
-    tcp_output(c->pcb);
-    if (done) conn_close(c);
+    altcp_output(c->pcb);
+    if (!done) return;
+    if (c->keep_alive) conn_reset_request(c);
+    else if (!tls_unsent(c)) conn_close(c); // else sent_cb or poll_cb comes back here
 }
 
 #define HDR_FMT "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %u\r\n" \
-                "Connection: close\r\n\r\n"
+                "Connection: %s\r\n\r\n"
+#define CONN_HDR(c) ((c)->keep_alive ? "keep-alive" : "close")
 
 // Small dynamic body: headers and body together in resp[]. Bodies are the
 // status JSON (STATUS_JSON_MAX) or short error/result objects, so this fits
@@ -162,10 +209,10 @@ static void send_more(conn_t *c) {
 static void respond(conn_t *c, int code, const char *status,
                     const char *content_type, const char *body) {
     int n = snprintf(c->resp, RESP_MAX, HDR_FMT "%s", code, status, content_type,
-                     (unsigned)strlen(body), body);
+                     (unsigned)strlen(body), CONN_HDR(c), body);
     if (n >= RESP_MAX) {
         n = snprintf(c->resp, RESP_MAX, HDR_FMT "%s", 500, "Internal Server Error",
-                     "text/plain", 18u, "response too large");
+                     "text/plain", 18u, CONN_HDR(c), "response too large");
     }
     c->resp_len = (uint16_t)n;
     c->resp_sent = 0;
@@ -181,7 +228,7 @@ static void respond_static(conn_t *c, int code, const char *status,
                            const char *content_type, const char *body, size_t len,
                            bool copy) {
     int n = snprintf(c->resp, RESP_MAX, HDR_FMT, code, status, content_type,
-                     (unsigned)len);
+                     (unsigned)len, CONN_HDR(c));
     c->resp_len = (uint16_t)n;
     c->resp_sent = 0;
     c->static_body = body;
@@ -482,6 +529,10 @@ static size_t build_metrics(char *out, size_t cap) {
     M_PUT("# TYPE pwrman_fault_log_records gauge\npwrman_fault_log_records %d\n", fault_log_count());
     M_PUT("# HELP pwrman_http_refused_total Web requests refused: no or wrong token, unknown host name, setup rules\n"
           "# TYPE pwrman_http_refused_total counter\npwrman_http_refused_total %lu\n", (unsigned long)refused_total);
+    if (https_expires())
+        M_PUT("# HELP pwrman_https_certificate_expiry_seconds When the web server's certificate expires\n"
+              "# TYPE pwrman_https_certificate_expiry_seconds gauge\npwrman_https_certificate_expiry_seconds %lu\n",
+              (unsigned long)https_expires());
     if (vin_fitted()) {
         M_PUT("# TYPE pwrman_bus_volts gauge\npwrman_bus_volts %.2f\n", vin_mv() / 1000.0);
         M_PUT("# TYPE pwrman_bus_voltage_ok gauge\npwrman_bus_voltage_ok %d\n",
@@ -574,7 +625,7 @@ static void log_refusal(const conn_t *c, int code, const char *why) {
     if (!http_refusal_log_ok(&refusal_limit, to_ms_since_boot(get_absolute_time()), &unlogged)) return;
     char line[48], from[IPADDR_STRLEN_MAX];
     http_req_line_text(c->req, line, sizeof(line));
-    if (!c->pcb || !ipaddr_ntoa_r(&c->pcb->remote_ip, from, sizeof(from))) strcpy(from, "?");
+    if (!c->pcb || !ipaddr_ntoa_r(altcp_get_ip(c->pcb, 0), from, sizeof(from))) strcpy(from, "?");
     if (unlogged) printf("http: %u more refused requests not shown\n", unlogged);
     printf("http: refused %s from %s (%d, %s)\n", line, from, code, why);
 }
@@ -637,7 +688,7 @@ static bool eth_window_live(uint32_t now_ms) {
 static bool request_on_wired(const conn_t *c) {
 #if PWRMAN_NET_ETH
     if (!eth_up() || !c->pcb) return false;
-    return ip4_addr_eq(ip_2_ip4(&c->pcb->local_ip), netif_ip4_addr(eth_netif_ptr()));
+    return ip4_addr_eq(ip_2_ip4(altcp_get_ip(c->pcb, 1)), netif_ip4_addr(eth_netif_ptr()));
 #else
     (void)c;
     return false;
@@ -691,8 +742,9 @@ static const char WRONG_HOST_HTML[] =
 
 static bool host_allowed(const conn_t *c) {
     char ip[IP4ADDR_STRLEN_MAX] = "";
-    if (c->pcb) ip4addr_ntoa_r(ip_2_ip4(&c->pcb->local_ip), ip, sizeof(ip));
-    return http_req_host_ok(c->req, ip, g_settings.device_name, g_settings.hostnames);
+    if (c->pcb) ip4addr_ntoa_r(ip_2_ip4(altcp_get_ip(c->pcb, 1)), ip, sizeof(ip));
+    return http_req_host_ok(c->req, c->tls ? HTTPS_PORT : HTTP_PORT, ip, g_settings.device_name,
+                            g_settings.hostnames, https_names());
 }
 
 // A request let in by a setup door carries no credential, so a POST must
@@ -743,6 +795,12 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
         return;
     }
 
+    if (s.https && !https_config()) {
+        respond(c, 400, "Bad Request", "application/json",
+                "{\"error\":\"https: install a certificate first (POST /api/v1/tls)\"}");
+        return;
+    }
+
     bool reboot_required = strcmp(g_settings.device_name, s.device_name) != 0 ||
                            strcmp(g_settings.wifi_ssid, s.wifi_ssid) != 0 ||
                            strcmp(g_settings.wifi_pass, s.wifi_pass) != 0 ||
@@ -756,6 +814,7 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     bool budget_changed = g_settings.budget_mw != s.budget_mw;
     bool led_changed = g_settings.led_brightness != s.led_brightness;
     bool names_changed = memcmp(g_settings.port_name, s.port_name, sizeof(s.port_name)) != 0;
+    bool https_changed = g_settings.https != s.https;
     bool link_changed = g_settings.mqtt_tls != s.mqtt_tls || g_settings.mqtt_ca_len != s.mqtt_ca_len ||
                         memcmp(g_settings.mqtt_ca, s.mqtt_ca, sizeof(s.mqtt_ca)) != 0;
     uint32_t old_limit[NUM_PORTS];
@@ -776,6 +835,7 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     }
     if (names_changed) mqtt_names_changed();
     if (link_changed) mqtt_reconnect();
+    if (https_changed) http_tls_sync(); // this response still goes out on its own connection
 
     if (budget_changed) {
         engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = s.budget_mw};
@@ -827,6 +887,7 @@ static long content_length(const char *req) {
 static void update_fail(conn_t *c, int code, const char *status, const char *msg) {
     char body[160];
     c->updating = false;
+    c->keep_alive = false;
     if (update_conn == c) update_conn = NULL;
     update_abort();
     snprintf(body, sizeof(body), "{\"error\":\"%s\"}", msg);
@@ -836,6 +897,7 @@ static void update_fail(conn_t *c, int code, const char *status, const char *msg
 static void update_complete(conn_t *c) {
     char err[96], body[192];
     c->updating = false;
+    c->keep_alive = false; // it restarts into the new image
     if (update_conn == c) update_conn = NULL;
     if (!update_finish(err, sizeof(err))) {
         update_fail(c, 422, "Unprocessable Entity", err);
@@ -875,6 +937,7 @@ static void update_feed(conn_t *c, struct pbuf *p, uint16_t skip) {
 }
 
 static void update_post_start(conn_t *c, const char *body_start) {
+    c->keep_alive = false; // a refusal leaves the body unread
     if (!authorized(c)) {
         respond_unauthorized(c);
         return;
@@ -914,6 +977,76 @@ static void update_post_start(conn_t *c, const char *body_start) {
     // body bytes that arrived with the headers
     update_feed_bytes(c, (const uint8_t *)body_start,
                       (uint32_t)(c->req_len - (uint16_t)(body_start - c->req)));
+}
+
+// ---- Certificate upload: POST /api/v1/tls, body = PEM text of the private
+// key and the certificate chain (net/https.h). Like the update, the body
+// streams into its own buffer rather than req[], and one upload runs at a
+// time.
+
+static void tls_upload_bytes(conn_t *c, const uint8_t *d, uint32_t n) {
+    if (!c->tls_upload || n == 0) return;
+    if (n > c->body_left) n = c->body_left;
+    memcpy(https_upload_buffer() + c->body_got, d, n);
+    c->body_got += n;
+    c->body_left -= n;
+    if (c->body_left) return;
+
+    c->tls_upload = false;
+    tls_upload_conn = NULL;
+    bool fault;
+    const char *err = https_install(c->body_got, &fault);
+    if (err) {
+        static char b[192]; // static: lwIP callback stack
+        char e[160];
+        json_escape(e, sizeof(e), err);
+        snprintf(b, sizeof(b), "{\"error\":\"%s\"}", e);
+        respond(c, fault ? 500 : 400, fault ? "Internal Server Error" : "Bad Request", "application/json", b);
+        return;
+    }
+    http_tls_sync(); // new HTTPS connections get the new certificate
+    static char b[512];
+    https_json(b, sizeof(b), net_epoch());
+    respond(c, 200, "OK", "application/json", b);
+}
+
+static void tls_upload_feed(conn_t *c, struct pbuf *p, uint16_t skip) {
+    for (struct pbuf *q = p; q && c->tls_upload; q = q->next) {
+        if (skip >= q->len) {
+            skip -= q->len;
+            continue;
+        }
+        tls_upload_bytes(c, (const uint8_t *)q->payload + skip, (uint32_t)(q->len - skip));
+        skip = 0;
+    }
+}
+
+static void tls_post_start(conn_t *c, const char *body_start) {
+    c->keep_alive = false; // a refusal leaves the body unread
+    if (!authorized(c)) {
+        respond_unauthorized(c);
+        return;
+    }
+    long cl = content_length(c->req);
+    if (cl <= 0) {
+        respond(c, 411, "Length Required", "application/json", "{\"error\":\"Content-Length required\"}");
+        return;
+    }
+    if (cl >= HTTPS_UPLOAD_MAX) {
+        respond(c, 413, "Payload Too Large", "application/json",
+                "{\"error\":\"send under " STR(HTTPS_UPLOAD_MAX) " bytes: the key and the certificate chain\"}");
+        return;
+    }
+    if (tls_upload_conn && tls_upload_conn != c) {
+        respond(c, 409, "Conflict", "application/json", "{\"error\":\"another certificate upload is running\"}");
+        return;
+    }
+    tls_upload_conn = c;
+    c->tls_upload = true;
+    c->body_left = (uint32_t)cl;
+    c->body_got = 0;
+    tls_upload_bytes(c, (const uint8_t *)body_start,
+                     (uint32_t)(c->req_len - (uint16_t)(body_start - c->req)));
 }
 
 static void handle_request(conn_t *c) {
@@ -964,6 +1097,9 @@ static void handle_request(conn_t *c) {
             respond(c, 200, "OK", "text/plain", "");
         else
             respond_static(c, 200, "OK", "text/plain; charset=utf-8", out, n, true);
+    } else if (!strncmp(c->req, "GET /api/v1/tls", 15) && (c->req[15] == ' ' || c->req[15] == '?')) {
+        https_json(json, sizeof(json), net_epoch());
+        respond(c, 200, "OK", "application/json", json);
     } else if (!strncmp(c->req, "GET /api/v1/faults", 18)) {
         int offset = 0;
         const char *q = strstr(c->req, "?offset=");
@@ -1113,6 +1249,15 @@ static void handle_request(conn_t *c) {
                 snprintf(b, sizeof(b), "{\"ok\":true,\"improv\":\"%s\"}", improv_state_str());
                 respond(c, 200, "OK", "application/json", b);
             }
+        } else if (!strncmp(c->req, "POST /api/v1/tls/remove", 23)) {
+            const char *err = https_remove();
+            if (err) {
+                char b[96];
+                snprintf(b, sizeof(b), "{\"error\":\"%s\"}", err);
+                respond(c, 409, "Conflict", "application/json", b);
+            } else {
+                respond(c, 200, "OK", "application/json", "{\"ok\":true}");
+            }
         } else if (!strncmp(c->req, "POST /api/v1/faults/clear", 25)) {
             if (!fault_log_available()) {
                 respond(c, 503, "Service Unavailable", "application/json",
@@ -1163,28 +1308,52 @@ static void handle_request(conn_t *c) {
     }
 }
 
-static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) {
+// Port 80 once HTTPS is on: the same request, at https:// on the same host
+static void respond_redirect(conn_t *c) {
+    static char loc[320]; // static: lwIP callback stack
+    if (!http_req_https_location(c->req, loc, sizeof(loc))) {
+        respond(c, 400, "Bad Request", "text/plain", "HTTPS only: send a Host header");
+        return;
+    }
+    // 307: the method and body carry over, and nothing caches it, so turning
+    // HTTPS off later is not undone by a browser that remembers the redirect
+    int n = snprintf(c->resp, RESP_MAX,
+                     "HTTP/1.1 307 Temporary Redirect\r\nLocation: %s\r\nContent-Type: text/plain\r\n"
+                     "Content-Length: 11\r\nConnection: %s\r\n\r\nUse HTTPS.\n",
+                     loc, CONN_HDR(c));
+    c->resp_len = (uint16_t)(n < RESP_MAX ? n : 0);
+    c->resp_sent = 0;
+    send_more(c);
+}
+
+static err_t recv_cb(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err) {
     conn_t *c = (conn_t *)arg;
     if (!p) { // remote closed
         if (c) conn_close(c); // conn_free aborts a transfer cut off mid-body
-        else tcp_close(pcb);
+        else altcp_close(pcb);
         return ERR_OK;
     }
     if (!c) {
         pbuf_free(p);
-        tcp_abort(pcb);
+        altcp_abort(pcb);
         return ERR_ABRT;
     }
     (void)err;
 
     // Ack the window up front: everything below consumes the whole pbuf, and
     // the handlers may close the pcb (making it unsafe to touch afterwards).
-    tcp_recved(pcb, p->tot_len);
+    altcp_recved(pcb, p->tot_len);
+    c->idle_polls = 0;
 
     if (c->resp_len) {
-        // response already in flight; drain and ignore whatever else arrives
+        // response still in flight: a client that sends its next request
+        // before this one is answered gets the connection closed after it,
+        // and asks again on a new one
+        c->keep_alive = false;
     } else if (c->updating) {
         update_feed(c, p, 0);
+    } else if (c->tls_upload) {
+        tls_upload_feed(c, p, 0);
     } else {
         uint16_t copied = pbuf_copy_partial(p, c->req + c->req_len,
                                             (uint16_t)(REQ_MAX - 1 - c->req_len), 0);
@@ -1192,15 +1361,24 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
         c->req[c->req_len] = '\0';
 
         char *hdr_end = strstr(c->req, "\r\n\r\n");
+        if (hdr_end) c->keep_alive = http_req_keep_alive(c->req);
         if (hdr_end && !host_allowed(c)) {
+            c->keep_alive = false;
             log_refusal(c, 403, "unknown host name");
             respond(c, 403, "Forbidden", "text/html", WRONG_HOST_HTML);
+        } else if (hdr_end && !c->tls && https_enforced()) {
+            c->keep_alive = false; // whatever body follows is not read
+            respond_redirect(c);
         } else if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19) &&
                    (c->req[19] == ' ' || c->req[19] == '?')) {
             // the image upload only: /api/v1/update/check and /latest are requests
             update_post_start(c, hdr_end + 4);
             // body bytes past what fit in req[] are still in this pbuf
             if (c->updating && copied < p->tot_len) update_feed(c, p, copied);
+        } else if (hdr_end && !strncmp(c->req, "POST /api/v1/tls", 16) &&
+                   (c->req[16] == ' ' || c->req[16] == '?')) {
+            tls_post_start(c, hdr_end + 4);
+            if (c->tls_upload && copied < p->tot_len) tls_upload_feed(c, p, copied);
         } else if (hdr_end) {
             // non-update bodies are small and usually ride in with the
             // headers; when Content-Length says the rest is still in flight
@@ -1208,8 +1386,15 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
             // that never finishes is dropped by the idle poll)
             long cl = content_length(c->req);
             long have = (long)(c->req_len - (uint16_t)(hdr_end + 4 - c->req));
-            if (!(cl > 0 && have < cl && c->req_len < REQ_MAX - 1)) handle_request(c);
+            bool waiting = cl > 0 && have < cl && c->req_len < REQ_MAX - 1;
+            if (!waiting) {
+                // a body cut short by req[], or bytes past it (a second
+                // request sent early): this connection ends with the response
+                if (have != (cl > 0 ? cl : 0) || copied < p->tot_len) c->keep_alive = false;
+                handle_request(c);
+            }
         } else if (c->req_len >= REQ_MAX - 1) {
+            c->keep_alive = false;
             respond(c, 431, "Request Header Fields Too Large", "text/plain", "too large");
         }
     }
@@ -1218,7 +1403,7 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
     return ERR_OK;
 }
 
-static err_t sent_cb(void *arg, struct tcp_pcb *pcb, u16_t len) {
+static err_t sent_cb(void *arg, struct altcp_pcb *pcb, u16_t len) {
     (void)pcb; (void)len;
     conn_t *c = (conn_t *)arg;
     if (c && c->resp_len) send_more(c);
@@ -1226,12 +1411,13 @@ static err_t sent_cb(void *arg, struct tcp_pcb *pcb, u16_t len) {
 }
 
 // Every 500ms per connection. Two jobs sent_cb can't do: resume a response
-// whose tcp_write failed with nothing in flight (sent_cb only fires once
-// queued data is acked), and free a slot held by a client that never sends a
-// request — browsers preconnect spare sockets, and with MAX_CONNS slots a few
-// of those would lock everyone else out. An OTA body in progress is exempt;
-// update_begin() has its own stale-transfer handling.
-static err_t poll_cb(void *arg, struct tcp_pcb *pcb) {
+// whose write failed with nothing in flight (sent_cb only fires once queued
+// data is acked), and free a slot held by a client that sends no request:
+// browsers preconnect spare sockets and keep finished ones open, and with
+// MAX_CONNS slots a few of those would lock everyone else out. An OTA body
+// in progress is exempt; update_begin() has its own stale-transfer
+// handling. A certificate upload that stops sending is dropped like the rest.
+static err_t poll_cb(void *arg, struct altcp_pcb *pcb) {
     (void)pcb;
     conn_t *c = (conn_t *)arg;
     if (!c) return ERR_OK;
@@ -1249,35 +1435,89 @@ static void err_cb(void *arg, err_t err) {
     if (c) conn_free(c); // pcb already gone
 }
 
-static err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
-    (void)arg;
+// A connection between requests (or one that has sent none yet) can give
+// its slot to a new one: the browser asks again on another.
+static conn_t *idle_slot(void) {
+    conn_t *best = NULL;
+    for (int i = 0; i < MAX_CONNS; i++) {
+        conn_t *c = &conns[i];
+        if (c->req_len || c->resp_len || c->updating || c->tls_upload) continue;
+        if (!best || c->idle_polls > best->idle_polls) best = c;
+    }
+    return best;
+}
+
+// arg is non-NULL on the HTTPS listener
+static err_t accept_cb(void *arg, struct altcp_pcb *newpcb, err_t err) {
     if (err != ERR_OK || !newpcb) return ERR_VAL;
     conn_t *c = NULL;
     for (int i = 0; i < MAX_CONNS; i++) {
         if (!conns[i].pcb) { c = &conns[i]; break; }
     }
+    if (!c && (c = idle_slot()) != NULL) conn_close(c);
     if (!c) return ERR_MEM;
     conn_free(c);
     c->pcb = newpcb;
-    tcp_arg(newpcb, c);
-    tcp_recv(newpcb, recv_cb);
-    tcp_sent(newpcb, sent_cb);
-    tcp_poll(newpcb, poll_cb, POLL_INTERVAL);
-    tcp_err(newpcb, err_cb);
+    if (arg) {
+        c->tls = true;
+        c->tls_conf = tls_listener_conf;
+        https_conn_opened(c->tls_conf);
+    }
+    altcp_arg(newpcb, c);
+    altcp_recv(newpcb, recv_cb);
+    altcp_sent(newpcb, sent_cb);
+    altcp_poll(newpcb, poll_cb, POLL_INTERVAL);
+    altcp_err(newpcb, err_cb);
     return ERR_OK;
+}
+
+void http_tls_sync(void) {
+    if (!net_available()) return;
+    net_lock();
+    struct altcp_tls_config *want = g_settings.https ? https_config() : NULL;
+    if (tls_listener && tls_listener_conf != want) {
+        // connections already accepted keep their configuration
+        altcp_close(tls_listener);
+        tls_listener = NULL;
+        tls_listener_conf = NULL;
+    }
+    if (want && !tls_listener) {
+        struct altcp_pcb *l = altcp_tls_new(want, IPADDR_TYPE_ANY);
+        if (l && altcp_bind(l, IP_ANY_TYPE, HTTPS_PORT) == ERR_OK) {
+            struct altcp_pcb *listening = altcp_listen_with_backlog(l, 4);
+            if (listening) {
+                tls_listener = listening;
+                tls_listener_conf = want;
+                altcp_arg(listening, (void *)1);
+                altcp_accept(listening, accept_cb);
+                printf("http: HTTPS on port %d for %s; port %d redirects\n", HTTPS_PORT,
+                       https_names()[0] ? https_names() : "(no names)", HTTP_PORT);
+            } else {
+                altcp_abort(l);
+            }
+        } else if (l) {
+            altcp_abort(l);
+        }
+        if (!tls_listener) printf("http: failed to listen on port %d\n", HTTPS_PORT);
+    } else if (!want && g_settings.https) {
+        printf("http: HTTPS is on but no certificate is installed: serving plain HTTP\n");
+    }
+    net_unlock();
 }
 
 void http_init(void) {
     http_setup_window_restart(to_ms_since_boot(get_absolute_time()));
     if (!net_available()) return;
     net_lock();
-    struct tcp_pcb *pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
-    if (pcb && tcp_bind(pcb, IP_ANY_TYPE, HTTP_PORT) == ERR_OK) {
-        pcb = tcp_listen_with_backlog(pcb, 4);
-        tcp_accept(pcb, accept_cb);
+    https_init();
+    struct altcp_pcb *pcb = altcp_tcp_new_ip_type(IPADDR_TYPE_ANY);
+    if (pcb && altcp_bind(pcb, IP_ANY_TYPE, HTTP_PORT) == ERR_OK) {
+        pcb = altcp_listen_with_backlog(pcb, 4);
+        altcp_accept(pcb, accept_cb);
     } else {
         printf("http: failed to bind port %d\n", HTTP_PORT);
-        if (pcb) tcp_abort(pcb);
+        if (pcb) altcp_abort(pcb);
     }
     net_unlock();
+    http_tls_sync();
 }

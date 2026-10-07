@@ -13,7 +13,7 @@
 // this against a pair of sectors in RAM.
 
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    20
+#define SETTINGS_VERSION    21
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -39,6 +39,7 @@
 #define SETTINGS_V17_PAYLOAD ALIGN4(offsetof(settings_t, port_protect))
 #define SETTINGS_V18_PAYLOAD ALIGN4(offsetof(settings_t, hostnames))
 #define SETTINGS_V19_PAYLOAD ALIGN4(offsetof(settings_t, update_postpone))
+#define SETTINGS_V20_PAYLOAD ALIGN4(offsetof(settings_t, https))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -62,7 +63,8 @@ _Static_assert(SETTINGS_V16_PAYLOAD == 792, "settings v16 layout moved");
 _Static_assert(SETTINGS_V17_PAYLOAD == 2844, "settings v17 layout moved");
 _Static_assert(SETTINGS_V18_PAYLOAD == 2848, "settings v18 layout moved");
 _Static_assert(SETTINGS_V19_PAYLOAD == 2976, "settings v19 layout moved");
-_Static_assert(offsetof(settings_t, crc) == 3036, "settings v20 layout moved");
+_Static_assert(SETTINGS_V20_PAYLOAD == 3036, "settings v20 layout moved");
+_Static_assert(offsetof(settings_t, crc) == 3036, "settings v21 layout moved"); // https fit in v20's padding
 _Static_assert(sizeof(settings_t) <= SETTINGS_SECTOR_SIZE, "settings record outgrew its sector");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
@@ -117,6 +119,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t record_payload_len(const settings_t *s) {
     switch (s->version) {
     case SETTINGS_VERSION: return payload_len();
+    case 20:               return SETTINGS_V20_PAYLOAD;
     case 19:               return SETTINGS_V19_PAYLOAD;
     case 18:               return SETTINGS_V18_PAYLOAD;
     case 17:               return SETTINGS_V17_PAYLOAD;
@@ -278,6 +281,7 @@ void settings_load(void) {
             memset(g_settings.update_skip, 0, sizeof(g_settings.update_skip));
             memset(g_settings.update_tried, 0, sizeof(g_settings.update_tried));
         }
+        if (g_settings.version < 21) g_settings.https = 0;
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();

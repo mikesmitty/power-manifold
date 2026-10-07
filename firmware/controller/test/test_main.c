@@ -24,6 +24,7 @@ void run_protect_tests(void);
 void run_settings_tests(void);
 void run_settings_json_tests(void);
 void run_sim_inject_tests(void);
+void run_tls_bundle_tests(void);
 void run_update_auto_tests(void);
 void run_update_image_tests(void);
 void run_update_latest_tests(void);
@@ -57,6 +58,7 @@ int main(void) {
     run_settings_tests();
     run_settings_json_tests();
     run_sim_inject_tests();
+    run_tls_bundle_tests();
     run_update_auto_tests();
     run_update_image_tests();
     run_update_latest_tests();

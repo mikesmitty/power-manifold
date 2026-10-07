@@ -105,7 +105,7 @@ when asked for, there or with `update latest`, or by itself (see
 the controller asking; `update check` asks at once. That host is a small
 proxy in front of this repository's GitHub releases
 (`firmware/update-proxy`). It exists because the update client supports only
-plain HTTP (TLS is used only for the broker link) and GitHub serves release
+plain HTTP (TLS is used only for the broker link and the web server) and GitHub serves release
 downloads only over HTTPS. The same pointer can instead be published,
 retained, to `pwrman/<name>/update/latest` by something on the LAN; the
 newer of the two is the one that counts. Neither needs to be trusted, as the
