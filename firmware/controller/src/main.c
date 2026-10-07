@@ -60,8 +60,7 @@ static bool blade_trip_running(void) {
 static void factory_reset(void) {
     printf("button: factory reset — restoring defaults and rebooting\n");
     sleep_ms(300);
-    settings_defaults();
-    if (!settings_save()) printf("settings: save failed\n");
+    if (!settings_wipe()) printf("settings: wipe failed\n");
     fault_log_clear();
     sleep_ms(20);
     boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);

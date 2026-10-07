@@ -301,6 +301,30 @@ bool settings_save(void) {
     return settings_hw_write(sector_off(home_base, target), buf);
 }
 
+bool settings_wipe(void) {
+    if (!home_base) home_base = settings_hw_home();
+    uint32_t legacy = settings_hw_legacy();
+
+    // A save only replaces the older slot, so the record before it (Wi-Fi
+    // password, API token, broker login) would survive a reset in the other
+    // one. Erase both, and a legacy copy too, before defaults go back in.
+    // During a trial this also takes the record a revert would have read:
+    // the older firmware then starts on defaults, which is what was asked.
+    // A legacy sector is erased only when it holds a record, as in
+    // settings_migrate, since on a partitioned board that flash is not ours.
+    bool ok = true;
+    for (int i = 0; i < SETTINGS_SLOTS; i++) {
+        if (!settings_hw_write(sector_off(home_base, i), NULL)) ok = false;
+        if (legacy != home_base && slot_valid(slot_ptr(legacy, i)) &&
+            !settings_hw_write(sector_off(legacy, i), NULL))
+            ok = false;
+    }
+    migrate_pending = false;
+    trial_slot = -1;
+    settings_defaults();
+    return settings_save() && ok;
+}
+
 #define SAVE_DEBOUNCE_MS 5000
 
 static uint32_t save_at_ms; // 0 = clean

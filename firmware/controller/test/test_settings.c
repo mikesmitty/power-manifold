@@ -411,6 +411,82 @@ static void test_defaults_keep_seq(void) {
     MT_ASSERT_EQ(g_settings.wifi_ssid[0], 0);
 }
 
+// True when the sector still holds the sample's API token anywhere in it
+static bool holds_token(uint32_t off) {
+    for (unsigned i = 0; i + 3 < SETTINGS_SECTOR_SIZE; i++)
+        if (!memcmp(flash + off + i, "tok", 4)) return true;
+    return false;
+}
+
+// A factory reset leaves no earlier record behind: the slot a plain
+// defaults+save would skip still held the old credentials.
+static void test_wipe_leaves_no_old_record(void) {
+    start();
+    settings_t s;
+    sample(&s, "older", 7);
+    write_record(SLOT(HOME, 0), &s, 18, V18_LEN);
+    sample(&s, "newer", 8);
+    write_record(SLOT(HOME, 1), &s, 18, V18_LEN);
+    settings_load();
+    MT_ASSERT(strcmp(g_settings.wifi_ssid, "newer") == 0);
+
+    MT_ASSERT(settings_wipe());
+    MT_ASSERT(on_defaults());
+    MT_ASSERT(!holds_token(SLOT(HOME, 0)));
+    MT_ASSERT(!holds_token(SLOT(HOME, 1)));
+    MT_ASSERT(crc_ok(SLOT(HOME, 0), V18_LEN)); // defaults, the only record
+    MT_ASSERT(erased(SLOT(HOME, 1)));
+
+    memset(&g_settings, 0, sizeof(g_settings));
+    settings_load();
+    MT_ASSERT(on_defaults());
+}
+
+// A legacy copy goes too; an empty legacy sector is left alone
+static void test_wipe_clears_legacy(void) {
+    start();
+    settings_t s;
+    sample(&s, "legacy", 20);
+    write_record(SLOT(LEGACY, 1), &s, 13, 664);
+    flash[SLOT(LEGACY, 0)] = 0x5A; // not a record: someone else's flash
+    settings_load();
+    MT_ASSERT(settings_migration_pending());
+
+    MT_ASSERT(settings_wipe());
+    MT_ASSERT(!settings_migration_pending());
+    MT_ASSERT(erased(SLOT(LEGACY, 1)));
+    MT_ASSERT_EQ(flash[SLOT(LEGACY, 0)], 0x5A);
+    MT_ASSERT_EQ(writes, 4); // two home erases, one legacy erase, the save
+    settings_load();
+    MT_ASSERT(on_defaults());
+    MT_ASSERT(!settings_migration_pending());
+}
+
+// On trial the record a revert would read is wiped as well
+static void test_wipe_on_trial(void) {
+    start();
+    settings_t s;
+    sample(&s, "before", 3);
+    write_record(SLOT(HOME, 0), &s, 18, V18_LEN);
+    trial = true;
+    settings_load();
+    strcpy(g_settings.wifi_ssid, "during");
+    MT_ASSERT(settings_save());
+
+    MT_ASSERT(settings_wipe());
+    MT_ASSERT(!holds_token(SLOT(HOME, 0)));
+    MT_ASSERT(!holds_token(SLOT(HOME, 1)));
+    settings_load();
+    MT_ASSERT(on_defaults());
+}
+
+static void test_wipe_failure_reports(void) {
+    start();
+    settings_load();
+    write_fail = true;
+    MT_ASSERT(!settings_wipe());
+}
+
 static void test_save_later_debounces(void) {
     start();
     settings_load();
@@ -452,6 +528,10 @@ void run_settings_tests(void) {
     mt_run("settings: a home record outranks a legacy one", test_home_record_outranks_legacy);
     mt_run("settings: an unpartitioned board uses the legacy pair", test_unpartitioned_board_uses_legacy);
     mt_run("settings: defaults keep the sequence", test_defaults_keep_seq);
+    mt_run("settings: a wipe leaves no earlier record", test_wipe_leaves_no_old_record);
+    mt_run("settings: a wipe clears a legacy record only", test_wipe_clears_legacy);
+    mt_run("settings: a wipe on trial clears the pre-trial record", test_wipe_on_trial);
+    mt_run("settings: a failed wipe is reported", test_wipe_failure_reports);
     mt_run("settings: save_later debounces", test_save_later_debounces);
     mt_run("settings: a failed write is reported", test_write_failure_reports);
 }

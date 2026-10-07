@@ -102,6 +102,10 @@ extern settings_t g_settings;
 void settings_load(void);     // falls back to defaults on empty/corrupt flash
 bool settings_save(void);     // core 0 only; engine pauses briefly via flash_safe_execute
 void settings_defaults(void);
+// Factory reset of the store: erases every stored copy, the previous slot
+// and any legacy record included, then saves defaults as the only record.
+// Core 0 only, like settings_save. False if any erase or the save failed.
+bool settings_wipe(void);
 
 // Per-port label for the UI and Home Assistant: the stored name, or "Port N"
 // when none is set (port is 0-based).
