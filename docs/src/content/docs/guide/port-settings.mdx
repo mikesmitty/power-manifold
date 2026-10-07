@@ -73,11 +73,14 @@ port stops at 3 A (60 W at 20 V), whatever the limit says.
 
 ## Switching off when charged
 
-The controller notices when a device has finished charging. That happens
-when the device draws less than **500 mW** for **10 minutes**. The port
-light turns white, as if nothing were plugged in, and the port shows *charged*. If the device starts
-drawing again for that long, it counts as charging again. You can change
-both numbers in **Settings**, or set the power to 0 to turn detection off.
+The controller decides a device has finished charging when it draws less
+than **500 mW** for **10 minutes**. The port light then turns white, as if
+nothing were plugged in, and the port shows *charged*. If the device starts
+drawing again for that long, it counts as charging again.
+
+Both numbers can be changed in **Settings**, as **Charged below** and
+**…for**. To turn this off, set the power threshold to 0: no device is ever
+marked charged, and **Switch off once charged** never turns a port off.
 
 Two per-port options build on this:
 
