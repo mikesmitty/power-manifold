@@ -107,3 +107,31 @@ const char *http_req_hostnames_parse(const char *in, char *out, size_t cap) {
     }
     return NULL;
 }
+
+void http_req_line_text(const char *req, char *out, size_t cap) {
+    if (!cap) return;
+    size_t n = 0;
+    int spaces = 0;
+    for (const char *p = req; *p && *p != '\r' && *p != '\n' && n + 1 < cap; p++) {
+        if (*p == ' ' && ++spaces == 2) break; // before the HTTP version
+        if (*p == '?' && spaces == 1) break;
+        out[n++] = (*p >= 0x20 && *p < 0x7F) ? *p : '?';
+    }
+    out[n] = '\0';
+}
+
+bool http_refusal_log_ok(http_refusal_limit_t *l, uint32_t now_ms, unsigned *unlogged) {
+    if (!l->started || now_ms - l->window_ms >= HTTP_REFUSAL_WINDOW_MS) {
+        l->started = true;
+        l->window_ms = now_ms;
+        l->logged = 0;
+    }
+    if (l->logged >= HTTP_REFUSAL_LOG_MAX) {
+        l->unlogged++;
+        return false;
+    }
+    l->logged++;
+    *unlogged = l->unlogged;
+    l->unlogged = 0;
+    return true;
+}

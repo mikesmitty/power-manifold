@@ -77,6 +77,7 @@ typedef struct {
 
 static conn_t conns[MAX_CONNS];
 static conn_t *update_conn; // the one connection allowed to stream an update
+static uint32_t refused_total; // requests refused since boot (log_refusal)
 
 // The page itself lives in web/index.html; the build turns it into this
 // literal (tools/web_page.py), with the {{...}} limits taken from the headers.
@@ -479,6 +480,8 @@ static size_t build_metrics(char *out, size_t cap) {
     M_PUT("# TYPE pwrman_fan_auto gauge\npwrman_fan_auto %d\n", t.fan_auto ? 1 : 0);
     M_PUT("# TYPE pwrman_alert_active gauge\npwrman_alert_active %d\n", t.alert_active ? 1 : 0);
     M_PUT("# TYPE pwrman_fault_log_records gauge\npwrman_fault_log_records %d\n", fault_log_count());
+    M_PUT("# HELP pwrman_http_refused_total Web requests refused: no or wrong token, unknown host name, setup rules\n"
+          "# TYPE pwrman_http_refused_total counter\npwrman_http_refused_total %lu\n", (unsigned long)refused_total);
     if (vin_fitted()) {
         M_PUT("# TYPE pwrman_bus_volts gauge\npwrman_bus_volts %.2f\n", vin_mv() / 1000.0);
         M_PUT("# TYPE pwrman_bus_voltage_ok gauge\npwrman_bus_voltage_ok %d\n",
@@ -560,7 +563,30 @@ static bool authorized(const conn_t *c) {
     return g_settings.api_token[0] && bearer_present(c, g_settings.api_token);
 }
 
+// A refused request is a possible attempt at unauthorized access: one line
+// on the console and syslog says who asked for what, rate-limited
+// (http_req.h), and the metrics count every one.
+static http_refusal_limit_t refusal_limit;
+
+static void log_refusal(const conn_t *c, int code, const char *why) {
+    refused_total++;
+    unsigned unlogged;
+    if (!http_refusal_log_ok(&refusal_limit, to_ms_since_boot(get_absolute_time()), &unlogged)) return;
+    char line[48], from[IPADDR_STRLEN_MAX];
+    http_req_line_text(c->req, line, sizeof(line));
+    if (!c->pcb || !ipaddr_ntoa_r(&c->pcb->remote_ip, from, sizeof(from))) strcpy(from, "?");
+    if (unlogged) printf("http: %u more refused requests not shown\n", unlogged);
+    printf("http: refused %s from %s (%d, %s)\n", line, from, code, why);
+}
+
+// No credential at all, or a wrong one.
+static const char *credential_why(const conn_t *c) {
+    static char v[256]; // static: lwIP callback stack; lwIP calls in one at a time
+    return http_req_header(c->req, "Authorization", v, sizeof(v)) ? "wrong token" : "no token";
+}
+
 static void respond_unauthorized(conn_t *c) {
+    log_refusal(c, 401, g_settings.api_token[0] ? credential_why(c) : "no API token set yet");
     respond(c, 401, "Unauthorized", "application/json",
             g_settings.api_token[0]
                 ? "{\"error\":\"bearer token required\"}"
@@ -637,6 +663,7 @@ static bool settings_authorized(const conn_t *c, bool *via_setup) {
 
 // Why /settings said no, in words the page shows as they are.
 static void respond_settings_locked(conn_t *c) {
+    log_refusal(c, 401, g_settings.api_token[0] ? credential_why(c) : "setup closed");
     const char *why;
     if (g_settings.api_token[0])
         why = "bearer token required";
@@ -673,6 +700,7 @@ static bool host_allowed(const conn_t *c) {
 // here. True once refused and answered.
 static bool setup_request_refused(conn_t *c) {
     if (c->req[0] == 'P' && !http_req_is_json(c->req)) {
+        log_refusal(c, 415, "setup request not sent as JSON");
         respond(c, 415, "Unsupported Media Type", "application/json",
                 "{\"error\":\"settings must be sent as application/json\"}");
         return true;
@@ -951,6 +979,7 @@ static void handle_request(conn_t *c) {
         if (via_setup && setup_request_refused(c)) return;
         bool secrets = !strncmp(c->req + 27, "?secrets=1 ", 11);
         if (secrets && via_setup) { // the setup doors never give out stored passwords
+            log_refusal(c, 401, "export with secrets through setup");
             respond(c, 401, "Unauthorized", "application/json",
                     "{\"error\":\"the export with secrets needs the API token\"}");
             return;
@@ -1164,6 +1193,7 @@ static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err) 
 
         char *hdr_end = strstr(c->req, "\r\n\r\n");
         if (hdr_end && !host_allowed(c)) {
+            log_refusal(c, 403, "unknown host name");
             respond(c, 403, "Forbidden", "text/html", WRONG_HOST_HTML);
         } else if (hdr_end && !strncmp(c->req, "POST /api/v1/update", 19) &&
                    (c->req[19] == ' ' || c->req[19] == '?')) {

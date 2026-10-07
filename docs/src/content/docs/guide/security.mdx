@@ -49,6 +49,11 @@ a trusted network.
   only to its own IP address, its device name and the names in
   [Host names](/integrations/network/#host-names), and during first-time
   setup it accepts only the requests its own page sends.
+- **Refused requests are logged.** Each request refused for a missing or
+  wrong token, an unknown name, or a setup rule is logged with the address
+  it came from, on the console and to your
+  [syslog server](/integrations/network/#syslog). The Prometheus metric
+  `pwrman_http_refused_total` counts them.
 - **Signed updates.** The controller installs only firmware signed by this
   project and built for this hardware, and does not go back to an older
   version unless you ask for it at the serial console.

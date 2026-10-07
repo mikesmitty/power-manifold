@@ -356,6 +356,16 @@ host-tested.
 Status, faults and `/metrics` need no token and are protected by the Host
 check alone.
 
+Every refusal (401, 403, 415) is logged as one line on the console, and so
+in syslog, with the method, path, client address, status and reason:
+`http: refused POST /api/v1/settings from 192.168.1.77 (401, wrong token)`.
+The query string is dropped and anything but printable ASCII becomes `?`,
+since the request line is whatever the client sent. At most five lines are
+logged a minute; the rest are counted, and the count is printed with the
+next line that is logged. `pwrman_http_refused_total` in `/metrics` counts
+every refusal since boot. Refusals are not written to the fault log, which
+lives in flash.
+
 ## Console log
 
 Everything the firmware prints is mirrored into a 4 KB ring (boot banner,

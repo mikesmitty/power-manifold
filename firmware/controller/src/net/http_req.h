@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // Header checks on a raw HTTP request (request line, headers, blank line,
 // body), for the requests a setup door lets in without a credential. Pure
@@ -40,3 +41,26 @@ bool http_req_bearer_ok(const char *req, const char *secret);
 // port). Written to out lowercase, single-spaced, with any trailing dot
 // dropped; empty input clears the list. NULL on success, else the reason.
 const char *http_req_hostnames_parse(const char *in, char *out, size_t cap);
+
+// The method and path of the request line, for a log line: the query is
+// dropped, anything but printable ASCII becomes '?', and a long path is cut
+// short. The request is whatever the client sent, so nothing of it reaches
+// the log unfiltered.
+void http_req_line_text(const char *req, char *out, size_t cap);
+
+// Refused requests are logged at most HTTP_REFUSAL_LOG_MAX to a minute, so
+// a client that keeps trying cannot fill the log; the rest are counted and
+// the count is reported with the next line that is logged.
+#define HTTP_REFUSAL_LOG_MAX 5
+#define HTTP_REFUSAL_WINDOW_MS 60000u
+
+typedef struct {
+    uint32_t window_ms; // start of the current minute
+    unsigned logged;    // lines logged in it
+    unsigned unlogged;  // refusals since the last line that were not logged
+    bool     started;
+} http_refusal_limit_t;
+
+// True when this refusal gets a line; *unlogged is then the number of
+// earlier ones that did not.
+bool http_refusal_log_ok(http_refusal_limit_t *l, uint32_t now_ms, unsigned *unlogged);

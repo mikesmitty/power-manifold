@@ -106,6 +106,33 @@ static void test_bearer(void) {
     MT_ASSERT(!http_req_bearer_ok(REQ("Authorization: Bearer \r\n", ""), ""));
 }
 
+static void test_line_text(void) {
+    char out[24];
+    http_req_line_text("POST /api/v1/settings?secrets=1 HTTP/1.1\r\nHost: x\r\n\r\n", out, sizeof(out));
+    MT_ASSERT(!strcmp(out, "POST /api/v1/settings"));
+    http_req_line_text("GET /a\x1b[2Jb HTTP/1.1\r\n", out, sizeof(out));
+    MT_ASSERT(!strcmp(out, "GET /a?[2Jb"));
+    http_req_line_text("GET /a-very-long-path-that-goes-on HTTP/1.1\r\n", out, sizeof(out));
+    MT_ASSERT(strlen(out) == sizeof(out) - 1);
+    http_req_line_text("", out, sizeof(out));
+    MT_ASSERT(!strcmp(out, ""));
+}
+
+static void test_refusal_rate_limit(void) {
+    http_refusal_limit_t l = {0};
+    unsigned unlogged = 99;
+    for (unsigned i = 0; i < HTTP_REFUSAL_LOG_MAX; i++) {
+        MT_ASSERT(http_refusal_log_ok(&l, 1000 + i, &unlogged));
+        MT_ASSERT_EQ(unlogged, 0);
+    }
+    for (unsigned i = 0; i < 40; i++) MT_ASSERT(!http_refusal_log_ok(&l, 2000 + i, &unlogged));
+    // the next minute logs again and reports what was held back
+    MT_ASSERT(http_refusal_log_ok(&l, 1000 + HTTP_REFUSAL_WINDOW_MS, &unlogged));
+    MT_ASSERT_EQ(unlogged, 40);
+    MT_ASSERT(http_refusal_log_ok(&l, 1001 + HTTP_REFUSAL_WINDOW_MS, &unlogged));
+    MT_ASSERT_EQ(unlogged, 0);
+}
+
 void run_http_req_tests(void) {
     mt_run("http_req: header lookup", test_header_lookup);
     mt_run("http_req: header lines in the body are ignored", test_body_is_not_headers);
@@ -115,4 +142,6 @@ void run_http_req_tests(void) {
     mt_run("http_req: the owner's extra names are allowed", test_host_extra_names);
     mt_run("http_req: the hostnames setting is checked and tidied", test_hostnames_parse);
     mt_run("http_req: the bearer must match the secret exactly", test_bearer);
+    mt_run("http_req: the request line is cleaned for the log", test_line_text);
+    mt_run("http_req: refusal lines are rate-limited", test_refusal_rate_limit);
 }

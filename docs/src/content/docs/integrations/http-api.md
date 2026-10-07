@@ -320,7 +320,9 @@ listed in the [console reference](/developers/controller/console/).
 chassis totals, the input voltage, UPS readings when one is connected, and
 every port metric labeled with `port` and `name`. Blade temperatures are
 `pwrman_port_temperature_celsius` with a `sensor` label (`converter`,
-`plug`, `mcu`).
+`plug`, `mcu`). `pwrman_http_refused_total` counts the requests refused
+since the controller started (see [What a refused request looks
+like](#examples)).
 
 ```yaml
 scrape_configs:
