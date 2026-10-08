@@ -220,7 +220,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
    <fieldset><legend>Device</legend>
     <label>Device name<span class="h">Hostname and MQTT topic id</span><input id="dname" name="dname" maxlength="31" pattern="[A-Za-z0-9\-]+" required></label>
     <label>API token<span class="h">Locks the API and this panel</span><input id="atok" name="atok" type="password" maxlength="32"></label>
-    <label>UTC offset (minutes)<span class="h">For example &minus;240 for UTC&minus;4</span><input id="tz" name="tz" pattern="[+\-]?[0-9]{1,3}" title="Whole minutes, -720 to 840" required></label>
+    <label>UTC offset (minutes)<span class="h">For example &minus;240 for UTC&minus;4</span><input id="tz" name="tz" pattern="[+\-&minus;]?[0-9]{1,3}" title="Whole minutes, &minus;720 to 840" required></label>
     <label>Update source<span class="h">Checked once a day for a newer release. Blank means never.</span><input id="upd" name="upd" maxlength="63"></label>
     <label>Automatic updates<span class="h">A newer release installs by itself 1 to 7 days after it is found, between 03:00 and 05:00. The ports stay on.</span><select id="uauto" name="uauto"><option value="on">On</option><option value="off">Off</option></select></label>
    </fieldset>
@@ -228,33 +228,33 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     <label>Addressing<span class="h">Wired if a W6100 is present, else WiFi. Applies at reboot.</span><select id="ipmode" name="ipmode"><option value="dhcp">DHCP</option><option value="static">Static</option></select></label>
     <div class="three"><label>IP address<input id="ip" name="ip" placeholder="10.0.0.20"></label><label>Netmask<input id="mask" name="mask" placeholder="255.255.255.0"></label><label>Gateway<input id="gw" name="gw" placeholder="10.0.0.1"></label></div>
     <div class="two"><label>DNS server<span class="h">Blank: from DHCP</span><input id="dns" name="dns" placeholder="10.0.0.1"></label><label>Time server<span class="h">Blank: DHCP's, else {{NET_NTP_DEFAULT}}</span><input id="ntp" name="ntp" maxlength="63"></label></div>
-    <div class="two"><label>Syslog host<span class="h">Blank: off</span><input id="slh" name="slh" maxlength="63"></label><label>Syslog port<input id="slp" name="slp" type="number" min="1" max="65535"></label></div>
+    <div class="two"><label>Syslog host<span class="h">Blank: off</span><input id="slh" name="slh" maxlength="63"></label><label>Syslog port<input id="slp" name="slp" inputmode="numeric" pattern="[0-9]+" title="1 to 65535"></label></div>
     <label>Host names<span class="h">Other names this page is opened by, such as a DNS or tailnet name, separated by spaces. The IP address and the device name with .local always work.</span><input id="hosts" name="hosts" maxlength="255"></label>
     <label>HTTPS<span class="h" id="tlsi">No certificate installed.</span><select id="https" name="https"><option value="off">Off</option><option value="on">On: port 80 redirects</option></select></label>
     <div class="actions"><button class="btn sm" id="tlb" type="button">Install certificate&hellip;</button><button class="btn sm" id="tlr" type="button" hidden>Remove certificate</button><input type="file" id="tlf" multiple hidden></div>
    </fieldset>
    <fieldset><legend>MQTT</legend>
-    <div class="two"><label>Broker<span class="h">Blank: MQTT off</span><input id="mhost" name="mhost" maxlength="63"></label><label>Port<input id="mport" name="mport" type="number" min="1" max="65535"></label></div>
+    <div class="two"><label>Broker<span class="h">Blank: MQTT off</span><input id="mhost" name="mhost" maxlength="63"></label><label>Port<input id="mport" name="mport" inputmode="numeric" pattern="[0-9]+" title="1 to 65535"></label></div>
     <div class="two"><label>User<input id="muser" name="muser" maxlength="32"></label><label>Password<input id="mpass" name="mpass" type="password" maxlength="64"></label></div>
     <label>Connection<span class="h">TLS checks the broker against the certificate below, or the Let's Encrypt roots when none is installed</span><select id="mtls" name="mtls"><option value="plain">Plain</option><option value="tls">TLS</option><option value="unverified">TLS, unverified</option></select></label>
     <label>Broker certificate<span class="h">PEM, up to 2 KB, for a broker not issued by Let's Encrypt. Blank: Let's Encrypt.</span><textarea id="mca" name="mca" rows="3" spellcheck="false"></textarea></label>
    </fieldset>
    <fieldset><legend>Power and fan</legend>
-    <label>Chassis budget (W)<input id="bud" name="bud" type="number" min="{{STR(BUDGET_MIN_W)}}" max="{{STR(BUDGET_MAX_W)}}" required></label>
-    <div class="two"><label>Charged below (mW)<span class="h">0 turns detection off</span><input id="chmw" name="chmw" type="number" min="0" max="20000" step="50" required></label><label>&hellip;for (minutes)<input id="chmin" name="chmin" type="number" min="1" max="255" required></label></div>
+    <label>Chassis budget (W)<input id="bud" name="bud" inputmode="numeric" pattern="[0-9]+" title="{{STR(BUDGET_MIN_W)}} to {{STR(BUDGET_MAX_W)}}" required></label>
+    <div class="two"><label>Charged below (mW)<span class="h">0 turns detection off</span><input id="chmw" name="chmw" inputmode="numeric" pattern="[0-9]+" title="0 to 20000" required></label><label>&hellip;for (minutes)<input id="chmin" name="chmin" inputmode="numeric" pattern="[0-9]+" title="1 to 255" required></label></div>
     <label>Fan<select id="fmode" name="fmode"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select></label>
-    <div class="three"><label>Auto on at (W)<input id="fon" name="fon" type="number" min="1" max="1000" required></label><label>Auto off at (W)<input id="foff" name="foff" type="number" min="0" max="999" required></label><label>Or a contract over (mA)<input id="fma" name="fma" type="number" min="0" max="10000" required></label></div>
+    <div class="three"><label>Auto on at (W)<input id="fon" name="fon" inputmode="numeric" pattern="[0-9]+" title="1 to 1000" required></label><label>Auto off at (W)<input id="foff" name="foff" inputmode="numeric" pattern="[0-9]+" title="0 to 999" required></label><label>Or a contract over (mA)<input id="fma" name="fma" inputmode="numeric" pattern="[0-9]+" title="0 to 10000" required></label></div>
    </fieldset>
    <fieldset class="wide"><legend>Status lights</legend>
     <div class="three">
-     <label>Brightness<span class="h">0 to 255. Faults still show at 0.</span><input id="led" name="led" type="number" min="0" max="255" required></label>
-     <label>Dimmed brightness<span class="h">At night or when idle</span><input id="ldim" name="ldim" type="number" min="0" max="255" required></label>
+     <label>Brightness<span class="h">0 to 255. Faults still show at 0.</span><input id="led" name="led" inputmode="numeric" pattern="[0-9]+" title="0 to 255" required></label>
+     <label>Dimmed brightness<span class="h">At night or when idle</span><input id="ldim" name="ldim" inputmode="numeric" pattern="[0-9]+" title="0 to 255" required></label>
      <label>Power-up sweep<span class="h">&nbsp;</span><select id="lboot" name="lboot"><option value="white">White</option><option value="rainbow">Rainbow</option></select></label>
     </div>
     <div class="three">
      <label>Night from<span class="h">Both blank: off</span><input id="lns" name="lns" type="time"></label>
      <label>Night until<span class="h">May wrap midnight</span><input id="lne" name="lne" type="time"></label>
-     <label>Dim after (minutes)<span class="h">Without a port event. 0: never.</span><input id="lidle" name="lidle" type="number" min="0" max="1440" required></label>
+     <label>Dim after (minutes)<span class="h">Without a port event. 0: never.</span><input id="lidle" name="lidle" inputmode="numeric" pattern="[0-9]+" title="0 to 1440" required></label>
     </div>
    </fieldset>
    <fieldset class="wide"><legend>Ports</legend>
@@ -390,12 +390,12 @@ TABS.forEach(b=>b.onclick=()=>tab(b.dataset.t));
 // settings
 const F=$('f'),M=$('msg'),LK=$('lock');
 $('pt').innerHTML=[1,2,3,4,5,6].map(n=>`<tr><td>${n}</td><td><input name="pn${n}" maxlength="23" placeholder="Port ${n}"></td>
- <td><input name="pl${n}" type="number" min="{{STR(PORT_LIMIT_MIN_MA)}}" max="{{STR(PORT_LIMIT_MAX_MA)}}" step="20" required></td>
+ <td><input name="pl${n}" inputmode="numeric" pattern="[0-9]+" title="{{STR(PORT_LIMIT_MIN_MA)}} to {{STR(PORT_LIMIT_MAX_MA)}}" required></td>
  <td><select name="pv${n}">${[5,9,12,15,20].map(v=>`<option value="${v}">${v} V</option>`).join('')}</select></td>
  <td><select name="pb${n}"><option value="on">On</option><option value="off">Off</option><option value="last">As left</option></select></td>
  <td><input type="checkbox" name="pr${n}" aria-label="Port ${n} protect running device"></td>
  <td><input type="checkbox" name="pa${n}" aria-label="Port ${n} off when charged"></td>
- <td><input name="ps${n}" type="number" min="0" max="{{STR(PORT_SLEEP_MAX_MIN)}}" required></td></tr>`).join('');
+ <td><input name="ps${n}" inputmode="numeric" pattern="[0-9]+" title="0 to {{STR(PORT_SLEEP_MAX_MIN)}}" required></td></tr>`).join('');
 const Q=p=>[...F.querySelectorAll(`[name^=${p}]`)],PN=Q('pn'),PL=Q('pl'),PB=Q('pb'),PV=Q('pv'),PA=Q('pa'),PR=Q('pr'),PS=Q('ps'),
 KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',
  led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',gw:'gateway',dns:'dns',ntp:'ntp_server',mca:'mqtt_ca',slh:'syslog_host',
@@ -415,7 +415,7 @@ async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr
  const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';
  F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;
  M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks the API and this panel, so keep a copy.';return d;}
-F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value:F[k].value;b.mqtt_port=b.mqtt_port||1883;
+F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value.replace('\u2212','-'):F[k].value;b.mqtt_port=b.mqtt_port||1883;
  b.update_auto=F.uauto.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
  b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_protect=PR.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
  b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;
