@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.16.0...controller-firmware-v0.16.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **controller:** plain text field for the UTC offset ([491df69](https://github.com/mikesmitty/power-manifold/commit/491df697719f4a3a8ac37928c06ecfb865e4a1c9))
+* **controller:** plain text fields for every number in settings ([e5cd0b9](https://github.com/mikesmitty/power-manifold/commit/e5cd0b99f99cb457b2356b1594c5cc60951264ff))
+* **controller:** show the restart after an update instead of the old offer ([7741292](https://github.com/mikesmitty/power-manifold/commit/774129269f118346f3add9a9b7aaac9be3443d2f))
+
 ## [0.16.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.15.0...controller-firmware-v0.16.0) (2026-10-08)
 
 
