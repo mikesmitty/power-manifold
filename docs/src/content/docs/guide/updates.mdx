@@ -132,9 +132,8 @@ work together.
 
 Every release is signed. The controller only installs firmware that is
 signed by this project, built for this hardware, and not older than what
-it is running. Because of that, the download doesn't need to be encrypted.
-Updates come from `fw.powermanifold.io`, which serves the project's GitHub
-releases.
+it is running. Updates come from `fw.powermanifold.io`, which serves the
+project's GitHub releases.
 
 Updates are downloaded over HTTP, not HTTPS. The controller refuses an
 update address that starts with `https://`, so a server of your own that
