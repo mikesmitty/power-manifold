@@ -339,6 +339,34 @@ says of every write. The driver is tested against an emulated supply in
 the host tests (`test_ups.c`) and is as yet untested with a real LAD
 supply.
 
+## API description
+
+[`openapi.yaml`](openapi.yaml) describes the HTTP API in OpenAPI 3.1. The
+docs site builds the [API reference](https://docs.powermanifold.io/integrations/api/)
+from it and serves the file itself at `/openapi.yaml`, and each
+controller-firmware release carries the copy from its tag. Release Please
+sets its `info.version` with the firmware's.
+
+The `openapi` host test (`tools/check_openapi.py`) fails when the file and
+the code disagree on:
+
+- the routes in `src/net/http.c`, in both directions;
+- the keys of each reply object built field by field (status, port, UPS,
+  update, network, fault log, fault, certificate), matched exactly against
+  its schema;
+- the fixed words those objects carry, such as the port states, and the
+  port actions, matched exactly against their enums;
+- the settings keys, as `settings_json_dump` builds the reply and the
+  export with secrets, and as `settings_json_apply` reads them;
+- any other reply key, request key or query parameter in `http.c`, which
+  must appear somewhere in the file;
+- the version.
+
+It does not see status codes, value ranges or descriptions; review those
+when an endpoint changes. The test reads only the subset of YAML the file
+is written in (see the script); the docs site's build validates the whole
+file against the OpenAPI 3.1 schema.
+
 ## Web server request checks
 
 The HTTP server (`src/net/http.c`) applies these checks before routing. The

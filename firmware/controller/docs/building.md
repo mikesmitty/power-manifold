@@ -140,4 +140,9 @@ cmake --build test/build
 ctest --test-dir test/build --output-on-failure
 ```
 
+The same run checks `docs/openapi.yaml` against the web server's routes and
+fields (the `openapi` test; see
+[API description](internals.md#api-description)). A change to the HTTP API
+fails it until the description matches.
+
 CI runs these on every push/PR touching the firmware.

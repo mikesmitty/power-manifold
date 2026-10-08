@@ -119,8 +119,32 @@ pwrman_update_keys(verify_image ${CMAKE_CURRENT_LIST_DIR}/..)
 include(../tools/letsencrypt_roots.cmake)
 pwrman_letsencrypt_roots(engine_tests ${CMAKE_CURRENT_LIST_DIR}/..)
 
-# tools/sign_image.py against that verifier, with a throwaway key
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+# docs/openapi.yaml against the web server's routes and fields, and against
+# the settings object as settings_json_dump builds it
+add_executable(settings_json_dump
+    support/settings_json_dump.c
+    ../src/civil_time.c
+    ../src/ip4_text.c
+    ../src/led_sched.c
+    ../src/pem.c
+    ../src/settings_json.c
+    ../src/settings_util.c
+    ../src/update_image.c
+    ../src/update_latest.c
+    ../src/net/http_req.c
+    ../src/net/http_url.c
+    ../src/net/jsonlite.c
+    ../src/net/tls_bundle.c
+)
+target_include_directories(settings_json_dump PRIVATE ../src ../src/net)
+add_test(NAME openapi
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/../tools/check_openapi.py
+            --controller ${CMAKE_CURRENT_LIST_DIR}/..
+            --settings-dump $<TARGET_FILE:settings_json_dump>)
+
+# tools/sign_image.py against that verifier, with a throwaway key
 find_program(OPENSSL_PROGRAM openssl)
 if(OPENSSL_PROGRAM)
     add_test(NAME sign_roundtrip
