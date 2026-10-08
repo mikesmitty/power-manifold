@@ -281,8 +281,7 @@ the same keys, so you can edit an export and post it back.
 
 `vin_cal`, the input voltage trim, appears in `GET /api/v1/settings` but
 not in exports, and posting it changes nothing. It belongs to the unit's
-own measuring circuit and is set only from the serial console with
-`vin cal`, against a meter, because the
+own measuring circuit and can't be changed over the API, because the
 [3 A cap on a sagging input](/guide/troubleshooting/#ports-capped-at-3-a)
 acts on the trimmed reading.
 

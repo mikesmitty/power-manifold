@@ -115,8 +115,10 @@ and the API are unavailable.
   networks and older Android phones don't resolve `.local` names.
 - If you renamed the device, the address is `http://<new-name>.local/`.
 - With [HTTPS](/integrations/https/) on, use the name on the certificate.
-  If that name no longer resolves or the certificate is broken, type
-  `https off` and then `save` on the serial console.
+  If that name no longer resolves, open the controller by its IP address
+  and accept the browser's warning that the certificate is for another
+  name. From there you can install a new certificate, or set **HTTPS** to
+  *Off* in **Settings**.
 
 ## Forgot the API token
 

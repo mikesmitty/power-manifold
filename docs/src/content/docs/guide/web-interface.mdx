@@ -98,10 +98,10 @@ Type a command in the box under the messages and press Enter to run it, or
 paste several lines and run them together; Shift+Enter starts a new line,
 and the up and down arrows bring back earlier commands. `help` lists them.
 The reply appears under the messages. Passwords and the token show as
-`********` there and in the log. A few commands work only over the serial
-debug console: `token`, `defaults`, `bootsel`, updates that are unsigned or
-older than the running firmware, the input voltage trim `vin cal`, and the
-bench tools `stack`, `i2c`, `sim` and `button`.
+`********` there and in the log. A few commands are refused there:
+`token`, `defaults`, `bootsel`, updates that are unsigned or older than the
+running firmware, the input voltage trim `vin cal`, and the bench tools
+`stack`, `i2c`, `sim` and `button`.
 
 ## Settings
 
@@ -151,8 +151,8 @@ At the bottom of **Settings**:
 
 - **Export** downloads every setting as a JSON file. Your Wi-Fi password,
   MQTT password and API token are left out unless you tick the box to
-  include them. The input voltage calibration is never included: it is
-  specific to the controller card and is set only over the serial console.
+  include them. The input voltage calibration is never included, because
+  it is specific to the controller card.
   Nor are the HTTPS certificate and the HTTPS setting.
 - **Import…** loads a file you exported earlier.
 

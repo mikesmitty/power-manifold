@@ -115,10 +115,10 @@ browsers warn, and the controller stays reachable to install a new one.
 
 ## Turning it off
 
-Set **HTTPS** to *Off* in **Settings**, send `{"https": false}` to
-`POST /api/v1/settings`, or type `https off` on the serial console and then
-`save`. The serial console works when the certificate is broken or the name
-no longer resolves.
+Set **HTTPS** to *Off* in **Settings**, or send `{"https": false}` to
+`POST /api/v1/settings`. If the certificate's name no longer resolves, open
+the controller by its IP address and accept the browser's warning that the
+certificate is for another name.
 
 To remove the certificate, turn HTTPS off first, then press **Remove
 certificate** or send `POST /api/v1/tls/remove`.
