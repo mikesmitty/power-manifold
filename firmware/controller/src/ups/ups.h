@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Mean Well LAD-xxxU UPS supply on the controller card's UPS header (core 0,
+// Mean Well LAD-xxxBU UPS supply on the controller card's UPS header (core 0,
 // polled from the main loop). Probes at boot and keeps probing every few
 // seconds while nothing answers, so the same image runs with or without a
 // UPS fitted; once one answers, the status block and the three headline

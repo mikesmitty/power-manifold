@@ -74,7 +74,7 @@
 #define ETH_SPI         spi0
 #define ETH_SPI_HZ      (20 * 1000 * 1000)
 
-// UPS serial link: a Mean Well LAD-xxxU supply on the controller card's UPS
+// UPS serial link: a Mean Well LAD-xxxBU supply on the controller card's UPS
 // header (JST SH: TX, GND, RX), 3.3 V TTL through 1k series resistors, the
 // LAD's fixed 9600 8N1. The cable crosses: our TX lands on the LAD's UART_RX
 // (CN2 pin 13), its UART_TX (pin 14) on our RX. Free pins on the Pico 2 W

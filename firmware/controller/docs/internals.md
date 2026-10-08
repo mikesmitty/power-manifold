@@ -47,7 +47,7 @@ see [Boards](building.md#boards)).
 | EXP_INT# | GP6 | GP6 | TCA9539 interrupt; open-drain, internal pull-up only |
 | MUX_RST# | GP7 | GP8 | TCA9548A reset; on the carrier released = high impedance (the backplane's 10 kΩ takes it to 5 V), asserted = driven low |
 | EXP_RST# | GP8 | GP1 | TCA9539 reset, same drive as MUX_RST# |
-| UPS_TX/UPS_RX | GP12/GP13 | GP12/GP13 | UART0, 9600 8N1, to a Mean Well LAD-xxxU UPS supply (the card's UPS header) |
+| UPS_TX/UPS_RX | GP12/GP13 | GP12/GP13 | UART0, 9600 8N1, to a Mean Well LAD-xxxBU UPS supply (the card's UPS header) |
 | SPI0 MISO/CS/SCK/MOSI | GP16–GP19 | GP16–GP19 | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
 | ETH_RST# | GP20 | GP20 | W6100 reset |
 | ETH_INT# | GP21 | GP21 | W6100 interrupt, level-low while a frame waits |
@@ -314,8 +314,9 @@ the EVB has no radio.
 
 ## UPS supply
 
-A Mean Well LAD-xxxU security/UPS power supply (the `U` variants have the
-serial port; the plain ones only have open-collector status pins) plugs
+A Mean Well LAD-xxxBU security/UPS power supply (`B` is the 27.6 V output
+for a 24 V battery, where `A` is 13.8 V and `C` about 41 V; the `U` variants
+have the serial port, the plain ones only open-collector status pins) plugs
 into the controller card's UPS header: 3.3 V TTL UART0 on GP12/GP13
 through the card's 1 kΩ series resistors, 9600 8N1, grounds common through
 the supply's V−. The link is the LAD manual's own frame — read 0x55 / write

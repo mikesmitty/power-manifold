@@ -1,6 +1,6 @@
 ---
 title: UPS power supply
-description: Unofficial support for running Power Manifold from a Mean Well LAD-U battery-backed supply and seeing AC power and battery status in Home Assistant.
+description: Unofficial support for running Power Manifold from a Mean Well LAD-xxxBU battery-backed supply and seeing AC power and battery status in Home Assistant.
 sidebar:
   order: 5
   badge:
@@ -18,22 +18,27 @@ the supply's serial lead requires opening the chassis. Support has been
 verified only against a simulated supply.
 </Aside>
 
-Power Manifold can run from a Mean Well **LAD-xxxU** security power supply,
-which charges a battery and switches to it when AC power fails. Only
-the models ending in **U** have the serial port Power Manifold needs.
+Power Manifold can run from a Mean Well **LAD-xxxBU** security power supply,
+which charges a battery and switches to it when AC power fails. Use a model
+whose name ends in **BU**:
+
+- **B** models charge a 24 V battery and have a 27.6 V output. The **A**
+  models (13.8 V) and **C** models (about 41 V) don't suit Power
+  Manifold's 24 V input.
+- **U** models have the serial port Power Manifold needs.
 
 ## Connecting it
 
 <Flow
 	nodes={[
 		{ title: 'AC power' },
-		{ title: 'Mean Well LAD-xxxU', detail: 'Runs from its battery when AC power fails' },
+		{ title: 'Mean Well LAD-xxxBU', detail: 'Runs from its battery when AC power fails' },
 		{ title: 'Power Manifold', detail: 'Shows AC power and battery', highlight: true },
 	]}
-	links={[{ label: 'AC' }, { label: ['24 V to the XT60', 'CN2 to the UPS header'] }]}
+	links={[{ label: 'AC' }, { label: ['27.6 V to the XT60', 'CN2 to the UPS header'] }]}
 />
 
-Connect the supply's 24 V output to the chassis XT60 input as usual. Then
+Connect the supply's output to the chassis XT60 input as usual. Then
 connect the supply's serial port (on its CN2 header) to the controller
 card's 3-pin **UPS** header. The controller finds the supply by itself
 within a few seconds.

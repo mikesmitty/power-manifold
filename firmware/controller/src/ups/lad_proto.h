@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Mean Well LAD-xxxU UPS power supply: the UART protocol from the LAD series
+// Mean Well LAD-xxxBU UPS power supply: the UART protocol from the LAD series
 // user manual (ch. 5.4). Not Modbus — a 9600 8N1 point-to-point link with
 // its own frame:
 //
