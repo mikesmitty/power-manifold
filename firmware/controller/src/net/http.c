@@ -57,8 +57,7 @@
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
 #define IDLE_POLLS      20   // drop a connection that sends no request in ~10s, the first or the next
 #define REBOOT_DELAY_MS 300  // API reboot: let the response leave first
-#define SETUP_WIFI_WINDOW_MS (10 * 60 * 1000) // after Improv provisioning
-#define SETUP_ETH_WINDOW_MS (60 * 60 * 1000) // first hour on Ethernet with no token stored
+#define SETUP_WINDOW_MS (60 * 60 * 1000) // first-time setup, after Improv provisioning or power-up on Ethernet
 #define HOST_NAMES_DOCS "https://docs.powermanifold.io/integrations/network/#host-names"
 #define STR_(x) #x
 #define STR(x) STR_(x)
@@ -660,12 +659,12 @@ static void respond_unauthorized(conn_t *c) {
 // cable. Two windows, both open only while no token is stored, both closed by
 // the settings save that sets one:
 //   * Over Wi-Fi, a successful Improv provisioning opens the settings to any
-//     request for SETUP_WIFI_WINDOW_MS. Being in Bluetooth range of the
+//     request for SETUP_WINDOW_MS. Being in Bluetooth range of the
 //     chassis stands in for the token, whichever app did the provisioning
 //     (the Home Assistant app's own Improv setup does not open the link the
 //     controller hands back).
 //   * Over Ethernet, a request arriving on the wired link's address is let in
-//     for SETUP_ETH_WINDOW_MS after power-up. A short press of the front-panel
+//     for SETUP_WINDOW_MS after power-up. A short press of the front-panel
 //     button restarts that hour (main.c), so a missed window costs a power
 //     cycle or a press, not a factory reset.
 // Either stands in for the token on /settings only, and a request let in this
@@ -677,12 +676,12 @@ static uint32_t wifi_window_until_ms; // 0 = closed
 static uint32_t eth_window_until_ms;  // 0 = closed
 
 void http_setup_wifi_open(uint32_t now_ms) {
-    wifi_window_until_ms = now_ms + SETUP_WIFI_WINDOW_MS;
+    wifi_window_until_ms = now_ms + SETUP_WINDOW_MS;
     if (!wifi_window_until_ms) wifi_window_until_ms = 1;
 }
 
 void http_setup_window_restart(uint32_t now_ms) {
-    eth_window_until_ms = now_ms + SETUP_ETH_WINDOW_MS;
+    eth_window_until_ms = now_ms + SETUP_WINDOW_MS;
     if (!eth_window_until_ms) eth_window_until_ms = 1;
 }
 
@@ -733,7 +732,7 @@ static void respond_settings_locked(conn_t *c) {
         why = "setup window closed: power-cycle the controller or press its button once, "
               "then set an API token within an hour";
     else
-        why = "no API token yet: Wi-Fi setup unlocks settings for ten minutes, "
+        why = "no API token yet: Wi-Fi setup unlocks settings for an hour, "
               "or connect Ethernet";
     char b[192];
     snprintf(b, sizeof(b), "{\"error\":\"%s\"}", why);

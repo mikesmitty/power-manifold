@@ -44,7 +44,7 @@ void http_init(void); // also starts the Ethernet setup hour, and loads the HTTP
 // network lock.
 void http_tls_sync(void);
 
-// Open the Wi-Fi setup window (10 minutes, or until a token exists). Improv
+// Open the Wi-Fi setup window (an hour, or until a token exists). Improv
 // calls this with the network lock held once provisioning succeeds.
 void http_setup_wifi_open(uint32_t now_ms);
 

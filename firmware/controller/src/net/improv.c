@@ -453,7 +453,7 @@ void improv_poll(uint32_t now_ms) {
         if (status == CYW43_LINK_UP && attempt_left_old_net) {
             attempt = false;
             // With no API token stored yet, the web UI's settings stay open
-            // for ten minutes, so any phone or computer can finish the job
+            // for an hour, so any phone or computer can finish the job
             // (token, broker, name) without a serial cable.
             char url[48];
             snprintf(url, sizeof(url), "http://%s/", net_ip_str());

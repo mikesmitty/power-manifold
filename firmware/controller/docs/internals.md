@@ -349,8 +349,8 @@ host-tested.
   wherever the first wrong character is. The server sends no CORS headers,
   so a page on another site cannot get a browser to send the header.
 - **Setup doors.** While no token is stored, the settings routes accept no
-  credential at all for ten minutes after Improv provisioning succeeds, and
-  over the Ethernet window for requests on the wired link. A settings `POST` let in that way must carry
+  credential at all for an hour after Improv provisioning succeeds, and
+  for the first hour after power-up for requests on the wired link. A settings `POST` let in that way must carry
   `Content-Type: application/json` or it gets `415`. Browsers send a
   cross-site POST without a CORS preflight only with a form or `text/plain`
   type, so this keeps another site from setting the first token.
