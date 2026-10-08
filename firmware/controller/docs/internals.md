@@ -272,12 +272,18 @@ port holds a contract over `on_ma` (default 3000 mA, so the everyday
 5 V/3 A contract never trips it; 0 disables) — a 5 V/5 A contract is only
 25 W of chassis load but heats the blade as I²R. A third rule reads the
 gen-3 blades' thermometers: the fan runs while any blade's converter is
-at or above 65 °C and that rule clears once every blade is under 55 °C.
-Those two temperatures are fixed, sit well under the blade's own 100 °C
-trip, and are provisional until the blades have been measured in the
+at or above 65 °C or any receptacle at or above 55 °C, and that rule
+clears once every converter is under 55 °C and every receptacle under
+45 °C. The receptacle counts because its shell is a touchable surface
+whose limit the certification depends on. Those four temperatures are
+fixed, sit well under the blade's own trips (100 °C converter, 70 °C
+receptacle), and are provisional until the blades have been measured in the
 closed chassis; a port without a reading (a gen-2 blade, an empty slot,
 an open thermistor) takes no part. In auto the fan stays on until all
-three rules are clear; `on`/`off` are manual overrides.
+three rules are clear. `on` and `off` are manual overrides, but `off`
+keeps the temperature rule: overheating is a safety matter, so no setting
+turns it off. Under a manual `off` the rule runs without the anti-flap
+hold, since its 10 °C hysteresis is enough.
 
 ## Fault log
 

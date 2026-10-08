@@ -9,7 +9,8 @@
 // FSMs, like engine_main. The sim reports measured draw as load_pct of the
 // contract current (80% by default), so a 20V/3A contract shows 48W.
 // Defaults from support_reset: on >= 80W, off <= 60W, any contract over 3A,
-// any gen-3 blade's converter at or above 65.0 C (off again under 55.0 C).
+// any gen-3 blade's converter at or above 65.0 C (off again under 55.0 C) or
+// receptacle at or above 55.0 C (off again under 45.0 C).
 
 static void seat_and_attach(uint8_t slot, uint16_t mv, uint32_t ma) {
     sim_set_present(slot, true);
@@ -265,8 +266,64 @@ static void test_blade_without_a_reading_does_not_count(void) {
     tick(2);
     MT_ASSERT_EQ(tele.port[0].temp_conv_dc, PORT_TEMP_NONE);
     MT_ASSERT(!sim_fan());
-    sim_set_temps(0, 300, 900); // a hot receptacle is not a fan input
+}
+
+static void test_hot_receptacle_turns_the_fan_on(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    sim_set_temps(0, 300, 549); // just under the receptacle's on temperature
     tick(2);
+    MT_ASSERT(!sim_fan());
+    sim_set_temps(0, 300, 550);
+    tick(2);
+    MT_ASSERT(sim_fan());
+
+    sim_set_temps(0, 300, 450); // 45.0 still holds it
+    tick_ms(FAN_MIN_HOLD_MS + 100);
+    MT_ASSERT(sim_fan());
+    sim_set_temps(0, 300, 449);
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
+static void test_hot_receptacle_overrides_manual_off(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    fan_policy_set_manual(false);
+    sim_set_temps(0, 300, 550);
+    tick(2);
+    MT_ASSERT(sim_fan());
+    sim_set_temps(0, 300, 449);
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
+static void test_hot_blade_overrides_manual_off(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    fan_policy_set_manual(false);
+    tick(2);
+    MT_ASSERT(!sim_fan());
+
+    sim_set_temps(0, 650, 300);
+    tick(2);
+    MT_ASSERT(sim_fan());
+    MT_ASSERT(!fan_policy_auto());
+
+    sim_set_temps(0, 550, 300); // 55.0 still holds it
+    tick(2);
+    MT_ASSERT(sim_fan());
+    sim_set_temps(0, 549, 300);
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
+static void test_manual_off_ignores_the_load_rules(void) {
+    support_reset(360000);
+    seat_and_attach(0, 5000, 5000);
+    MT_ASSERT(sim_fan());
+    fan_policy_set_manual(false);
+    tick_ms(FAN_MIN_HOLD_MS + 100);
     MT_ASSERT(!sim_fan());
 }
 
@@ -296,4 +353,9 @@ void run_fan_tests(void) {
            test_hot_blade_holds_the_fan_after_the_power_rule_clears);
     mt_run("fan: a blade without a reading does not count",
            test_blade_without_a_reading_does_not_count);
+    mt_run("fan: a hot blade overrides manual off", test_hot_blade_overrides_manual_off);
+    mt_run("fan: manual off ignores the load rules", test_manual_off_ignores_the_load_rules);
+    mt_run("fan: a hot receptacle turns it on", test_hot_receptacle_turns_the_fan_on);
+    mt_run("fan: a hot receptacle overrides manual off",
+           test_hot_receptacle_overrides_manual_off);
 }
