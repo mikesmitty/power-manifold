@@ -84,7 +84,9 @@ You can also install with the
 
 While the controller restarts, the blades keep running with the limits they
 had and their own protection. Power sharing and fault handling resume once
-the controller is back, after a few seconds.
+the controller is back, after a few seconds. Devices that are plugged in
+keep the power they had: the controller sends them no new offer unless the
+budget no longer covers them.
 
 <UpdateTimeline />
 

@@ -308,17 +308,22 @@ static void attach_begin(uint8_t i, uint32_t now_ms) {
 // touching EN. A fault latched while the controller was down is handled as
 // a new fault (the usual path: EN off, cooldown, re-probe). The blade's
 // configuration is checked against the settings and rewritten — and
-// re-advertised to an attached sink — only when it differs, so a live
-// contract is normally not interrupted. Its firmware is left alone
-// here whatever the controller would change about it: that waits for the
-// port to be idle (blade_wants). A blade that will not answer stays
-// powered too (warm_probe_failed).
+// re-advertised to an attached sink — only when it differs. A port with a
+// device running on it keeps the offer the blade already holds when that is
+// within the settings, an offer the budget had turned down included: the
+// restart must not be what changes it. Its contract then goes into the
+// budget like any new one, and is turned down only if it does not fit. Its
+// firmware is left alone here whatever the controller would change about
+// it: that waits for the port to be idle (blade_wants). A blade that will
+// not answer stays powered too (warm_probe_failed).
 static void warm_probe(uint8_t i, uint32_t now_ms) {
     if (ctx[i].silent) {
         if ((int32_t)(now_ms - ctx[i].silent_check_ms) < 0) return;
         ctx[i].silent_check_ms = now_ms + SILENT_RECHECK_MS;
     }
     uint16_t fail = 0;
+    uint32_t ma = limit_for(i), mv = g_settings.port_max_mv[i];
+    bool keep = false;
     if (!tca9548a_select(i)) {
         fail = PROBE_FAIL_MUX;
     } else {
@@ -328,7 +333,11 @@ static void warm_probe(uint8_t i, uint32_t now_ms) {
             read_identity(i);
             if (ctx[i].id_ok && !blade_wants(i)) ctx[i].update_rounds = 0; // running what it should
         }
-        fail = blade_adopt(ctx[i].gen, limit_for(i), g_settings.port_max_mv[i], &ctx[i].st);
+        uint32_t run_ma, run_mv;
+        keep = blade_running_limits(ctx[i].gen, &run_ma, &run_mv) &&
+               run_mv == mv && run_ma <= ma;
+        if (keep) ma = run_ma;
+        fail = blade_adopt(ctx[i].gen, ma, mv, &ctx[i].st);
         if (!fail && ctx[i].st.fault_bits) {
             ctx[i].warm = false;
             ctx[i].silent = false;
@@ -343,8 +352,17 @@ static void warm_probe(uint8_t i, uint32_t now_ms) {
     }
     ctx[i].warm = false;
     ctx[i].silent = false;
-    ctx[i].granted_ma = limit_for(i);
+    ctx[i].granted_ma = ma;
     budget_force_reserve(i, BUDGET_BASE_RESERVE_MW);
+    if (keep && ma < limit_for(i)) {
+        // The kept offer is below the port's limit: the budget had turned
+        // it down before the restart. It carries on as a throttled port,
+        // raised again as the budget allows.
+        attach_begin(i, now_ms);
+        ctx[i].denied_mw = limit_for(i) * g_settings.port_max_mv[i] / 1000;
+        enter(i, PORT_STATE_THROTTLED);
+        return;
+    }
     go_idle(i, now_ms); // an attached sink moves it on to ACTIVE next tick
 }
 
@@ -486,9 +504,13 @@ static void shed_lower_priority(uint8_t claimant, uint32_t want_mw) {
 
 // Any strictly higher-priority throttled port that still wants more goes
 // first: since recovery can happen in partial steps, it can use whatever
-// headroom exists, so freed watts always flow top-down by priority.
+// headroom exists, so freed watts always flow top-down by priority. Nothing
+// is handed out while a warm start is still adopting ports, or while an
+// adopted port's device is not yet in the budget.
 static bool recovery_should_yield(uint8_t i) {
     for (uint8_t j = 0; j < NUM_PORTS; j++) {
+        if (ctx[j].warm) return true;
+        if (ctx[j].state == PORT_STATE_IDLE && ctx[j].st.attached) return true;
         if (j == i || ctx[j].state != PORT_STATE_THROTTLED) continue;
         if (prio(j) >= prio(i)) continue;
         if (ctx[j].denied_mw > budget_port_reservation(j)) return true;

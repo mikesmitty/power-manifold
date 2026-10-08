@@ -289,6 +289,40 @@ static void test_smaller_budget_throttles_not_cuts(void) {
     MT_ASSERT(budget_reserved() <= 75000); // base reserves are never refused
 }
 
+// A gen-3 port the budget had turned down keeps that offer through the
+// restart instead of being re-offered its full limit, and is raised again
+// as the budget allows.
+static void test_turned_down_port_keeps_its_offer(void) {
+    support_reset(120000);
+    g_settings.port_priority[1] = 0; // a peer: nothing to turn down
+    for (uint8_t i = 0; i < 2; i++) {
+        sim_set_gen(i, 3);
+        sim_set_present(i, true);
+    }
+    tick(2);
+    sim_attach(1, 20000, 3000); // 60 W
+    tick(2);
+    sim_attach(0, 20000, 5000); // wants 100 W, 60 W free
+    tick(2);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 3000);
+    uint32_t caps0 = sim_src_cap_count(0), caps1 = sim_src_cap_count(1);
+
+    MT_ASSERT_EQ(warm_reboot(), 0x03);
+    tick_ms(200);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 3000);
+    MT_ASSERT_EQ(sim_src_cap_count(0), caps0); // nothing new sent to either device
+    MT_ASSERT_EQ(sim_src_cap_count(1), caps1);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000);
+    MT_ASSERT_EQ(budget_port_reservation(1), 60000);
+
+    sim_detach(1);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 5000);
+}
+
 static void test_fan_state_adopted(void) {
     support_reset(360000);
     sim_set_present(0, true);
@@ -315,5 +349,6 @@ void run_warm_tests(void) {
     mt_run("warm: changed settings reconfigure and re-advertise", test_changed_settings_reconfigure);
     mt_run("warm: a silent blade stays powered", test_silent_blade_stays_powered);
     mt_run("warm: a smaller budget throttles, never cuts", test_smaller_budget_throttles_not_cuts);
+    mt_run("warm: a turned-down port keeps its offer", test_turned_down_port_keeps_its_offer);
     mt_run("warm: the fan state is adopted", test_fan_state_adopted);
 }
