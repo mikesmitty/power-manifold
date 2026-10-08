@@ -19,7 +19,7 @@ const TELEMETRY = {
 	state: 'active', gen: 3, v: 20.021, i: 2.712, p: 54.3, e: 6.211, pdo: 5, contract_w: 65.0,
 	prio: 2, limit_ma: 5000, max_v: 20, boot: 'on', charged: false, auto_off: false, sleep_min: 0,
 	fault: 0, last_fault: '', last_fault_at: 0, t_conv: 54.9, t_plug: 41.3, t_mcu: 36.2,
-	progress: 0, update_due: false, silent: false,
+	progress: 0, update_due: false, fw: '0.2.0', silent: false,
 };
 const EVENT = { port: 4, event: 'charge', kind: 'auto_off', code: 2, arg: 0, text: 'charged', ts: 1791268930 };
 
@@ -52,6 +52,13 @@ const TREE: (Leaf | Branch)[] = [
 			{ name: 'state', dir: 'out', note: 'installed and newest versions, retained', example: { installed_version: '0.12.0', latest_version: '0.12.0' } },
 			{ name: 'set', dir: 'in', note: 'install: install the newest known release' },
 			{ name: 'latest', dir: 'in', note: 'retained pointer to your own release', example: { version: '0.13.0', url: 'http://fw.lan/controller.signed.bin' } },
+		],
+	},
+	{
+		name: 'blades/',
+		children: [
+			{ name: 'state', dir: 'out', note: 'the blades\' firmware; differs while an update waits, retained', example: { installed_version: '0.1.0', latest_version: '0.2.0', release_summary: 'Waiting: Pi 1. Each updates once its device is unplugged or switched off (drawing under the Charged below threshold). Install updates them now, cutting their power for a few seconds.' } },
+			{ name: 'set', dir: 'in', note: 'install: update the waiting blades now' },
 		],
 	},
 ];

@@ -11,6 +11,7 @@
 #include "lwip/dns.h"
 
 #include "boot_reason_hw.h"
+#include "engine/blade_bundle.h"
 #include "event_kind.h"
 #include "fault_log.h"
 #include "fault_text.h"
@@ -48,7 +49,7 @@
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
 #define PORT_PROTECT     (PORT_SENSOR_N + 13) // retracted: the setting was removed
 #define PORT_ENTITIES    (PORT_SENSOR_N + 14)
-#define CHASSIS_ENTITIES 24
+#define CHASSIS_ENTITIES 25
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -90,6 +91,7 @@ static unsigned latest_seq_sent; // update_latest_seq() as of the last update/st
 
 static char topic_buf[160];
 static char payload_buf[1024]; // largest: a port's event entity config
+static char blade_state_sent[512]; // the Blade firmware entity's state as last published
 static char device_json[192];
 
 static void ensure_ids(void) {
@@ -246,6 +248,19 @@ static void handle_command(const char *topic, const char *data) {
             ipc_cmd_push(&c);
         }
         settings_save_later();
+    } else if (strcmp(sub, "/blades/set") == 0) {
+        // Install on the Blade firmware entity: every blade whose update is
+        // waiting on a port in use is updated now, and its device loses
+        // power for the few seconds that takes. The operator asked for it.
+        if (strcasecmp(data, "install") != 0) return;
+        telemetry_t t;
+        ipc_snapshot_read(&t);
+        for (unsigned i = 0; i < NUM_PORTS; i++) {
+            if (!t.port[i].update_due) continue;
+            engine_cmd_t c = {.op = CMD_PORT_UPDATE, .port = (uint8_t)i};
+            ipc_cmd_push(&c);
+            printf("mqtt: blade update on port %u, from Home Assistant\n", i + 1);
+        }
     } else if (strcmp(sub, "/improv/set") == 0) {
         if (!strcasecmp(data, "open")) improv_open(IMPROV_WINDOW_MS, "Home Assistant");
     } else if (strcmp(sub, "/update/latest") == 0) {
@@ -307,6 +322,7 @@ static const char *const SUBS[] = {
     "port/+/boot/set", "port/+/autooff/set", "port/+/sleep/set", "charged_mw/set",
     "charged_min/set", "fan/set",            "budget/set",       "led/set",
     "update/latest",   "update/set",         "improv/set",       "update/auto/set",
+    "blades/set",
 };
 #define N_SUBS (sizeof(SUBS) / sizeof(SUBS[0]))
 static unsigned sub_idx;  // next SUBS entry to send
@@ -346,6 +362,7 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         sub_idx = 0; // command topics follow, one per SUBACK (subscribe_step)
         sub_inflight = false;
         publish_update_state();
+        blade_state_sent[0] = '\0'; // the next telemetry publishes it again
         printf("mqtt: connected to %s (%s)\n", g_settings.mqtt_host, mqtt_tls_mode_str());
     } else {
         state = ST_BACKOFF;
@@ -710,6 +727,20 @@ static void publish_update_entity(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+// The blades' firmware, as an update entity: Home Assistant lists it under
+// Settings, Updates, and counts it in the badge there, while a blade's update
+// waits on a port in use. Install updates those blades at once.
+static void publish_blade_update_entity(void) {
+    discovery_config_topic("update", "blade_fw");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Blade firmware\",\"uniq_id\":\"pwrman_%s_blade_fw\","
+             "\"stat_t\":\"~/blades/state\",\"cmd_t\":\"~/blades/set\","
+             "\"pl_inst\":\"install\",\"dev_cla\":\"firmware\","
+             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_update_auto_switch(void) {
     discovery_config_topic("switch", "update_auto");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -924,6 +955,9 @@ static void discovery_publish(int i) {
     case 22:
         publish_update_button("skip", "Skip this update", "mdi:debug-step-over");
         break;
+    case 23:
+        publish_blade_update_entity();
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -969,6 +1003,44 @@ static void temp_discovery_check(void) {
 
 // ---- telemetry & events ----------------------------------------------------
 
+static void version_text(char *out, size_t cap, uint32_t v) {
+    snprintf(out, cap, "%u.%u.%u", (unsigned)(v >> 16), (unsigned)(v >> 8 & 0xFF), (unsigned)(v & 0xFF));
+}
+
+// The Blade firmware entity's state, published retained when it changes.
+// The latest version is the one the controller carries; the installed one
+// is the oldest a waiting blade runs, else the same, so the entity shows an
+// update exactly while one waits on a port in use.
+static void publish_blade_state(const telemetry_t *t) {
+    static char payload[512];
+    const blade_image_header_t *bh = blade_bundle_header();
+    uint32_t latest = bh ? UPDATE_VERSION(bh->major, bh->minor, bh->patch) : 0;
+    uint32_t installed = latest;
+    for (unsigned i = 0; i < NUM_PORTS; i++) {
+        uint32_t v = t->port[i].blade_fw;
+        if (!t->port[i].update_due || !v || v == latest) continue;
+        if (installed == latest || v < installed) installed = v;
+    }
+    char lv[16] = "none", iv[16] = "none";
+    if (latest) version_text(lv, sizeof(lv), latest);
+    if (installed) version_text(iv, sizeof(iv), installed);
+    char waiting[80], summary[256], summary_json[320];
+    summary[0] = '\0';
+    if (health_blades_waiting(t, waiting, sizeof(waiting)))
+        snprintf(summary, sizeof(summary),
+                 "Waiting: %s. Each updates once its device is unplugged or switched off "
+                 "(drawing under the Charged below threshold). Install updates them now, "
+                 "cutting their power for a few seconds.", waiting);
+    json_escape(summary_json, sizeof(summary_json), summary);
+    snprintf(payload, sizeof(payload),
+             "{\"installed_version\":\"%s\",\"latest_version\":\"%s\",\"release_summary\":\"%s\"}",
+             iv, lv, summary_json);
+    if (!strcmp(payload, blade_state_sent)) return;
+    snprintf(topic_buf, sizeof(topic_buf), "%s/blades/state", base);
+    publish(topic_buf, payload, 1, 1);
+    snprintf(blade_state_sent, sizeof(blade_state_sent), "%s", payload);
+}
+
 static void publish_telemetry(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
@@ -1007,15 +1079,21 @@ static void publish_telemetry(void) {
              u->mains_dv / 10.0, u->load_ca / 100.0, vin_fitted() ? "true" : "false",
              vin_mv() / 1000.0, (unsigned long)bus_cap_ma());
     publish(topic_buf, payload_buf, 0, 1);
+    publish_blade_state(&t);
 
     for (unsigned i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
         port_gen[i] = p->gen;
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
-        char tc[8], tp[8], tm[8];
+        char tc[8], tp[8], tm[8], fw[20] = "null";
         port_temp_text(tc, sizeof(tc), p->temp_conv_dc, "null");
         port_temp_text(tp, sizeof(tp), p->temp_plug_dc, "null");
         port_temp_text(tm, sizeof(tm), p->temp_mcu_dc, "null");
+        if (p->blade_fw) {
+            char v[16];
+            version_text(v, sizeof(v), p->blade_fw);
+            snprintf(fw, sizeof(fw), "\"%s\"", v);
+        }
         fault_rec_t lf;
         char lf_text[64] = "";
         uint32_t lf_at = 0;
@@ -1029,7 +1107,7 @@ static void publish_telemetry(void) {
                  "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
                  "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu,"
                  "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u,"
-                 "\"update_due\":%s,\"silent\":%s}",
+                 "\"update_due\":%s,\"fw\":%s,\"silent\":%s}",
                  port_state_name((port_state_t)p->state), p->gen, p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
                  p->energy_mwh / 1e6, p->selected_pdo,
@@ -1040,7 +1118,7 @@ static void publish_telemetry(void) {
                  (g_settings.port_auto_off >> i) & 1 ? "true" : "false",
                  g_settings.port_sleep_min[i], p->fault_bits, lf_text, (unsigned long)lf_at,
                  tc, tp, tm, p->update_pct,
-                 p->update_due ? "true" : "false", p->silent ? "true" : "false");
+                 p->update_due ? "true" : "false", fw, p->silent ? "true" : "false");
         publish(topic_buf, payload_buf, 0, 0);
     }
     temp_discovery_check();

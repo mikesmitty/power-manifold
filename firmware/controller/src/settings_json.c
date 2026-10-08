@@ -89,9 +89,7 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     // HTTPS needs the certificate installed on this unit, which no export
     // carries: shown, never backed up, so an import cannot turn it on
     if (!o->export) off = putf(out, cap, off, "\"https\":%s,", s->https ? "true" : "false");
-    off = putf(out, cap, off, "\"blade_auto_update\":%s,\"blade_boot_via_loader\":%s,"
-               "\"blade_watch_s\":%u,\"port_names\":[",
-               s->blade_auto_update ? "true" : "false",
+    off = putf(out, cap, off, "\"blade_boot_via_loader\":%s,\"blade_watch_s\":%u,\"port_names\":[",
                s->blade_boot_via_loader ? "true" : "false", s->blade_watch_s);
     for (int i = 0; i < NUM_PORTS; i++) {
         off = putf(out, cap, off, "%s\"", i ? "," : "");
@@ -268,7 +266,6 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
     if (json_get_bool(body, "update_auto", &b)) s->update_auto = b;
     // whether a certificate is installed is the HTTP server's check
     if (json_get_bool(body, "https", &b)) s->https = b;
-    if (json_get_bool(body, "blade_auto_update", &b)) s->blade_auto_update = b;
     if (json_get_bool(body, "blade_boot_via_loader", &b)) s->blade_boot_via_loader = b;
     if (json_get_int(body, "blade_watch_s", &v)) {
         if (v < 0 || v > 255) return "blade_watch_s: 0-255 (0 disables)";

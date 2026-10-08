@@ -28,6 +28,7 @@ Ports are numbered 1 to 6.
 | `port/<n>/telemetry` | every second | one port, see below |
 | `event` | on each event | `{"port", "event", "kind", "code", "arg", "text", "ts"}` |
 | `update/state` | retained | `installed_version` and `latest_version` |
+| `blades/state` | retained, on change | `installed_version`, `latest_version` and `release_summary` for the blades: the installed version differs while a [blade update](/guide/updates/#blade-firmware) waits |
 
 **`status` fields:** `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`,
@@ -44,7 +45,8 @@ answers) and, with one connected, `ups_ac`, `ups_on_battery`,
 `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`,
 `last_fault_at`, the blade temperatures `t_conv`, `t_plug` and `t_mcu` in
 °C (`null` when there's no reading), `progress` (0–100 during a blade
-update), `update_due` and `silent`.
+update), `update_due` (a blade update is waiting), `fw` (the blade's
+firmware version, `null` when unknown) and `silent`.
 
 **Events:** `kind` is one of the
 [Home Assistant event types](/guide/home-assistant/#automations).
@@ -71,6 +73,7 @@ saved a few seconds after the last change.
 | `charged_mw/set`, `charged_min/set` | when a device counts as charged |
 | `improv/set` | `open`: open Wi-Fi setup for ten minutes |
 | `update/set` | `install`: install the newest known release |
+| `blades/set` | `install`: update every blade whose update is waiting now; their devices lose power for a few seconds |
 | `update/latest` | retained pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}` to offer your own release source. The controller uses the newer of this version and the one found by the daily check. |
 
 Example, with Mosquitto's command-line client:

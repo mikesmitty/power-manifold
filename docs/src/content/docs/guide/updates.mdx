@@ -93,17 +93,40 @@ budget no longer covers them.
 ## Blade firmware
 
 The blades have their own firmware, and the controller carries the version
-that goes with it. You don't need to do anything. After a controller update
-the controller brings each blade up to date by itself, but only when its
-port is not in use:
+that goes with it. After a controller update the controller brings each
+blade up to date by itself, at a moment when its port is not in use:
 
-- when the chassis is switched on, before the port powers up;
-- when its port has had nothing plugged in for ten seconds.
+- when the chassis is switched on, or the port is switched on, before the
+  port powers up;
+- when its port has had nothing plugged in for ten seconds;
+- when the device plugged into it is switched off. The controller knows a
+  device is off when it draws less than the
+  [**Charged below**](/guide/port-settings/#switching-off-when-charged)
+  threshold for the **…for** time: 500 mW for 10 minutes, by default.
 
-**A port that is powering a device is never interrupted for a blade
-update.** It waits until the device is unplugged, which could be days for a
-Raspberry Pi. Updating a blade takes a few seconds. Its light is off while
-it happens, and its state shows `updating` with a percentage.
+Updating a blade takes a few seconds. Its light is off while it happens, and
+its state shows `updating` with a percentage. A device that was plugged in
+reconnects once the port comes back.
+
+A port powering a device that is on, such as a running Raspberry Pi, is not
+interrupted. Its update waits until the device is unplugged or switched off,
+or until the port is switched off and on again. If **Charged below** is set
+to 0, the controller can't tell that a device is off, and only unplugging or
+switching the port off and on lets the update run.
+
+While an update waits, Power Manifold makes it hard to miss:
+
+- the port's light flashes amber briefly every 3 seconds;
+- the web interface's status line says *blade update waiting* with the
+  port's name, and the port's card says how to let the update run;
+- in Home Assistant, the **Problem** sensor turns on, and a **Blade
+  firmware** update appears under **Settings** › **Updates**. Its
+  **Install** button updates the waiting blades at once. Their devices lose
+  power for a few seconds, so shut them down first.
+
+Blades always take the firmware the controller carries. This can't be
+turned off, because a controller and blades on different versions may not
+work together.
 
 ## Security
 

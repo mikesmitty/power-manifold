@@ -354,6 +354,26 @@ static void test_identify_visible_when_dimmed_to_zero(void) {
     MT_ASSERT_EQ(px[1].b, LED_IDENTIFY_FLOOR);
 }
 
+// A port whose blade update is waiting flashes amber briefly every few
+// seconds over its own color; a port without one never does.
+static void test_waiting_update_flashes_amber(void) {
+    reset(255);
+    set_port(0, PORT_STATE_ACTIVE, 20000);
+    set_port(1, PORT_STATE_ACTIVE, 20000);
+    tele.port[0].update_due = true;
+    render(LED_UPDATE_FLASH_PERIOD_MS * 10); // the start of a flash
+    led_rgb_t amber = {255, 120, 0}, blue = {0, 60, 255};
+    MT_ASSERT(same(PX(0), amber));
+    MT_ASSERT(same(PX(1), blue));
+    render(LED_UPDATE_FLASH_PERIOD_MS * 10 + LED_UPDATE_FLASH_MS);
+    MT_ASSERT(same(PX(0), blue)); // the flash is over: its own color
+    reset(0);
+    set_port(0, PORT_STATE_ACTIVE, 20000);
+    tele.port[0].update_due = true;
+    render(LED_UPDATE_FLASH_PERIOD_MS * 10);
+    MT_ASSERT(dark(PX(0))); // brightness 0 blanks it like every other non-fault state
+}
+
 void run_led_tests(void) {
     mt_run("leds: port state colours", test_port_state_colours);
     mt_run("leds: button hold fills the chain", test_hold_fill);
@@ -375,4 +395,5 @@ void run_led_tests(void) {
     mt_run("leds: identify overrides everything", test_identify_overrides_everything);
     mt_run("leds: identify visible at brightness 0", test_identify_visible_when_dimmed_to_zero);
     mt_run("leds: acknowledge flash", test_ack_flash);
+    mt_run("leds: a waiting blade update flashes amber", test_waiting_update_flashes_amber);
 }

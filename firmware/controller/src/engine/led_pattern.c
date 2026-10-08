@@ -54,6 +54,10 @@ static led_rgb_t active_colour(const port_telemetry_t *p) {
 // (blink/pulse/dim) to apply on top.
 static led_rgb_t port_colour(const port_telemetry_t *p, uint32_t now_ms, uint32_t *level) {
     *level = 255;
+    // A blade update waiting on a port in use: a short amber flash every few
+    // seconds over the port's own color, so the port whose device needs
+    // unplugging or switching off can be picked out from across the room.
+    if (p->update_due && now_ms % LED_UPDATE_FLASH_PERIOD_MS < LED_UPDATE_FLASH_MS) return COL_AMBER;
     switch ((port_state_t)p->state) {
     case PORT_STATE_ABSENT:
         *level = 5;

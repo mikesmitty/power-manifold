@@ -52,7 +52,8 @@ curl $PM/api/v1/status
      "contract_w": 65.0, "prio": 2, "limit_ma": 5000,
      "max_v": 20, "boot": "on", "fault": 0,
      "t_conv": 54.9, "t_plug": 41.3, "t_mcu": 36.2,
-     "progress": 0, "update_due": false, "silent": false}
+     "progress": 0, "update_due": false, "fw": "0.2.0",
+     "silent": false}
     // ...one entry per port, six in all
   ]
 }
@@ -200,7 +201,9 @@ A bad value gets `400` with the reason, such as
 
 **Status, per port:** `name`, `state`, `gen` (blade generation), `v`, `i`, `p`, `e`, `pdo`,
 `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`,
-`fault`, `t_conv`, `t_plug`, `t_mcu`, `progress`, `update_due`, `silent`.
+`fault`, `t_conv`, `t_plug`, `t_mcu`, `progress`, `update_due` (a
+[blade update](/guide/updates/#blade-firmware) is waiting), `fw` (the
+blade's firmware version, `null` when unknown), `silent`.
 
 **Status, chassis:** `name`, `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `improv`, `uptime_s`,

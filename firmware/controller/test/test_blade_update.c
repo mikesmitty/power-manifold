@@ -143,21 +143,12 @@ static void test_matching_image_is_started(void) {
     MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
 }
 
-// A running blade on another version is sent to its bootloader and rewritten
-// when the setting says so, and left alone when it does not.
-static void test_other_version_follows_the_setting(void) {
+// A running blade on another version is sent to its bootloader and
+// rewritten. There is no setting to keep what it holds.
+static void test_other_version_is_rewritten(void) {
     support_reset(360000);
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     seat3(0); // the sim's fresh blade runs 0.0.1
-    settle(0, 100);
-    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
-    MT_ASSERT_EQ(sim_blade_flash_version(0), UPDATE_VERSION(0, 0, 1)); // auto-update off: as it was
-    MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
-
-    support_reset(360000);
-    g_settings.blade_auto_update = 1;
-    fake_bundle_make(0, 2, 0, IMAGE_LEN);
-    seat3(0);
     sim_attach(0, 9000, 2000); // plugged in before the port has had power: it loses nothing by waiting
     settle(0, 200);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
@@ -194,7 +185,6 @@ static void test_boot_option_is_programmed_once(void) {
     // with a bundle as well: the option first, the image under it, one trip for both
     support_reset(360000);
     g_settings.blade_boot_via_loader = 1;
-    g_settings.blade_auto_update = 1;
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     seat3(0);
     tick(2);
@@ -250,7 +240,6 @@ static void test_a_busy_port_waits_for_its_update(void) {
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
     uint32_t en = sim_en_change_count(0);
 
-    g_settings.blade_auto_update = 1;
     g_settings.blade_boot_via_loader = 1;
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     controller_reboot();
@@ -294,7 +283,6 @@ static void test_a_busy_port_waits_for_its_update(void) {
 // image commits, idle ports get what was waiting.
 static void test_a_trial_image_leaves_the_blades_alone(void) {
     support_reset(360000);
-    g_settings.blade_auto_update = 1;
     g_settings.blade_boot_via_loader = 1;
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     port_fsm_hold_updates(true);
@@ -327,25 +315,43 @@ static void test_a_trial_image_leaves_the_blades_alone(void) {
     MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0xFF), 0);
 }
 
-// With the update setting off the chassis does not push its image onto a
-// blade that has one of its own, the way in through the bootloader
-// included.
-static void test_setting_off_keeps_what_the_blade_holds(void) {
+// A device that is switched off, its draw under the charged threshold for
+// the charged time, gives its port up for the update as an empty port would:
+// a few dark seconds, then the sink is served again. One that still draws
+// above the threshold keeps its power.
+static void test_a_switched_off_device_lets_its_blade_update(void) {
     support_reset(360000);
-    fake_bundle_make(0, 2, 0, IMAGE_LEN);
-    sim_set_gen(0, 3);
-    sim_blade_set_boot_via_loader(0, true);
-    sim_set_present(0, true);
-    MT_ASSERT(sim_blade_in_loader(0));
+    g_settings.charged_mw = 500;
+    g_settings.charged_min = 10;
+    seat3(0); // runs 0.0.1; nothing bundled yet
     settle(0, 100);
-    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
-    MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
+    sim_set_load_pct(0, 20);
+    sim_attach(0, 5000, 3000); // 3 W
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
+
+    fake_bundle_make(0, 2, 0, IMAGE_LEN);
+    controller_reboot();
+    tick_ms(11 * 60000);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE); // drawing: it waits
+    MT_ASSERT(!tele.port[0].charged);
+    MT_ASSERT(tele.port[0].update_due);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 0);
+    MT_ASSERT_EQ(tele.port[0].blade_fw, UPDATE_VERSION(0, 0, 1));
+
+    sim_set_load_pct(0, 2); // switched off: 300 mW
+    tick_ms(9 * 60000);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 0); // not under the threshold for long enough yet
+    tick_ms(60000 + 1000);
+    settle(0, 400);
+    MT_ASSERT(flash_holds_bundle(0));
     MT_ASSERT_EQ(sim_blade_go_count(0), 1);
-    MT_ASSERT_EQ(sim_blade_flash_version(0), UPDATE_VERSION(0, 0, 1));
-    const engine_evt_t *e = evt_last(EVT_UPDATE, 0);
-    MT_ASSERT(e != NULL);
-    MT_ASSERT_EQ(e->code, UPDATE_STARTED);
-    MT_ASSERT_EQ(e->arg, UPDATE_VERSION(0, 0, 1));
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 0);
+    tick(3);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE); // and the sink is served again
+    MT_ASSERT(!tele.port[0].update_due);
+    MT_ASSERT_EQ(tele.port[0].blade_fw, UPDATE_VERSION(0, 2, 0));
+    MT_ASSERT(!tele.port[0].charged); // a new attach: it counts as charged again only after the wait
 }
 
 // A blade that stops answering while its port is powered keeps the port
@@ -582,7 +588,6 @@ static void test_update_command_rewrites(void) {
 static void test_watch_setting_and_gen2(void) {
     support_reset(360000);
     g_settings.blade_watch_s = 120;
-    g_settings.blade_auto_update = 1;
     g_settings.blade_boot_via_loader = 1;
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     seat3(0);
@@ -600,12 +605,12 @@ void run_blade_update_tests(void) {
     mt_run("update: the CRC matches the STM32 unit", test_crc_matches_the_stm32_unit);
     mt_run("update: a blank blade is programmed", test_blank_blade_is_programmed);
     mt_run("update: a matching image is started", test_matching_image_is_started);
-    mt_run("update: another version follows the setting", test_other_version_follows_the_setting);
+    mt_run("update: another version is rewritten", test_other_version_is_rewritten);
     mt_run("update: the boot option is programmed once", test_boot_option_is_programmed_once);
     mt_run("update: a stuck option leaves the port working", test_a_stuck_option_leaves_the_port_working);
     mt_run("update: a busy port waits for its update", test_a_busy_port_waits_for_its_update);
     mt_run("update: a trial image leaves the blades alone", test_a_trial_image_leaves_the_blades_alone);
-    mt_run("update: the setting off keeps what the blade holds", test_setting_off_keeps_what_the_blade_holds);
+    mt_run("update: a switched-off device lets its blade update", test_a_switched_off_device_lets_its_blade_update);
     mt_run("update: a silent blade keeps its power", test_a_silent_blade_keeps_its_power);
     mt_run("update: a power cut mid-write is recovered", test_power_cut_mid_write_is_recovered);
     mt_run("update: a controller reboot mid-write is recovered", test_controller_reboot_mid_write_is_recovered);

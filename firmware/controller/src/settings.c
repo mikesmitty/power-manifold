@@ -31,7 +31,7 @@
 #define SETTINGS_V9_PAYLOAD ALIGN4(offsetof(settings_t, led_dim))
 #define SETTINGS_V10_PAYLOAD ALIGN4(offsetof(settings_t, port_max_mv))
 #define SETTINGS_V11_PAYLOAD ALIGN4(offsetof(settings_t, vin_cal))
-#define SETTINGS_V12_PAYLOAD ALIGN4(offsetof(settings_t, blade_auto_update))
+#define SETTINGS_V12_PAYLOAD ALIGN4(offsetof(settings_t, retired_13))
 #define SETTINGS_V13_PAYLOAD ALIGN4(offsetof(settings_t, payload_len))
 #define SETTINGS_V14_PAYLOAD ALIGN4(offsetof(settings_t, update_url))
 #define SETTINGS_V15_PAYLOAD ALIGN4(offsetof(settings_t, ntp_server))
@@ -194,7 +194,6 @@ void settings_defaults(void) {
     g_settings.charged_min = CHARGED_MIN_DEFAULT;
     g_settings.led_dim = LED_DIM_DEFAULT;
     g_settings.vin_cal = VIN_CAL_DEFAULT_;
-    g_settings.blade_auto_update = 1;
     g_settings.blade_boot_via_loader = 1;
     g_settings.blade_watch_s = BLADE_WATCH_S_DEFAULT;
     strcpy(g_settings.update_url, UPDATE_SOURCE_DEFAULT);
@@ -255,7 +254,7 @@ void settings_load(void) {
         }
         if (g_settings.version < 12) g_settings.vin_cal = VIN_CAL_DEFAULT_;
         if (g_settings.version < 13) {
-            g_settings.blade_auto_update = 1;
+            g_settings.retired_13 = 0;
             g_settings.blade_boot_via_loader = 1;
             g_settings.blade_watch_s = BLADE_WATCH_S_DEFAULT;
         }

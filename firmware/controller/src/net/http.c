@@ -402,23 +402,26 @@ static void build_status_json(char *out, size_t cap) {
         const port_telemetry_t *p = &t.port[i];
         static char pn[PORT_NAME_MAX * 6 + 1]; // static: IRQ stack
         json_escape(pn, sizeof(pn), settings_port_name((unsigned)i));
-        char tc[8], tp[8], tm[8];
+        char tc[8], tp[8], tm[8], fw[20] = "null";
         port_temp_text(tc, sizeof(tc), p->temp_conv_dc, "null");
         port_temp_text(tp, sizeof(tp), p->temp_plug_dc, "null");
         port_temp_text(tm, sizeof(tm), p->temp_mcu_dc, "null");
+        if (p->blade_fw)
+            snprintf(fw, sizeof(fw), "\"%u.%u.%u\"", (unsigned)(p->blade_fw >> 16),
+                     (unsigned)(p->blade_fw >> 8 & 0xFF), (unsigned)(p->blade_fw & 0xFF));
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"gen\":%u,\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
             "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
             "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u,"
             "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u,"
-            "\"update_due\":%s,\"silent\":%s}",
+            "\"update_due\":%s,\"fw\":%s,\"silent\":%s}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state), p->gen,
             p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
             p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
             p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],
             (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
             settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, tc, tp, tm, p->update_pct,
-            p->update_due ? "true" : "false", p->silent ? "true" : "false");
+            p->update_due ? "true" : "false", fw, p->silent ? "true" : "false");
     }
     if (off < cap) snprintf(out + off, cap - off, "]}");
 }

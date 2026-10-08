@@ -29,7 +29,10 @@
 //              LED_CHASSIS_OK_MAX, so it stays dim on a bright chain and
 //              dims no further than the other lights on a dimmed one
 //   ports      per-slot state colours (spec §6.1); a sink that has finished
-//              charging shows white, as idle does, whatever its contract state
+//              charging shows white, as idle does, whatever its contract state;
+//              a port whose blade update is waiting for its device to be
+//              unplugged or switched off flashes amber briefly every
+//              LED_UPDATE_FLASH_PERIOD_MS over that color
 //
 // Master brightness 0 blanks everything except a faulted port or a bus
 // fault, which keep blinking at LED_FAULT_FLOOR so a dark rack still shows
@@ -62,6 +65,8 @@ typedef struct {
 #define LED_CHASSIS_OK_MAX   32                           // brightness ceiling of the all-clear glow
 #define LED_FAULT_FLOOR      16                           // brightness used for faults at 0
 #define LED_IDENTIFY_FLOOR   32
+#define LED_UPDATE_FLASH_PERIOD_MS 3000                   // a waiting blade update: one amber flash this often
+#define LED_UPDATE_FLASH_MS  300                          // and this long
 
 void led_view_init(led_view_t *v, uint8_t brightness, uint8_t boot_style);
 

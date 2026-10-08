@@ -162,13 +162,15 @@ static void test_older_layout_upgrades(void) {
     start();
     settings_t s;
     sample(&s, "old", 7);
-    s.blade_auto_update = s.blade_boot_via_loader = s.blade_watch_s = 0; // v12 had none of these
+    s.retired_13 = 1; // a byte a v12 record never carried
+    s.blade_boot_via_loader = s.blade_watch_s = 0;
     write_record(SLOT(HOME, 0), &s, 12, 660);
     settings_load();
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "old") == 0);
     MT_ASSERT(strcmp(g_settings.api_token, "tok") == 0);
     MT_ASSERT_EQ(g_settings.vin_cal, 1010);
-    MT_ASSERT_EQ(g_settings.blade_auto_update, 1); // v13's defaults
+    MT_ASSERT_EQ(g_settings.retired_13, 0);
+    MT_ASSERT_EQ(g_settings.blade_boot_via_loader, 1); // v13's defaults
     MT_ASSERT_EQ(g_settings.blade_watch_s, 120);
     MT_ASSERT_EQ(g_settings.version, 21);
     MT_ASSERT_EQ(g_settings.seq, 7);

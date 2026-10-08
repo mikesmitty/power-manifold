@@ -90,6 +90,13 @@
 .led.pulse::after {
 	animation: led-pulse 2s ease-in-out infinite;
 }
+/* A waiting blade update: a short amber flash every 3 s over the color */
+.led.flag::after {
+	animation: led-flag 3s step-start infinite;
+}
+@keyframes led-flag {
+	0%, 10% { background: #f59e0b; box-shadow: 0 0 0.3em 0.05em #f59e0b; }
+}
 @keyframes led-blink {
 	50% { opacity: 0.4; }
 }
@@ -97,7 +104,7 @@
 	50% { opacity: 0.5; }
 }
 @media (prefers-reduced-motion: reduce) {
-	.led.blink::after, .led.pulse::after { animation: none; }
+	.led.blink::after, .led.pulse::after, .led.flag::after { animation: none; }
 }
 
 /* Keep a table's first column readable without letting a long cell take

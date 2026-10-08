@@ -97,7 +97,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "\"tz_offset_min\":-240") != NULL);
     MT_ASSERT(strstr(json, "vin_cal") == NULL); // a backup leaves the trim out
     MT_ASSERT(strstr(json, "\"https\"") == NULL); // and HTTPS, whose certificate stays behind
-    MT_ASSERT(strstr(json, "\"blade_auto_update\":false") != NULL);
+    MT_ASSERT(strstr(json, "blade_auto_update") == NULL); // a setting since removed
     MT_ASSERT(strstr(json, "\"update_auto\":false") != NULL);
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);
     MT_ASSERT(strstr(json, "\"port_sleep_min\":[0,90,180,270,360,450]") != NULL);
@@ -190,7 +190,8 @@ static void test_rejects(void) {
     MT_ASSERT(apply_fresh("{\"vin_cal\":950}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"https\":false}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"blade_watch_s\":300}", false) != NULL);
-    MT_ASSERT(apply_fresh("{\"blade_watch_s\":60,\"blade_auto_update\":true,\"blade_boot_via_loader\":false}", false) == NULL);
+    MT_ASSERT(apply_fresh("{\"blade_watch_s\":60,\"blade_boot_via_loader\":false}", false) == NULL);
+    MT_ASSERT(apply_fresh("{\"blade_auto_update\":false}", false) == NULL); // removed: accepted and ignored
     MT_ASSERT(apply_fresh("{\"led_night\":\"\",\"led_idle_min\":60}", false) == NULL);
     MT_ASSERT(apply_fresh("{\"fan_mode\":\"on\",\"fan_on_w\":50,\"fan_off_w\":60}", false) != NULL);
     MT_ASSERT(apply_fresh("{\"name\":\"ok\"}", true) != NULL); // setup needs a token

@@ -36,6 +36,13 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
         any_fault = true;
         count++;
     }
+    char waiting[96];
+    unsigned n_waiting = health_blades_waiting(t, waiting, sizeof(waiting));
+    if (n_waiting) {
+        n = put(buf, cap, n, count ? "; blade update waiting: " : "blade update waiting: ");
+        n = put(buf, cap, n, waiting);
+        count += n_waiting;
+    }
     bool any_silent = false;
     for (unsigned i = 0; i < NUM_PORTS; i++) {
         if (!t->port[i].silent) continue; // powered, its blade not answering
@@ -84,6 +91,20 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
                                                            : "bus voltage sagging, ");
         n = put(buf, cap, n, vin_status_str());
         if (bus_cap_on()) n = put(buf, cap, n, ", ports capped at 3 A");
+        count++;
+    }
+    return count;
+}
+
+unsigned health_blades_waiting(const telemetry_t *t, char *buf, size_t cap) {
+    if (cap == 0) return 0;
+    buf[0] = '\0';
+    size_t n = 0;
+    unsigned count = 0;
+    for (unsigned i = 0; i < NUM_PORTS; i++) {
+        if (!t->port[i].update_due) continue;
+        n = put(buf, cap, n, count ? ", " : "");
+        n = put(buf, cap, n, settings_port_name(i));
         count++;
     }
     return count;

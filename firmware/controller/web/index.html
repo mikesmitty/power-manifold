@@ -61,8 +61,10 @@ display:flex;align-items:center;gap:1.25rem;overflow-x:auto;color:var(--plate-in
 .led.fast{animation:blink .2s steps(1) infinite}
 .led.pulse{animation:pulse 1s ease-in-out infinite}
 .led.breathe{animation:pulse 2s ease-in-out infinite}
+.led.flag{animation:flag 3s step-start infinite}
 @keyframes blink{50%{opacity:.12}}
 @keyframes pulse{50%{opacity:.25}}
+@keyframes flag{0%,10%{background:var(--amber);box-shadow:0 0 8px var(--amber);opacity:1}}
 @media(prefers-reduced-motion:reduce){.led{animation:none!important}}
 
 /* status line and problems */
@@ -105,6 +107,7 @@ background:color-mix(in srgb,var(--red) 9%,var(--panel));border:1px solid color-
 .meter i{display:block;height:100%}
 .spark{display:block;width:100%;height:auto}
 .note{font-size:.85rem;color:var(--mute);min-height:2.6rem;display:flex;align-items:center}
+.wait{font-size:.8rem;border-left:3px solid var(--amber);padding:.2rem 0 .2rem .5rem;margin:.1rem 0 .5rem}
 .cfi{display:flex;flex-wrap:wrap;gap:.1rem .9rem}
 .cfi>span{white-space:nowrap}
 .cf{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:.8rem;color:var(--mute);border-top:1px solid var(--line);padding-top:.55rem;min-height:2.3rem}
@@ -283,8 +286,10 @@ let last,sel=-1,ask=-1;
 const COL={green:'var(--green)',blue:'var(--blue)',white:'var(--mute)',amber:'var(--amber)',red:'var(--red)',cyan:'var(--cyan)',off:'var(--off)'};
 // The same colors and rates the chassis lights use (led_pattern.c).
 // A port whose blade is updating is dark, as on the chassis, and blinks
-// cyan once the blade starts up again.
-function led(p){const a=p.v>=11?'blue':'green';switch(p.state){
+// cyan once the blade starts up again. One whose blade update is waiting
+// flashes amber briefly every 3 s over its own color.
+function led(p){return led0(p)+(p.update_due?' flag':'');}
+function led0(p){const a=p.v>=11?'blue':'green';switch(p.state){
  case'absent':return'amber dim';case'probe':return'cyan blink';case'idle':return'white';
  case'active':return p.charged?'white':a;case'throttled':return p.charged?'white':a+' pulse';
  case'fault':return'red fast';default:return'off';}}
@@ -328,7 +333,7 @@ function card(p,i){const h=hue(p),c=COL[h],live=p.state=='active'||p.state=='thr
   :`<button class="btn sm" data-a="pw" data-i="${i}">${p.state=='disabled'?'Switch on':'Switch off'}</button>`;
  return `<div class="card${i==sel?' sel':''}${p.state=='fault'?' fault':''}${live?'':' quiet'}" data-i="${i}" tabindex="0">
   <div class="ch"><span class="led ${led(p)}"></span><span class="pn">${i+1}</span><span class="nm" title="${esc(p.name)}">${esc(p.name)}</span><span class="st${h=='red'?' red':''}">${label(p)}</span></div>
-  ${body}<div class="cf"><span class="num cfi"><span>${W(p.e,3)} kWh</span>${t.length?`<span>${t.join(', ')}</span>`:''}</span>${ctl}</div></div>`;}
+  ${p.update_due?'<div class="wait">Blade update waiting. It runs once the device is unplugged or switched off (drawing under the Charged below threshold), or when the port is switched off and on.</div>':''}${body}<div class="cf"><span class="num cfi"><span>${W(p.e,3)} kWh</span>${t.length?`<span>${t.join(', ')}</span>`:''}</span>${ctl}</div></div>`;}
 
 function detail(i){const p=last.ports[i],f=[['Reserved',p.contract_w?W(p.contract_w,0)+' W':'none'],['Current limit',p.limit_ma+' mA'],
  ['Voltage cap',p.max_v+' V'],['At power-up',p.boot],['Converter',p.t_conv!=null?W(p.t_conv)+' \u00b0C':'\u2013'],['Plug',p.t_plug!=null?W(p.t_plug)+' \u00b0C':'\u2013'],['Blade MCU',p.t_mcu!=null?W(p.t_mcu)+' \u00b0C':'\u2013'],['Energy',W(p.e,3)+' kWh']];

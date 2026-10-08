@@ -223,29 +223,49 @@ so the trip interrupts no output.
 
 A blade *running* its firmware has to be sent to the bootloader, and that
 takes its port down for the few seconds the trip lasts. The controller does
-this in two cases: the firmware is not the bundled version (`blades auto
-on`, the default: the chassis keeps its blades on the firmware it was tested
-with, downgrades included — turn it off to run a bench build on a chassis,
-and then a blade in its bootloader is started on whatever good image it
-holds), and its option bytes are still the factory ones (`blades bootopt
-on`, the default), to have them programmed, once, so every reset lands in
-the bootloader from then on. When both are wanted the option goes first and
-the image is written under it, in the same trip. Both are stored with the
-other settings (`blade_auto_update`, `blade_boot_via_loader` in the settings
-JSON).
+this in two cases: the firmware is not the bundled version (always: the
+chassis keeps its blades on the firmware it was tested with, downgrades
+included, and there is no setting to turn that off, since a controller and
+blades on different versions may not work together; to run a bench build
+of the blade firmware, bundle it into a controller build), and its option
+bytes are still the factory ones (`blades bootopt on`, the default, stored
+as `blade_boot_via_loader` in the settings JSON), to have them programmed,
+once, so every reset lands in the bootloader from then on. When both are
+wanted the option goes first and the image is written under it, in the
+same trip. Older settings JSON may carry `blade_auto_update`; it is
+accepted and ignored.
 
-**A port with something plugged in is never taken down for either of them.**
+**A port whose device is drawing is never taken down for either of them.**
 They are done
 
 - at a probe that starts from a dark port — a blade just seated, the
   chassis powering up, a port switched on, the retry after a fault — before
   the port is given power, a sink already plugged in or not;
-- once a powered port has had nothing plugged in for ten seconds.
+- once a powered port has had nothing plugged in for ten seconds;
+- once the device plugged in is switched off, which the controller sees as
+  its draw staying under the charged threshold (`charged_mw` for
+  `charged_min`, the same test that marks a device charged). The device
+  loses power for the few seconds of the trip and is served again when the
+  port comes back. With `charged_mw` at 0 the controller cannot tell a
+  device is off, and this case never arises.
 
-A port that is charging something keeps charging on the firmware its blade
-has, for days if that is how long the device stays: `status` marks it
-`[blade update due when idle]`, the status JSON and the telemetry carry
-`update_due`. `port <n> update` (the `update` action) forces an immediate
+A port whose device stays on keeps its power on the firmware its blade has,
+for days if that is how long the device stays on. The wait is made hard to
+miss so the device gets switched off: the port's light flashes amber for
+300 ms every 3 s over its own color (`led_pattern.c`), the problem list
+(`health_problems`, so the page's status line, Home Assistant's *Problem*
+sensor and `info`) says `blade update waiting: <ports>`, the page's port
+card says how to let it run, `status` marks it `[blade update waiting]`,
+and the status JSON and the telemetry carry `update_due` and the blade's
+running version as `fw`. Home Assistant also gets a *Blade firmware*
+update entity on `blades/state` (retained, published when it changes):
+`latest_version` is the bundled version and `installed_version` the
+oldest version a waiting blade runs, so Home Assistant lists an update
+exactly while one waits. A waiting update whose blade already runs the
+bundled version (only its boot option is due) or a newer one (the bundle
+is a downgrade) does not show there, only in the problem list. Its
+Install (`install` on `blades/set`) sends `port <n> update` to every
+waiting port. `port <n> update` (the `update` action) forces an immediate
 update: it rewrites the bundle onto the blade regardless of what is plugged
 in or what firmware the blade runs.
 

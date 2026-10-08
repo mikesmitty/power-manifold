@@ -28,7 +28,9 @@
 #define SILENT_RECHECK_MS 1000
 // What the controller wants done to a running blade's firmware (the bundled
 // version, the boot option) takes the port down for a few seconds, so it
-// waits until nothing has been plugged into the port for this long.
+// waits until nothing has been plugged into the port for this long, or until
+// the device plugged in is switched off, which shows as its draw staying
+// under the charged threshold (charge_track).
 #ifndef UPDATE_IDLE_MS
 #define UPDATE_IDLE_MS 10000
 #endif
@@ -193,9 +195,9 @@ static void probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
 
 // The blade is in its ROM bootloader: a trip through it (blade_update.h)
 // unless it has had its share of them. It leaves on the bundled firmware
-// when the chassis keeps its blades on that (the setting, and a controller
-// image that has committed); otherwise whatever good image it holds is
-// started as it is, and only a blade without one is written.
+// once the controller's image has committed; during the trial whatever good
+// image it holds is started as it is, and only a blade without one is
+// written.
 static void begin_update(uint8_t i, uint32_t now_ms) {
     ctx[i].warm = false;
     ctx[i].silent = false;
@@ -208,7 +210,7 @@ static void begin_update(uint8_t i, uint32_t now_ms) {
     }
     ctx[i].update_rounds++;
     blade_update_begin(i, ctx[i].update_rewrite ? BLADE_UPDATE_REWRITE
-                          : g_settings.blade_auto_update && !hold_updates ? BLADE_UPDATE_MATCH
+                          : !hold_updates ? BLADE_UPDATE_MATCH
                           : BLADE_UPDATE_KEEP);
     ctx[i].update_rewrite = false;
     enter(i, PORT_STATE_UPDATE);
@@ -223,8 +225,8 @@ static void read_identity(uint8_t i) {
 
 // What the controller would change about a running gen-3 blade's firmware,
 // from what the blade said of itself at the probe: the bundled version,
-// when the setting says the chassis keeps its blades on it or a rewrite was
-// asked for, and the boot option, when that setting says so. Either takes
+// which the chassis always keeps its blades on, and the boot option, when
+// its setting says so. Either takes
 // the port through the bootloader, so the caller chooses when. No update is
 // requested while the controller's own image is on trial
 // (port_fsm_hold_updates), or after the bootloader trips have failed.
@@ -235,8 +237,7 @@ static unsigned blade_wants(uint8_t i) {
     unsigned w = p->update_rewrite ? WANT_REWRITE : 0;
     if (hold_updates || p->update_stuck) return w;
     const blade_image_header_t *want = blade_bundle_header();
-    if (g_settings.blade_auto_update && want &&
-        (p->id.major != want->major || p->id.minor != want->minor || p->id.patch != want->patch))
+    if (want && (p->id.major != want->major || p->id.minor != want->minor || p->id.patch != want->patch))
         w |= WANT_REWRITE;
     if (g_settings.blade_boot_via_loader && !(p->id.boot & BLADE_BOOT_VIA_LOADER)) w |= WANT_BOOT_OPT;
     return w;
@@ -808,6 +809,14 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         sync_limit(i);
         track_contract(i);
         if (!charge_track(i, now_ms)) break;
+        if (p->charged) {
+            // The device is switched off: its draw has stayed under the
+            // charged threshold, so a few dark seconds cost it nothing. The
+            // moment for whatever the blade's firmware was waiting for, as
+            // on an empty port.
+            unsigned wants = blade_wants(i);
+            if (wants && send_to_loader(i, now_ms, wants)) break;
+        }
         if (p->state == PORT_STATE_THROTTLED && p->denied_mw) {
             // Freed budget flows back by priority. When everything the port
             // was refused fits, claim it and restore the full advertisement;
@@ -871,6 +880,8 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
     out->state = (uint8_t)p->state;
     out->gen = blade_gen_number(p->gen);
     out->update_pct = p->state == PORT_STATE_UPDATE ? blade_update_pct(i) : 0;
+    out->blade_fw = p->gen == BLADE_GEN_3 && p->id_ok
+                        ? UPDATE_VERSION(p->id.major, p->id.minor, p->id.patch) : 0;
     out->update_due = (p->state == PORT_STATE_IDLE || p->state == PORT_STATE_ACTIVE ||
                        p->state == PORT_STATE_THROTTLED) && blade_wants(i) != 0;
     out->silent = p->silent;

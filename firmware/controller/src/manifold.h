@@ -74,7 +74,8 @@ typedef struct {
     uint32_t contract_mw;   // budget reservation held by this port
     uint32_t energy_mwh;    // delivered since boot (not persisted)
     uint8_t  update_pct;    // PORT_STATE_UPDATE: how far the image has been written, 0-100
-    bool     update_due;    // the blade's firmware is to be updated once nothing is plugged into the port
+    bool     update_due;    // the blade's firmware is to be updated once the port is empty or its device off
+    uint32_t blade_fw;      // UPDATE_VERSION of a gen-3 blade's running firmware, 0 when not known
     bool     silent;        // powered, and the blade is not answering: what is shown is its last answer
     // A gen-3 blade's thermometers, 0.1 degC while the port is powered and
     // polled; PORT_TEMP_NONE otherwise, and for an NTC the blade reads as

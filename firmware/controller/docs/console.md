@@ -55,7 +55,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `port <n> autooff on\|off` | switch off once the sink is charged |
 | `port <n> sleep <min>\|off` | switch off this long after a sink attaches |
 | `charged <mW> <minutes>` | charge-complete thresholds; 0 mW switches detection off |
-| `blades [auto on\|off \| bootopt on\|off \| watch <s>\|off]` | the bundled gen-3 blade firmware and the update policy (see [Blade firmware updates](flash-and-updates.md#blade-firmware-updates)) |
+| `blades [bootopt on\|off \| watch <s>\|off]` | the bundled gen-3 blade firmware and the update policy (see [Blade firmware updates](flash-and-updates.md#blade-firmware-updates)) |
 | `fan on\|off\|auto [on_w off_w [on_ma]]` | fan policy |
 | `led <0-255>`, `led boot white\|rainbow` | LED brightness and power-up sweep |
 | `led dim <0-255>`, `led night <HH:MM> <HH:MM>\|off`, `led idle <minutes>\|off` | dimmed level, night window, idle dimming |

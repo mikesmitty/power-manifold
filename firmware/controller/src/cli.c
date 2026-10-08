@@ -100,7 +100,6 @@ static void print_help(void) {
            "  port <1-%d> sleep <min>|off     switch off this long after a sink attaches\n"
            "  charged <mW> <minutes>       charged = draw under mW for minutes (0 mW = off)\n"
            "  blades                       the bundled gen-3 blade firmware and the update policy\n"
-           "  blades auto on|off           rewrite blades running another version (default on)\n"
            "  blades bootopt on|off        set blades to boot through their ROM bootloader (default on)\n"
            "  blades watch <s>|off         blades reset into it after this long without the controller\n"
            "  fan on|off|auto [on_w off_w [on_ma]]\n"
@@ -156,7 +155,7 @@ static void print_status(void) {
                g_settings.port_priority[i],
                settings_port_boot_name(g_settings.port_boot[i]), conv, plug, settings_port_name(i),
                p->silent ? "  [silent: last answer shown]" : "",
-               p->update_due ? "  [blade update due when idle]" : "");
+               p->update_due ? "  [blade update waiting]" : "");
     }
     printf("total %lumW reserved %lumW budget %lumW fan %s%s alert %s",
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
@@ -864,26 +863,23 @@ static void run_line(char *l) {
             if (h) printf("bundled blade firmware %u.%u.%u (protocol %u, %lu bytes)\n", h->major, h->minor,
                           h->patch, h->proto, (unsigned long)h->length);
             else printf("no blade firmware bundled in this build\n");
-            printf("auto update %s, boot through the bootloader %s, watch ",
-                   g_settings.blade_auto_update ? "on" : "off", g_settings.blade_boot_via_loader ? "on" : "off");
+            printf("boot through the bootloader %s, watch ", g_settings.blade_boot_via_loader ? "on" : "off");
             if (g_settings.blade_watch_s) printf("%u s\n", g_settings.blade_watch_s);
             else printf("off\n");
-            printf("a port with something plugged in is left alone: its blade is updated once the port has been empty for a while,\n"
-                   "or now with 'port <n> update'%s\n",
+            printf("a port in use is left alone: its blade is updated once the port has been empty for a while or its device\n"
+                   "is switched off (drawing under the 'charged' threshold), or now with 'port <n> update'%s\n",
                    flash_map_update_pending() ? "; nothing is changed while this controller image is on trial" : "");
             return;
         }
         bool on = v && !strcmp(v, "on");
-        if (!strcmp(what, "auto") && v && (on || !strcmp(v, "off"))) {
-            g_settings.blade_auto_update = on;
-        } else if (!strcmp(what, "bootopt") && v && (on || !strcmp(v, "off"))) {
+        if (!strcmp(what, "bootopt") && v && (on || !strcmp(v, "off"))) {
             g_settings.blade_boot_via_loader = on;
         } else if (!strcmp(what, "watch") && v) {
             int sec = !strcmp(v, "off") ? 0 : atoi(v);
             if (sec < 0 || sec > 255) { printf("watch: 1-255 s, or off\n"); return; }
             g_settings.blade_watch_s = (uint8_t)sec; // blades pick it up at their next probe
         } else {
-            printf("usage: blades [auto on|off | bootopt on|off | watch <1-255>|off]\n");
+            printf("usage: blades [bootopt on|off | watch <1-255>|off]\n");
             return;
         }
         printf("ok ('save' to persist)\n");
