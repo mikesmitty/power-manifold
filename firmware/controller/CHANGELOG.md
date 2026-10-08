@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.16.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.15.0...controller-firmware-v0.16.0) (2026-10-08)
+
+
+### Features
+
+* **controller:** answer only to the controller's own host names ([650d994](https://github.com/mikesmitty/power-manifold/commit/650d9949093035daad9d3fb811f14dd2ae58b0b4))
+* **controller:** install new releases automatically ([2a34d56](https://github.com/mikesmitty/power-manifold/commit/2a34d5680581ef2b3b2480e764fca6d436f01c79))
+* **controller:** keep the bus-voltage trim off the network ([566d340](https://github.com/mikesmitty/power-manifold/commit/566d340e268d05cf8a12fc6b9a0d4ed4fa99d9d7))
+* **controller:** link the wrong-name page to the Host names docs ([bd4a0bc](https://github.com/mikesmitty/power-manifold/commit/bd4a0bcb8ae3e010f870e53cb1a600c37255afad))
+* **controller:** log refused web requests ([69d835f](https://github.com/mikesmitty/power-manifold/commit/69d835f7d61bc9e0b7c6bba345abdec2f80a213f))
+* **controller:** one hour of first-time setup on Wi-Fi as on Ethernet ([36607f8](https://github.com/mikesmitty/power-manifold/commit/36607f86e185449cdce6a6f75bedb845a83e54f9))
+* **controller:** open first-time setup for ten minutes after Wi-Fi setup ([34cd1d0](https://github.com/mikesmitty/power-manifold/commit/34cd1d0ff34061f9b4137e0d46249601fa0645e0))
+* **controller:** run console commands from the web page ([3804d25](https://github.com/mikesmitty/power-manifold/commit/3804d25c2098a5d6a0ffcf9a56e6c7aa96db1107))
+* **controller:** serve the web interface over HTTPS with an installed certificate ([2f34c7c](https://github.com/mikesmitty/power-manifold/commit/2f34c7c6780fc9e52ed613b85af6d0fc912da7f8))
+* **controller:** update, network and Wi-Fi setup in the JSON API ([43edcc0](https://github.com/mikesmitty/power-manifold/commit/43edcc0c4eedd64fb5322b56c4a25cbba4a74364))
+
+
+### Bug Fixes
+
+* **controller:** compare bearer tokens in constant time ([08cd224](https://github.com/mikesmitty/power-manifold/commit/08cd22490470bab54738da4a74cee37f2781ddec))
+* **controller:** erase every stored settings copy on factory reset ([134eabe](https://github.com/mikesmitty/power-manifold/commit/134eabebdab6cdf9add9d225b2c73b6950e3b35c))
+* **controller:** keep HTTPS up across certificate swaps and restarts of the listener ([203064a](https://github.com/mikesmitty/power-manifold/commit/203064ace151c92c81cb389a745d21ca9aee7afa))
+* **controller:** plain console messages for failed pulls and debounced saves ([4f3f97a](https://github.com/mikesmitty/power-manifold/commit/4f3f97a1389a5e1d59c4f7a214d0b1be086a529f))
+* **controller:** read a refused upload's body before closing ([cd4681f](https://github.com/mikesmitty/power-manifold/commit/cd4681fd705ccb772e5acc47c51fa5ff7c9ffd4e))
+* **controller:** read the Wi-Fi RSSI from the main loop, not per request ([707286f](https://github.com/mikesmitty/power-manifold/commit/707286fb71d790af5ca43a88ebb0f754a03922b4))
+* **controller:** refuse cross-site requests through the setup doors ([31fdf21](https://github.com/mikesmitty/power-manifold/commit/31fdf21b1ffdfc6241a86cc4b462cfd5f825fca9))
+* **controller:** report a refused MQTT broker certificate in the status ([0312839](https://github.com/mikesmitty/power-manifold/commit/03128392b95e944bc8b698fd52b4f78639cd4d5c))
+* **controller:** store certificate chains of up to six certificates ([cd0c6d9](https://github.com/mikesmitty/power-manifold/commit/cd0c6d95e73cef4ff78cf47182127778dc63e3dd))
+* **controller:** write updates into the slot the running image did not boot from ([882263c](https://github.com/mikesmitty/power-manifold/commit/882263c4ac5ac8b6e438266ef8e643235202f2a7))
+
 ## [0.15.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.14.0...controller-firmware-v0.15.0) (2026-10-07)
 
 
