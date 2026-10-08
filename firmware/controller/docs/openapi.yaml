@@ -1,0 +1,1849 @@
+openapi: 3.1.0
+info:
+  title: Power Manifold API
+  version: 0.16.1 # x-release-please-version
+  summary: Status, port control, settings and updates for the Power Manifold controller.
+  description: |
+    The controller's HTTP API. Every path is on the controller itself, at
+    `http://<name>.local/` or its IP address. With
+    [HTTPS](https://docs.powermanifold.io/integrations/https/) on, use
+    `https://` and a name on the certificate; port 80 then answers every
+    request with `307 Temporary Redirect` to the same path over HTTPS.
+
+    **Authentication.** Reading the status, the fault log, the certificate
+    details and the metrics needs no credential. Everything else needs the API
+    token as a bearer token: `Authorization: Bearer <token>`. A controller with
+    no token refuses every change until
+    [first-time setup](https://docs.powermanifold.io/setup/first-time-setup/)
+    sets one.
+
+    **Host names.** The `Host` header must be the controller's IP address, its
+    device name, the device name with `.local`, or one of its
+    [host names](https://docs.powermanifold.io/integrations/network/#host-names).
+    Any other name gets `403 Forbidden` with an HTML page.
+
+    **Errors.** A refused JSON request gets an object with one `error` string
+    that says why, such as `{"error": "watts out of range"}`. The wording can
+    change between releases; use the status code to tell cases apart.
+
+    **Request bodies.** Send JSON bodies with `Content-Type: application/json`.
+    The settings refuse any other type during first-time setup. Request
+    headers and a JSON body together must stay under 6 KB.
+
+    Worked examples are on the
+    [HTTP API](https://docs.powermanifold.io/integrations/http-api/) page.
+  license:
+    name: MIT
+    url: https://github.com/mikesmitty/power-manifold/blob/main/LICENSE
+externalDocs:
+  description: HTTP API guide with examples
+  url: https://docs.powermanifold.io/integrations/http-api/
+servers:
+  - url: http://{host}
+    description: Plain HTTP, the default
+    variables:
+      host:
+        default: pwrman.local
+        description: The controller's IP address, its device name with `.local`, or one of its host names.
+  - url: https://{host}
+    description: HTTPS, once a certificate is installed and HTTPS is on
+    variables:
+      host:
+        default: pwrman.example.com
+        description: A name on the installed certificate.
+tags:
+  - name: Status
+    description: Live readings for the chassis and every port.
+  - name: Ports
+    description: Switch a port on or off and act on its blade.
+  - name: Power
+    description: The power budget and the fan.
+  - name: Settings
+    description: Read, change, back up and restore the stored settings.
+  - name: Updates
+    description: Check for, download and install controller firmware.
+  - name: Fault log
+    description: The persistent record of port faults, restarts and input voltage events.
+  - name: HTTPS
+    description: The web server's certificate.
+  - name: Maintenance
+    description: The message log, the web console, Wi-Fi setup and restarts.
+  - name: Metrics
+    description: Prometheus scrape endpoint.
+
+paths:
+  /api/v1/status:
+    get:
+      tags: [Status]
+      operationId: getStatus
+      summary: Read the status
+      description: Everything the web interface shows, as one object.
+      responses:
+        '200':
+          description: The current status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+              examples:
+                status:
+                  $ref: '#/components/examples/Status'
+
+  /api/v1/faults:
+    get:
+      tags: [Fault log]
+      operationId: getFaults
+      summary: Read the fault log
+      description: Eight entries per page, newest first.
+      parameters:
+        - name: offset
+          in: query
+          description: How many of the newest entries to skip. Use 8 for the second page.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: One page of the fault log.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaultLog'
+              example:
+                available: true
+                count: 4
+                offset: 0
+                faults:
+                  - seq: 41
+                    epoch: 1791255690
+                    uptime_s: 262840
+                    port: 4
+                    type: fault
+                    code: 256
+                    arg: 0
+                    power_w: 26.4
+                    contract_w: 27.0
+                    text: ocp
+
+  /api/v1/faults/clear:
+    post:
+      tags: [Fault log]
+      operationId: clearFaults
+      summary: Clear the fault log
+      security:
+        - token: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          description: The log could not be erased.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: clear failed
+        '503':
+          description: This controller has no fault log.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no fault log on this board
+
+  /api/v1/port/{port}:
+    post:
+      tags: [Ports]
+      operationId: setPort
+      summary: Act on a port
+      description: |
+        `enable` and `disable` switch the port on and off. A port set to
+        `last` in `port_boot` comes back in the state set here after a
+        restart. `hard_reset` sends a USB PD hard reset, `src_cap` announces
+        the port's power offers to the device again, and `update` writes the
+        bundled firmware to the port's blade now.
+      security:
+        - token: []
+      parameters:
+        - name: port
+          in: path
+          required: true
+          description: Port number.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [enable, disable, hard_reset, src_cap, update]
+            example:
+              action: disable
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '400':
+          description: The action is not one of the above.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: unknown action
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NoSuchEndpoint'
+        '503':
+          $ref: '#/components/responses/Busy'
+
+  /api/v1/budget:
+    post:
+      tags: [Power]
+      operationId: setBudget
+      summary: Set the power budget
+      description: |
+        The total power the ports may promise their devices. Saved, and
+        applied at once. The same value is `budget_w` in the settings.
+      security:
+        - token: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [watts]
+              properties:
+                watts:
+                  type: integer
+                  minimum: 15
+                  maximum: 600
+            example:
+              watts: 240
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '400':
+          description: The value is outside 15–600 W.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: watts out of range
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Busy'
+
+  /api/v1/fan:
+    post:
+      tags: [Power]
+      operationId: setFan
+      summary: Switch the fan
+      description: |
+        `{"on": true}` or `{"on": false}` holds the fan on or off.
+        `{"mode": "auto"}` hands it back to the automatic rules. Saved, and
+        applied at once. With the fan held off it still starts when a
+        blade gets too warm.
+      security:
+        - token: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  title: Manual
+                  required: [on]
+                  properties:
+                    'on':
+                      type: boolean
+                - type: object
+                  title: Automatic
+                  required: [mode]
+                  properties:
+                    mode:
+                      type: string
+                      const: auto
+            examples:
+              'on':
+                value:
+                  'on': true
+              auto:
+                value:
+                  mode: auto
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Busy'
+
+  /api/v1/settings:
+    get:
+      tags: [Settings]
+      operationId: getSettings
+      summary: Read the settings
+      description: |
+        Every setting except the passwords and the token. During first-time
+        setup a request without a token is let in; see
+        [first-time setup](https://docs.powermanifold.io/setup/first-time-setup/).
+      security:
+        - token: []
+      responses:
+        '200':
+          description: The settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '401':
+          $ref: '#/components/responses/SettingsLocked'
+        '503':
+          $ref: '#/components/responses/Busy'
+    post:
+      tags: [Settings]
+      operationId: changeSettings
+      summary: Change settings
+      description: |
+        Send any subset of the keys. Keys left out keep their value, and
+        unknown keys are ignored. The whole body is checked before anything
+        changes, so one bad value changes nothing.
+
+        The device name, Wi-Fi, MQTT broker and addressing apply after
+        `POST /api/v1/reboot`; the reply's `reboot_required` says when one is
+        needed. Everything else applies at once.
+
+        Posting an export back restores it. During first-time setup the body
+        must be sent as `application/json` and must set `token`.
+      security:
+        - token: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsChange'
+            examples:
+              priorities:
+                summary: Make port 3 the most important
+                value:
+                  port_priorities: [1, 2, 0, 3, 4, 5]
+              names:
+                summary: Name the first two ports
+                value:
+                  port_names: [Laptop, Phone]
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, reboot_required]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  reboot_required:
+                    type: boolean
+                    description: A changed setting takes effect after `POST /api/v1/reboot`.
+              example:
+                ok: true
+                reboot_required: false
+        '400':
+          description: A value is out of range or malformed. Nothing was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                range:
+                  value:
+                    error: 'port_limits_ma: 500-5000 mA each'
+                https:
+                  value:
+                    error: 'https: install a certificate first (POST /api/v1/tls)'
+                setup:
+                  value:
+                    error: set an API token to finish setup
+        '401':
+          $ref: '#/components/responses/SettingsLocked'
+        '415':
+          description: A request let in by first-time setup was not sent as JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: settings must be sent as application/json
+        '500':
+          description: The settings could not be saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: flash save failed
+
+  /api/v1/settings/export:
+    get:
+      tags: [Settings]
+      operationId: exportSettings
+      summary: Export the settings
+      description: |
+        The settings as a backup file. Posting it to `/api/v1/settings`
+        restores it. `vin_cal` and `https` are left out, because they belong
+        to this unit.
+      security:
+        - token: []
+      parameters:
+        - name: secrets
+          in: query
+          description: |
+            `1` includes `wifi_pass`, `mqtt_pass` and `token`. Keep such a
+            file private. Not available during first-time setup.
+          schema:
+            type: integer
+            enum: [1]
+      responses:
+        '200':
+          description: The export.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsExport'
+        '401':
+          $ref: '#/components/responses/SettingsLocked'
+        '503':
+          $ref: '#/components/responses/Busy'
+
+  /api/v1/update/check:
+    post:
+      tags: [Updates]
+      operationId: checkForUpdate
+      summary: Check for a new release
+      description: |
+        Asks the update source for the newest release now. The answer
+        appears in the status `update` object.
+      security:
+        - token: []
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: A check cannot start now, for example with no update source set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/update/latest:
+    post:
+      tags: [Updates]
+      operationId: installLatestUpdate
+      summary: Install the newest release
+      description: |
+        Downloads the newest release the controller knows of, checks its
+        signature and installs it. While it downloads, the status
+        `update.installing` is `true` and `update.progress` counts up; then
+        `update.restarting` is `true` until the controller restarts into the
+        new firmware on trial. Port power stays on throughout.
+      security:
+        - token: []
+      responses:
+        '202':
+          description: The download has started.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, version]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  version:
+                    type: string
+                    description: The version being installed.
+              example:
+                ok: true
+                version: 0.13.0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No newer release is known yet, or an install cannot start now.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'no release is known yet: ask with POST /api/v1/update/check'
+
+  /api/v1/update/postpone:
+    post:
+      tags: [Updates]
+      operationId: postponeUpdate
+      summary: Postpone automatic installs
+      description: |
+        No automatic install for the next 7 days. Installing by hand still
+        works.
+      security:
+        - token: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: The controller does not know the time yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/update/skip:
+    post:
+      tags: [Updates]
+      operationId: skipUpdate
+      summary: Skip the newest release
+      description: |
+        The newest known release does not install automatically. Installing
+        it by hand still works.
+      security:
+        - token: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No newer release is known.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/update:
+    post:
+      tags: [Updates]
+      operationId: uploadUpdate
+      summary: Upload a firmware file
+      description: |
+        The body is `controller.signed.bin` from a
+        [release](https://github.com/mikesmitty/power-manifold/releases). The
+        controller checks the signature, installs the file and restarts on
+        trial a second after replying. It refuses unsigned files, files for
+        other hardware and older versions. Port power stays on throughout.
+      security:
+        - token: []
+      parameters:
+        - name: Content-Length
+          in: header
+          required: true
+          description: The file size. Chunked bodies are refused.
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              contentMediaType: application/octet-stream
+      responses:
+        '200':
+          description: Installed. The controller restarts into it in one second.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, slot, bytes, version, action]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  slot:
+                    type: string
+                    enum: [A, B]
+                    description: The flash slot the file was written to.
+                  bytes:
+                    type: integer
+                  version:
+                    type: string
+                  action:
+                    type: string
+              example:
+                ok: true
+                slot: B
+                bytes: 854580
+                version: 0.13.0
+                action: trial reboot in 1s
+        '400':
+          description: The body was sent chunked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: chunked bodies unsupported; send Content-Length
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Another update is running or about to restart, or the file does not fit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: another update is already in progress
+        '411':
+          $ref: '#/components/responses/LengthRequired'
+        '422':
+          description: The file was refused, for example for its signature, its hardware or its version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/tls:
+    get:
+      tags: [HTTPS]
+      operationId: getTls
+      summary: Read the certificate details
+      responses:
+        '200':
+          description: Whether HTTPS is on, and the installed certificate.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tls'
+              example:
+                enabled: true
+                active: true
+                installed: true
+                names: [pwrman.example.com]
+                issuer: Let's Encrypt E6
+                expires: '2026-12-30'
+                days_left: 83
+                sha256: '3F:9A:...:C1'
+    post:
+      tags: [HTTPS]
+      operationId: installTls
+      summary: Install a certificate
+      description: |
+        The body is the private key and the certificate chain as PEM text,
+        under 12288 bytes. The key must be ECDSA. See
+        [HTTPS](https://docs.powermanifold.io/integrations/https/).
+      security:
+        - token: []
+      requestBody:
+        required: true
+        content:
+          application/x-pem-file:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Installed. New connections use it at once.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tls'
+        '400':
+          description: The key or the chain was refused. The error says why.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Another certificate upload is running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: another certificate upload is running
+        '411':
+          $ref: '#/components/responses/LengthRequired'
+        '413':
+          description: The body is 12288 bytes or more.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: The certificate could not be saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/tls/remove:
+    post:
+      tags: [HTTPS]
+      operationId: removeTls
+      summary: Remove the certificate
+      security:
+        - token: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: HTTPS is still on, or no certificate is installed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/log:
+    get:
+      tags: [Maintenance]
+      operationId: getLog
+      summary: Read the message log
+      description: The controller's recent messages as text, oldest first.
+      security:
+        - token: []
+      responses:
+        '200':
+          description: The messages. Passwords and the token appear as `********`.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: Another request is reading the log. Try again.
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: log busy, retry
+
+  /api/v1/console:
+    get:
+      tags: [Maintenance]
+      operationId: getConsole
+      summary: Read the console reply
+      description: |
+        The transcript of the last batch sent to `POST /api/v1/console`.
+        Poll until the reply is `200`.
+      security:
+        - token: []
+      responses:
+        '200':
+          description: The transcript; empty before the first batch.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '202':
+          description: The batch is still running. The body is empty.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Maintenance]
+      operationId: runConsole
+      summary: Run console commands
+      description: |
+        Console commands as text, one per line, under 2048 bytes in all. The
+        reply is for people to read, and its wording can change in any
+        release; programs should use the JSON requests instead. The
+        commands are listed in the
+        [console reference](https://docs.powermanifold.io/developers/controller/console/).
+        Some commands are refused here, and the transcript says so.
+      security:
+        - token: []
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+            example: |
+              status
+              faults
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '400':
+          description: The body is empty.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: no command
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: The last batch is still running or still being read.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: the last commands are still running
+        '413':
+          description: The body is 2048 bytes or more.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/improv:
+    post:
+      tags: [Maintenance]
+      operationId: setImprov
+      summary: Open or close Wi-Fi setup
+      description: |
+        `{"open": true}` opens
+        [Wi-Fi setup](https://docs.powermanifold.io/setup/wifi-provisioning/)
+        for 10 minutes; `{"open": false}` closes it.
+      security:
+        - token: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [open]
+              properties:
+                open:
+                  type: boolean
+            example:
+              open: true
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, improv]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  improv:
+                    $ref: '#/components/schemas/ImprovState'
+              example:
+                ok: true
+                improv: advertising
+        '400':
+          description: The body has no `open` boolean.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: This controller has no Wi-Fi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Wi-Fi setup is not available on this controller
+
+  /api/v1/reboot:
+    post:
+      tags: [Maintenance]
+      operationId: reboot
+      summary: Restart the controller
+      description: |
+        Restarts the controller 300 ms after replying. Port power stays on,
+        and the ports keep their contracts.
+      security:
+        - token: []
+      responses:
+        '200':
+          description: The restart is scheduled.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, action]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  action:
+                    type: string
+              example:
+                ok: true
+                action: reboot in 300ms
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /metrics:
+    get:
+      tags: [Metrics]
+      operationId: getMetrics
+      summary: Prometheus metrics
+      description: |
+        Prometheus text format: the chassis totals, the input voltage, UPS
+        readings when one is connected, and every port metric labeled with
+        `port` and `name`. See
+        [Prometheus](https://docs.powermanifold.io/integrations/http-api/#prometheus).
+      responses:
+        '200':
+          description: The metrics.
+          content:
+            text/plain; version=0.0.4; charset=utf-8:
+              schema:
+                type: string
+              example: |
+                # TYPE pwrman_total_power_watts gauge
+                pwrman_total_power_watts 110.42
+                # TYPE pwrman_port_power_watts gauge
+                pwrman_port_power_watts{port="1",name="Laptop"} 54.30
+        '503':
+          description: Another scrape is still being sent. Try again.
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: scrape in progress
+
+components:
+  securitySchemes:
+    token:
+      type: http
+      scheme: bearer
+      description: The API token from the controller's settings.
+
+  responses:
+    Ok:
+      description: Done.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Ok'
+    Accepted:
+      description: Started. The result shows up later.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Ok'
+    Unauthorized:
+      description: The token is missing or wrong, or no token is set yet.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            token:
+              value:
+                error: bearer token required
+            noToken:
+              value:
+                error: 'no API token set yet: finish first-time setup first'
+    SettingsLocked:
+      description: |
+        The token is missing or wrong. On a controller with no token yet, the
+        error says how to open first-time setup.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            token:
+              value:
+                error: bearer token required
+            wifi:
+              value:
+                error: 'no API token yet: Wi-Fi setup unlocks settings for an hour, or connect Ethernet'
+    Busy:
+      description: The controller is busy with another request. Try again.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: busy, retry
+    LengthRequired:
+      description: The request has no `Content-Length`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Content-Length required
+    NoSuchEndpoint:
+      description: No such port or path.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: no such endpoint
+
+  schemas:
+    Ok:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          const: true
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Why the request was refused, in words.
+
+    ImprovState:
+      type: string
+      description: Wi-Fi setup over Bluetooth.
+      enum: [off, advertising, connected, provisioning, provisioned]
+
+    Status:
+      type: object
+      required:
+        - name
+        - fw
+        - slot
+        - trial
+        - uptime_s
+        - rssi
+        - total_w
+        - reserved_w
+        - budget_w
+        - headroom_w
+        - energy_kwh
+        - fan
+        - fan_mode
+        - alert
+        - improv
+        - boot
+        - warm_start
+        - vin_v
+        - ceiling_ma
+        - problem
+        - problems
+        - led_mode
+        - led_now
+        - chassis_light
+        - blade_fw
+        - ups
+        - update
+        - net
+        - ports
+      properties:
+        name:
+          type: string
+          description: Device name.
+        fw:
+          type: string
+          description: Controller firmware version.
+        slot:
+          type: string
+          enum: [A, B, other, raw]
+          description: The flash slot the controller is running from.
+        trial:
+          type: boolean
+          description: The firmware is on trial after an update and not yet kept.
+        uptime_s:
+          type: integer
+          description: Seconds since the controller started.
+        rssi:
+          type: integer
+          description: Wi-Fi signal strength in dBm; 0 without a Wi-Fi connection.
+        eth:
+          type: string
+          description: |
+            Wired Ethernet, on controllers that have it: `absent`, `no link`,
+            or the link speed and address, such as `100M full, 192.168.1.40`.
+        total_w:
+          type: number
+          description: Power all ports deliver now, in watts.
+        reserved_w:
+          type: number
+          description: Power promised to the connected devices, in watts.
+        budget_w:
+          type: number
+          description: The power budget, in watts.
+        headroom_w:
+          type: number
+          description: Budget not yet promised, in watts.
+        energy_kwh:
+          type: number
+          description: Energy delivered through all ports, in kWh.
+        fan:
+          type: string
+          enum: ['on', 'off']
+          description: Whether the fan is running.
+        fan_mode:
+          type: string
+          enum: [auto, 'on', 'off']
+        alert:
+          type: boolean
+          description: A blade is signaling an alert on the backplane.
+        improv:
+          $ref: '#/components/schemas/ImprovState'
+        boot:
+          type: string
+          description: Why the controller last started, such as `power-on`, `watchdog timeout` or `firmware update`.
+        warm_start:
+          type: boolean
+          description: The controller restarted while the ports stayed powered.
+        vin_v:
+          type: [number, 'null']
+          description: Input voltage; `null` on hardware that does not measure it.
+        ceiling_ma:
+          type: integer
+          description: |
+            The current every port is held to while the input voltage is low,
+            in mA, or 0 when no cap applies. See
+            [Ports capped at 3 A](https://docs.powermanifold.io/guide/troubleshooting/#ports-capped-at-3-a).
+        problem:
+          type: boolean
+          description: Something needs attention.
+        problems:
+          type: string
+          description: What needs attention, in words; empty when nothing does.
+        led_mode:
+          type: string
+          enum: [normal, night, idle]
+          description: Which brightness the port lights use now.
+        led_now:
+          type: integer
+          minimum: 0
+          maximum: 255
+          description: The port lights' brightness now.
+        chassis_light:
+          type: string
+          enum: [bus_fault, wifi_setup, setup, ok]
+          description: |
+            What the chassis light shows: `bus_fault` (input voltage out of
+            range), `wifi_setup` (Wi-Fi setup open), `setup` (first-time setup
+            open) or `ok`.
+        blade_fw:
+          type: [string, 'null']
+          description: The blade firmware version this controller installs on its blades.
+        ups:
+          $ref: '#/components/schemas/Ups'
+        update:
+          $ref: '#/components/schemas/UpdateStatus'
+        net:
+          $ref: '#/components/schemas/NetStatus'
+        ports:
+          type: array
+          minItems: 6
+          maxItems: 6
+          description: One entry per port, in port order.
+          items:
+            $ref: '#/components/schemas/Port'
+
+    Port:
+      type: object
+      required:
+        - name
+        - state
+        - gen
+        - attached
+        - charged
+        - pdo
+        - v
+        - i
+        - p
+        - e
+        - contract_w
+        - prio
+        - limit_ma
+        - max_v
+        - boot
+        - fault
+        - t_conv
+        - t_plug
+        - t_mcu
+        - progress
+        - update_due
+        - fw
+        - silent
+      properties:
+        name:
+          type: string
+          description: The port's name.
+        state:
+          type: string
+          enum: [absent, probe, idle, active, throttled, fault, disabled, updating]
+          description: |
+            `absent` (no blade), `probe` (checking the blade), `idle` (no
+            device), `active` (delivering power), `throttled` (held to a lower
+            power to stay within the budget), `fault`, `disabled` (switched
+            off), or `updating` (its blade firmware is being written).
+        gen:
+          type: integer
+          enum: [0, 2, 3]
+          description: Blade generation; 0 until the blade has been checked.
+        attached:
+          type: boolean
+          description: A device is connected.
+        charged:
+          type: boolean
+          description: The device has drawn less than `charged_mw` for `charged_min` minutes.
+        pdo:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: The power offer the device chose, 1–7; 0 for none.
+        v:
+          type: number
+          description: Output voltage, in volts.
+        i:
+          type: number
+          description: Output current, in amps.
+        p:
+          type: number
+          description: Output power, in watts.
+        e:
+          type: number
+          description: Energy delivered through this port, in kWh.
+        contract_w:
+          type: number
+          description: The power the device's contract allows, in watts.
+        prio:
+          type: integer
+          description: Priority; 0 is the most important.
+        limit_ma:
+          type: integer
+          description: The port's current limit, in mA.
+        max_v:
+          type: integer
+          description: The highest voltage the port offers.
+        boot:
+          type: string
+          enum: ['on', 'off', last]
+          description: The port's state at power-up.
+        fault:
+          type: integer
+          description: |
+            Fault bits; 0 for none. Bit 5: CC line over-voltage. Bit 8:
+            over-current. Bit 9: output over-voltage. Bit 10: VCONN
+            over-current. Bit 11: port protector too hot. Bit 12: converter
+            fault. Bit 13: converter too hot. Bit 14: receptacle too hot.
+            Bit 15: blade failure. Bits 0–4, 6 and 7 come only from
+            generation 2 blades.
+        t_conv:
+          type: [number, 'null']
+          description: Converter temperature, in °C; `null` without a reading.
+        t_plug:
+          type: [number, 'null']
+          description: Receptacle temperature, in °C; `null` without a reading.
+        t_mcu:
+          type: [number, 'null']
+          description: The blade processor's temperature, in °C; `null` without a reading.
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: While `state` is `updating`, the percent of the blade firmware written.
+        update_due:
+          type: boolean
+          description: |
+            A [blade update](https://docs.powermanifold.io/guide/updates/#blade-firmware)
+            is waiting for the port to be free.
+        fw:
+          type: [string, 'null']
+          description: The blade's firmware version; `null` when unknown.
+        silent:
+          type: boolean
+          description: |
+            The blade has stopped answering. The port stays powered, and the
+            readings are its last answer.
+
+    Ups:
+      type: object
+      required: [present]
+      description: The UPS link. Only `present` when no UPS is connected.
+      properties:
+        present:
+          type: boolean
+        ac:
+          type: boolean
+          description: AC power is present.
+        on_battery:
+          type: boolean
+        charging:
+          type: boolean
+        full:
+          type: boolean
+          description: The battery is fully charged.
+        fault:
+          type: string
+          description: Battery faults in words; empty when there are none.
+        mains_v:
+          type: number
+          description: AC input voltage.
+        batt_v:
+          type: number
+          description: Battery voltage.
+        load_a:
+          type: number
+          description: Load current, in amps.
+        uvp_v:
+          type: number
+          description: The battery voltage at which the UPS cuts off.
+        cells:
+          type: array
+          maxItems: 4
+          items:
+            type: [number, 'null']
+          description: Cell voltages; `null` for a cell the UPS does not report.
+        status:
+          type: string
+          description: A one-line summary in words.
+
+    UpdateStatus:
+      type: object
+      required:
+        - available
+        - latest
+        - check
+        - check_age_s
+        - installing
+        - progress
+        - restarting
+        - auto
+        - auto_wait_s
+        - postponed_until
+        - skipped
+      properties:
+        available:
+          type: boolean
+          description: A newer release is known.
+        latest:
+          type: [string, 'null']
+          description: The newest known release.
+        check:
+          type: string
+          enum: ['off', never, checking, ok, failed]
+          description: The last check for a release; `off` without an update source.
+        check_age_s:
+          type: integer
+          description: Seconds since the last check finished.
+        installing:
+          type: boolean
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Percent of the download.
+        restarting:
+          type: boolean
+          description: The new firmware is installed and the controller restarts into it within a second.
+        auto:
+          type: string
+          enum: ['off', none, waiting, scheduled, retry, installing, postponed, skipped]
+          description: |
+            What [automatic updates](https://docs.powermanifold.io/guide/updates/#automatic-updates)
+            will do: `off`; `none` (no newer release); `waiting` (for
+            `auto_wait_s` more seconds); `scheduled` (for 03:00 local time);
+            `retry` (the last attempt failed and the next night tries again);
+            `installing`; `postponed` (until `postponed_until`); or `skipped`.
+        auto_wait_s:
+          type: integer
+        postponed_until:
+          type: integer
+          description: Unix time automatic installs are postponed until; 0 when they are not.
+        skipped:
+          type: [string, 'null']
+          description: The version that does not install automatically.
+
+    NetStatus:
+      type: object
+      description: |
+        The network as the controller uses it now, which can differ from the
+        settings. Addresses are `null` while the network is down.
+      required: [up, ip, netmask, gateway, dns, ntp, time_synced, mqtt, mqtt_problem]
+      properties:
+        up:
+          type: boolean
+        ip:
+          type: [string, 'null']
+        netmask:
+          type: [string, 'null']
+        gateway:
+          type: [string, 'null']
+        dns:
+          type: [string, 'null']
+        ntp:
+          type: [string, 'null']
+          description: The time server in use.
+        time_synced:
+          type: boolean
+          description: The controller knows the time.
+        mqtt:
+          type: string
+          enum: ['off', connecting, waiting_for_clock, connected]
+          description: The link to the MQTT broker.
+        mqtt_problem:
+          type: [string, 'null']
+          description: Why a TLS link to the broker cannot connect.
+
+    FaultLog:
+      type: object
+      required: [available, count, offset, faults]
+      properties:
+        available:
+          type: boolean
+          description: This controller keeps a fault log.
+        count:
+          type: integer
+          description: Entries in the log.
+        offset:
+          type: integer
+        faults:
+          type: array
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/Fault'
+
+    Fault:
+      type: object
+      required: [seq, epoch, uptime_s, port, type, code, arg, power_w, contract_w, text]
+      properties:
+        seq:
+          type: integer
+          description: Entry number; counts up for the life of the log.
+        epoch:
+          type: integer
+          description: Unix time; 0 for entries logged before the controller knew the time.
+        uptime_s:
+          type: integer
+          description: Seconds since the controller started.
+        port:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: The port; 0 for chassis entries.
+        type:
+          type: string
+          enum: [fault, probe_fail, boot, bus, pd_reset]
+          description: |
+            `fault` (a port fault), `probe_fail` (a blade did not answer when
+            checked), `boot` (the controller started), `bus` (the input voltage
+            went out of range or came back) or `pd_reset` (a USB PD reset).
+        code:
+          type: integer
+        arg:
+          type: integer
+        power_w:
+          type: number
+          description: The port's output power at the time; 0 for `boot`.
+        contract_w:
+          type: number
+          description: The port's contract at the time; 0 for `boot`.
+        text:
+          type: string
+          description: What happened, in words.
+
+    Tls:
+      type: object
+      required: [enabled, active, installed]
+      properties:
+        enabled:
+          type: boolean
+          description: The `https` setting.
+        active:
+          type: boolean
+          description: HTTPS is serving, and port 80 redirects to it.
+        installed:
+          type: boolean
+          description: A certificate is installed. The fields below appear only then.
+        names:
+          type: array
+          items:
+            type: string
+          description: The names on the certificate.
+        issuer:
+          type: string
+        expires:
+          type: string
+          format: date
+        days_left:
+          type: [integer, 'null']
+          description: Days until it expires; `null` while the controller does not know the time.
+        sha256:
+          type: string
+          description: The certificate's SHA-256 fingerprint.
+
+    SettingsValues:
+      type: object
+      description: The settings that read back as they are written.
+      properties:
+        name:
+          type: string
+          maxLength: 31
+          pattern: '^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$'
+          description: Device name, used for `<name>.local` and the MQTT topics.
+        wifi_ssid:
+          type: string
+          maxLength: 32
+        mqtt_host:
+          type: string
+          maxLength: 63
+          description: MQTT broker; empty turns MQTT off.
+        mqtt_port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        mqtt_user:
+          type: string
+          maxLength: 32
+        mqtt_tls:
+          type: boolean
+          description: Connect to the broker over TLS.
+        mqtt_tls_verify:
+          type: boolean
+          description: With `mqtt_tls`, check the broker's certificate.
+        mqtt_ca:
+          type: string
+          description: |
+            The broker's CA certificate as PEM, up to 2048 bytes as DER; empty
+            for none. Without one a verified link trusts the Let's Encrypt
+            roots.
+        ip_mode:
+          type: string
+          enum: [dhcp, static]
+        ip:
+          type: string
+          description: Static address, as a dotted quad or empty.
+        netmask:
+          type: string
+        gateway:
+          type: string
+        dns:
+          type: string
+          description: DNS server; empty uses the one DHCP names (the gateway with static addressing).
+        ntp_server:
+          type: string
+          maxLength: 63
+          description: Time server; empty uses the one DHCP names, or time.cloudflare.com.
+        hostnames:
+          type: string
+          description: |
+            Extra [host names](https://docs.powermanifold.io/integrations/network/#host-names)
+            the web server answers to, separated by spaces. Commas are also
+            accepted when writing.
+        syslog_host:
+          type: string
+          maxLength: 63
+          description: Syslog server; empty sends no syslog.
+        syslog_port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        update_url:
+          type: string
+          maxLength: 63
+          description: Update source, as `http://host[:port][/path]` without a trailing slash; empty never checks.
+        update_auto:
+          type: boolean
+          description: New releases install by themselves.
+        budget_w:
+          type: integer
+          minimum: 15
+          maximum: 600
+          description: The power budget, in watts.
+        fan_mode:
+          type: string
+          enum: [auto, 'on', 'off']
+        fan_on_w:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Automatic mode turns the fan on at this total power, in watts.
+        fan_off_w:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Automatic mode turns the fan off at this total power, in watts. Must be below `fan_on_w`.
+        fan_on_ma:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          description: Automatic mode also runs the fan while any contract is above this current, in mA; 0 turns this off.
+        charged_mw:
+          type: integer
+          minimum: 0
+          maximum: 20000
+          description: A device drawing less than this, in mW, for `charged_min` minutes counts as charged; 0 turns this off.
+        charged_min:
+          type: integer
+          minimum: 1
+          maximum: 255
+        led_brightness:
+          type: integer
+          minimum: 0
+          maximum: 255
+        led_boot:
+          type: string
+          enum: [white, rainbow]
+          description: The light sweep at power-up.
+        led_dim:
+          type: integer
+          minimum: 0
+          maximum: 255
+          description: Brightness during the night window and when idle.
+        led_night:
+          type: string
+          description: Night window as `HH:MM-HH:MM` local time; empty for none.
+        led_idle_min:
+          type: integer
+          minimum: 0
+          maximum: 1440
+          description: Dim after this many minutes without a port event; 0 never.
+        tz_offset_min:
+          type: integer
+          minimum: -720
+          maximum: 840
+          description: Local time minus UTC, in minutes.
+        blade_boot_via_loader:
+          type: boolean
+          description: Set each blade, once, to start through its bootloader, so the controller can update it.
+        blade_watch_s:
+          type: integer
+          minimum: 0
+          maximum: 255
+          description: |
+            A switched-off blade the controller has not addressed for this
+            many seconds restarts into its bootloader; 0 never.
+        port_names:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 23
+          description: Port names; empty for the default name.
+        port_limits_ma:
+          type: array
+          maxItems: 6
+          items:
+            type: integer
+            minimum: 500
+            maximum: 5000
+          description: Current limit per port, in mA.
+        port_max_v:
+          type: array
+          maxItems: 6
+          items:
+            type: integer
+            enum: [5, 9, 12, 15, 20]
+          description: The highest voltage each port offers.
+        port_priorities:
+          type: array
+          maxItems: 6
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+          description: Priority per port; 0 is the most important.
+        port_boot:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            enum: ['on', 'off', last]
+          description: Each port's state at power-up.
+        port_auto_off:
+          type: array
+          maxItems: 6
+          items:
+            type: integer
+            enum: [0, 1]
+          description: 1 switches the port off once its device is charged.
+        port_sleep_min:
+          type: array
+          maxItems: 6
+          items:
+            type: integer
+            minimum: 0
+            maximum: 1440
+          description: Switch the port off this many minutes after a device connects; 0 never.
+
+    SettingsFlags:
+      type: object
+      properties:
+        mqtt_pass_set:
+          type: boolean
+          description: A broker password is stored.
+        token_set:
+          type: boolean
+          description: An API token is stored.
+        setup:
+          type: boolean
+          description: This request was let in by first-time setup.
+
+    Secrets:
+      type: object
+      properties:
+        wifi_pass:
+          type: string
+          maxLength: 64
+        mqtt_pass:
+          type: string
+          maxLength: 64
+        token:
+          type: string
+          maxLength: 32
+          pattern: '^[!-~]+$'
+          description: The API token; printable ASCII without spaces.
+
+    Settings:
+      allOf:
+        - $ref: '#/components/schemas/SettingsValues'
+        - $ref: '#/components/schemas/SettingsFlags'
+        - type: object
+          properties:
+            vin_cal:
+              type: integer
+              description: |
+                The input voltage trim, in thousandths. It belongs to this unit's
+                measuring circuit and cannot be changed over the API.
+            https:
+              type: boolean
+              description: HTTPS is on.
+
+    SettingsExport:
+      allOf:
+        - $ref: '#/components/schemas/SettingsValues'
+        - $ref: '#/components/schemas/SettingsFlags'
+        - $ref: '#/components/schemas/Secrets'
+        - type: object
+          required: [format, fw]
+          properties:
+            format:
+              type: integer
+              const: 1
+            fw:
+              type: string
+              description: The firmware version that wrote the export.
+
+    SettingsChange:
+      allOf:
+        - $ref: '#/components/schemas/SettingsValues'
+        - $ref: '#/components/schemas/Secrets'
+        - type: object
+          properties:
+            https:
+              type: boolean
+              description: Turn HTTPS on or off. Needs an installed certificate.
+          description: |
+            Port arrays are read in port order. A shorter array changes only
+            the first ports.
+
+  examples:
+    Status:
+      value:
+        name: pwrman
+        fw: 0.16.1
+        slot: A
+        trial: false
+        uptime_s: 274620
+        rssi: -58
+        eth: 100M full, 192.168.1.40
+        total_w: 110.42
+        reserved_w: 202.0
+        budget_w: 240.0
+        headroom_w: 38.0
+        energy_kwh: 17.850
+        fan: 'on'
+        fan_mode: auto
+        alert: false
+        improv: 'off'
+        boot: power-on
+        warm_start: false
+        vin_v: 24.06
+        ceiling_ma: 0
+        problem: false
+        problems: ''
+        led_mode: normal
+        led_now: 48
+        chassis_light: ok
+        blade_fw: 0.2.0
+        ups:
+          present: false
+        update:
+          available: false
+          latest: 0.16.1
+          check: ok
+          check_age_s: 5120
+          installing: false
+          progress: 0
+          restarting: false
+          auto: none
+          auto_wait_s: 0
+          postponed_until: 0
+          skipped: null
+        net:
+          up: true
+          ip: 192.168.1.40
+          netmask: 255.255.255.0
+          gateway: 192.168.1.1
+          dns: 192.168.1.1
+          ntp: time.cloudflare.com
+          time_synced: true
+          mqtt: connected
+          mqtt_problem: null
+        ports:
+          - {name: Laptop, state: active, gen: 3, attached: true, charged: false, pdo: 5,
+             v: 20.021, i: 2.712, p: 54.30, e: 6.211, contract_w: 65.0, prio: 0,
+             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: 54.9,
+             t_plug: 41.3, t_mcu: 36.2, progress: 0, update_due: false, fw: 0.2.0,
+             silent: false}
+          - {name: Phone, state: active, gen: 3, attached: true, charged: false, pdo: 2,
+             v: 9.004, i: 2.180, p: 19.63, e: 1.402, contract_w: 27.0, prio: 1,
+             limit_ma: 3000, max_v: 9, boot: 'on', fault: 0, t_conv: 41.2,
+             t_plug: 33.0, t_mcu: 34.8, progress: 0, update_due: false, fw: 0.2.0,
+             silent: false}
+          - {name: Port 3, state: idle, gen: 3, attached: false, charged: false, pdo: 0,
+             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 2,
+             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: 30.1,
+             t_plug: 29.4, t_mcu: 31.0, progress: 0, update_due: false, fw: 0.2.0,
+             silent: false}
+          - {name: Port 4, state: idle, gen: 3, attached: false, charged: false, pdo: 0,
+             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 3,
+             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: 29.8,
+             t_plug: 29.0, t_mcu: 30.7, progress: 0, update_due: false, fw: 0.2.0,
+             silent: false}
+          - {name: Port 5, state: disabled, gen: 3, attached: false, charged: false, pdo: 0,
+             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 4,
+             limit_ma: 5000, max_v: 20, boot: last, fault: 0, t_conv: 28.9,
+             t_plug: 28.5, t_mcu: 30.2, progress: 0, update_due: false, fw: 0.2.0,
+             silent: false}
+          - {name: Port 6, state: absent, gen: 0, attached: false, charged: false, pdo: 0,
+             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 5,
+             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: null,
+             t_plug: null, t_mcu: null, progress: 0, update_due: false, fw: null,
+             silent: false}
