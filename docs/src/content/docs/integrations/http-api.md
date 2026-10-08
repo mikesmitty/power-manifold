@@ -211,7 +211,9 @@ A bad value gets `400` with the reason, such as
 **Status, `update`:** `available` (a newer release is known), `latest`
 (its version, or `null`), `check` (`off`, `never`, `checking`, `ok` or
 `failed`), `check_age_s` (seconds since the last check finished),
-`installing` and `progress` (percent of the download), and what
+`installing` and `progress` (percent of the download), `restarting`
+(the new image is installed and the controller restarts into it within a
+second), and what
 [automatic updates](/guide/updates/#automatic-updates) will do: `auto`
 (`off`; `none`, no newer release; `waiting`, for `auto_wait_s` more
 seconds; `scheduled`, for 03:00 local time; `retry`, the last attempt
@@ -302,7 +304,9 @@ curl -X POST -H "Authorization: Bearer $TOKEN" http://pwrman.local/api/v1/update
 
 `409` means no release is known yet: send `POST /api/v1/update/check`
 first, then wait for `update.latest` in the status. While it downloads,
-`update.installing` is `true` and `update.progress` counts up.
+`update.installing` is `true` and `update.progress` counts up. Then
+`update.restarting` is `true` until the controller restarts into the new
+firmware.
 
 Or download `controller.signed.bin` from a
 [release](https://github.com/mikesmitty/power-manifold/releases) and post

@@ -296,7 +296,7 @@ function quiet(p){return{absent:'No blade in this slot.',probe:'Checking the bla
  disabled:'Power is off.',fault:'Switched off after a fault. See the fault log.',updating:'Blade firmware is updating.'}[p.state];}
 const W=(x,d=1)=>x.toFixed(d);
 // The Updates line in About: an install under way, a newer release, or how the last check went.
-function upd(u){if(u.installing)return'installing, '+u.progress+' %';
+function upd(u){if(u.restarting)return'installed, restarting';if(u.installing)return'installing, '+u.progress+' %';
  if(u.available)return u.latest+' available'+({waiting:', installs automatically in '+dur(u.auto_wait_s)+', between 03:00 and 05:00',
   scheduled:', installs automatically between 03:00 and 05:00',installing:', installs automatically between 03:00 and 05:00',retry:', installs automatically the next night',
   postponed:', automatic install postponed until '+new Date(u.postponed_until*1000).toLocaleDateString(),skipped:', skipped'}[u.auto]||'');
@@ -347,10 +347,10 @@ function draw(){if(!last)return;const d=last,P=d.ports,g=$('grid'),
  $('lgd').innerHTML=P.map((p,i)=>p.p>.05?`<span><i class="sw" style="background:${COL[hue(p)]}"></i>${esc(p.name)} <span class="num">${W(p.p)} W</span></span>`:'').join('')+
   `<span><i class="sw res" style="background:repeating-linear-gradient(135deg,var(--hatch) 0 3px,transparent 3px 6px);border:1px solid var(--line)"></i>reserved, not in use</span>`;}
 
-async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}catch(e){$('line').textContent='No response from the device.';return;}
+async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}catch(e){$('line').textContent=last&&(last.update.restarting||last.update.installing)?'Restarting into the new firmware.':'No response from the device.';return;}
  last=d;document.title=d.name;$('dn').textContent=d.name;
  const fan=d.fan=='on'?'on':'off',L=[d.vin_v!=null&&['',W(d.vin_v,2)+' V',' in'],['Fan ',fan,d.fan_mode=='auto'?', automatic':''],
-  ['',W(d.energy_kwh,2)+' kWh',' delivered'],['Firmware ',d.fw,(d.trial?', on trial':'')+(d.update.available?', '+d.update.latest+' available':'')]];
+  ['',W(d.energy_kwh,2)+' kWh',' delivered'],['Firmware ',d.fw,(d.trial?', on trial':'')+(d.update.restarting?', restarting into '+d.update.latest:d.update.available?', '+d.update.latest+' available':'')]];
  $('line').innerHTML=L.filter(x=>x).map(x=>`<span>${x[0]}<b class="num">${esc(x[1])}</b>${x[2]}</span>`).join('');
  $('tw').innerHTML=W(d.total_w)+'<small> W</small>';$('rw').innerHTML=W(d.reserved_w,0)+'<small> W</small>';
  $('fw').innerHTML=W(d.headroom_w,0)+'<small> W</small>';$('bw').textContent=W(d.budget_w,0)+' W';
@@ -360,8 +360,8 @@ async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}c
  const A=[['Firmware',d.fw+', slot '+d.slot+(d.trial?', on trial':'')],['Blade firmware',d.blade_fw||'\u2013'],['Running for',dur(d.uptime_s)],['Last start',d.boot],
   ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')'],['Updates',upd(d.update)]];if(d.ups&&d.ups.present)A.push(['UPS',d.ups.status]);
  if(d.net.mqtt!='off')A.push(['MQTT broker',d.net.mqtt.replace(/_/g,' ')+(d.net.mqtt_problem?': '+d.net.mqtt_problem:'')]);
- const ub=$('uib');ub.hidden=!d.update.available||d.update.installing;ub.textContent='Install '+d.update.latest;$('ucb').disabled=d.update.check=='checking';
- const ua=d.update.available&&!d.update.installing&&!['off','none','skipped'].includes(d.update.auto);$('upp').hidden=!ua||d.update.auto=='postponed';$('usk').hidden=!ua;
+ const ub=$('uib');const busy=d.update.installing||d.update.restarting;ub.hidden=!d.update.available||busy;ub.textContent='Install '+d.update.latest;$('ucb').disabled=d.update.check=='checking';
+ const ua=d.update.available&&!busy&&!['off','none','skipped'].includes(d.update.auto);$('upp').hidden=!ua||d.update.auto=='postponed';$('usk').hidden=!ua;
  $('about').innerHTML=A.map(x=>`<div>${x[0]}<b class="num">${esc(x[1])}</b></div>`).join('');
  d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});if(H[i].length>N)H[i].shift();});draw();}
 tick();setInterval(tick,1000);
