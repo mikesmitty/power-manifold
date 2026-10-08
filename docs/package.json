@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.0",
+    "@readme/openapi-parser": "^4.1.2",
     "astro": "^7.2.10",
     "improv-wifi-sdk": "^1.4.1",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "starlight-openapi": "^0.27.0"
   },
   "allowScripts": {
     "esbuild": true

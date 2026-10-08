@@ -6,10 +6,16 @@
 // GitHub alerts. On the way in, this script turns the H1 into frontmatter,
 // relative links into site or GitHub URLs, and alerts into Starlight asides.
 // The output directories are generated and ignored by git.
+//
+// It also validates the controller's OpenAPI description and copies it to
+// the site root as /openapi.yaml, for API clients and code generators. The
+// reference pages themselves come from the same file through
+// starlight-openapi, which reads it without validating it.
 
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { validate } from '@readme/openapi-parser';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = join(REPO, 'docs/src/content/docs/developers');
@@ -132,3 +138,13 @@ for (const page of PAGES) {
 	writeFileSync(out, convert(page));
 }
 console.log(`sync-firmware-docs: ${PAGES.length} pages into ${relative(REPO, OUT)}/`);
+
+const API = 'firmware/controller/docs/openapi.yaml';
+const checked = await validate(join(REPO, API));
+if (!checked.valid) {
+	for (const e of checked.errors) console.error(`${API}: ${e.message}`);
+	process.exit(1);
+}
+for (const w of checked.warnings) console.warn(`${API}: ${w.message}`);
+copyFileSync(join(REPO, API), join(REPO, 'docs/public/openapi.yaml'));
+console.log(`sync-firmware-docs: ${API} validated, copied to docs/public/`);

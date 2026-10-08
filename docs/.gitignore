@@ -23,3 +23,4 @@ pnpm-debug.log*
 # generated from firmware/*/docs by scripts/sync-firmware-docs.mjs
 src/content/docs/developers/controller/
 src/content/docs/developers/charger-module/
+public/openapi.yaml

@@ -15,6 +15,12 @@ set the first token.
 With [HTTPS](/integrations/https/) on, use `https://` and the name on the
 certificate. Port 80 then answers every request with a redirect.
 
+The [API reference](/integrations/api/) lists every request with its
+fields. The same description is available as an OpenAPI 3.1 file,
+[`openapi.yaml`](/openapi.yaml), for API clients and code generators. Each
+[controller firmware release](https://github.com/mikesmitty/power-manifold/releases)
+includes the file that matches it.
+
 ## Examples
 
 Set these once in your shell, then copy any example below:
