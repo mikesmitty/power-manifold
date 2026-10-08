@@ -117,6 +117,7 @@ jobs:
             dist/controller-factory.bin dist/controller.cdx.json
             dist/controller-pico2w.uf2 dist/controller-pico2w.elf dist/partition_table-pico2w.uf2
             dist/controller-pico2w-factory.bin
+            firmware/controller/docs/openapi.yaml
           )
           if [ -f dist/controller.signed.bin ]; then
             assets+=(dist/controller.signed.bin dist/controller-pico2w.signed.bin)

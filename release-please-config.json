@@ -9,7 +9,8 @@
             "draft": true,
             "force-tag-creation": true,
             "extra-files": [
-                "src/manifold.h"
+                "src/manifold.h",
+                "docs/openapi.yaml"
             ]
         },
         "firmware/charger-module": {
