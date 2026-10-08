@@ -57,7 +57,7 @@
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
 #define IDLE_POLLS      20   // drop a connection that sends no request in ~10s, the first or the next
 #define REBOOT_DELAY_MS 300  // API reboot: let the response leave first
-#define SETUP_SECRET_TTL_MS (10 * 60 * 1000) // Improv redirect secret
+#define SETUP_WIFI_WINDOW_MS (10 * 60 * 1000) // after Improv provisioning
 #define SETUP_ETH_WINDOW_MS (60 * 60 * 1000) // first hour on Ethernet with no token stored
 #define HOST_NAMES_DOCS "https://docs.powermanifold.io/integrations/network/#host-names"
 #define STR_(x) #x
@@ -657,28 +657,28 @@ static void respond_unauthorized(conn_t *c) {
 }
 
 // ---- First-time setup: how the first API token gets in without a serial
-// cable. Two doors, both open only while no token is stored, both closed by
+// cable. Two windows, both open only while no token is stored, both closed by
 // the settings save that sets one:
-//   * Over Wi-Fi, Improv hands the provisioning client http://<ip>/?s=<secret>,
-//     so the same phone can finish setup in the web UI for SETUP_SECRET_TTL_MS.
+//   * Over Wi-Fi, a successful Improv provisioning opens the settings to any
+//     request for SETUP_WIFI_WINDOW_MS. Being in Bluetooth range of the
+//     chassis stands in for the token, whichever app did the provisioning
+//     (the Home Assistant app's own Improv setup does not open the link the
+//     controller hands back).
 //   * Over Ethernet, a request arriving on the wired link's address is let in
 //     for SETUP_ETH_WINDOW_MS after power-up. A short press of the front-panel
 //     button restarts that hour (main.c), so a missed window costs a power
 //     cycle or a press, not a factory reset.
 // Either stands in for the token on /settings only, and a request let in this
-// way must set a token (settings_json_apply). The secret is written from
-// improv_poll under the network lock and read here in lwIP's context; the
-// window timer is written from the main loop.
+// way must set a token (settings_json_apply). The Wi-Fi timer is written from
+// improv_poll under the network lock and the Ethernet one from the main loop;
+// both are read here in lwIP's context.
 
-static char setup_secret[9];
-static uint32_t setup_until_ms;      // 0 = no secret issued
-static uint32_t eth_window_until_ms; // 0 = closed
+static uint32_t wifi_window_until_ms; // 0 = closed
+static uint32_t eth_window_until_ms;  // 0 = closed
 
-const char *http_setup_secret_issue(uint32_t now_ms) {
-    snprintf(setup_secret, sizeof(setup_secret), "%08lx", (unsigned long)get_rand_32());
-    setup_until_ms = now_ms + SETUP_SECRET_TTL_MS;
-    if (!setup_until_ms) setup_until_ms = 1;
-    return setup_secret;
+void http_setup_wifi_open(uint32_t now_ms) {
+    wifi_window_until_ms = now_ms + SETUP_WIFI_WINDOW_MS;
+    if (!wifi_window_until_ms) wifi_window_until_ms = 1;
 }
 
 void http_setup_window_restart(uint32_t now_ms) {
@@ -686,9 +686,9 @@ void http_setup_window_restart(uint32_t now_ms) {
     if (!eth_window_until_ms) eth_window_until_ms = 1;
 }
 
-static bool setup_secret_live(uint32_t now_ms) {
-    if (!setup_until_ms || g_settings.api_token[0]) return false;
-    return (int32_t)(now_ms - setup_until_ms) < 0;
+static bool wifi_window_live(uint32_t now_ms) {
+    if (!wifi_window_until_ms || g_settings.api_token[0]) return false;
+    return (int32_t)(now_ms - wifi_window_until_ms) < 0;
 }
 
 static bool eth_window_live(uint32_t now_ms) {
@@ -708,7 +708,7 @@ static bool request_on_wired(const conn_t *c) {
 }
 
 bool http_setup_open(uint32_t now_ms) {
-    return setup_secret_live(now_ms) || (eth_window_live(now_ms) && eth_up());
+    return wifi_window_live(now_ms) || (eth_window_live(now_ms) && eth_up());
 }
 
 // /settings always needs a bearer, or an open setup door.
@@ -716,8 +716,7 @@ static bool settings_authorized(const conn_t *c, bool *via_setup) {
     *via_setup = false;
     if (g_settings.api_token[0]) return bearer_present(c, g_settings.api_token);
     uint32_t now = to_ms_since_boot(get_absolute_time());
-    if ((setup_secret_live(now) && bearer_present(c, setup_secret)) ||
-        (eth_window_live(now) && request_on_wired(c))) {
+    if (wifi_window_live(now) || (eth_window_live(now) && request_on_wired(c))) {
         *via_setup = true;
         return true;
     }
@@ -734,7 +733,7 @@ static void respond_settings_locked(conn_t *c) {
         why = "setup window closed: power-cycle the controller or press its button once, "
               "then set an API token within an hour";
     else
-        why = "no API token yet: finish Wi-Fi setup to unlock settings, "
+        why = "no API token yet: Wi-Fi setup unlocks settings for ten minutes, "
               "or connect Ethernet";
     char b[192];
     snprintf(b, sizeof(b), "{\"error\":\"%s\"}", why);
@@ -867,7 +866,7 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     }
 
     bool saved = settings_save(); // flash_safe_execute, as the OTA path does from here
-    setup_until_ms = eth_window_until_ms = 0; // a token now exists (or the caller had one)
+    wifi_window_until_ms = eth_window_until_ms = 0; // a token now exists (or the caller had one)
     printf("settings: %s via web%s\n", saved ? "saved" : "save FAILED",
            via_setup ? " (first-time setup)" : "");
     if (saved) {
@@ -1078,7 +1077,7 @@ static void handle_request(conn_t *c) {
     static char json[STATUS_JSON_MAX];
 
     if (!strncmp(c->req, "GET /", 5) && (c->req[5] == ' ' || c->req[5] == '?')) {
-        // "/?s=<secret>" is the Improv redirect; the page reads the query itself
+        // a query string (an older Improv redirect, a bookmark) gets the page too
         respond_static(c, 200, "OK", "text/html", INDEX_HTML, sizeof(INDEX_HTML) - 1, false);
     } else if (!strncmp(c->req, "GET /api/v1/status", 18)) {
         build_status_json(json, sizeof(json));

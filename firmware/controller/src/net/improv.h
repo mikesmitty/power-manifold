@@ -14,8 +14,8 @@
 // has been off the network for IMPROV_DOWN_OPEN_MS,
 // and on request (CLI `improv on`, the Home Assistant button) for
 // IMPROV_WINDOW_MS. It closes on success (the client is handed
-// http://<ip>/ to continue in the web UI — with a ?s=<setup secret> that
-// unlocks the settings panel while no API token is stored yet), when the
+// http://<ip>/ to continue in the web UI, and while no API token is stored
+// yet the settings open there for ten minutes), when the
 // network comes back, on timeout, or on `improv off`; the BT controller is
 // powered down outside the window. A failed attempt (wrong password, 30 s without an IP) reports
 // UNABLE_TO_CONNECT and restores the previous credentials.

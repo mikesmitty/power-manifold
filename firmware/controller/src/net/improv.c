@@ -25,7 +25,7 @@
 #define CONNECT_TIMEOUT_MS (30 * 1000)
 #define CLOSE_AFTER_MS     1000  // let the result notification land first
 #define IDENTIFY_MS        10000
-#define RESULT_MAX         64    // [cmd len slen "http://255.255.255.255/?s=xxxxxxxx" crc] is 38
+#define RESULT_MAX         64    // [cmd len slen "http://255.255.255.255/" crc] is 27
 
 // generated attribute handles; compile_gatt suffixes each UUID's first
 // instance with _01
@@ -452,16 +452,12 @@ void improv_poll(uint32_t now_ms) {
         if (status != CYW43_LINK_UP) attempt_left_old_net = true;
         if (status == CYW43_LINK_UP && attempt_left_old_net) {
             attempt = false;
-            // With no API token stored yet, the redirect carries a one-shot
-            // setup secret that unlocks the web UI's settings panel, so the
-            // same phone can finish the job (broker, name, token) without a
-            // serial cable. Once a token exists the plain URL is enough.
+            // With no API token stored yet, the web UI's settings stay open
+            // for ten minutes, so any phone or computer can finish the job
+            // (token, broker, name) without a serial cable.
             char url[48];
-            if (g_settings.api_token[0])
-                snprintf(url, sizeof(url), "http://%s/", net_ip_str());
-            else
-                snprintf(url, sizeof(url), "http://%s/?s=%s", net_ip_str(),
-                         http_setup_secret_issue(now_ms));
+            snprintf(url, sizeof(url), "http://%s/", net_ip_str());
+            if (!g_settings.api_token[0]) http_setup_wifi_open(now_ms);
             result_len = (uint8_t)improv_result_build(IMPROV_CMD_WIFI_SETTINGS, url, result,
                                                       sizeof(result));
             set_error(IMPROV_ERR_NONE);

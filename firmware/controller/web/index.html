@@ -464,9 +464,7 @@ $('tok').onkeydown=e=>{if(e.key=='Enter')$('ul').click();};
 // Something needed the token: open Settings at the token field and say what for.
 async function unlock(what){tab('cfg',1);await cfgLoad();if(LK.hidden)return;
  M.textContent=(sessionStorage.tok?'Token rejected. ':'')+'Enter the API token to '+what+'.';const k=$('tok');k.scrollIntoView({block:'center'});k.focus();}
-const U=new URL(location),S=U.searchParams.get('s');
-if(S){sessionStorage.tok=S;U.searchParams.delete('s');history.replaceState(null,'',U);tab('cfg');}
-else cfgLoad().then(d=>{if(d&&!d.token_set)tab('cfg');});
+cfgLoad().then(d=>{if(d&&!d.token_set)tab('cfg');});
 
 // console
 async function lgLoad(){let r;try{r=await fetch('/api/v1/log',{headers:hdr()});}catch(e){$('lgm').textContent='No response from the device.';return;}

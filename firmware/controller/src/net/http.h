@@ -32,10 +32,10 @@
 //
 // Every POST, the console log and the settings need "Authorization: Bearer
 // <token>". With no token stored the controller refuses them all, except
-// that /settings opens for first-time setup through one of two doors: the
-// one-shot secret Improv puts in its redirect URL (?s=..., ten minutes), or
-// the first hour after power-up for a request arriving over Ethernet. A
-// request let in that way must set a token, which closes both doors.
+// that /settings opens for first-time setup in one of two windows: ten
+// minutes after Wi-Fi setup over Improv succeeds, for any request, or the
+// first hour after power-up for a request arriving over Ethernet. A request
+// let in that way must set a token, which closes both.
 
 void http_init(void); // also starts the Ethernet setup hour, and loads the HTTPS certificate
 
@@ -44,16 +44,17 @@ void http_init(void); // also starts the Ethernet setup hour, and loads the HTTP
 // network lock.
 void http_tls_sync(void);
 
-// Mint the setup secret (good for 10 minutes, or until a token exists).
-// Improv calls this with the network lock held; returns static storage.
-const char *http_setup_secret_issue(uint32_t now_ms);
+// Open the Wi-Fi setup window (10 minutes, or until a token exists). Improv
+// calls this with the network lock held once provisioning succeeds.
+void http_setup_wifi_open(uint32_t now_ms);
 
 // Start the Ethernet setup hour over (a short press of the front-panel
 // button). Harmless once a token is stored.
 void http_setup_window_restart(uint32_t now_ms);
 
-// Settings are open for first-time setup right now: the secret is live, or
-// the Ethernet hour is running with the wired link up. For the LED cue.
+// Settings are open for first-time setup right now: the Wi-Fi window is
+// open, or the Ethernet hour is running with the wired link up. For the LED
+// cue.
 bool http_setup_open(uint32_t now_ms);
 
 // A reboot was requested over the API and its delay has elapsed; the main

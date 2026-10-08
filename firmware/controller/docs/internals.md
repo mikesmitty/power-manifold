@@ -348,9 +348,9 @@ host-tested.
   `Authorization: Bearer <token>`. The comparison takes the same time
   wherever the first wrong character is. The server sends no CORS headers,
   so a page on another site cannot get a browser to send the header.
-- **Setup doors.** While no token is stored, the settings routes accept the
-  Improv setup secret as the bearer, or no credential at all over the
-  Ethernet window. A settings `POST` let in that way must carry
+- **Setup doors.** While no token is stored, the settings routes accept no
+  credential at all for ten minutes after Improv provisioning succeeds, and
+  over the Ethernet window for requests on the wired link. A settings `POST` let in that way must carry
   `Content-Type: application/json` or it gets `415`. Browsers send a
   cross-site POST without a CORS preflight only with a form or `text/plain`
   type, so this keeps another site from setting the first token.
