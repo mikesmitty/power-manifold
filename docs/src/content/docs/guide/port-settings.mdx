@@ -45,6 +45,19 @@ order. This stops six devices from starting all at once.
 The voltage cap is the highest voltage a port offers. Choose 5, 9, 12, 15
 or 20 V. The default is 20 V, which offers everything.
 
+The cap applies to PPS (Programmable Power Supply) as well. A port offers
+two PPS ranges, 3.3–11 V and 3.3–21 V, and offers a range only when all of
+it fits under the cap:
+
+| Cap | PPS ranges offered |
+|---|---|
+| 5 V or 9 V | none |
+| 12 V or 15 V | 3.3–11 V |
+| 20 V | 3.3–11 V and 3.3–21 V |
+
+The 20 V cap is the one exception: it still offers the 3.3–21 V range,
+which goes slightly above 20 V.
+
 Use a lower cap to protect a device that shouldn't get a high voltage. For
 example:
 
