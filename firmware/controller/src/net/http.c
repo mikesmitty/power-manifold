@@ -1299,24 +1299,31 @@ static void handle_request(conn_t *c) {
                         "{\"error\":\"watts out of range\"}");
                 return;
             }
-            g_settings.budget_mw = (uint32_t)watts * 1000u;
-            engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = g_settings.budget_mw};
+            // the setting changes only once the engine has the command
+            engine_cmd_t cmd = {.op = CMD_SET_BUDGET, .arg = (uint32_t)watts * 1000u};
+            if (!ipc_cmd_push(&cmd)) {
+                respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
+                return;
+            }
+            g_settings.budget_mw = cmd.arg;
             settings_save_later();
-            respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
-                    "OK", "application/json", "{\"ok\":true}");
+            respond(c, 200, "OK", "application/json", "{\"ok\":true}");
         } else if (!strncmp(c->req, "POST /api/v1/fan", 16)) {
-            engine_cmd_t cmd;
-            if (strstr(body, "\"auto\"")) {
+            engine_cmd_t cmd = {0};
+            bool fan_auto = strstr(body, "\"auto\"") != NULL;
+            if (fan_auto) {
                 cmd.op = CMD_FAN_AUTO;
-                g_settings.fan_auto = 1;
             } else {
                 cmd.op = CMD_FAN;
                 cmd.arg = strstr(body, "true") != NULL;
-                g_settings.fan_auto = 0;
             }
+            if (!ipc_cmd_push(&cmd)) {
+                respond(c, 503, "Service Unavailable", "application/json", "{\"error\":\"busy, retry\"}");
+                return;
+            }
+            g_settings.fan_auto = fan_auto;
             settings_save_later();
-            respond(c, ipc_cmd_push(&cmd) ? 200 : 503,
-                    "OK", "application/json", "{\"ok\":true}");
+            respond(c, 200, "OK", "application/json", "{\"ok\":true}");
         } else if (!strncmp(c->req, "POST /api/v1/reboot", 19)) {
             uint32_t t = to_ms_since_boot(get_absolute_time()) + REBOOT_DELAY_MS;
             reboot_at_ms = t ? t : 1; // the main loop reboots (and flushes a pending save)
