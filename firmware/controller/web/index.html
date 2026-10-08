@@ -220,7 +220,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
    <fieldset><legend>Device</legend>
     <label>Device name<span class="h">Hostname and MQTT topic id</span><input id="dname" name="dname" maxlength="31" pattern="[A-Za-z0-9\-]+" required></label>
     <label>API token<span class="h">Locks the API and this panel</span><input id="atok" name="atok" type="password" maxlength="32"></label>
-    <label>UTC offset (minutes)<span class="h">For example &minus;240 for UTC&minus;4</span><input id="tz" name="tz" type="number" min="-720" max="840" required></label>
+    <label>UTC offset (minutes)<span class="h">For example &minus;240 for UTC&minus;4</span><input id="tz" name="tz" pattern="[+\-]?[0-9]{1,3}" title="Whole minutes, -720 to 840" required></label>
     <label>Update source<span class="h">Checked once a day for a newer release. Blank means never.</span><input id="upd" name="upd" maxlength="63"></label>
     <label>Automatic updates<span class="h">A newer release installs by itself 1 to 7 days after it is found, between 03:00 and 05:00. The ports stay on.</span><select id="uauto" name="uauto"><option value="on">On</option><option value="off">Off</option></select></label>
    </fieldset>
