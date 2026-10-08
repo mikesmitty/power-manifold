@@ -23,6 +23,7 @@ in Safari or Firefox, or in any browser on an iPhone or iPad. On those, use
 the Home Assistant app: go to **Settings → Devices & services → Add
 integration** and search for **Improv**. The app also shows a
 notification by itself when it finds a Power Manifold waiting for setup.
+Either way, open `http://pwrman.local/` afterwards to finish setup.
 </Aside>
 
 ## Steps
@@ -44,11 +45,11 @@ notification by itself when it finds a Power Manifold waiting for setup.
    network. If the password is wrong, or the controller gets no address
    within 30 seconds, you'll see *unable to connect* and can try again.
 
-5. **Press Next.** When it says *Provisioned!*, press **Next**. Use the same
-   phone or computer for this step. It opens the controller's web interface with
-   the settings unlocked for ten minutes, so you can finish
-   [first-time setup](/setup/first-time-setup/#steps) by
-   choosing an API token.
+5. **Press Next.** When it says *Provisioned!*, press **Next**. It opens the
+   controller's web interface. On a new controller the settings stay open
+   to anyone on your network for ten minutes, so you can finish
+   [first-time setup](/setup/first-time-setup/#steps) by choosing an API
+   token. If **Next** is not offered, go to `http://pwrman.local/`.
 
 </Steps>
 
