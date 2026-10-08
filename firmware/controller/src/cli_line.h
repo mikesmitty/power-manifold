@@ -18,6 +18,6 @@ void cli_line_mask(const char *in, char *out, size_t cap);
 // refused commands are the ones that must stay behind the serial console:
 // `token`, `bootsel`, `defaults`, `update` with --unsigned or --downgrade,
 // `vin cal`, and the bench and test tools `stack`, `i2c`, `sim` and
-// `button`. The returned text names the command, for "'%s' works only on
-// the serial console".
+// `button`. The returned text names the command, for "'%s' can't be run
+// from the web console".
 const char *cli_line_web_refusal(const char *line);

@@ -293,7 +293,7 @@ bool update_finish(char *err, size_t errlen) {
     if (!is_signed && UPDATE_KEY_COUNT && !(up.allow & UPDATE_ALLOW_UNSIGNED)) {
         update_abort();
         return eout(err, errlen,
-                    "unsigned image; only the console installs those (update --unsigned <url>)");
+                    "unsigned image; only signed releases install");
     }
 
     if (up.cursor <= FLASH_SECTOR_SIZE) {
@@ -331,7 +331,7 @@ bool update_finish(char *err, size_t errlen) {
     if (incoming < update_version_word(FW_VERSION) && !(up.allow & UPDATE_ALLOW_DOWNGRADE)) {
         update_abort();
         if (err && errlen)
-            snprintf(err, errlen, "%s is older than the running %s; console only (update --downgrade <url>)",
+            snprintf(err, errlen, "%s is older than the running %s; older versions do not install",
                      up.ver, FW_VERSION);
         return false;
     }

@@ -122,7 +122,7 @@ static void print_help(void) {
            "  update [--unsigned] [--downgrade] <http-url>|latest\n"
            "                               OTA pull into the inactive slot ('latest': the newest known\n"
            "                               release); the flags let an unsigned or an older image in\n"
-           "                               (this console only)\n"
+           "                               (not from the web console)\n"
            "  update check                 ask the update source for the newest release now\n"
            "  update source <http-url>|default|off\n"
            "                               where the daily check asks; 'off' = never ask (then 'save')\n"
@@ -181,7 +181,7 @@ static void print_info(void) {
     boot_reason_text(boot_reason_last(), boot_text, sizeof(boot_text));
     printf("last boot: %s\n", boot_text);
     if (update_key_count())
-        printf("updates: signed images only (%u key%s built in); unsigned or older ones from this console\n",
+        printf("updates: signed images only (%u key%s built in)\n",
                update_key_count(), update_key_count() == 1 ? "" : "s");
     else
         printf("updates: NOT checked for a signature (no keys in this build)\n");
@@ -1174,7 +1174,7 @@ static void run_web_batch(void) {
         printf("web> %s\n", masked);
         const char *refused = cli_line_web_refusal(p);
         if (refused) {
-            printf("'%s' works only on the serial console\n", refused);
+            printf("'%s' can't be run from the web console\n", refused);
             continue;
         }
         memcpy(cmd, p, n + 1);
