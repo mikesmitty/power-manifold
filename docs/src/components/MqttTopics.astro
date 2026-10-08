@@ -17,7 +17,7 @@ const STATUS = {
 };
 const TELEMETRY = {
 	state: 'active', gen: 3, v: 20.021, i: 2.712, p: 54.3, e: 6.211, pdo: 5, contract_w: 65.0,
-	prio: 2, limit_ma: 5000, max_v: 20, boot: 'on', charged: false, auto_off: false, protect: false, sleep_min: 0,
+	prio: 2, limit_ma: 5000, max_v: 20, boot: 'on', charged: false, auto_off: false, sleep_min: 0,
 	fault: 0, last_fault: '', last_fault_at: 0, t_conv: 54.9, t_plug: 41.3, t_mcu: 36.2,
 	progress: 0, update_due: false, silent: false,
 };
@@ -37,7 +37,6 @@ const TREE: (Leaf | Branch)[] = [
 			{ name: 'volt/set', dir: 'in', note: 'voltage cap: 5, 9, 12, 15 or 20' },
 			{ name: 'boot/set', dir: 'in', note: 'at power-up: on, off or last' },
 			{ name: 'autooff/set', dir: 'in', note: 'switch off once charged: ON or OFF' },
-			{ name: 'protect/set', dir: 'in', note: 'protect running device: ON or OFF' },
 			{ name: 'sleep/set', dir: 'in', note: 'sleep timer in minutes, 0 = off' },
 		],
 	},

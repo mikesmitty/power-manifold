@@ -95,7 +95,7 @@ typedef struct {
     uint16_t mqtt_ca_len;     // bytes of mqtt_ca in use, 0 = none installed
     uint8_t  mqtt_ca[MQTT_CA_MAX]; // one DER certificate: the broker's CA, or the broker's own self-signed one
     // -- added in layout version 18 --
-    uint8_t  port_protect;    // bit N set: power sharing never changes port N's offer once a device is running on it (port_fsm.c)
+    uint8_t  retired_18;      // a per-port setting since removed; kept so that later fields do not move
     // -- added in layout version 19 --
     char     hostnames[HOSTNAMES_MAX]; // extra names the web server answers to, space-separated, lowercase (net/http_req.h)
     // -- added in layout version 20 --

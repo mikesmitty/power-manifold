@@ -36,7 +36,7 @@
 #define SETTINGS_V14_PAYLOAD ALIGN4(offsetof(settings_t, update_url))
 #define SETTINGS_V15_PAYLOAD ALIGN4(offsetof(settings_t, ntp_server))
 #define SETTINGS_V16_PAYLOAD ALIGN4(offsetof(settings_t, mqtt_tls))
-#define SETTINGS_V17_PAYLOAD ALIGN4(offsetof(settings_t, port_protect))
+#define SETTINGS_V17_PAYLOAD ALIGN4(offsetof(settings_t, retired_18))
 #define SETTINGS_V18_PAYLOAD ALIGN4(offsetof(settings_t, hostnames))
 #define SETTINGS_V19_PAYLOAD ALIGN4(offsetof(settings_t, update_postpone))
 #define SETTINGS_V20_PAYLOAD ALIGN4(offsetof(settings_t, https))
@@ -271,7 +271,7 @@ void settings_load(void) {
             g_settings.mqtt_ca_len = 0;
             memset(g_settings.mqtt_ca, 0, sizeof(g_settings.mqtt_ca));
         }
-        if (g_settings.version < 18) g_settings.port_protect = 0;
+        if (g_settings.version < 18) g_settings.retired_18 = 0;
         if (g_settings.version < 19) memset(g_settings.hostnames, 0, sizeof(g_settings.hostnames));
         if (g_settings.version < 20) {
             g_settings.update_postpone = g_settings.update_seen_at = 0;

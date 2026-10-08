@@ -258,7 +258,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     </div>
    </fieldset>
    <fieldset class="wide"><legend>Ports</legend>
-    <div class="tw"><table class="ptab"><thead><tr><th>Port</th><th>Name</th><th title="The current every PDO advertises, {{STR(PORT_LIMIT_MIN_MA)}}-{{STR(PORT_LIMIT_MAX_MA)}} mA. The 21 V PPS range stops at 4750 to stay within 100 W.">Limit mA</th><th title="The highest PDO the port advertises">Max V</th><th title="Port state at power-up">At power-up</th><th title="Once a device is running on this port, power sharing never changes its power. For devices that could be harmed by potential power loss during renegotiation.">Protect running device</th><th title="Switch off once charged">Off when charged</th><th title="Switch off this many minutes after a sink attaches, 0 = never">Sleep min</th></tr></thead><tbody id="pt"></tbody></table></div>
+    <div class="tw"><table class="ptab"><thead><tr><th>Port</th><th>Name</th><th title="The current every PDO advertises, {{STR(PORT_LIMIT_MIN_MA)}}-{{STR(PORT_LIMIT_MAX_MA)}} mA. The 21 V PPS range stops at 4750 to stay within 100 W.">Limit mA</th><th title="The highest PDO the port advertises">Max V</th><th title="Port state at power-up">At power-up</th><th title="Switch off once charged">Off when charged</th><th title="Switch off this many minutes after a sink attaches, 0 = never">Sleep min</th></tr></thead><tbody id="pt"></tbody></table></div>
    </fieldset>
   </div>
   <div class="actions">
@@ -393,10 +393,9 @@ $('pt').innerHTML=[1,2,3,4,5,6].map(n=>`<tr><td>${n}</td><td><input name="pn${n}
  <td><input name="pl${n}" inputmode="numeric" pattern="[0-9]+" title="{{STR(PORT_LIMIT_MIN_MA)}} to {{STR(PORT_LIMIT_MAX_MA)}}" required></td>
  <td><select name="pv${n}">${[5,9,12,15,20].map(v=>`<option value="${v}">${v} V</option>`).join('')}</select></td>
  <td><select name="pb${n}"><option value="on">On</option><option value="off">Off</option><option value="last">As left</option></select></td>
- <td><input type="checkbox" name="pr${n}" aria-label="Port ${n} protect running device"></td>
  <td><input type="checkbox" name="pa${n}" aria-label="Port ${n} off when charged"></td>
  <td><input name="ps${n}" inputmode="numeric" pattern="[0-9]+" title="0 to {{STR(PORT_SLEEP_MAX_MIN)}}" required></td></tr>`).join('');
-const Q=p=>[...F.querySelectorAll(`[name^=${p}]`)],PN=Q('pn'),PL=Q('pl'),PB=Q('pb'),PV=Q('pv'),PA=Q('pa'),PR=Q('pr'),PS=Q('ps'),
+const Q=p=>[...F.querySelectorAll(`[name^=${p}]`)],PN=Q('pn'),PL=Q('pl'),PB=Q('pb'),PV=Q('pv'),PA=Q('pa'),PS=Q('ps'),
 KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',
  led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',gw:'gateway',dns:'dns',ntp:'ntp_server',mca:'mqtt_ca',slh:'syslog_host',
  slp:'syslog_port',upd:'update_url',hosts:'hostnames',chmw:'charged_mw',chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},
@@ -411,13 +410,13 @@ async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr
  for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';F.uauto.value=d.update_auto?'on':'off';
  F.https.value=d.https?'on':'off';tlsLoad();
  PN.forEach((e,i)=>e.value=d.port_names[i]||'');PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);
- PV.forEach((e,i)=>e.value=d.port_max_v[i]);PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PR.forEach((e,i)=>e.checked=!!d.port_protect[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);
+ PV.forEach((e,i)=>e.value=d.port_max_v[i]);PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);
  const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';
  F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;
  M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks the API and this panel, so keep a copy.';return d;}
 F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value.replace('\u2212','-'):F[k].value;b.mqtt_port=b.mqtt_port||1883;
  b.update_auto=F.uauto.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
- b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_protect=PR.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
+ b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
  b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;
  let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});d=await r.json();}catch(e){}
  if(!r||!r.ok){M.textContent='Not saved: '+(d.error||'no response');return;}

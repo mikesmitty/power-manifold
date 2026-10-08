@@ -86,7 +86,7 @@ uint16_t blade_setup(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv);
 uint16_t blade_adopt(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv, blade_status_t *st);
 // The limits a gen-3 blade holds while a device is on its port and the
 // blade still has the configuration it was given: what a restarted
-// controller leaves alone on a protected port. False otherwise, and always
+// controller leaves running. False otherwise, and always
 // for a gen-2 blade, whose limits are not read back.
 bool blade_running_limits(blade_gen_t gen, uint32_t *ma, uint32_t *mv);
 

@@ -274,7 +274,7 @@ the same keys, so you can edit an export and post it back.
 | Updates | `update_auto` (`true`: new releases install by themselves) |
 | Power | `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`, `charged_mw`, `charged_min` |
 | Lights | `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`, `tz_offset_min` |
-| Ports (arrays of six) | `port_names`, `port_limits_ma`, `port_max_v`, `port_priorities`, `port_boot`, `port_protect`, `port_auto_off`, `port_sleep_min` |
+| Ports (arrays of six) | `port_names`, `port_limits_ma`, `port_max_v`, `port_priorities`, `port_boot`, `port_auto_off`, `port_sleep_min` |
 
 `vin_cal`, the input voltage trim, appears in `GET /api/v1/settings` but
 not in exports, and posting it changes nothing. It belongs to the unit's

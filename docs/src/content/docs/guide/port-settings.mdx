@@ -13,9 +13,7 @@ Each port has its own settings. You can change them in the web interface's
 **Settings**, in [Home Assistant](/guide/home-assistant/), over
 [MQTT](/integrations/mqtt/) or with the
 [HTTP API](/integrations/http-api/). Changes apply at once,
-even to a device that is already plugged in. The exception is
-[Protect running device](#protect-running-device), which applies from the
-next device plugged in.
+even to a device that is already plugged in.
 
 ## Name
 
@@ -111,45 +109,13 @@ again. A port set to **last** at power-up remembers that it was off.
 <Aside type="tip">
 **Switch off once charged** and the sleep timer are meant for devices with a
 battery. Leave them off on ports that power a Raspberry Pi or another
-computer that should stay on.
+computer that doesn't expect to abruptly lose power.
 </Aside>
-
-## Protect running device
-
-Turn on **Protect running device** for devices that could be harmed by
-potential power loss during renegotiation.
-
-Normally, [power sharing](/guide/sharing-power/) can change what a port
-offers while its device is running. It turns the port down to make room for
-a higher-priority port, or limits it when the device asks for more than is
-free. Each time, the device has to agree on a new contract with the port,
-and some devices may briefly lose power while they do. If a device doesn't
-answer the new offer quickly enough, the USB Power Delivery standard
-requires the port to reset the connection, which cuts its power for a
-moment.
-
-A protected port settles its power once, when a device is plugged in:
-
-- It sets aside everything the port offers, so the device can later ask for
-  anything up to that without the offer changing.
-- If that much power isn't free, lower-priority ports are turned down first.
-  If there still isn't enough, the port's own offer is reduced straight
-  away, before the device has started up.
-- While the device stays plugged in, power sharing never changes the port's
-  offer, whatever the other ports' priorities. Restarting the controller,
-  for example to install an update, doesn't change it either.
-
-The power stays set aside until the device is unplugged, even while the
-device draws less. A device that was offered less because power was short
-keeps that smaller offer until it is plugged in again.
-
-Two things still change a protected port's offer: the
-[input voltage dropping](/guide/sharing-power/#when-the-input-voltage-drops),
-which limits every port to 3 A, and changing the port's current limit or
-voltage cap yourself.
 
 ## Priority
 
 Each port also has a priority, which decides which ports are turned down
-first when devices ask for more power than the supply can give. See
-[Sharing power between ports](/guide/sharing-power/).
+first when devices ask for more power than the supply can give. A port with
+priority 0 is never turned down to make room for another port, which suits
+devices that could be harmed by potential power loss during renegotiation.
+See [Sharing power between ports](/guide/sharing-power/).

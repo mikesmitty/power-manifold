@@ -38,9 +38,8 @@ If a newly plugged-in device would take the total over the budget, Power
 Manifold makes room:
 
 1. It turns down lower-priority ports, starting with the lowest. It never
-   takes a port below 15 W, and never turns down a port with
-   [Protect running device](/guide/port-settings/#protect-running-device)
-   on.
+   takes a port below 15 W, and never turns down a port with the same or a
+   higher priority than the new device.
 2. If that isn't enough, it gives the new device whatever is left.
 
 A port that has been turned down keeps powering its device, only with less
@@ -49,8 +48,9 @@ device is sent a new, smaller offer and switches to it. Some devices may
 briefly lose power while they renegotiate: if a device doesn't answer the
 new offer quickly enough, the USB Power Delivery standard requires the port
 to reset the connection, which cuts its power for a moment. For devices
-that could be harmed by that, turn on
-[Protect running device](/guide/port-settings/#protect-running-device).
+that could be harmed by that, such as a computer that must not lose power
+while it runs, give the port [priority 0](#priorities): no other port can
+then turn it down.
 
 Nothing is switched off to save power.
 
@@ -79,16 +79,15 @@ Set priorities in Home Assistant (a number for each port), over
 which take 25 W each, and a 100 W laptop on port 6. Give the Pis priority 0
 so they always get what they ask for, and leave the laptop at 6. The Pis
 take 100 W of the budget, so the laptop is offered the rest and charges more
-slowly. If a Pi is unplugged, the laptop gets its share. Turning on
-[Protect running device](/guide/port-settings/#protect-running-device) for
-the Pis as well means their power is settled when they are plugged in and
-never changes while they run.
+slowly. If a Pi is unplugged, the laptop gets its share. Because the Pis
+have priority 0, no other port can turn them down while they run.
 
 ## When the input voltage drops
 
 If the supply voltage falls below 20 V, every port is limited to 3 A (60 W
 at most) until the voltage has been above 20.5 V for 30 seconds. Devices are offered less, but nothing is switched
-off. While this is happening the web interface and Home Assistant show a
+off. This is a safety limit and applies to every port, priority 0
+included. Use a supply whose voltage stays well above 20 V under load. While this is happening the web interface and Home Assistant show a
 problem saying the ports are capped.
 
 If you see this often, your supply is too small for your devices, or its

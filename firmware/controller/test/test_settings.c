@@ -256,36 +256,34 @@ static void test_v16_record_upgrades(void) {
 }
 
 // Version 17 ended with the broker certificate; its crc sat where the
-// port protect mask now starts
+// retired layout-18 byte starts
 static void test_v17_record_upgrades(void) {
     start();
     settings_t s;
     sample(&s, "seventeen", 7);
     s.mqtt_tls = 1;
-    s.port_protect = 0x3F; // a byte a v17 record never carried
+    s.retired_18 = 0x3F; // a byte a v17 record never carried
     write_record(SLOT(HOME, 0), &s, 17, V17_LEN);
     settings_load();
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "seventeen") == 0);
     MT_ASSERT_EQ(g_settings.mqtt_tls, 1);
-    MT_ASSERT_EQ(g_settings.port_protect, 0); // no port is protected until asked
+    MT_ASSERT_EQ(g_settings.retired_18, 0);
     MT_ASSERT_EQ(g_settings.version, 21);
     MT_ASSERT(settings_save());
     MT_ASSERT_EQ(rec(SLOT(HOME, 1))->payload_len, V21_LEN);
     MT_ASSERT(crc_ok(SLOT(HOME, 1), V21_LEN));
 }
 
-// Version 18 ended with the port protect mask; its crc sat where the
+// Version 18 ended with a byte since retired; its crc sat where the
 // hostnames list now starts
 static void test_v18_record_upgrades(void) {
     start();
     settings_t s;
     sample(&s, "eighteen", 8);
-    s.port_protect = 0x05;
     strcpy(s.hostnames, "never.written"); // bytes a v18 record never carried
     write_record(SLOT(HOME, 0), &s, 18, V18_LEN);
     settings_load();
     MT_ASSERT(strcmp(g_settings.wifi_ssid, "eighteen") == 0);
-    MT_ASSERT_EQ(g_settings.port_protect, 0x05);
     MT_ASSERT_EQ(g_settings.hostnames[0], 0); // only the address and the device name
     MT_ASSERT_EQ(g_settings.version, 21);
     MT_ASSERT(settings_save());
@@ -580,7 +578,7 @@ void run_settings_tests(void) {
     mt_run("settings: a version 14 record gains the update source", test_v14_record_upgrades);
     mt_run("settings: a version 15 record gains the time server", test_v15_record_upgrades);
     mt_run("settings: a version 16 record gains the broker TLS fields", test_v16_record_upgrades);
-    mt_run("settings: a version 17 record gains the port protect mask", test_v17_record_upgrades);
+    mt_run("settings: a version 17 record upgrades", test_v17_record_upgrades);
     mt_run("settings: a version 18 record gains an empty hostnames list", test_v18_record_upgrades);
     mt_run("settings: a version 19 record gains automatic installs, on", test_v19_record_upgrades);
     mt_run("settings: a newer layout is read by its stated length", test_newer_layout_is_read);

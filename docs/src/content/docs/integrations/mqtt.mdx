@@ -41,7 +41,7 @@ answers) and, with one connected, `ups_ac`, `ups_on_battery`,
 
 **`port/<n>/telemetry` fields:** `state`, `gen` (blade generation), `v`,
 `i`, `p`, `e` (kWh), `contract_w`, `pdo`, `prio`, `limit_ma`, `max_v`,
-`boot`, `charged`, `auto_off`, `protect`, `sleep_min`, `fault`, `last_fault`,
+`boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`,
 `last_fault_at`, the blade temperatures `t_conv`, `t_plug` and `t_mcu` in
 °C (`null` when there's no reading), `progress` (0–100 during a blade
 update), `update_due` and `silent`.
@@ -64,7 +64,6 @@ saved a few seconds after the last change.
 | `port/<n>/volt/set` | voltage cap: `5`, `9`, `12`, `15` or `20` |
 | `port/<n>/boot/set` | power-up state: `on`, `off` or `last` |
 | `port/<n>/autooff/set` | switch off once charged: `ON` or `OFF` |
-| `port/<n>/protect/set` | protect running device: `ON` or `OFF` |
 | `port/<n>/sleep/set` | sleep timer in minutes, 0 = off |
 | `budget/set` | chassis budget in watts |
 | `fan/set` | `auto`, `on` or `off` |
