@@ -85,5 +85,6 @@ network came up.
 
 The controller asks `http://fw.powermanifold.io` once a day whether there is
 new firmware. Clear **Update source** to stop it asking, or point it at
-your own server that hosts the same files. See
+your own server that hosts the same files over plain HTTP; an `https://`
+address is refused. See
 [Firmware updates](/guide/updates/).

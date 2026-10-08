@@ -136,6 +136,11 @@ it is running. Because of that, the download doesn't need to be encrypted.
 Updates come from `fw.powermanifold.io`, which serves the project's GitHub
 releases.
 
+Updates are downloaded over HTTP, not HTTPS. The controller refuses an
+update address that starts with `https://`, so a server of your own that
+hosts the files must serve them over plain HTTP. The signature check is
+what protects the download.
+
 <Flow
 	nodes={[
 		{ title: 'GitHub releases', detail: 'Signed by the project' },
