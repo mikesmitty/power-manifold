@@ -251,7 +251,11 @@ load off it: while the bus reads under 20.0 V every port's advertised
 current is capped at 3 A, chassis-wide, under whatever the port's own
 limit is. No sink can then hold a 5 A PDO or APDO and no port delivers
 more than 60 W; sinks that are attached are sent the new table and
-renegotiate within it, and nothing is switched off. The cap comes off
+renegotiate within it, and nothing is switched off. The cap also keeps
+each slot connector within its current rating: a slot feeds its blade
+through six VIN pins rated about 1.1 A each, and a gen-3 blade at full
+output on a bus this low runs its converter in boost and can draw more
+than that. The cap comes off
 once the bus has held 20.5 V for 30 s without a dip. At power-up the
 first reading is judged against 20.5 V rather than 20.0 V, so a chassis
 that has just been cut by the backplane and comes back on a marginal

@@ -94,7 +94,7 @@ These are refused there and work only on the serial console:
 | `update --unsigned`, `update --downgrade` | the update signing and no-downgrade rules hold for everything that arrives over the network |
 | `defaults` | it clears the token along with every other setting |
 | `bootsel` | it stops the firmware until someone reaches the box |
-| `vin cal` | the bus-sag cap acts on the trimmed reading; trim it against a meter at the box (`vin` alone is allowed) |
+| `vin cal` | the bus-sag cap, which keeps the slot connectors within their current rating, acts on the trimmed reading; trim it against a meter at the box (`vin` alone is allowed) |
 | `stack`, `i2c`, `sim`, `button` | bench and test tools; `i2c` writes go around the port engine |
 
 A new command that sets the token, gets past the update rules, clears the

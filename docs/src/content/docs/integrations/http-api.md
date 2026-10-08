@@ -283,7 +283,9 @@ the same keys, so you can edit an export and post it back.
 not in exports, and posting it changes nothing. It belongs to the unit's
 own measuring circuit and can't be changed over the API, because the
 [3 A cap on a sagging input](/guide/troubleshooting/#ports-capped-at-3-a)
-acts on the trimmed reading.
+acts on the trimmed reading. The cap is a safety limit: at a low input
+voltage, a blade at full output would draw more current than the pins of
+its connector are rated for.
 
 `https` also appears in `GET /api/v1/settings` but not in exports, because
 the certificate it needs stays on the controller. Setting it to `true`

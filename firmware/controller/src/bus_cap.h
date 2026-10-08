@@ -10,8 +10,12 @@
 // it. This module acts before that point. While the bus is under 20 V it
 // caps every port's advertised current at 3 A, so no sink can hold a 5 A
 // PDO or APDO and no port delivers more than 60 W. Sinks that are attached
-// renegotiate to a smaller contract; no port is switched off. The numbers
-// are fixed, not settings: this is a safety cut-off.
+// renegotiate to a smaller contract; no port is switched off. The cap also
+// keeps each slot connector within its current rating: a slot feeds its
+// blade through six VIN pins rated about 1.1 A each, and a gen-3 blade at
+// full output on a bus this low runs its converter in boost and can draw
+// more than that. The numbers are fixed, not settings: this is a safety
+// cut-off.
 //
 // Hardware-free. Core 0 calls bus_cap_poll with the bus monitor's reading
 // (vin.h) and, when the cap changes, sends the engine CMD_SET_CEILING.
