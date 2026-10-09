@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.17.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.16.1...controller-firmware-v0.17.0) (2026-10-09)
+
+
+### Features
+
+* **controller:** update blades once their device is off, and flag waiting updates ([6b3d921](https://github.com/mikesmitty/power-manifold/commit/6b3d9213ff84532a180a7a549fdf3f6734c755ff))
+
+
+### Bug Fixes
+
+* **controller:** answer a full engine queue on budget and fan with an error ([4a495c5](https://github.com/mikesmitty/power-manifold/commit/4a495c5b2e5f44e7040ddabd2d60eaade8a074c1))
+* **controller:** keep every running offer through a controller restart ([a837e05](https://github.com/mikesmitty/power-manifold/commit/a837e0552ae690358cb0c5fecdbccc94440800b9))
+* **controller:** remove the protect running device setting ([06dca0f](https://github.com/mikesmitty/power-manifold/commit/06dca0f3a50ca0b28c20e399bde6218659be181d))
+* **controller:** run the fan for hot blades even when it is forced off ([ffc15ae](https://github.com/mikesmitty/power-manifold/commit/ffc15aee72a6afd5d0d4086a1e0d391ddea0ab2d))
+* **controller:** stop pointing web users to the serial console ([06d4e3f](https://github.com/mikesmitty/power-manifold/commit/06d4e3fb85ccf3b3c18f64608c05400508a15e28))
+
 ## [0.16.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.16.0...controller-firmware-v0.16.1) (2026-10-08)
 
 
