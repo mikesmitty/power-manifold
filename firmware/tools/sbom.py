@@ -173,6 +173,7 @@ def charger_module(c_library: dict | None) -> tuple[dict, list, list]:
         "name": "charger-module-firmware",
         "version": version,
         "supplier": SUPPLIER,
+        "licenses": licenses("MIT", None),
         "externalReferences": [{"type": "vcs", "url": PROJECT_URL}],
     }
     deps = fetched_components() + ([c_library] if c_library else [])
@@ -188,6 +189,7 @@ def controller(sdk: pathlib.Path, c_library: dict | None) -> tuple[dict, list, l
         "name": "controller-firmware",
         "version": version,
         "supplier": SUPPLIER,
+        "licenses": licenses("MIT", None),
         "externalReferences": [{"type": "vcs", "url": PROJECT_URL}],
     }
 

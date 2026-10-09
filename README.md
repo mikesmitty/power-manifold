@@ -39,3 +39,27 @@ documentation site.
 
 CI exports KiCad fabrication outputs when a board changes, and
 release-please cuts a release for each component.
+
+## License
+
+Copyright 2024-2026 Michael Smith.
+
+| Part | License |
+| --- | --- |
+| Hardware designs in `hardware/` | CERN-OHL-P-2.0 ([LICENSE-hardware](LICENSE-hardware)) |
+| Documentation: Markdown files (`.md`, `.mdx`) and the images in `img/`, `docs/public/` and `docs/src/assets/` | CC BY 4.0 ([LICENSE-docs](LICENSE-docs)) |
+| Everything else, including the firmware, the web page, the tools and the code of the documentation site | MIT ([LICENSE](LICENSE)) |
+
+Third-party material keeps its own terms:
+
+- `hardware/libraries/`: symbols, footprints and 3D models, most of them
+  from the KiCad libraries, EasyEDA and part makers.
+- The part makers' 3D models `hardware/charger-module/4691.step`,
+  `hardware/charger-module/MPQ4242.step` and `hardware/controller/4691.step`,
+  and any third-party models inside the board exports in `hardware/CAD/`.
+- `firmware/controller/lib/monocypher/`: CC0 or BSD-2-Clause, see its
+  `LICENCE.md`.
+
+Libraries that the firmware builds download, such as the Pico SDK and ST's
+USB-PD stack, are not part of this repository. Each firmware release lists them and
+their licenses in its SBOM (`.cdx.json`).

@@ -32,6 +32,9 @@ info:
 
     Worked examples are on the
     [HTTP API](https://docs.powermanifold.io/integrations/http-api/) page.
+  license:
+    name: MIT
+    identifier: MIT
 externalDocs:
   description: HTTP API guide with examples
   url: https://docs.powermanifold.io/integrations/http-api/
