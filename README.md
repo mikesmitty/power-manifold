@@ -47,7 +47,8 @@ Copyright 2024-2026 Michael Smith.
 | Part | License |
 | --- | --- |
 | Hardware designs in `hardware/` | CERN-OHL-P-2.0 ([LICENSE-hardware](LICENSE-hardware)) |
-| Documentation: Markdown files (`.md`, `.mdx`) and the images in `img/`, `docs/public/` and `docs/src/assets/` | CC BY 4.0 ([LICENSE-docs](LICENSE-docs)) |
+| Documentation: Markdown files (`.md`, `.mdx`), the screenshots in `docs/src/assets/` and the site icon `docs/public/favicon.svg` | CC BY 4.0 ([LICENSE-docs](LICENSE-docs)) |
+| Product renders: the images in `img/` and `docs/public/hero.webp` | None, all rights reserved |
 | Everything else, including the firmware, the web page, the tools and the code of the documentation site | MIT ([LICENSE](LICENSE)) |
 
 Third-party material keeps its own terms:
