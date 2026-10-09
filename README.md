@@ -54,9 +54,7 @@ Third-party material keeps its own terms:
 
 - `hardware/libraries/`: symbols, footprints and 3D models, most of them
   from the KiCad libraries, EasyEDA and part makers.
-- The part makers' 3D models `hardware/charger-module/4691.step`,
-  `hardware/charger-module/MPQ4242.step` and `hardware/controller/4691.step`,
-  and any third-party models inside the board exports in `hardware/CAD/`.
+- Third-party 3D models inside the board exports in `hardware/CAD/`.
 - `firmware/controller/lib/monocypher/`: CC0 or BSD-2-Clause, see its
   `LICENCE.md`.
 
