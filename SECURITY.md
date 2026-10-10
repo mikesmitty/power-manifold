@@ -24,15 +24,17 @@ A useful report includes:
 3. We prepare a fix and send you status updates at least every 14 days until it is released.
 4. We release the fix and publish an advisory. The advisory credits you unless you ask us not to.
 
-We ask that you keep the details private until the fix is released, or for 90 days from your report,
-whichever comes first. If a fix needs more time, we will explain why and agree on a new date with you.
+We ask that you keep the details private until 14 days after the fix is released, or for 90 days
+from your report, whichever comes first. Controllers install a new release automatically over the
+week after it comes out, so the 14 days let most of them update first. If a fix needs more time, we
+will explain why and agree on a new date with you.
 
 A problem found in a third-party component is reported to that component's maintainers as well.
 
 ## Scope
 
 - The controller firmware (`firmware/controller`), including its web page, HTTP API, MQTT client,
-  Wi-Fi setup over Bluetooth and the update mechanism.
+  Wi-Fi setup and the update mechanism.
 - The charger module firmware (`firmware/charger-module`).
 - The update server at `fw.powermanifold.io`.
 - The Wi-Fi setup page on the documentation site.

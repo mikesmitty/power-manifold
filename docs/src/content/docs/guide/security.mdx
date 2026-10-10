@@ -26,7 +26,7 @@ and the people on it, such as a home or office network.
 | --- | --- | --- |
 | Web interface and HTTP API | Only with HTTPS | Plain HTTP unless you install a certificate and turn HTTPS on. On plain HTTP the API token is sent unencrypted with each change. See [HTTPS](/integrations/https/). |
 | MQTT | Only with TLS | Unencrypted unless your broker supports TLS and you turn it on. See [MQTT security](/integrations/network/#mqtt-security). |
-| Wi-Fi setup over Bluetooth | No | Run setup only when no untrusted person is near the chassis. See [Wi-Fi setup](/setup/wifi-provisioning/). |
+| Wi-Fi setup | No | The Wi-Fi password is sent over a short-range wireless link. Run setup only when no untrusted person is near the chassis. See [Wi-Fi setup](/setup/wifi-provisioning/). |
 | Firmware updates | No | Each release is signed, and the controller installs only signed firmware. Encryption is not needed to keep an update from being altered. See [Firmware updates](/guide/updates/#security). |
 | Syslog | No | Messages go to your syslog server as plain UDP. |
 
