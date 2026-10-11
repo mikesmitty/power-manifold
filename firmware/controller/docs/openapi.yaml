@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Power Manifold API
-  version: 0.16.1 # x-release-please-version
+  version: 0.17.0 # x-release-please-version
   summary: Status, port control, settings and updates for the Power Manifold controller.
   description: |
     The controller's HTTP API. Every path is on the controller itself, at
