@@ -24,7 +24,7 @@ and the people on it, such as a home or office network.
 
 | Connection | Encrypted | Notes |
 | --- | --- | --- |
-| Web interface and HTTP API | Only with HTTPS | Plain HTTP unless you install a certificate and turn HTTPS on. On plain HTTP the API token is sent unencrypted with each change. See [HTTPS](/integrations/https/). |
+| Web interface and HTTP API | Only with HTTPS | Plain HTTP unless you install a certificate and turn HTTPS on. On plain HTTP the API token is sent unencrypted with each change, and with each read while **Require token for reading** is on. See [HTTPS](/integrations/https/). |
 | MQTT | Only with TLS | Unencrypted unless your broker supports TLS and you turn it on. See [MQTT security](/integrations/network/#mqtt-security). |
 | Wi-Fi setup | No | The Wi-Fi password is sent over a short-range wireless link. Run setup only when no untrusted person is near the chassis. See [Wi-Fi setup](/setup/wifi-provisioning/). |
 | Firmware updates | No | Each release is signed, and the controller installs only signed firmware. Encryption is not needed to keep an update from being altered. See [Firmware updates](/guide/updates/#security). |
@@ -39,9 +39,18 @@ controller belongs on a trusted network.
 - **The API token.** Every change over the network needs the API token:
   settings, port switching, updates, restarts and the web console. Reading
   the settings or the console log needs it too. Reading the status, the
-  fault log and the Prometheus metrics does not by default; turn on
-  **Require token for reading** in Settings (`auth_read` in the API) to
-  require the token for those as well.
+  fault log, the certificate details and the Prometheus metrics does not
+  by default; turn on **Require token for reading** in Settings
+  (`auth_read` in the API) to require the token for those as well. With
+  it on, the web page sends the token every second and a metrics scraper
+  sends it with every scrape, so turn on [HTTPS](/integrations/https/)
+  too. On plain HTTP the token crosses your network unencrypted each time.
+- **The token does not cover MQTT.** The controller publishes its status
+  to your MQTT broker and takes port, power, light and update commands
+  from it, whatever the token settings are. Anyone your broker lets
+  subscribe to the controller's topics can read the status, and anyone it
+  lets publish to them can make those changes. Limit both with your
+  broker's user accounts and access rules.
 - **No token, no changes.** A controller with no API token refuses every
   change until [first-time setup](/setup/first-time-setup/) sets one. Setup
   is open, to anyone on your network, only for an hour after Wi-Fi setup

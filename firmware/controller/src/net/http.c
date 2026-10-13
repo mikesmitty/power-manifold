@@ -578,16 +578,17 @@ static bool bearer_present(const conn_t *c, const char *token) {
 }
 
 // Every change over the network, the console log, the web console and the
-// OTA push need the API token, and the read endpoints need it too while
-// auth_read is on. A controller with no token stored refuses them all; the
-// only thing it accepts is the settings save that sets the first token,
-// through one of the setup doors below.
+// OTA push need the API token. A controller with no token stored refuses
+// them all; the only thing it accepts is the settings save that sets the
+// first token, through one of the setup doors below.
 static bool authorized(const conn_t *c) {
     return g_settings.api_token[0] && bearer_present(c, g_settings.api_token);
 }
 
+// The read endpoints need the token too while auth_read is on. With no token
+// stored they stay open, since there is no token for the page to ask for.
 static bool read_authorized(const conn_t *c) {
-    return !g_settings.auth_read || authorized(c);
+    return !g_settings.auth_read || !g_settings.api_token[0] || authorized(c);
 }
 
 // A refused request is a possible attempt at unauthorized access: one line

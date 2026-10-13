@@ -106,10 +106,11 @@ running firmware, the input voltage trim `vin cal`, and the bench tools
 ## Settings
 
 Open the **Settings** tab below the port cards. Its first row, which shows
-without the token unless **Require token for reading** is on, is about the unit itself: the controller firmware and the
-slot it runs from, the blade firmware, how long it has been running, why it
-last started, whether the lights are dimmed, whether an update is out, and
-the MQTT broker connection if one is set up. **Check for updates** asks for
+without the token unless **Require token for reading** is on, is about the
+unit itself: the controller firmware and the slot it runs from, the blade
+firmware, how long it has been running, why it last started, whether the
+lights are dimmed, whether an update is out, and the MQTT broker connection
+if one is set up. **Check for updates** asks for
 the newest release now, and **Install** appears when one is available.
 While a release waits to install automatically, **Postpone 7 days** and
 **Skip this version** appear too (see [Updates](/guide/updates/)). These
@@ -131,7 +132,8 @@ The settings and the pages that describe them:
 - **Device name** and **MQTT broker**: see
   [Home Assistant](/guide/home-assistant/).
 - **Require token for reading**: also requires the API token to view the
-  status, the fault log and the Prometheus metrics. See
+  status, the fault log, the certificate details and the Prometheus
+  metrics. Use it with [HTTPS](/integrations/https/). See
   [Security](/guide/security/#how-the-controller-protects-itself).
 - **Chassis budget** and **fan**: see
   [Sharing power](/guide/sharing-power/).

@@ -345,8 +345,7 @@ listed in the [console reference](/developers/controller/console/).
 ## Prometheus
 
 `GET /metrics` serves Prometheus text format with no login unless `auth_read`
-is on (then pass the API token as `bearer_token` in Prometheus). It includes the
-chassis totals, the input voltage, and every port metric labeled with `port`
+is on. It includes the chassis totals, the input voltage, and every port metric labeled with `port`
 and `name`. Blade temperatures are `pwrman_port_temperature_celsius` with a
 `sensor` label (`converter`, `plug`, `mcu`). `pwrman_http_refused_total` counts the requests refused
 since the controller started (see [What a refused request looks
@@ -359,4 +358,19 @@ scrape_configs:
   - job_name: power-manifold
     static_configs:
       - targets: ["pwrman.local"]
+```
+
+With `auth_read` on, Prometheus needs the API token and sends it with every
+scrape. Keep the token in a file, and scrape over [HTTPS](/integrations/https/)
+so the token does not cross the network unencrypted. The target is the name on
+the certificate, which also goes in [Host names](/integrations/network/#host-names):
+
+```yaml
+scrape_configs:
+  - job_name: power-manifold
+    scheme: https
+    authorization:
+      credentials_file: /etc/prometheus/pwrman-token
+    static_configs:
+      - targets: ["pwrman.home.example.com"]
 ```

@@ -79,6 +79,9 @@ paths:
       operationId: getStatus
       summary: Read the status
       description: Everything the web interface shows, as one object.
+      security:
+        - {}
+        - token: []
       responses:
         '200':
           description: The current status.
@@ -90,7 +93,7 @@ paths:
                 status:
                   $ref: '#/components/examples/Status'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/ReadUnauthorized'
 
   /api/v1/faults:
     get:
@@ -106,6 +109,9 @@ paths:
             type: integer
             minimum: 0
             default: 0
+      security:
+        - {}
+        - token: []
       responses:
         '200':
           description: One page of the fault log.
@@ -129,7 +135,7 @@ paths:
                     contract_w: 27.0
                     text: ocp
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/ReadUnauthorized'
 
   /api/v1/faults/clear:
     post:
@@ -634,6 +640,9 @@ paths:
       tags: [HTTPS]
       operationId: getTls
       summary: Read the certificate details
+      security:
+        - {}
+        - token: []
       responses:
         '200':
           description: Whether HTTPS is on, and the installed certificate.
@@ -651,7 +660,7 @@ paths:
                 days_left: 83
                 sha256: '3F:9A:...:C1'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/ReadUnauthorized'
     post:
       tags: [HTTPS]
       operationId: installTls
@@ -917,6 +926,9 @@ paths:
         Prometheus text format: the chassis totals, the input voltage, and
         every port metric labeled with `port` and `name`. See
         [Prometheus](https://docs.powermanifold.io/integrations/http-api/#prometheus).
+      security:
+        - {}
+        - token: []
       responses:
         '200':
           description: The metrics.
@@ -930,7 +942,7 @@ paths:
                 # TYPE pwrman_port_power_watts gauge
                 pwrman_port_power_watts{port="1",name="Laptop"} 54.30
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/ReadUnauthorized'
         '503':
           description: Another scrape is still being sent. Try again.
           content:
@@ -972,6 +984,14 @@ components:
             noToken:
               value:
                 error: 'no API token set yet: finish first-time setup first'
+    ReadUnauthorized:
+      description: auth_read is on and the token is missing or wrong.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: bearer token required
     SettingsLocked:
       description: |
         The token is missing or wrong. On a controller with no token yet, the

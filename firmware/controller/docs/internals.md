@@ -368,7 +368,10 @@ host-tested.
 
 Status, faults, the certificate details and `/metrics` need no token by
 default and are protected by the Host check alone; the `auth_read` setting
-(layout version 22) requires the token for them too.
+(layout version 22) requires the token for them too while one is stored. The
+page sends the token on these reads only after one is refused or while its
+settings show `auth_read` on, so it does not cross plain HTTP every second
+for nothing.
 
 Every refusal (401, 403, 415) is logged as one line on the console, and so
 in syslog, with the method, path, client address, status and reason:

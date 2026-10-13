@@ -109,7 +109,7 @@ typedef struct {
     // -- added in layout version 21 --
     uint8_t  https;            // 1: the web server listens on 443 and port 80 only redirects (net/https.h)
     // -- added in layout version 22 --
-    uint8_t  auth_read;        // 1: reading status, faults, certificate details and /metrics also needs the API token
+    uint8_t  auth_read;        // 1: reading status, faults, certificate details and /metrics also needs the API token, once one is stored
     uint32_t crc; // must remain last
 } settings_t;
 
