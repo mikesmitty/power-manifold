@@ -6,7 +6,8 @@ sidebar:
 ---
 
 Everything in the web interface is also available as JSON at
-`http://<name>.local/api/v1/`. Reading status needs no password. Anything
+`http://<name>.local/api/v1/`. Reading status needs no password unless
+`auth_read` is on. Anything
 that changes something needs your API token. A new controller has no token and
 refuses every change until one is set.
 [First-time setup](/setup/first-time-setup/) describes how to
@@ -204,6 +205,9 @@ A bad value gets `400` with the reason, such as
 | `GET /api/v1/tls` | The HTTPS certificate: `enabled`, `active`, `installed`, then `names`, `issuer`, `expires`, `days_left` and `sha256` when one is installed. |
 | `GET /metrics` | [Prometheus metrics](#prometheus). |
 
+With `auth_read` on, `GET /api/v1/status`, `GET /api/v1/faults`,
+`GET /api/v1/tls` and `GET /metrics` also need the token.
+
 **Status, per port:** `name`, `state`, `gen` (blade generation), `v`, `i`, `p`, `e`, `pdo`,
 `contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`,
 `fault`, `t_conv`, `t_plug`, `t_mcu`, `progress`, `update_due` (a
@@ -275,7 +279,7 @@ the same keys, so you can edit an export and post it back.
 
 | Area | Keys |
 | --- | --- |
-| Device | `name`, `token` |
+| Device | `name`, `token`, `auth_read` (`true`: also require the token to read status, faults, certificate details and `/metrics`) |
 | Wi-Fi | `wifi_ssid`, `wifi_pass` |
 | MQTT | `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`, `mqtt_tls_verify`, `mqtt_ca` (PEM) |
 | Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `hostnames`, `syslog_host`, `syslog_port`, `update_url`, `https` |
@@ -340,7 +344,8 @@ listed in the [console reference](/developers/controller/console/).
 
 ## Prometheus
 
-`GET /metrics` serves Prometheus text format with no login. It includes the
+`GET /metrics` serves Prometheus text format with no login unless `auth_read`
+is on (then pass the API token as `bearer_token` in Prometheus). It includes the
 chassis totals, the input voltage, and every port metric labeled with `port`
 and `name`. Blade temperatures are `pwrman_port_temperature_celsius` with a
 `sensor` label (`converter`, `plug`, `mcu`). `pwrman_http_refused_total` counts the requests refused

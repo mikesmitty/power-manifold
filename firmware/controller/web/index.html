@@ -223,6 +223,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
    <fieldset><legend>Device</legend>
     <label>Device name<span class="h">Hostname and MQTT topic id</span><input id="dname" name="dname" maxlength="31" pattern="[A-Za-z0-9\-]+" required></label>
     <label>API token<span class="h">Locks the API and this panel</span><input id="atok" name="atok" type="password" maxlength="32"></label>
+    <label>Require token for reading<span class="h">Also require the API token to read status, the fault log and Prometheus metrics</span><select id="aread" name="aread"><option value="off">Off</option><option value="on">On</option></select></label>
     <label>UTC offset (minutes)<span class="h">For example &minus;240 for UTC&minus;4</span><input id="tz" name="tz" pattern="[+\-&minus;]?[0-9]{1,3}" title="Whole minutes, &minus;720 to 840" required></label>
     <label>Update source<span class="h">Checked once a day for a newer release. Blank means never.</span><input id="upd" name="upd" maxlength="63"></label>
     <label>Automatic updates<span class="h">A newer release installs by itself 1 to 7 days after it is found, between 03:00 and 05:00. The ports stay on.</span><select id="uauto" name="uauto"><option value="on">On</option><option value="off">Off</option></select></label>
@@ -281,8 +282,11 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
 <script>
 const TH={auto:'Theme: automatic',light:'Theme: light',dark:'Theme: dark'},THB=document.getElementById('thm');THB.textContent=TH[theme];
 THB.onclick=()=>{theme=theme=='auto'?'light':theme=='light'?'dark':'auto';try{localStorage.theme=theme;}catch(e){}THB.textContent=TH[theme];paint();};
-const $=s=>document.getElementById(s),N=600,H=[],esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
-let last,sel=-1,ask=-1;
+const $=s=>document.getElementById(s),N=600,H=[],esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';'),
+hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{},
+BT='bearer token required',cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1)+'.':'Not allowed.';
+async function why(r){try{return(await r.json()).error||'';}catch(e){return'';}}
+let last,sel=-1,ask=-1,rl=0;
 const COL={green:'var(--green)',blue:'var(--blue)',white:'var(--mute)',amber:'var(--amber)',red:'var(--red)',cyan:'var(--cyan)',off:'var(--off)'};
 // The same colors and rates the chassis lights use (led_pattern.c).
 // A port whose blade is updating is dark, as on the chassis, and blinks
@@ -352,8 +356,8 @@ function draw(){if(!last)return;const d=last,P=d.ports,g=$('grid'),
  $('lgd').innerHTML=P.map((p,i)=>p.p>.05?`<span><i class="sw" style="background:${COL[hue(p)]}"></i>${esc(p.name)} <span class="num">${W(p.p)} W</span></span>`:'').join('')+
   `<span><i class="sw res" style="background:repeating-linear-gradient(135deg,var(--hatch) 0 3px,transparent 3px 6px);border:1px solid var(--line)"></i>reserved, not in use</span>`;}
 
-async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}catch(e){$('line').textContent=last&&(last.update.restarting||last.update.installing)?'Restarting into the new firmware.':'No response from the device.';return;}
- last=d;document.title=d.name;$('dn').textContent=d.name;
+async function tick(){let r,d;try{r=await fetch('/api/v1/status',{headers:hdr()});if(r.status==401){rl=1;$('line').textContent='Enter the API token in Settings to view status.';unlock('view status');return;}d=await r.json();}catch(e){$('line').textContent=last&&(last.update.restarting||last.update.installing)?'Restarting into the new firmware.':'No response from the device.';return;}
+ rl=0;last=d;document.title=d.name;$('dn').textContent=d.name;
  const fan=d.fan=='on'?'on':'off',L=[d.vin_v!=null&&['',W(d.vin_v,2)+' V',' in'],['Fan ',fan,d.fan_mode=='auto'?', automatic':''],
   ['',W(d.energy_kwh,2)+' kWh',' delivered'],['Firmware ',d.fw,(d.trial?', on trial':'')+(d.update.restarting?', restarting into '+d.update.latest:d.update.available?', '+d.update.latest+' available':'')]];
  $('line').innerHTML=L.filter(x=>x).map(x=>`<span>${x[0]}<b class="num">${esc(x[1])}</b>${x[2]}</span>`).join('');
@@ -369,7 +373,7 @@ async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}c
  const ua=d.update.available&&!busy&&!['off','none','skipped'].includes(d.update.auto);$('upp').hidden=!ua||d.update.auto=='postponed';$('usk').hidden=!ua;
  $('about').innerHTML=A.map(x=>`<div>${x[0]}<b class="num">${esc(x[1])}</b></div>`).join('');
  d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});if(H[i].length>N)H[i].shift();});draw();}
-tick();setInterval(tick,1000);
+tick();setInterval(()=>!rl&&tick(),1000);
 
 function pick(i){sel=sel==i?-1:i;draw();}
 $('slots').onclick=e=>{const b=e.target.closest('.slot');if(b)pick(+b.dataset.i);};
@@ -404,23 +408,20 @@ const Q=p=>[...F.querySelectorAll(`[name^=${p}]`)],PN=Q('pn'),PL=Q('pl'),PB=Q('p
 KEYS={dname:'name',mhost:'mqtt_host',mport:'mqtt_port',muser:'mqtt_user',bud:'budget_w',fmode:'fan_mode',fon:'fan_on_w',foff:'fan_off_w',fma:'fan_on_ma',
  led:'led_brightness',lboot:'led_boot',ipmode:'ip_mode',ip:'ip',mask:'netmask',gw:'gateway',dns:'dns',ntp:'ntp_server',mca:'mqtt_ca',slh:'syslog_host',
  slp:'syslog_port',upd:'update_url',hosts:'hostnames',chmw:'charged_mw',chmin:'charged_min',ldim:'led_dim',lidle:'led_idle_min',tz:'tz_offset_min'},
-NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1},
-hdr=()=>sessionStorage.tok?{Authorization:'Bearer '+sessionStorage.tok}:{},
-BT='bearer token required',cap=w=>w?w.charAt(0).toUpperCase()+w.slice(1)+'.':'Not allowed.';
-async function why(r){try{return(await r.json()).error||'';}catch(e){return'';}}
+NUM={mport:1,bud:1,fon:1,foff:1,fma:1,led:1,slp:1,chmw:1,chmin:1,ldim:1,lidle:1,tz:1};
 async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr()});}catch(e){M.textContent='No response from the device.';return null;}
  if(r.status==401){const w=await why(r);F.hidden=true;LK.hidden=w!=BT;
   M.textContent=w==BT?(sessionStorage.tok?'Token rejected. ':'')+'Enter the API token to edit settings.':cap(w);return null;}
  const d=await r.json();LK.hidden=true;F.hidden=false;
  for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';F.uauto.value=d.update_auto?'on':'off';
- F.https.value=d.https?'on':'off';tlsLoad();
+ F.aread.value=d.auth_read?'on':'off';F.https.value=d.https?'on':'off';tlsLoad();if(rl){rl=0;tick();flLoad();}
  PN.forEach((e,i)=>e.value=d.port_names[i]||'');PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);
  PV.forEach((e,i)=>e.value=d.port_max_v[i]);PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);
  const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';
  F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;
  M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks the API and this panel, so keep a copy.';return d;}
 F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value.replace('\u2212','-'):F[k].value;b.mqtt_port=b.mqtt_port||1883;
- b.update_auto=F.uauto.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
+ b.update_auto=F.uauto.value=='on';b.auth_read=F.aread.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
  b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
  b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;
  let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});d=await r.json();}catch(e){}
@@ -452,7 +453,7 @@ IMF.onchange=async()=>{const f=IMF.files[0];if(!f)return;const t=await f.text();
  M.textContent=d.reboot_required?'Imported. Reboot to apply the name, network and broker.':'Imported and applied.';};
 // HTTPS certificate: shown under the HTTPS setting, installed from the
 // key and chain files (acme.sh's .key and fullchain.cer), removed while off
-async function tlsLoad(){let d;try{d=await(await fetch('/api/v1/tls')).json();}catch(e){return;}
+async function tlsLoad(){let d;try{d=await(await fetch('/api/v1/tls',{headers:hdr()})).json();}catch(e){return;}
  $('tlsi').textContent=d.installed?d.names.join(', ')+', by '+d.issuer+', expires '+d.expires+(d.days_left!=null?' ('+d.days_left+' days)':'')+'.':'No certificate installed. Install the key and certificate chain first.';
  $('tlr').hidden=!d.installed;}
 const TLF=$('tlf');$('tlb').onclick=()=>TLF.click();
@@ -495,13 +496,13 @@ $('cin').onkeydown=e=>{const T=e.target;
 
 // fault log
 const at=f=>f.epoch?new Date(f.epoch*1000).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'up '+f.uptime_s+' s';
-async function flLoad(){let d;try{d=await(await fetch('/api/v1/faults')).json();}catch(e){$('flm').textContent='No response from the device.';return;}
+async function flLoad(){let r,d;try{r=await fetch('/api/v1/faults',{headers:hdr()});if(r.status==401){rl=1;$('flt').hidden=true;const w=await why(r);$('flm').textContent=w==BT?'Enter the API token in Settings to read the fault log.':cap(w);return;}d=await r.json();}catch(e){$('flm').textContent='No response from the device.';return;}
  const T=$('flt');if(!d.available){$('flm').textContent='No fault log on this board (it needs the data partition).';T.hidden=true;return;}
  $('flm').textContent=d.count?'':'No faults recorded.';T.hidden=!d.count;
  const nm=n=>n&&last?esc(last.ports[n-1].name):'Chassis';
  T.tBodies[0].innerHTML=d.faults.map(f=>`<tr><td class="num">${at(f)}</td><td>${f.port?'<span class="mute">'+f.port+'</span> '+nm(f.port):'Chassis'}</td>
   <td><span class="ty ${f.type}">${f.type.replace('_',' ')}</span> ${esc(f.text)}</td><td class="num">${f.type=='boot'||f.type=='bus'?'':W(f.power_w)+' / '+W(f.contract_w,0)}</td></tr>`).join('');}
-setInterval(()=>{if(!$('fl').hidden)flLoad();},10000);
+setInterval(()=>{if(!rl&&!$('fl').hidden)flLoad();},10000);
 $('flc').onclick=async()=>{let r;try{r=await fetch('/api/v1/faults/clear',{method:'POST',headers:hdr()});}catch(e){}
  if(r&&r.ok){flLoad();return;}if(r&&r.status==401){const w=await why(r);if(w==BT)unlock('clear the fault log');else $('flm').textContent=cap(w);return;}$('flm').textContent='Clear failed.';};
 flLoad();

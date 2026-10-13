@@ -39,7 +39,9 @@ controller belongs on a trusted network.
 - **The API token.** Every change over the network needs the API token:
   settings, port switching, updates, restarts and the web console. Reading
   the settings or the console log needs it too. Reading the status, the
-  fault log and the Prometheus metrics does not.
+  fault log and the Prometheus metrics does not by default; turn on
+  **Require token for reading** in Settings (`auth_read` in the API) to
+  require the token for those as well.
 - **No token, no changes.** A controller with no API token refuses every
   change until [first-time setup](/setup/first-time-setup/) sets one. Setup
   is open, to anyone on your network, only for an hour after Wi-Fi setup

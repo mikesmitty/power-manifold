@@ -20,6 +20,7 @@ static void test_mask_secrets(void) {
     MT_ASSERT(!strcmp(mask("mqtt tls on"), "mqtt tls on"));
     MT_ASSERT(!strcmp(mask("token abcdef0123"), "token " CLI_LINE_MASK));
     MT_ASSERT(!strcmp(mask("token clear"), "token clear"));
+    MT_ASSERT(!strcmp(mask("token read on"), "token read on"));
     MT_ASSERT(!strcmp(mask("token"), "token"));
 }
 

@@ -44,7 +44,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `https remove` | remove the certificate; refused while HTTPS is on |
 | `syslog <host> [port]` / `syslog off` | mirror the console to a UDP syslog host |
 | `name <device-name>` | hostname and topic id |
-| `token <t>\|clear` | API bearer token; with none stored the network API refuses every change until one is set here, through Improv, or in the first hour on Ethernet |
+| `token <t>\|clear` / `token read [on\|off]` | API bearer token, and whether reading status, the fault log, the certificate details and `/metrics` also requires it; with no token stored the network API refuses every change until one is set here, through Improv, or in the first hour on Ethernet |
 | `budget <watts>` | chassis power budget |
 | `port <n> on\|off\|reset\|srccap\|update` | port control; `update` writes the bundled gen-3 blade firmware over whatever the blade runs |
 | `port <n> priority <0-255>` | 0 = highest; sheds from the bottom |

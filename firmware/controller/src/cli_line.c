@@ -35,7 +35,7 @@ void cli_line_mask(const char *in, char *out, size_t cap) {
     } else if (word_is(word, wl, "token")) {
         const char *q = p, *arg;
         size_t al = next_word(&q, &arg);
-        if (!word_is(arg, al, "clear")) secret = 1;
+        if (!word_is(arg, al, "clear") && !word_is(arg, al, "read")) secret = 1;
     }
 
     size_t len = 0;

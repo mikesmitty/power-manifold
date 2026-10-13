@@ -11,7 +11,8 @@ info:
     request with `307 Temporary Redirect` to the same path over HTTPS.
 
     **Authentication.** Reading the status, the fault log, the certificate
-    details and the metrics needs no credential. Everything else needs the API
+    details and the metrics needs no credential unless `auth_read` is on.
+    Everything else (and those four when `auth_read` is on) needs the API
     token as a bearer token: `Authorization: Bearer <token>`. A controller with
     no token refuses every change until
     [first-time setup](https://docs.powermanifold.io/setup/first-time-setup/)
@@ -88,6 +89,8 @@ paths:
               examples:
                 status:
                   $ref: '#/components/examples/Status'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /api/v1/faults:
     get:
@@ -125,6 +128,8 @@ paths:
                     power_w: 26.4
                     contract_w: 27.0
                     text: ocp
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /api/v1/faults/clear:
     post:
@@ -645,6 +650,8 @@ paths:
                 expires: '2026-12-30'
                 days_left: 83
                 sha256: '3F:9A:...:C1'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [HTTPS]
       operationId: installTls
@@ -922,6 +929,8 @@ paths:
                 pwrman_total_power_watts 110.42
                 # TYPE pwrman_port_power_watts gauge
                 pwrman_port_power_watts{port="1",name="Laptop"} 54.30
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '503':
           description: Another scrape is still being sent. Try again.
           content:
@@ -1525,6 +1534,9 @@ components:
         update_auto:
           type: boolean
           description: New releases install by themselves.
+        auth_read:
+          type: boolean
+          description: Also require the API token to read status, the fault log, the certificate details and Prometheus metrics.
         budget_w:
           type: integer
           minimum: 15

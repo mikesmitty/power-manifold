@@ -578,11 +578,16 @@ static bool bearer_present(const conn_t *c, const char *token) {
 }
 
 // Every change over the network, the console log, the web console and the
-// OTA push need the API token. A controller with no token stored refuses
-// them all; the only thing it accepts is the settings save that sets the
-// first token, through one of the setup doors below.
+// OTA push need the API token, and the read endpoints need it too while
+// auth_read is on. A controller with no token stored refuses them all; the
+// only thing it accepts is the settings save that sets the first token,
+// through one of the setup doors below.
 static bool authorized(const conn_t *c) {
     return g_settings.api_token[0] && bearer_present(c, g_settings.api_token);
+}
+
+static bool read_authorized(const conn_t *c) {
+    return !g_settings.auth_read || authorized(c);
 }
 
 // A refused request is a possible attempt at unauthorized access: one line
@@ -1039,9 +1044,17 @@ static void handle_request(conn_t *c) {
         // a query string (an older Improv redirect, a bookmark) gets the page too
         respond_static(c, 200, "OK", "text/html", INDEX_HTML, sizeof(INDEX_HTML) - 1, false);
     } else if (!strncmp(c->req, "GET /api/v1/status", 18)) {
+        if (!read_authorized(c)) {
+            respond_unauthorized(c);
+            return;
+        }
         build_status_json(json, sizeof(json));
         respond(c, 200, "OK", "application/json", json);
     } else if (!strncmp(c->req, "GET /metrics", 12)) {
+        if (!read_authorized(c)) {
+            respond_unauthorized(c);
+            return;
+        }
         if (metrics_busy()) {
             respond(c, 503, "Service Unavailable", "text/plain", "scrape in progress");
             return;
@@ -1078,9 +1091,17 @@ static void handle_request(conn_t *c) {
         else
             respond_static(c, 200, "OK", "text/plain; charset=utf-8", out, n, true);
     } else if (!strncmp(c->req, "GET /api/v1/tls", 15) && (c->req[15] == ' ' || c->req[15] == '?')) {
+        if (!read_authorized(c)) {
+            respond_unauthorized(c);
+            return;
+        }
         https_json(json, sizeof(json), net_epoch());
         respond(c, 200, "OK", "application/json", json);
     } else if (!strncmp(c->req, "GET /api/v1/faults", 18)) {
+        if (!read_authorized(c)) {
+            respond_unauthorized(c);
+            return;
+        }
         int offset = 0;
         const char *q = strstr(c->req, "?offset=");
         if (q) offset = atoi(q + 8);

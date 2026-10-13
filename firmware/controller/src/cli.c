@@ -86,6 +86,7 @@ static void print_help(void) {
            "                               mirror the console to a UDP syslog host (RFC 5424)\n"
            "  name <device-name>           hostname / topic id\n"
            "  token <t>|clear              REST API bearer token\n"
+           "  token read [on|off]          also require the token to read status, faults and metrics\n"
            "  budget <watts>               chassis power budget\n"
            "  port <1-%d> on|off|reset|srccap|update\n"
            "                               update: write the bundled gen-3 blade firmware over what it runs\n"
@@ -692,7 +693,19 @@ static void run_line(char *l) {
         printf("name set; 'save' then 'reboot' to apply\n");
     } else if (!strcmp(cmd, "token")) {
         const char *t = strtok_r(NULL, " \t", &save);
-        if (!t) { printf("usage: token <t>|clear\n"); return; }
+        if (t && !strcmp(t, "read")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (!v) {
+                printf("token read: %s\n", g_settings.auth_read ? "on" : "off");
+            } else if (!strcmp(v, "on") || !strcmp(v, "off")) {
+                g_settings.auth_read = !strcmp(v, "on");
+                printf("token read: %s ('save' to persist; applies at once)\n", v);
+            } else {
+                printf("usage: token read [on|off]\n");
+            }
+            return;
+        }
+        if (!t) { printf("usage: token <t>|clear | token read [on|off]\n"); return; }
         snprintf(g_settings.api_token, sizeof(g_settings.api_token), "%s",
                  strcmp(t, "clear") ? t : "");
         printf("token %s\n", g_settings.api_token[0]

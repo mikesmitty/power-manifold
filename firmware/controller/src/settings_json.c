@@ -51,9 +51,9 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
     off = put_str(out, cap, off, "mqtt_host", s->mqtt_host);
     off = putf(out, cap, off, "\"mqtt_port\":%u,", s->mqtt_port);
     off = put_str(out, cap, off, "mqtt_user", s->mqtt_user);
-    off = putf(out, cap, off, "\"mqtt_pass_set\":%s,\"token_set\":%s,\"setup\":%s,",
+    off = putf(out, cap, off, "\"mqtt_pass_set\":%s,\"token_set\":%s,\"auth_read\":%s,\"setup\":%s,",
                s->mqtt_pass[0] ? "true" : "false", s->api_token[0] ? "true" : "false",
-               o->setup ? "true" : "false");
+               s->auth_read ? "true" : "false", o->setup ? "true" : "false");
     off = putf(out, cap, off, "\"budget_w\":%lu,\"fan_mode\":\"%s\",\"fan_on_w\":%u,"
                "\"fan_off_w\":%u,\"fan_on_ma\":%u,\"led_brightness\":%u,\"led_boot\":\"%s\",",
                (unsigned long)(s->budget_mw / 1000u),
@@ -263,6 +263,7 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         if (!got_verify) verify = s->mqtt_tls != MQTT_TLS_UNVERIFIED;
         s->mqtt_tls = !tls ? MQTT_TLS_OFF : verify ? MQTT_TLS_VERIFIED : MQTT_TLS_UNVERIFIED;
     }
+    if (json_get_bool(body, "auth_read", &b)) s->auth_read = b;
     if (json_get_bool(body, "update_auto", &b)) s->update_auto = b;
     // whether a certificate is installed is the HTTP server's check
     if (json_get_bool(body, "https", &b)) s->https = b;

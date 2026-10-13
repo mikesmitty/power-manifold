@@ -366,8 +366,9 @@ host-tested.
   cross-site POST without a CORS preflight only with a form or `text/plain`
   type, so this keeps another site from setting the first token.
 
-Status, faults and `/metrics` need no token and are protected by the Host
-check alone.
+Status, faults, the certificate details and `/metrics` need no token by
+default and are protected by the Host check alone; the `auth_read` setting
+(layout version 22) requires the token for them too.
 
 Every refusal (401, 403, 415) is logged as one line on the console, and so
 in syslog, with the method, path, client address, status and reason:

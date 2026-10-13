@@ -106,7 +106,7 @@ running firmware, the input voltage trim `vin cal`, and the bench tools
 ## Settings
 
 Open the **Settings** tab below the port cards. Its first row, which shows
-without the token, is about the unit itself: the controller firmware and the
+without the token unless **Require token for reading** is on, is about the unit itself: the controller firmware and the
 slot it runs from, the blade firmware, how long it has been running, why it
 last started, whether the lights are dimmed, whether an update is out, and
 the MQTT broker connection if one is set up. **Check for updates** asks for
@@ -130,6 +130,9 @@ The settings and the pages that describe them:
 
 - **Device name** and **MQTT broker**: see
   [Home Assistant](/guide/home-assistant/).
+- **Require token for reading**: also requires the API token to view the
+  status, the fault log and the Prometheus metrics. See
+  [Security](/guide/security/#how-the-controller-protects-itself).
 - **Chassis budget** and **fan**: see
   [Sharing power](/guide/sharing-power/).
 - **Port names, current limits, voltage caps, state at power-up, switch off
