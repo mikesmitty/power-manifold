@@ -59,7 +59,6 @@ static void test_web_refusal(void) {
     MT_ASSERT(cli_line_web_refusal("status") == NULL);
     MT_ASSERT(cli_line_web_refusal("tokens") == NULL);
     MT_ASSERT(cli_line_web_refusal("save") == NULL);
-    MT_ASSERT(cli_line_web_refusal("ups") == NULL);
     MT_ASSERT(!strcmp(cli_line_web_refusal("vin cal 24.13"), "vin cal"));
     MT_ASSERT(!strcmp(cli_line_web_refusal("vin  cal reset"), "vin cal"));
     MT_ASSERT(cli_line_web_refusal("vin") == NULL);

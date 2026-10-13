@@ -25,7 +25,6 @@
 #include "settings.h"
 #include "stack_probe.h"
 #include "update.h"
-#include "ups/ups.h"
 #include "vin.h"
 
 #define WATCHDOG_TIMEOUT_MS 5000
@@ -101,7 +100,6 @@ int main(void) {
     cli_init();
     net_init();
     http_init();
-    ups_init(); // probes the UPS header; harmless with nothing plugged in
     button_init(); // the front-panel button (GP22)
 
     if (!update_key_count())
@@ -124,7 +122,6 @@ int main(void) {
     uint8_t led_flags_sent = 0; // engine's view starts with no chassis overlay
     uint8_t led_level_sent = g_settings.led_brightness; // what the engine applied at init
     uint8_t led_base_seen = g_settings.led_brightness;
-    bool ups_seen = false; // Home Assistant learns about the UPS when it shows up
     bool bus_low_seen = false; // the bus low flag as last recorded in the fault log
     uint8_t hold_sent = 0; // button hold progress the chain is showing
 
@@ -138,17 +135,12 @@ int main(void) {
         update_check_poll(now_ms);
         update_auto_poll(now_ms);
         log_sink_poll(now_ms);
-        ups_poll(now_ms);
         vin_poll(now_ms);
         if (bus_cap_poll(now_ms, vin_mv())) {
             engine_cmd_t c = {.op = CMD_SET_CEILING, .arg = bus_cap_ma()};
             ipc_cmd_push(&c);
             if (bus_cap_on()) printf("bus: %s, ports capped at %u A\n", vin_status_str(), BUS_CAP_MA / 1000);
             else printf("bus: %s for %u s, port cap lifted\n", vin_status_str(), BUS_CAP_HOLD_MS / 1000);
-        }
-        if (ups_present() != ups_seen) {
-            ups_seen = ups_present();
-            mqtt_names_changed(); // re-run discovery: the UPS entities come and go with it
         }
 
         // chassis conditions shown on the chassis light (led_pattern.h)

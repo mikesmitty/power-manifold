@@ -24,9 +24,9 @@ pico_board_cmake_set(PICO_CYW43_SUPPORTED, 1)
 #define PICO_RP2350A 1
 
 // --- UART ---
-// The only UART header is the UPS link (J5, JST SH: TX, GND, RX). Console
-// output goes over USB (and RTT); this is where stdio_uart would land if it
-// were ever enabled.
+// J5 (JST SH: TX, GND, RX) brings out UART0 on GP12/GP13. Console output
+// goes over USB (and RTT); this is where stdio_uart would land if it were
+// ever enabled.
 #ifndef PICO_DEFAULT_UART
 #define PICO_DEFAULT_UART 0
 #endif

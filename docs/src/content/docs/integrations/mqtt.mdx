@@ -34,11 +34,9 @@ Ports are numbered 1 to 6.
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`,
 `led_mode`, `fw`, `boot` (why it last started), `problem` and `problems`,
 `charged_mw`, `charged_min`, the input voltage `vin_v` (`vin` is false
-when it isn't measured), `ceiling_ma` (3000 while [low input voltage caps
+when it isn't measured), and `ceiling_ma` (3000 while [low input voltage caps
 the ports](/guide/troubleshooting/#ports-capped-at-3-a),
-else 0), `ups` (true once a [UPS](/integrations/ups/)
-answers) and, with one connected, `ups_ac`, `ups_on_battery`,
-`ups_charging`, `ups_batt_v`, `ups_mains_v`, `ups_load_a`.
+else 0).
 
 **`port/<n>/telemetry` fields:** `state`, `gen` (blade generation), `v`,
 `i`, `p`, `e` (kWh), `contract_w`, `pdo`, `prio`, `limit_ma`, `max_v`,

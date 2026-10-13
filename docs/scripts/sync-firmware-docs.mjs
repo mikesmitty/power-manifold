@@ -38,7 +38,7 @@ const PAGES = [
 		slug: 'controller/internals',
 		order: 2,
 		description:
-			'How the RP2350 controller firmware is put together: cores, GPIO map, blade generations, warm starts, bus monitoring, wired Ethernet, the UPS link, the fan and the logs.',
+			'How the RP2350 controller firmware is put together: cores, GPIO map, blade generations, warm starts, bus monitoring, wired Ethernet, the fan and the logs.',
 	},
 	{
 		src: 'firmware/controller/docs/flash-and-updates.md',

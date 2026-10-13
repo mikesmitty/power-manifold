@@ -43,15 +43,13 @@
 #include "settings_json.h"
 #include "update.h"
 #include "update_latest.h"
-#include "ups/lad_proto.h"
-#include "ups/ups.h"
 #include "vin.h"
 
 #define HTTP_PORT       80
 #define HTTPS_PORT      443
 #define MAX_CONNS       4
 #define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
-#define STATUS_JSON_MAX 4192 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the UPS block, the bus voltage, the chassis light, and the update and net blocks, worst case
+#define STATUS_JSON_MAX 4192 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the bus voltage, the chassis light, and the update and net blocks, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -249,33 +247,6 @@ static void respond_static(conn_t *c, int code, const char *status,
     send_more(c);
 }
 
-// "ups":{...}, — the supply's readings; just present:false without one
-static void build_ups_json(char *out, size_t cap) {
-    const ups_state_t *s = ups_state();
-    if (!s->present) {
-        snprintf(out, cap, "\"ups\":{\"present\":false},");
-        return;
-    }
-    char fault[96];
-    ups_fault_text(fault, sizeof(fault)); // fixed words, nothing to escape
-    size_t off = (size_t)snprintf(out, cap,
-        "\"ups\":{\"present\":true,\"ac\":%s,\"on_battery\":%s,\"charging\":%s,\"full\":%s,"
-        "\"fault\":\"%s\",\"mains_v\":%.1f,\"batt_v\":%.2f,\"load_a\":%.2f,\"uvp_v\":%.2f,"
-        "\"cells\":[",
-        (s->status_l & LAD_ST_AC_OK) ? "true" : "false",
-        (s->status_l & LAD_ST_ON_BATTERY) ? "true" : "false",
-        (s->status_l & LAD_ST_CHARGING) ? "true" : "false",
-        (s->status_l & LAD_ST_CHG_FULL) ? "true" : "false", fault, s->mains_dv / 10.0,
-        s->batt_cv / 100.0, s->load_ca / 100.0, s->uvp_cv / 100.0);
-    for (int i = 0; i < 4 && off < cap; i++) {
-        if (s->cell_cv[i] == 0xFFFF)
-            off += (size_t)snprintf(out + off, cap - off, "%snull", i ? "," : "");
-        else
-            off += (size_t)snprintf(out + off, cap - off, "%s%.2f", i ? "," : "", s->cell_cv[i] / 100.0);
-    }
-    if (off < cap) snprintf(out + off, cap - off, "],\"status\":\"%s\"},", ups_status_str());
-}
-
 // What the chassis light is showing, so the page can draw it: the order
 // render_chassis (led_pattern.c) uses on the flags main.c sends it. Having no
 // network is left out, because a browser that loaded the page has one.
@@ -365,8 +336,7 @@ static void build_status_json(char *out, size_t cap) {
 #if PWRMAN_NET_ETH
     snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
 #endif
-    static char upsf[320], updf[320], netf[512]; // static: IRQ stack
-    build_ups_json(upsf, sizeof(upsf));
+    static char updf[320], netf[512]; // static: IRQ stack
     build_update_json(updf, sizeof(updf));
     build_net_json(netf, sizeof(netf));
     char vinf[16]; // a number, or null on a board without the divider
@@ -384,7 +354,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"fan_mode\":\"%s\",\"alert\":%s,\"improv\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
         "\"vin_v\":%s,\"ceiling_ma\":%lu,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
         "\"chassis_light\":\"%s\","
-        "\"blade_fw\":%s,%s%s%s\"ports\":[",
+        "\"blade_fw\":%s,%s%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
         flash_map_update_pending() ? "true" : "false",
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
@@ -395,7 +365,7 @@ static void build_status_json(char *out, size_t cap) {
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
         t.warm_start ? "true" : "false", vinf, (unsigned long)bus_cap_ma(),
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
-        led_sched_level(&g_settings, led_sched_current()), chassis_light_name(), bladef, upsf,
+        led_sched_level(&g_settings, led_sched_current()), chassis_light_name(), bladef,
         updf, netf);
 
     for (int i = 0; i < NUM_PORTS && off < cap; i++) {
@@ -551,19 +521,6 @@ static size_t build_metrics(char *out, size_t cap) {
         M_PUT("# TYPE pwrman_bus_volts gauge\npwrman_bus_volts %.2f\n", vin_mv() / 1000.0);
         M_PUT("# TYPE pwrman_bus_voltage_ok gauge\npwrman_bus_voltage_ok %d\n",
               (vin_low() || vin_high()) ? 0 : 1);
-    }
-    const ups_state_t *u = ups_state();
-    M_PUT("# TYPE pwrman_ups_present gauge\npwrman_ups_present %d\n", u->present ? 1 : 0);
-    if (u->present) {
-        M_PUT("# TYPE pwrman_ups_ac_ok gauge\npwrman_ups_ac_ok %d\n", (u->status_l & LAD_ST_AC_OK) ? 1 : 0);
-        M_PUT("# TYPE pwrman_ups_on_battery gauge\npwrman_ups_on_battery %d\n", (u->status_l & LAD_ST_ON_BATTERY) ? 1 : 0);
-        M_PUT("# TYPE pwrman_ups_charging gauge\npwrman_ups_charging %d\n", (u->status_l & LAD_ST_CHARGING) ? 1 : 0);
-        M_PUT("# TYPE pwrman_ups_battery_full gauge\npwrman_ups_battery_full %d\n", (u->status_l & LAD_ST_CHG_FULL) ? 1 : 0);
-        M_PUT("# TYPE pwrman_ups_fault gauge\npwrman_ups_fault %d\n", ups_fault() ? 1 : 0);
-        M_PUT("# TYPE pwrman_ups_mains_volts gauge\npwrman_ups_mains_volts %.1f\n", u->mains_dv / 10.0);
-        M_PUT("# TYPE pwrman_ups_battery_volts gauge\npwrman_ups_battery_volts %.2f\n", u->batt_cv / 100.0);
-        M_PUT("# TYPE pwrman_ups_load_amps gauge\npwrman_ups_load_amps %.2f\n", u->load_ca / 100.0);
-        M_PUT("# TYPE pwrman_ups_status_flags gauge\npwrman_ups_status_flags %u\n", u->status_l);
     }
 
     // per port: one line per metric per port, ports labelled by number and name

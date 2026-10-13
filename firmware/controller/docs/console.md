@@ -30,7 +30,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | Command | Purpose |
 | --- | --- |
 | `status` | port table (state — `upd NN%` while a blade is being written — contract, draw, current limit, voltage `cap`, priority, `boot` policy, `chg` once charged, a gen-3 blade's `conv` and `plug` temperatures) and chassis power |
-| `info` | firmware, slot and boot reason, links, addressing and time server, UPS supply, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
+| `info` | firmware, slot and boot reason, links, addressing and time server, bus voltage, broker, syslog sink, LED schedule and local time, problems, simulator state |
 | `wifi <ssid> [pass]` | WiFi credentials |
 | `improv [on\|off]` | Wi-Fi setup window |
 | `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
@@ -61,7 +61,6 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `led dim <0-255>`, `led night <HH:MM> <HH:MM>\|off`, `led idle <minutes>\|off` | dimmed level, night window, idle dimming |
 | `tz <+HH:MM\|-HH:MM>` | local time offset for the night window |
 | `faults [clear]` | persistent fault log |
-| `ups [buzzer on\|off]` | UPS supply readings, status bits, per-block voltages and link counters; `buzzer off` silences its alarm until the supply restarts |
 | `vin [cal <volts>\|cal reset]` | DC bus voltage with the raw count and gain trim; `cal 24.13` trims the reading to a meter's (then `save`) |
 | `button [short\|long]` | front-panel button input and state; `short` (wake the chain) / `long` (open Wi-Fi setup) act as if it had been pressed |
 | `export` | every setting as JSON, without passwords |

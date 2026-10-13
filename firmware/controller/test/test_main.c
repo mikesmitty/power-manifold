@@ -29,7 +29,6 @@ void run_update_auto_tests(void);
 void run_update_image_tests(void);
 void run_update_latest_tests(void);
 void run_update_sig_tests(void);
-void run_ups_tests(void);
 void run_vin_tests(void);
 void run_w6100_tests(void);
 void run_warm_tests(void);
@@ -63,7 +62,6 @@ int main(void) {
     run_update_image_tests();
     run_update_latest_tests();
     run_update_sig_tests();
-    run_ups_tests();
     run_vin_tests();
     run_w6100_tests();
     run_warm_tests();

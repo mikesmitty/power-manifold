@@ -132,7 +132,7 @@ real-blade build the command says so and does nothing.
 The engine core (state machine + budget arbiter) is hardware-free and runs
 natively against the same simulated drivers, and so does everything else
 with a seam under it (the settings store against a flash in RAM, the bus
-monitor against an emulated ADC, the button, the UPS protocol):
+monitor against an emulated ADC, the button):
 
 ```sh
 cmake -S test -B test/build

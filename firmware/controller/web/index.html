@@ -363,7 +363,7 @@ async function tick(){let d;try{d=await(await fetch('/api/v1/status')).json();}c
  const CL={bus_fault:['red fast','bus voltage out of range'],wifi_setup:['blue breathe','Wi-Fi setup open'],setup:['amber breathe','first-time setup open']}[d.chassis_light]||['green dim','all clear'];
  $('cl').className='led '+CL[0];$('cl').title='Chassis light: '+CL[1];
  const A=[['Firmware',d.fw+', slot '+d.slot+(d.trial?', on trial':'')],['Blade firmware',d.blade_fw||'\u2013'],['Running for',dur(d.uptime_s)],['Last start',d.boot],
-  ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')'],['Updates',upd(d.update)]];if(d.ups&&d.ups.present)A.push(['UPS',d.ups.status]);
+  ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')'],['Updates',upd(d.update)]];
  if(d.net.mqtt!='off')A.push(['MQTT broker',d.net.mqtt.replace(/_/g,' ')+(d.net.mqtt_problem?': '+d.net.mqtt_problem:'')]);
  const ub=$('uib');const busy=d.update.installing||d.update.restarting;ub.hidden=!d.update.available||busy;ub.textContent='Install '+d.update.latest;$('ucb').disabled=d.update.check=='checking';
  const ua=d.update.available&&!busy&&!['off','none','skipped'].includes(d.update.auto);$('upp').hidden=!ua||d.update.auto=='postponed';$('usk').hidden=!ua;

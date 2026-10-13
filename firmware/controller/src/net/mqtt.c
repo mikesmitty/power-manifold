@@ -27,8 +27,6 @@
 #include "settings.h"
 #include "update_check.h"
 #include "update_latest.h"
-#include "ups/lad_proto.h"
-#include "ups/ups.h"
 #include "bus_cap.h"
 #include "vin.h"
 
@@ -42,14 +40,13 @@
 // charge controls + the thermometers a gen-3 blade carries (published while
 // the port holds one, retracted for a gen-2 blade, left as they are while
 // the slot is empty or still probing); chassis sensors + fan + BLE
-// provisioning button + the UPS entities (published while a supply answers,
-// retracted otherwise; the last chassis step retracts the pre-select fan
+// provisioning button (the last chassis step retracts the pre-select fan
 // switch config)
 #define PORT_SENSOR_N    5
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
 #define PORT_PROTECT     (PORT_SENSOR_N + 13) // retracted: the setting was removed
 #define PORT_ENTITIES    (PORT_SENSOR_N + 14)
-#define CHASSIS_ENTITIES 25
+#define CHASSIS_ENTITIES 19
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -821,10 +818,8 @@ static void publish_fan_select(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
-// UPS entities exist only while a supply answers on the UPS header; without
-// one the config is retracted so a board that never had a UPS shows none.
-// An entity for hardware that may not be there (the UPS supply, the bus
-// voltage divider): published while it is, retracted otherwise.
+// An entity for hardware that may not be there (the bus voltage divider):
+// published while it is, retracted otherwise.
 static void publish_optional_entity(bool present, const char *component, const char *object,
                                     const char *name, const char *extra, const char *tpl) {
     discovery_config_topic(component, object);
@@ -915,47 +910,20 @@ static void discovery_publish(int i) {
         publish_led_mode_sensor();
         break;
     case 13:
-        publish_optional_entity(ups_present(), "binary_sensor", "ups_ac", "UPS AC input", "\"dev_cla\":\"plug\",",
-                           "{{ value_json.ups_ac }}");
-        break;
-    case 14:
-        publish_optional_entity(ups_present(), "binary_sensor", "ups_on_battery", "UPS on battery",
-                           "\"ic\":\"mdi:battery-arrow-down\",", "{{ value_json.ups_on_battery }}");
-        break;
-    case 15:
-        publish_optional_entity(ups_present(), "binary_sensor", "ups_charging", "UPS charging",
-                           "\"dev_cla\":\"battery_charging\",", "{{ value_json.ups_charging }}");
-        break;
-    case 16:
-        publish_optional_entity(ups_present(), "sensor", "ups_batt_v", "UPS battery voltage",
-                           "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
-                           "{{ value_json.ups_batt_v }}");
-        break;
-    case 17:
-        publish_optional_entity(ups_present(), "sensor", "ups_mains_v", "UPS AC voltage",
-                           "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
-                           "{{ value_json.ups_mains_v }}");
-        break;
-    case 18:
-        publish_optional_entity(ups_present(), "sensor", "ups_load_a", "UPS load current",
-                           "\"dev_cla\":\"current\",\"unit_of_meas\":\"A\"," MEASUREMENT,
-                           "{{ value_json.ups_load_a }}");
-        break;
-    case 19:
         publish_optional_entity(vin_fitted(), "sensor", "bus_v", "Bus voltage",
                            "\"dev_cla\":\"voltage\",\"unit_of_meas\":\"V\"," MEASUREMENT,
                            "{{ value_json.vin_v }}");
         break;
-    case 20:
+    case 14:
         publish_update_auto_switch();
         break;
-    case 21:
+    case 15:
         publish_update_button("postpone", "Postpone update 7 days", "mdi:update-clock");
         break;
-    case 22:
+    case 16:
         publish_update_button("skip", "Skip this update", "mdi:debug-step-over");
         break;
-    case 23:
+    case 17:
         publish_blade_update_entity();
         break;
     default:
@@ -1054,7 +1022,6 @@ static void publish_telemetry(void) {
     static char problems_json[256]; // labels are user text
     unsigned n_problems = health_problems(&t, problems, sizeof(problems));
     json_escape(problems_json, sizeof(problems_json), problems);
-    const ups_state_t *u = ups_state(); // zeros while absent: the entities are retracted then
     snprintf(topic_buf, sizeof(topic_buf), "%s/status", base);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
@@ -1062,8 +1029,6 @@ static void publish_telemetry(void) {
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
              "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
              "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\","
-             "\"ups\":%s,\"ups_ac\":\"%s\",\"ups_on_battery\":\"%s\",\"ups_charging\":\"%s\","
-             "\"ups_batt_v\":%.2f,\"ups_mains_v\":%.1f,\"ups_load_a\":%.2f,"
              "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_ma\":%lu}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
@@ -1073,10 +1038,7 @@ static void publish_telemetry(void) {
              g_settings.led_brightness, FW_VERSION, boot_text,
              n_problems ? "ON" : "OFF", problems_json, g_settings.charged_mw,
              g_settings.charged_min, led_mode_name(led_sched_current()),
-             u->present ? "true" : "false", (u->status_l & LAD_ST_AC_OK) ? "ON" : "OFF",
-             (u->status_l & LAD_ST_ON_BATTERY) ? "ON" : "OFF",
-             (u->status_l & LAD_ST_CHARGING) ? "ON" : "OFF", u->batt_cv / 100.0,
-             u->mains_dv / 10.0, u->load_ca / 100.0, vin_fitted() ? "true" : "false",
+             vin_fitted() ? "true" : "false",
              vin_mv() / 1000.0, (unsigned long)bus_cap_ma());
     publish(topic_buf, payload_buf, 0, 1);
     publish_blade_state(&t);

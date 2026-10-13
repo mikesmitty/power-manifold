@@ -4,7 +4,7 @@
 Fails when the two disagree on any of these:
   * the routes: every "GET /..." or "POST /..." that src/net/http.c answers
     is a path and method in the description, and the reverse;
-  * the reply objects built field by field (the status and its ups, update
+  * the reply objects built field by field (the status and its update
     and net blocks, a port, the fault log and one fault, the certificate
     details): the keys in each builder are exactly the properties of its
     schema, in both directions;
@@ -235,11 +235,10 @@ JSON_KEY = re.compile(r'\\"([a-z0-9_]+)\\":')
 # Builders whose keys must match a schema exactly. The keys up to and
 # including `head_end` belong to the first schema, the rest to the second:
 # the status object's own fields end at "ports" and each port's follow, and
-# a block such as "ups":{...} names its parent's key first. A repeat of
+# a block such as "update":{...} names its parent's key first. A repeat of
 # head_end in the tail is that same parent key, built in another branch.
 BUILDERS = [
     ("src/net/http.c", "build_status_json", "Status", "ports", "Port"),
-    ("src/net/http.c", "build_ups_json", "Status", "ups", "Ups"),
     ("src/net/http.c", "build_update_json", "Status", "update", "UpdateStatus"),
     ("src/net/http.c", "build_net_json", "Status", "net", "NetStatus"),
     ("src/net/http.c", "build_faults_json", "FaultLog", "faults", "Fault"),

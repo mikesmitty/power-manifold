@@ -42,8 +42,6 @@ add_executable(engine_tests
     ../src/net/tls_bundle.c
     ../src/net/jsonlite.c
     ../src/net/w6100.c
-    ../src/ups/lad_proto.c
-    ../src/ups/ups.c
     ../src/vin.c
     ../src/update_image.c
     ../src/update_auto.c
@@ -80,7 +78,6 @@ add_executable(engine_tests
     test_update_auto.c
     test_update_latest.c
     test_update_sig.c
-    test_ups.c
     test_vin.c
     test_w6100.c
     test_warm.c
@@ -91,7 +88,6 @@ target_include_directories(engine_tests PRIVATE
     ../src
     ../src/engine
     ../src/net
-    ../src/ups
     ../../charger-module/include # blade_regs.h, shared with the gen-3 blade firmware
     ../lib/monocypher
     support

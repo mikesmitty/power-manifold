@@ -50,7 +50,6 @@ curl $PM/api/v1/status
   "problem": false, "problems": "",
   "led_mode": "normal", "led_now": 48,
   "chassis_light": "ok", "blade_fw": "0.2.0",
-  "ups": {"present": false},
   "ports": [
     {"name": "Laptop", "state": "active", "gen": 3,
      "attached": true, "charged": false, "pdo": 5,
@@ -215,7 +214,7 @@ blade's firmware version, `null` when unknown), `silent`.
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `improv`, `uptime_s`,
 `fw`, `blade_fw`, `slot`, `trial`, `boot`, `warm_start`, `vin_v`,
 `ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`,
-`chassis_light`, and the `update`, `net` and `ups` objects.
+`chassis_light`, and the `update` and `net` objects.
 
 **Status, `update`:** `available` (a newer release is known), `latest`
 (its version, or `null`), `check` (`off`, `never`, `checking`, `ok` or
@@ -342,10 +341,9 @@ listed in the [console reference](/developers/controller/console/).
 ## Prometheus
 
 `GET /metrics` serves Prometheus text format with no login. It includes the
-chassis totals, the input voltage, UPS readings when one is connected, and
-every port metric labeled with `port` and `name`. Blade temperatures are
-`pwrman_port_temperature_celsius` with a `sensor` label (`converter`,
-`plug`, `mcu`). `pwrman_http_refused_total` counts the requests refused
+chassis totals, the input voltage, and every port metric labeled with `port`
+and `name`. Blade temperatures are `pwrman_port_temperature_celsius` with a
+`sensor` label (`converter`, `plug`, `mcu`). `pwrman_http_refused_total` counts the requests refused
 since the controller started (see [What a refused request looks
 like](#examples)). With a certificate installed,
 `pwrman_https_certificate_expiry_seconds` is when it expires, as a Unix

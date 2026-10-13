@@ -907,9 +907,8 @@ paths:
       operationId: getMetrics
       summary: Prometheus metrics
       description: |
-        Prometheus text format: the chassis totals, the input voltage, UPS
-        readings when one is connected, and every port metric labeled with
-        `port` and `name`. See
+        Prometheus text format: the chassis totals, the input voltage, and
+        every port metric labeled with `port` and `name`. See
         [Prometheus](https://docs.powermanifold.io/integrations/http-api/#prometheus).
       responses:
         '200':
@@ -1054,7 +1053,6 @@ components:
         - led_now
         - chassis_light
         - blade_fw
-        - ups
         - update
         - net
         - ports
@@ -1150,8 +1148,6 @@ components:
         blade_fw:
           type: [string, 'null']
           description: The blade firmware version this controller installs on its blades.
-        ups:
-          $ref: '#/components/schemas/Ups'
         update:
           $ref: '#/components/schemas/UpdateStatus'
         net:
@@ -1281,48 +1277,6 @@ components:
           description: |
             The blade has stopped answering. The port stays powered, and the
             readings are its last answer.
-
-    Ups:
-      type: object
-      required: [present]
-      description: The UPS link. Only `present` when no UPS is connected.
-      properties:
-        present:
-          type: boolean
-        ac:
-          type: boolean
-          description: AC power is present.
-        on_battery:
-          type: boolean
-        charging:
-          type: boolean
-        full:
-          type: boolean
-          description: The battery is fully charged.
-        fault:
-          type: string
-          description: Battery faults in words; empty when there are none.
-        mains_v:
-          type: number
-          description: AC input voltage.
-        batt_v:
-          type: number
-          description: Battery voltage.
-        load_a:
-          type: number
-          description: Load current, in amps.
-        uvp_v:
-          type: number
-          description: The battery voltage at which the UPS cuts off.
-        cells:
-          type: array
-          maxItems: 4
-          items:
-            type: [number, 'null']
-          description: Cell voltages; `null` for a cell the UPS does not report.
-        status:
-          type: string
-          description: A one-line summary in words.
 
     UpdateStatus:
       type: object
@@ -1792,8 +1746,6 @@ components:
         led_now: 48
         chassis_light: ok
         blade_fw: 0.2.0
-        ups:
-          present: false
         update:
           available: false
           latest: 0.16.1

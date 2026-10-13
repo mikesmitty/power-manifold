@@ -47,7 +47,6 @@ see [Boards](building.md#boards)).
 | EXP_INT# | GP6 | GP6 | TCA9539 interrupt; open-drain, internal pull-up only |
 | MUX_RST# | GP7 | GP8 | TCA9548A reset; on the carrier released = high impedance (the backplane's 10 kΩ takes it to 5 V), asserted = driven low |
 | EXP_RST# | GP8 | GP1 | TCA9539 reset, same drive as MUX_RST# |
-| UPS_TX/UPS_RX | GP12/GP13 | GP12/GP13 | UART0, 9600 8N1, to a Mean Well LAD-xxxBU UPS supply (the card's UPS header) |
 | SPI0 MISO/CS/SCK/MOSI | GP16–GP19 | GP16–GP19 | W6100 wired Ethernet (WIZnet EVB-Pico2 pinout) |
 | ETH_RST# | GP20 | GP20 | W6100 reset |
 | ETH_INT# | GP21 | GP21 | W6100 interrupt, level-low while a frame waits |
@@ -312,33 +311,6 @@ management socket: link, DHCP, mDNS and the web UI over a cable. The
 wired-beside-WiFi switchover has so far only run in the host tests, since
 the EVB has no radio.
 
-## UPS supply
-
-A Mean Well LAD-xxxBU security/UPS power supply (`B` is the 27.6 V output
-for a 24 V battery, where `A` is 13.8 V and `C` about 41 V; the `U` variants
-have the serial port, the plain ones only open-collector status pins) plugs
-into the controller card's UPS header: 3.3 V TTL UART0 on GP12/GP13
-through the card's 1 kΩ series resistors, 9600 8N1, grounds common through
-the supply's V−. The link is the LAD manual's own frame — read 0x55 / write
-0xAA, a length byte, a 16-bit address, data, CRC-8 (polynomial 0x07,
-checked against the manual's worked examples) — not Modbus. The firmware
-probes the header every 5 s until something answers, then reads the status
-word, AC voltage, load current and battery voltage every second and the
-per-block voltages and undervoltage cutoff every ten, spacing requests the
-20 ms the supply asks for and giving up on a reply after 100 ms; five
-missed replies in a row or five silent seconds mark it absent again. What
-comes back is the `ups` block in the status JSON, the `ups_*` fields and
-Home Assistant entities over MQTT, `pwrman_ups_*` on `/metrics`, the UPS
-part of the chassis summary on the page, `ups` and a line in `info` on the
-console, and log lines for AC power lost/restored, battery full and battery
-faults. Running on battery, or a battery fault (missing, reversed,
-under/overvoltage, unbalanced, discharge overload, a bad block), raises the
-problem indicator. `ups buzzer off` silences the supply's alarm; the
-setting lives in the supply and is lost when it restarts, as its manual
-says of every write. The driver is tested against an emulated supply in
-the host tests (`test_ups.c`) and is as yet untested with a real LAD
-supply.
-
 ## API description
 
 [`openapi.yaml`](openapi.yaml) describes the HTTP API in OpenAPI 3.1. The
@@ -351,7 +323,7 @@ The `openapi` host test (`tools/check_openapi.py`) fails when the file and
 the code disagree on:
 
 - the routes in `src/net/http.c`, in both directions;
-- the keys of each reply object built field by field (status, port, UPS,
+- the keys of each reply object built field by field (status, port,
   update, network, fault log, fault, certificate), matched exactly against
   its schema;
 - the fixed words those objects carry, such as the port states, and the

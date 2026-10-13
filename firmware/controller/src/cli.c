@@ -44,8 +44,6 @@
 #include "stack_probe.h"
 #include "update.h"
 #include "update_latest.h"
-#include "ups/lad_proto.h"
-#include "ups/ups.h"
 #include "bus_cap.h"
 #include "vin.h"
 
@@ -111,7 +109,6 @@ static void print_help(void) {
            "  led idle <minutes>|off       dim after this long without a port event\n"
            "  tz <+HH:MM|-HH:MM>           local time = UTC + this (LED schedule)\n"
            "  faults [clear]               persistent fault log\n"
-           "  ups [buzzer on|off]          UPS supply readings; silence its buzzer (until it restarts)\n"
            "  vin [cal <volts>|cal reset]  DC bus voltage; trim it to a meter reading (then 'save')\n"
            "  button [short|long]          front-panel button state; act as if pressed\n"
            "  export                       every setting as JSON (no passwords; POST it to import)\n"
@@ -208,7 +205,6 @@ static void print_info(void) {
 #if PWRMAN_NET_ETH
     printf("eth: %s\n", eth_status_str());
 #endif
-    printf("ups: %s\n", ups_status_str());
     printf("bus: %s", vin_status_str());
     if (vin_fitted()) printf(" (cal %u.%03u)", g_settings.vin_cal / 1000, g_settings.vin_cal % 1000);
     if (bus_cap_on()) printf(", ports capped at %u A until it holds %u.%u V for %u s", BUS_CAP_MA / 1000,
@@ -416,36 +412,6 @@ static void run_sim(char **save) {
 }
 #endif
 
-static void print_ups(void) {
-    const ups_state_t *s = ups_state();
-    printf("ups: %s\n", ups_status_str());
-    if (!s->present) {
-        printf("  no Mean Well LAD answering on the UPS header (probed every 5 s; %lu timeouts)\n",
-               (unsigned long)s->timeouts);
-        return;
-    }
-    char fault[96];
-    ups_fault_text(fault, sizeof(fault));
-    printf("  status %04x/%04x: AC %s, %s, %s%s%s%s%s\n", s->status_h, s->status_l,
-           (s->status_l & LAD_ST_AC_OK) ? "ok" : "ABNORMAL",
-           (s->status_l & LAD_ST_ON_BATTERY) ? "on battery" : "on AC power",
-           (s->status_l & LAD_ST_CHG_FULL) ? "battery full" :
-           (s->status_l & LAD_ST_CHARGING) ? "charging" : "not charging",
-           (s->status_l & LAD_ST_FORCED) ? ", forced start" : "",
-           (s->status_l & LAD_ST_LINK_CTRL) ? ", remote UPS" : "",
-           (s->status_h & LAD_STH_BAT_SW_OFF) ? ", battery switch OFF" : "",
-           fault[0] ? ", FAULT" : "");
-    if (fault[0]) printf("  fault: %s\n", fault);
-    printf("  cells:");
-    for (int i = 0; i < 4; i++) {
-        if (s->cell_cv[i] == 0xFFFF) printf(" -");
-        else printf(" %u.%02u V", s->cell_cv[i] / 100, s->cell_cv[i] % 100);
-    }
-    printf("; undervoltage cutoff %u.%02u V\n", s->uvp_cv / 100, s->uvp_cv % 100);
-    printf("  link: %lu replies, %lu timeouts, %lu bad frames\n", (unsigned long)s->replies,
-           (unsigned long)s->timeouts, (unsigned long)s->bad_frames);
-}
-
 static bool port_arg(const char *s, uint8_t *port) {
     int n = atoi(s);
     if (n < 1 || n > NUM_PORTS) {
@@ -533,17 +499,6 @@ static void run_line(char *l) {
         print_status();
     } else if (!strcmp(cmd, "info")) {
         print_info();
-    } else if (!strcmp(cmd, "ups")) {
-        const char *what = strtok_r(NULL, " \t", &save);
-        const char *v = strtok_r(NULL, " \t", &save);
-        if (!what) {
-            print_ups();
-        } else if (!strcmp(what, "buzzer") && v && (!strcmp(v, "on") || !strcmp(v, "off"))) {
-            if (!ups_present()) printf("no UPS answering\n");
-            else printf(ups_set_buzzer(!strcmp(v, "on")) ? "ok\n" : "busy, try again\n");
-        } else {
-            printf("usage: ups [buzzer on|off]\n");
-        }
     } else if (!strcmp(cmd, "vin")) {
         const char *what = strtok_r(NULL, " \t", &save);
         const char *v = strtok_r(NULL, " \t", &save);

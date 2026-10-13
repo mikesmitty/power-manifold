@@ -33,7 +33,7 @@ Developer documentation lives in [`docs/`](docs/) and is published on the
   the fake-blade simulator, host tests.
 - [Internals](docs/internals.md): the two cores, GPIO map, blade
   generations, warm starts and keeping ports powered, bus voltage, wired
-  Ethernet, the UPS link, the fan and the logs.
+  Ethernet, the fan and the logs.
 - [Flash layout and updates](docs/flash-and-updates.md): partitions, first
   programming, OTA, signed images, try-before-you-buy and blade firmware
   updates.
