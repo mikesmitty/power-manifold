@@ -54,7 +54,7 @@ Bench shortcut for the Pico 2 W carrier: `-DCARRIER_INTERNAL_PULLUPS=ON`
 swaps the three 4.7 kΩ resistors the breakout needs on SDA, SCL and
 ALERT# for the RP2350's own pad pull-ups (50–80 kΩ) and slows the bus to
 100 kHz so their slow edges fit inside the clock's low period. Once a mux
-channel is open, that blade segment's 4.7 kΩ pull-ups on the backplane
+channel is open, the seated blade's 4.7 kΩ pull-ups on its segment
 pass through the switch and stiffen the upstream bus too. It is a
 one-or-two-blade bench build: at 100 kHz six powered blades' per-tick
 reads no longer fit the 10 ms engine tick. Refused for the controller

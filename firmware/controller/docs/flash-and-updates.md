@@ -35,9 +35,10 @@ Each board is programmed once. The partition table sits in the first
 needs both.
 
 - *Over SWD*, which is how a controller card is programmed (its USB is an
-  unpopulated header): write `controller-factory.bin` at `0x10000000`. It is
-  the start of flash as one file — the partition table, then the firmware
-  where slot A begins.
+  unpopulated header; see [SWD access on the controller
+  card](#swd-access-on-the-controller-card) for where the probe connects):
+  write `controller-factory.bin` at `0x10000000`. It is the start of flash
+  as one file — the partition table, then the firmware where slot A begins.
 
   ```
   openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg -c "adapter speed 4000" \
@@ -56,6 +57,32 @@ needs both.
 
 Settings saved by older raw-layout firmware are found and migrated into the
 data partition on first boot.
+
+### SWD access on the controller card
+
+The card brings SWD out in two places. J4, a 3-pin JST SH header on the top
+side, carries SWCLK (pin 1), GND (pin 2) and SWDIO (pin 3) for a debug probe
+on the bench. Six test pads on the bottom side carry the same signals plus
+power and reset, for a pogo-pin programming fixture:
+
+| Pad | Silkscreen | Signal |
+| --- | --- | --- |
+| J3 | 5V | the card's 5 V rail, which feeds its 3.3 V regulator; a fixture powers the card here |
+| J7 | GND | ground |
+| J8 | 3V3 | the card's 3.3 V rail, for the probe's target-voltage sense |
+| J9 | CLK | SWCLK |
+| J10 | DIO | SWDIO |
+| J11 | RUN | the RP2350's RUN pin: low holds the chip in reset |
+
+The pads are 1.5 mm round bare copper on a 2.54 mm pitch, in one row 4.0 mm
+in from the long edge that the radio module overhangs, in the order of the
+table. RUN is nearest the RJ45 end: its center is 33.2 mm from the front
+edge, and the 5V pad's center is 45.9 mm from it. The bottom silkscreen
+labels each pad.
+
+The 5V pad is the same rail the backplane feeds through the card-edge
+fingers, so a fixture powers the card only while it is out of the chassis.
+The `openocd` command above works the same through either connection.
 
 ## BOOTSEL updates
 
