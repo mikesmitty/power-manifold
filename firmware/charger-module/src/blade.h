@@ -8,9 +8,6 @@
 #define PORT_POWER_MAX_MW   100000u
 // Advertised above 3 A only once the cable's e-marker has said 5 A
 #define CABLE_DEFAULT_MA    3000u
-// Converter limit from attach until the first contract sets its own: what a
-// cable without an e-marker may carry, with the fixed-contract margin
-#define CABLE_LIMIT_AT_ATTACH_MA 3300u
 
 // Temperature limits, tenths of a degree. A reading past either one for
 // 50 ms switches the port off and latches the fault. A sensor that reads

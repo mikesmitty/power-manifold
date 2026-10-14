@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 
+#include "port.h"
+
 // What the supervisor asks of the PD stack and its power glue, free of the
 // stack's own headers (implemented in usbpd/, stood in for by the host
 // tests).
@@ -18,3 +20,8 @@ void stack_send_capabilities(void); // the table changed under an attached sink
 // free. Only a sink in a PD 3 contract can receive one; otherwise it is dropped.
 void stack_send_alert_otp(void);
 void stack_hard_reset(void);
+// The Type-C current the CC line advertises (port_rp): to the next sink at
+// once, and to an attached one while it has no contract. In a PD 3
+// contract the policy engine moves the level itself for collision
+// avoidance, and this one returns once the contract is gone.
+void stack_set_rp(port_rp_t level);

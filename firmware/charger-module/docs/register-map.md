@@ -53,7 +53,9 @@ How it differs from the gen-2 blade, for the controller:
 The advertised table is the gen-2 one: fixed 5, 9, 12, 15 and 20 V, PPS
 3.3–11 V and 3.3–21 V. Every object's current is the lowest of `MAX_MA`, what
 the cable carries (3 A unless its e-marker says 5 A) and what keeps the object
-within 100 W, so the 21 V range stops at 4.75 A.
+within 100 W, so the 21 V range stops at 4.75 A. A sink without a contract
+gets the Type-C current level within `MAX_MA` on its CC line (3 A, 1.5 A or
+Default USB) and a converter limit of `MAX_MA`, at most 3 A, plus 10 %.
 
 ## Firmware updates over the backplane
 

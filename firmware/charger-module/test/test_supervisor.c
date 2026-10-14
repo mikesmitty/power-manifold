@@ -12,6 +12,7 @@
 #include "stack.h"
 #include "supervisor.h"
 #include "tcpp02.h"
+#include "tps55288.h"
 
 // The supervisor on the simulated board, with the controller on the other
 // side of the register file.
@@ -178,6 +179,31 @@ static void new_limits_go_to_the_sink(void) {
     MT_ASSERT(fake_stack_capabilities_sent() > sent);
     MT_ASSERT_EQ(pdo_fixed_ma(port_table()->obj[0]), 1500);
     MT_ASSERT(stack_port_armed());
+}
+
+static void a_sink_without_a_contract_gets_the_limit_too(void) {
+    boot();
+    en_high();
+    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    run_ms(200);
+    MT_ASSERT_EQ(fake_stack_rp(), PORT_RP_3A0);
+    // a sink attaches and never asks for a contract
+    MT_ASSERT_EQ(power_cc_mode(TCPP02_NORMAL), POWER_OK);
+    MT_ASSERT_EQ(power_vbus_on(), POWER_OK);
+    uint8_t reg = TPS55288_REG_IOUT_LIMIT;
+    MT_ASSERT_EQ(tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, reg)), 3300);
+
+    ctl_configure(2000, BLADE_MAX_MV_ALL, true);
+    run_ms(5);
+    MT_ASSERT_EQ(fake_stack_rp(), PORT_RP_1A5);
+    MT_ASSERT_EQ(tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, reg)), 2200);
+
+    ctl_configure(1000, BLADE_MAX_MV_ALL, true);
+    run_ms(5);
+    MT_ASSERT_EQ(fake_stack_rp(), PORT_RP_DEFAULT);
+    MT_ASSERT_EQ(tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, reg)), 1100);
+    MT_ASSERT(power_vbus_is_on());
+    MT_ASSERT(!fake_board_alert());
 }
 
 static void commands_reach_the_stack(void) {
@@ -510,6 +536,7 @@ void run_supervisor_tests(void) {
     mt_run("supervisor: a ceiling of zero is off", a_ceiling_of_zero_is_off);
     mt_run("supervisor: port disable and EN low disarm", port_disable_and_en_low_disarm);
     mt_run("supervisor: new limits go to the sink", new_limits_go_to_the_sink);
+    mt_run("supervisor: a sink without a contract gets the limit too", a_sink_without_a_contract_gets_the_limit_too);
     mt_run("supervisor: commands reach the stack", commands_reach_the_stack);
     mt_run("supervisor: an over-voltage trip takes the port down", over_voltage_trip_takes_the_port_down);
     mt_run("supervisor: a fault that persists comes back", a_fault_that_persists_comes_back);

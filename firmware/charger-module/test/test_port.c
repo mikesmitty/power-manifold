@@ -26,6 +26,25 @@ static void same_limits_change_nothing(void) {
     MT_ASSERT(port_set_limits(2000, 9000));
 }
 
+static void typec_level_follows_the_limit(void) {
+    port_init();
+    (void)port_set_limits(5000, BLADE_MAX_MV_ALL);
+    MT_ASSERT_EQ(port_rp(), PORT_RP_3A0);
+    MT_ASSERT_EQ(port_typec_ma(), 3000); // Type-C current stops at 3 A
+    (void)port_set_limits(3000, BLADE_MAX_MV_ALL);
+    MT_ASSERT_EQ(port_rp(), PORT_RP_3A0);
+    (void)port_set_limits(2999, BLADE_MAX_MV_ALL);
+    MT_ASSERT_EQ(port_rp(), PORT_RP_1A5);
+    MT_ASSERT_EQ(port_typec_ma(), 2999);
+    (void)port_set_limits(1500, BLADE_MAX_MV_ALL);
+    MT_ASSERT_EQ(port_rp(), PORT_RP_1A5);
+    (void)port_set_limits(1499, BLADE_MAX_MV_ALL);
+    MT_ASSERT_EQ(port_rp(), PORT_RP_DEFAULT);
+    (void)port_set_limits(500, BLADE_MAX_MV_ALL);
+    MT_ASSERT_EQ(port_rp(), PORT_RP_DEFAULT);
+    MT_ASSERT_EQ(port_typec_ma(), 500);
+}
+
 static void cable_raises_the_offer(void) {
     port_init();
     (void)port_set_limits(5000, BLADE_MAX_MV_ALL);
@@ -147,6 +166,7 @@ static void hard_resets_are_counted(void) {
 void run_port_tests(void) {
     mt_run("port: nothing to offer until configured", nothing_to_offer_until_configured);
     mt_run("port: the same limits change nothing", same_limits_change_nothing);
+    mt_run("port: the Type-C level follows the limit", typec_level_follows_the_limit);
     mt_run("port: a 5 A cable raises the offer, for that cable", cable_raises_the_offer);
     mt_run("port: a cable within the ceiling changes nothing", cable_within_the_ceiling_changes_nothing);
     mt_run("port: request to contract", request_to_contract);

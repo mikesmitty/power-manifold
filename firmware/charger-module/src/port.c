@@ -4,6 +4,9 @@
 
 #include "blade.h"
 
+#define TYPEC_3A0_MA 3000u
+#define TYPEC_1A5_MA 1500u
+
 static pdo_limits_t limits;
 static pdo_table_t table;
 static bool attached;
@@ -39,6 +42,16 @@ bool port_set_cable_ma(uint16_t ma) {
 
 const pdo_table_t *port_table(void) {
     return &table;
+}
+
+port_rp_t port_rp(void) {
+    if (limits.max_ma >= TYPEC_3A0_MA) return PORT_RP_3A0;
+    if (limits.max_ma >= TYPEC_1A5_MA) return PORT_RP_1A5;
+    return PORT_RP_DEFAULT;
+}
+
+uint16_t port_typec_ma(void) {
+    return limits.max_ma < TYPEC_3A0_MA ? limits.max_ma : (uint16_t)TYPEC_3A0_MA;
 }
 
 void port_attach(void) {

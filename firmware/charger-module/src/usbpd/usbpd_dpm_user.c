@@ -8,6 +8,8 @@
 #include "usbpd_pwr_if.h"
 #include "usbpd_pwr_user.h"
 
+#include "stm32g0xx_ll_ucpd.h"
+
 #include "hw.h"
 #include "meter.h"
 #include "port.h"
@@ -23,6 +25,28 @@
 static uint32_t received_rdo;
 static bool reset_wanted;
 static bool alert_wanted; // an over-temperature Alert the supervisor asked for
+static port_rp_t rp_wanted = PORT_RP_3A0; // DPM_Settings' CAD_DefaultResistor until the supervisor says
+static bool rp_held; // rp_wanted is on the CC line of an attached sink without a contract
+
+// The CC line's level for a sink without a contract. ST's CAD takes a new
+// level only while nothing is attached, and in a PD 3 contract the policy
+// engine moves the level itself for collision avoidance (SinkTxOk at 3 A,
+// SinkTxNG at 1.5 A). In between, it is written here: once after attach or
+// a change, and again once a contract is gone (a hard reset).
+static void keep_rp(void) {
+    uint32_t power = DPM_Params[USBPD_PORT_0].PE_Power;
+    bool uncontracted = port_attached() && !port_contract() &&
+                        power != USBPD_POWER_EXPLICITCONTRACT && power != USBPD_POWER_TRANSITION;
+    if (!uncontracted) {
+        rp_held = false;
+        return;
+    }
+    if (rp_held) return;
+    LL_UCPD_SetRpResistor(UCPD1, rp_wanted == PORT_RP_3A0   ? LL_UCPD_RESISTOR_3_0A
+                                 : rp_wanted == PORT_RP_1A5 ? LL_UCPD_RESISTOR_1_5A
+                                                            : LL_UCPD_RESISTOR_DEFAULT);
+    rp_held = true;
+}
 
 // Requests to the policy engine are refused while it is busy, so they are
 // repeated until it takes them. New capabilities only need asking for inside
@@ -60,6 +84,7 @@ USBPD_StatusTypeDef USBPD_DPM_UserInit(void) {
 void USBPD_DPM_UserExecute(void const *argument) {
     (void)argument;
     supervisor_run();
+    keep_rp();
     ask_the_engine();
 }
 
@@ -246,6 +271,16 @@ void stack_send_alert_otp(void) {
 
 void stack_hard_reset(void) {
     reset_wanted = true;
+}
+
+void stack_set_rp(port_rp_t level) {
+    static const CAD_RP_Source_Current_Adv_Typedef cad[] = {
+        [PORT_RP_DEFAULT] = vRp_Default, [PORT_RP_1A5] = vRp_1_5A, [PORT_RP_3A0] = vRp_3_0A};
+    if (level == rp_wanted) return;
+    rp_wanted = level;
+    rp_held = false;
+    // the level the CAD presents from the next detach on
+    (void)USBPD_CAD_SRC_SetRpResistor(USBPD_PORT_0, cad[level]);
 }
 
 // ST's device layer and the policy engine tick in milliseconds off these

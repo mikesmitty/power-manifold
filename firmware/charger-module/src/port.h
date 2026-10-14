@@ -19,6 +19,17 @@ bool port_set_limits(uint16_t max_ma, uint16_t max_mv); // true: the table chang
 bool port_set_cable_ma(uint16_t ma);                    // true: the table changed
 const pdo_table_t *port_table(void);
 
+// A sink without a contract goes by the Type-C current its CC line
+// advertises: the highest level within the controller's limit. The
+// converter holds it to the same current (power_set_typec_ma).
+typedef enum {
+    PORT_RP_DEFAULT, // Default USB power: 500 mA, or 900 mA for USB 3
+    PORT_RP_1A5,
+    PORT_RP_3A0,
+} port_rp_t;
+port_rp_t port_rp(void);
+uint16_t  port_typec_ma(void); // the controller's limit, at most 3 A
+
 void port_attach(void);
 void port_detach(void);        // the cable goes with the sink: back to CABLE_DEFAULT_MA
 bool port_attached(void);

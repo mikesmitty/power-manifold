@@ -62,6 +62,15 @@ the table `pdo.c` builds from the controller's limits and the cable, and
 hands each accepted request to the power path. New limits from the
 controller reach an attached sink as fresh Source_Capabilities.
 
+A sink without USB PD never reads the table. It goes by the Type-C current
+on the CC line, which follows the controller's limit: 3 A from 3000 mA up,
+1.5 A from 1500 mA, and Default USB below that. The converter holds such a
+sink, and any sink before its first contract, to the same current: `MAX_MA`
+up to 3 A, with the fixed-contract margin. ST's CAD takes a new level only
+while nothing is attached, so for an attached sink without a contract the
+glue writes it to the UCPD directly. During a PD 3 contract the policy
+engine moves the level itself for collision avoidance.
+
 Any of these latches a fault, takes the port down and pulls ALERT#:
 
 | Fault | Source |

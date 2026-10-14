@@ -130,6 +130,10 @@ static bool take_controller_input(void) {
         console_dec(cfg.watch_s);
         console_str(" s\n");
         if (port_set_limits(cfg.max_ma, cfg.max_mv)) stack_send_capabilities();
+        // and a sink without a contract: what the CC line advertises, and
+        // what the converter lets it draw
+        stack_set_rp(port_rp());
+        raise(fault_of(power_set_typec_ma(port_typec_ma())));
     }
     switch (cmd) {
     case BLADE_CMD_SRC_CAP:

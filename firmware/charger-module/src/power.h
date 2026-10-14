@@ -53,6 +53,13 @@ bool           power_converter_ready(void);
 power_result_t power_cc_mode(tcpp02_mode_t mode);
 power_result_t power_vconn(tcpp02_vconn_t cc);
 
+// The current a sink may draw without a contract (port_typec_ma): the
+// converter's limit from VBUS on until the first contract, and for as long
+// as the sink makes none, with the margin a fixed contract gets. Applied at
+// once while VBUS is on without a contract, otherwise at the next VBUS on.
+// Until it is set, 3 A, as the stack's CC line advertises out of reset.
+power_result_t power_set_typec_ma(uint32_t ma);
+
 power_result_t power_vbus_on(void);  // to vSafe5V
 power_result_t power_vbus_off(void); // and discharged to vSafe0V
 bool           power_vbus_is_on(void);

@@ -22,6 +22,7 @@ static void bring_up(void) {
 
 static uint8_t tcpp_ctrl(void) { return fake_bus_peek(ADDR_TCPP02, TCPP02_REG_ACK); }
 static uint8_t conv_mode(void) { return fake_bus_peek(ADDR_TPS55288, TPS55288_REG_MODE); }
+static uint32_t ilim(void) { return tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_IOUT_LIMIT)); }
 
 static void port_comes_up_in_hibernate(void) {
     fake_board_reset();
@@ -92,6 +93,21 @@ static void vbus_on_gives_up(void) {
     MT_ASSERT(!(conv_mode() & TPS55288_MODE_OE));
     MT_ASSERT(!(tcpp_ctrl() & TCPP02_CTRL_GDP));
     MT_ASSERT_EQ(fake_board_peak_vbus_mv(), 0); // the switch never closed
+}
+
+static void without_a_contract_the_limit_is_typec(void) {
+    bring_up();
+    MT_ASSERT_EQ(power_vbus_on(), POWER_OK);
+    MT_ASSERT_EQ(ilim(), 3300); // 3 A, as the CC line says out of reset
+    MT_ASSERT_EQ(power_set_typec_ma(2000), POWER_OK); // the controller lowers the limit: at once
+    MT_ASSERT_EQ(ilim(), 2200);
+    MT_ASSERT_EQ(power_set(9000, 1000, false), POWER_OK); // a contract sets its own
+    MT_ASSERT_EQ(ilim(), 1100);
+    MT_ASSERT_EQ(power_set_typec_ma(500), POWER_OK); // kept for later: the contract stands
+    MT_ASSERT_EQ(ilim(), 1100);
+    MT_ASSERT_EQ(power_vbus_off(), POWER_OK); // a hard reset ends the contract
+    MT_ASSERT_EQ(power_vbus_on(), POWER_OK);
+    MT_ASSERT_EQ(ilim(), 550);
 }
 
 static void step_up(void) {
@@ -259,6 +275,7 @@ void run_power_tests(void) {
     mt_run("power: the switch closes onto 5 V", vbus_on_closes_onto_5v);
     mt_run("power: VBUS on with charge left above 5 V", vbus_on_with_charge_left_above_5v);
     mt_run("power: VBUS on gives up and shuts down", vbus_on_gives_up);
+    mt_run("power: without a contract the limit is the Type-C current", without_a_contract_the_limit_is_typec);
     mt_run("power: step up raises the threshold first", step_up);
     mt_run("power: step down, unloaded, lowers the threshold last", step_down_unloaded);
     mt_run("power: a step down that stalls keeps its threshold", step_down_that_stalls);

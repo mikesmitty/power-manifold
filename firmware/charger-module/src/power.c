@@ -17,6 +17,8 @@
 static bool port_up;       // we are driving TCPP_EN high
 static bool conv_ready;
 static bool vbus_on;
+static bool contracted;    // power_set has run since VBUS came on
+static uint32_t typec_ma;  // power_set_typec_ma
 static uint32_t setpoint_mv;
 static tcpp02_ctrl_t tcpp;
 
@@ -37,6 +39,13 @@ static power_result_t write_tcpp(void) {
 static bool conv_mode(bool on, bool discharge, bool forced_pwm) {
     tps55288_mode_t m = {.output_on = on, .discharge = discharge, .forced_pwm = forced_pwm};
     return tps55288_set_mode(&m);
+}
+
+// A fixed contract's current, or a sink's without a contract, with the
+// margin that keeps the converter's limit from biting inside it
+static uint32_t limit_for(uint32_t ma) {
+    uint32_t limit_ma = (ma * POWER_FIXED_MARGIN_PCT + 99) / 100;
+    return limit_ma < POWER_LIMIT_FLOOR_MA ? POWER_LIMIT_FLOOR_MA : limit_ma;
 }
 
 static bool within(uint32_t mv, uint32_t target_mv) {
@@ -66,6 +75,8 @@ void power_init(void) {
     port_up = false;
     conv_ready = false;
     vbus_on = false;
+    contracted = false;
+    typec_ma = CABLE_DEFAULT_MA;
     setpoint_mv = 0;
     tcpp = (tcpp02_ctrl_t){.mode = TCPP02_HIBERNATE};
 }
@@ -120,12 +131,19 @@ power_result_t power_vconn(tcpp02_vconn_t cc) {
     return write_tcpp();
 }
 
+power_result_t power_set_typec_ma(uint32_t ma) {
+    typec_ma = ma;
+    if (!conv_ready || !vbus_on || contracted) return POWER_OK;
+    if (tripped()) return POWER_TRIPPED;
+    return tps55288_set_limit_ma(limit_for(ma)) ? POWER_OK : POWER_BUS;
+}
+
 power_result_t power_vbus_on(void) {
     if (!conv_ready) return POWER_NOT_READY;
     uint32_t t0 = hw_ms();
+    contracted = false;
     set_threshold(ovp_threshold_mv(POWER_VSAFE5V_MV));
-    if (!tps55288_set_mv(POWER_VSAFE5V_MV) ||
-        !tps55288_set_limit_ma(CABLE_LIMIT_AT_ATTACH_MA))
+    if (!tps55288_set_mv(POWER_VSAFE5V_MV) || !tps55288_set_limit_ma(limit_for(typec_ma)))
         return POWER_BUS;
 
     // The converter first, behind the open switch. It comes up to 5 V where
@@ -163,6 +181,7 @@ void power_shutdown(void) {
     if (conv_ready) conv_mode(false, true, false);
     setpoint_mv = 0;
     vbus_on = false;
+    contracted = false;
     tcpp.vbus_on = false;
     tcpp.vconn = TCPP02_VCONN_OFF;
     if (port_up && !tripped()) {
@@ -176,6 +195,7 @@ power_result_t power_vbus_off(void) {
     bool conv_ok = !conv_ready || conv_mode(false, true, false);
     setpoint_mv = 0;
     vbus_on = false;
+    contracted = false;
     tcpp.vbus_on = false;
     tcpp.vbus_discharge = true;
     power_result_t r = write_tcpp();
@@ -198,12 +218,9 @@ bool power_vbus_is_on(void) {
 power_result_t power_set(uint32_t mv, uint32_t ma, bool pps) {
     if (!conv_ready || !vbus_on) return POWER_NOT_READY;
     if (tripped()) return POWER_TRIPPED;
+    contracted = true;
 
-    uint32_t limit_ma = ma;
-    if (!pps) {
-        limit_ma = (ma * POWER_FIXED_MARGIN_PCT + 99) / 100;
-        if (limit_ma < POWER_LIMIT_FLOOR_MA) limit_ma = POWER_LIMIT_FLOOR_MA;
-    }
+    uint32_t limit_ma = pps ? ma : limit_for(ma);
 
     uint32_t from_mv = setpoint_mv;
     bool down = mv < from_mv;
