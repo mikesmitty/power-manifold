@@ -36,8 +36,11 @@ The firmware's share is the order of operations (`power.c`):
 - the threshold covers the higher of the two voltages for as long as the
   output moves between them: up, the threshold goes first; down, it follows
   once VBUS has arrived;
-- the converter's output is enabled only behind the closed VBUS switch, and
-  ramps VBUS up from 0 V;
+- the converter comes up to 5 V behind the open VBUS switch, where the
+  comparator watches it, and the switch closes only once it is there. The
+  TCPP02's gate drive and C31 (47 pF, converter side to the Q3/Q4 gates)
+  then set how fast VBUS rises, which keeps the inrush into the sink's
+  capacitance under the over-current trip;
 - the converter runs forced PWM while its output has to come down. The board
   straps it for PFM (R22 75k), where it blocks reverse current and cannot
   pull its own output down: an unloaded 20 V would stay 20 V. The mode

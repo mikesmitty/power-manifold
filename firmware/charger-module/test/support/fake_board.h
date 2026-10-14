@@ -8,9 +8,10 @@
 // a VBUS that follows the converter and the switch the way the hardware
 // would (the parts' registers are fake_bus.h's).
 //
-//   - VBUS rises and falls at the converter's slew rate while the switch is
-//     closed and the output enabled;
-//   - without forced PWM and without a load it does not fall at all;
+//   - the converter's output rises and falls at its slew rate while enabled,
+//     and VBUS follows it while the switch is closed;
+//   - without forced PWM it falls only into a sink's load through the closed
+//     switch;
 //   - with the switch open it falls only through a discharge path;
 //   - the comparator trips the moment the converter output is above the
 //     threshold the DAC holds, and the trip is remembered.
@@ -41,4 +42,5 @@ uint32_t fake_board_vout_mv(void);
 uint32_t fake_board_trip_mv(void);            // what the DAC code amounts to
 uint32_t fake_board_peak_vbus_mv(void);
 bool     fake_board_comparator_tripped(void); // at any time since the reset
-bool     fake_board_output_on_with_switch_open(void); // ever
+bool     fake_board_closed_early(void);   // ever: the VBUS switch closed onto an output
+                                          // that was off or not yet at its setpoint

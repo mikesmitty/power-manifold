@@ -60,26 +60,38 @@ static void nothing_without_the_converter(void) {
     MT_ASSERT(!power_converter_ready());
 }
 
-static void vbus_on_ramps_behind_the_switch(void) {
+static void vbus_on_closes_onto_5v(void) {
     bring_up();
     MT_ASSERT_EQ(power_vbus_on(), POWER_OK);
     MT_ASSERT(power_vbus_is_on());
     MT_ASSERT(tcpp_ctrl() & TCPP02_CTRL_GDP);
     MT_ASSERT(conv_mode() & TPS55288_MODE_OE);
     MT_ASSERT_EQ(conv_mode() & 0x0F, 0); // as strapped
-    MT_ASSERT(!fake_board_output_on_with_switch_open());
+    MT_ASSERT(!fake_board_closed_early());
     MT_ASSERT(fake_board_vbus_mv() >= 4750 && fake_board_vbus_mv() <= 5250);
+    MT_ASSERT(fake_board_peak_vbus_mv() <= 5250);
     MT_ASSERT_EQ(power_setpoint_mv(), 5000);
+    MT_ASSERT(!fake_board_comparator_tripped());
+}
+
+static void vbus_on_with_charge_left_above_5v(void) {
+    bring_up();
+    fake_board_set_vout_mv(5600); // under the 5 V threshold, over the window
+    MT_ASSERT_EQ(power_vbus_on(), POWER_OK); // nothing but the converter to pull it down
+    MT_ASSERT(!fake_board_closed_early());
+    MT_ASSERT(fake_board_peak_vbus_mv() <= 5250);
+    MT_ASSERT_EQ(conv_mode() & 0x0F, 0); // back as strapped
     MT_ASSERT(!fake_board_comparator_tripped());
 }
 
 static void vbus_on_gives_up(void) {
     bring_up();
-    fake_board_stick_vbus(true);
+    fake_board_stick_vbus(true); // the converter's output never arrives
     MT_ASSERT_EQ(power_vbus_on(), POWER_TIMEOUT);
     MT_ASSERT(!power_vbus_is_on());
     MT_ASSERT(!(conv_mode() & TPS55288_MODE_OE));
     MT_ASSERT(!(tcpp_ctrl() & TCPP02_CTRL_GDP));
+    MT_ASSERT_EQ(fake_board_peak_vbus_mv(), 0); // the switch never closed
 }
 
 static void step_up(void) {
@@ -157,7 +169,7 @@ static void vbus_off_discharges(void) {
     MT_ASSERT(!fake_board_comparator_tripped());
     // and on again
     MT_ASSERT_EQ(power_vbus_on(), POWER_OK);
-    MT_ASSERT(!fake_board_output_on_with_switch_open());
+    MT_ASSERT(!fake_board_closed_early());
 }
 
 static void vbus_off_without_the_converter(void) {
@@ -244,7 +256,8 @@ void run_power_tests(void) {
     mt_run("power: port up with TCPP_EN held", port_up_with_the_line_held);
     mt_run("power: port up without a TCPP02", port_up_without_a_tcpp02);
     mt_run("power: nothing without the converter", nothing_without_the_converter);
-    mt_run("power: VBUS ramps up behind the closed switch", vbus_on_ramps_behind_the_switch);
+    mt_run("power: the switch closes onto 5 V", vbus_on_closes_onto_5v);
+    mt_run("power: VBUS on with charge left above 5 V", vbus_on_with_charge_left_above_5v);
     mt_run("power: VBUS on gives up and shuts down", vbus_on_gives_up);
     mt_run("power: step up raises the threshold first", step_up);
     mt_run("power: step down, unloaded, lowers the threshold last", step_down_unloaded);

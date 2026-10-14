@@ -20,13 +20,14 @@ static bool en_line, alert;
 static int16_t temp_conv, temp_plug;
 static unsigned feeds;
 static uint32_t vout_mv, vbus_mv, peak_mv;
-static bool ever_tripped, ever_bare_output;
+static bool ever_tripped, ever_closed_early, was_closed;
 
 static bool boot_via_loader;
 static unsigned loader_resets, boot_option_writes;
 
 static void tcpp_follows_en(void);
 static void comparator(void);
+static void watch_switch(void);
 static void written(void);
 
 void fake_board_reset(void) {
@@ -42,7 +43,7 @@ void fake_board_reset(void) {
     temp_conv = temp_plug = 250;
     feeds = 0;
     vout_mv = vbus_mv = peak_mv = 0;
-    ever_tripped = ever_bare_output = false;
+    ever_tripped = ever_closed_early = was_closed = false;
     fake_bus_reset();
     fake_bus_on_write(written);
     tcpp_follows_en();
@@ -69,7 +70,7 @@ uint32_t fake_board_vbus_mv(void) { return vbus_mv; }
 uint32_t fake_board_vout_mv(void) { return vout_mv; }
 uint32_t fake_board_peak_vbus_mv(void) { return peak_mv; }
 bool fake_board_comparator_tripped(void) { return ever_tripped; }
-bool fake_board_output_on_with_switch_open(void) { return ever_bare_output; }
+bool fake_board_closed_early(void) { return ever_closed_early; }
 
 uint32_t fake_board_trip_mv(void) {
     return (uint32_t)(((uint64_t)dac_code * vdda_mv * SENSE_DIV_NUM) / 4095);
@@ -97,6 +98,7 @@ static void comparator(void) {
     }
     held = over;
     tcpp_follows_en();
+    watch_switch();
 }
 
 static bool output_enabled(void) {
@@ -107,10 +109,28 @@ static uint8_t tcpp_ctrl(void) {
     return (en_drive && !held) ? fake_bus_peek(ADDR_TCPP02, TCPP02_REG_ACK) : 0;
 }
 
+static uint32_t setpoint_mv(void) {
+    uint16_t ref = (uint16_t)(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_REF_LSB) |
+                              (fake_bus_peek(ADDR_TPS55288, TPS55288_REG_REF_MSB) << 8));
+    return tps55288_ref_mv(ref);
+}
+
+// The moment the switch closes, the converter's output has to be on and
+// within 5 % of its setpoint
+static void watch_switch(void) {
+    bool closed = (tcpp_ctrl() & TCPP02_CTRL_GDP) != 0;
+    if (closed && !was_closed) {
+        uint32_t target = setpoint_mv(), tol = target / 20;
+        if (!output_enabled() || vout_mv + tol < target || vout_mv > target + tol)
+            ever_closed_early = true;
+    }
+    was_closed = closed;
+}
+
 // after every register write, not only once a millisecond: two writes in the
 // wrong order have no time between them
 static void written(void) {
-    if (output_enabled() && !(tcpp_ctrl() & TCPP02_CTRL_GDP)) ever_bare_output = true;
+    watch_switch();
 }
 
 static void step_ms(void) {
@@ -119,11 +139,8 @@ static void step_ms(void) {
     uint8_t ctrl = tcpp_ctrl();
     bool output = output_enabled();
     bool closed = (ctrl & TCPP02_CTRL_GDP) != 0;
-    uint16_t ref = (uint16_t)(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_REF_LSB) |
-                              (fake_bus_peek(ADDR_TPS55288, TPS55288_REG_REF_MSB) << 8));
-    uint32_t target = tps55288_ref_mv(ref);
+    uint32_t target = setpoint_mv();
 
-    if (output && !closed) ever_bare_output = true;
     if (stuck) return;
 
     if (output) {

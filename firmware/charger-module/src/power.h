@@ -16,8 +16,10 @@
 // What holds in every state:
 //   - the over-voltage threshold covers the higher of the two voltages for
 //     as long as the output is moving between them;
-//   - the converter's output is enabled only with the VBUS switch closed, and
-//     ramps from 0 V behind it;
+//   - the VBUS switch closes only onto a converter output already at 5 V:
+//     the converter comes up behind the open switch, where the over-voltage
+//     comparator watches it, and the switch's own slew sets how fast VBUS
+//     follows;
 //   - the converter runs forced PWM while its output has to come down, and
 //     as strapped otherwise.
 

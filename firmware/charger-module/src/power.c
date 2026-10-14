@@ -45,15 +45,21 @@ static bool within(uint32_t mv, uint32_t target_mv) {
     return mv + tol >= target_mv && mv <= target_mv + tol;
 }
 
-static power_result_t wait_vbus(uint32_t target_mv, uint32_t timeout_ms) {
-    uint32_t t0 = hw_ms();
+// Until a reading is where it was sent: near the target, or under vSafe0V
+// for a target of 0. The timeout counts from since_ms.
+static power_result_t wait_mv(uint32_t (*read_mv)(void), uint32_t target_mv,
+                              uint32_t since_ms, uint32_t timeout_ms) {
     for (;;) {
         if (tripped()) return POWER_TRIPPED;
-        uint32_t mv = meter_vbus_mv();
+        uint32_t mv = read_mv();
         if (target_mv ? within(mv, target_mv) : mv < POWER_VSAFE0V_MV) return POWER_OK;
-        if (hw_ms() - t0 >= timeout_ms) return POWER_TIMEOUT;
+        if (hw_ms() - since_ms >= timeout_ms) return POWER_TIMEOUT;
         hw_delay_ms(POLL_MS);
     }
+}
+
+static power_result_t wait_vbus(uint32_t target_mv, uint32_t timeout_ms) {
+    return wait_mv(meter_vbus_mv, target_mv, hw_ms(), timeout_ms);
 }
 
 void power_init(void) {
@@ -116,27 +122,39 @@ power_result_t power_vconn(tcpp02_vconn_t cc) {
 
 power_result_t power_vbus_on(void) {
     if (!conv_ready) return POWER_NOT_READY;
+    uint32_t t0 = hw_ms();
     set_threshold(ovp_threshold_mv(POWER_VSAFE5V_MV));
     if (!tps55288_set_mv(POWER_VSAFE5V_MV) ||
-        !tps55288_set_limit_ma(CABLE_LIMIT_AT_ATTACH_MA) ||
-        !conv_mode(false, false, false))
+        !tps55288_set_limit_ma(CABLE_LIMIT_AT_ATTACH_MA))
         return POWER_BUS;
 
-    // the switch first: the converter then ramps VBUS up from 0 V behind it
-    tcpp.vbus_on = true;
-    tcpp.vbus_discharge = false;
-    power_result_t r = write_tcpp();
-    if (r != POWER_OK) {
-        tcpp.vbus_on = false;
-        return r;
-    }
-    vbus_on = true;
-    if (!conv_mode(true, false, false)) {
+    // The converter first, behind the open switch. It comes up to 5 V where
+    // the over-voltage comparator watches it, and nothing reaches the sink
+    // until it is there. Charge left above 5 V on its output needs forced
+    // PWM to come down, since nothing else draws from it.
+    bool down = meter_vout_mv() > POWER_VSAFE5V_MV;
+    if (!conv_mode(true, false, down)) {
         power_shutdown();
         return POWER_BUS;
     }
     setpoint_mv = POWER_VSAFE5V_MV;
-    r = wait_vbus(POWER_VSAFE5V_MV, POWER_SETTLE_TIMEOUT_MS);
+    power_result_t r = wait_mv(meter_vout_mv, POWER_VSAFE5V_MV, t0, POWER_SETTLE_TIMEOUT_MS);
+    if (r == POWER_OK && down && !conv_mode(true, false, false)) r = POWER_BUS;
+    if (r != POWER_OK) {
+        power_shutdown();
+        return r;
+    }
+
+    // Then the switch. The TCPP02's gate drive and C31, drain to gate, set
+    // how fast VBUS rises, which keeps the inrush into the sink's
+    // capacitance under the over-current trip.
+    tcpp.vbus_on = true;
+    tcpp.vbus_discharge = false;
+    r = write_tcpp();
+    if (r == POWER_OK) {
+        vbus_on = true;
+        r = wait_mv(meter_vbus_mv, POWER_VSAFE5V_MV, t0, POWER_SETTLE_TIMEOUT_MS);
+    }
     if (r != POWER_OK) power_shutdown();
     return r;
 }
