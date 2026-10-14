@@ -58,7 +58,10 @@ Third-party material keeps its own terms:
 - Third-party 3D models inside the board exports in `hardware/CAD/`.
 - `firmware/controller/lib/monocypher/`: CC0 or BSD-2-Clause, see its
   `LICENCE.md`.
+- `firmware/tools/licenses/`: the license files of newlib and libgloss, the
+  C library the firmware links, for the notices below.
 
 Libraries that the firmware builds download, such as the Pico SDK and ST's
-USB-PD stack, are not part of this repository. Each firmware release lists them and
-their licenses in its SBOM (`.cdx.json`).
+USB-PD stack, are not part of this repository. Each firmware release lists them in
+its SBOM (`.cdx.json`) and carries their copyright notices and license texts in
+a notices file (`controller-notices.txt`, `charger-module-notices.txt`).

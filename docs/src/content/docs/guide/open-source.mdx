@@ -1,0 +1,62 @@
+---
+title: Open-source software
+description: The third-party software in Power Manifold's firmware, the licenses it comes under, and where to find the full notices.
+sidebar:
+  order: 9
+---
+
+Power Manifold's firmware is published under the MIT License, with its
+source code on
+[GitHub](https://github.com/mikesmitty/power-manifold). The hardware
+designs are published under CERN-OHL-P-2.0 and this documentation under
+CC BY 4.0.
+
+The firmware also contains software written by others. Each piece comes
+under its own license, and most of those licenses ask for their copyright
+notices and license text to go with every copy.
+
+## Controller firmware
+
+| Software | What it does | License |
+| --- | --- | --- |
+| Pico SDK, from Raspberry Pi | Runs the processor | BSD-3-Clause |
+| printf by Marco Paland and USB descriptors from MicroPython, both part of the Pico SDK | Text formatting, USB device description | MIT |
+| SEGGER RTT, part of the Pico SDK | Diagnostic output | SEGGER's BSD-style license |
+| lwIP | Networking: TCP/IP, DHCP, DNS, mDNS, MQTT, time, firmware downloads | BSD-3-Clause |
+| Mbed TLS | Encryption for HTTPS and for MQTT over TLS | Apache-2.0 |
+| cyw43-driver | The Wi-Fi radio | Raspberry Pi's license for its own chips |
+| BTstack, from BlueKitchen, with Rijndael (AES) by Philip J. Erdelsky | The radio link a phone uses for Wi-Fi setup | Raspberry Pi's license for BTstack on its products; public domain |
+| TinyUSB | USB device support | MIT |
+| Monocypher | Checks the signature on firmware updates | BSD-2-Clause |
+| newlib | The C library | newlib's licenses |
+
+The controller carries the charger module firmware to keep blades up to
+date, so it also contains everything in the next table.
+
+## Charger module firmware
+
+| Software | What it does | License |
+| --- | --- | --- |
+| CMSIS, from Arm, and the STM32G0 device files, from ST | Starts the processor | Apache-2.0 |
+| STM32G0 low-layer drivers, from ST | The USB-C and DMA hardware | BSD-3-Clause |
+| USB Power Delivery stack, from ST | Negotiates power with the connected device | SLA0044 |
+| newlib and libgloss | The C library | newlib's and libgloss's licenses |
+
+ST's USB Power Delivery stack is not open-source software. ST's license for
+it, SLA0044, permits its use on ST microcontrollers only, and the charger
+module firmware contains it in binary form.
+
+## Full notices
+
+Every firmware release on
+[GitHub](https://github.com/mikesmitty/power-manifold/releases) includes a
+notices file with each copyright notice and the full license texts, made
+from the files that went into that build:
+
+- `controller-notices.txt` with each controller firmware release, covering
+  the charger module firmware it carries as well
+- `charger-module-notices.txt` with each charger module firmware release
+
+The software bill of materials attached to the same release
+(`controller.cdx.json` or `charger-module.cdx.json`) gives the version of
+each component.

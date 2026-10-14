@@ -119,18 +119,6 @@ jobs:
           python3 firmware/tools/sbom.py controller --sdk "$HOME/pico-sdk"
           --out firmware/controller/build/controller.cdx.json
 
-      - name: Store firmware
-        uses: actions/upload-artifact@v7
-        with:
-          name: controller-firmware
-          path: |
-            firmware/controller/build/controller.uf2
-            firmware/controller/build/controller.bin
-            firmware/controller/build/controller.elf
-            firmware/controller/build/controller-factory.bin
-            firmware/controller/build/partition_table.uf2
-            firmware/controller/build/controller.cdx.json
-
       # The Pico 2 W on the pcie-breakout: a development stand-in until the
       # card exists. Built and released so a bench board can be updated; it
       # goes away with the breakout.
@@ -142,6 +130,30 @@ jobs:
 
       - name: Build (Pico 2 W)
         run: ninja -C firmware/controller/build-pico2w
+
+      # The copyright notices and license texts that the libraries' licenses
+      # ask to go with every binary copy, for both controller builds and the
+      # blade image they carry.
+      - name: Third-party notices
+        run: >
+          python3 firmware/tools/notices.py controller --sdk "$HOME/pico-sdk"
+          --map firmware/controller/build/controller.elf.map
+          --map firmware/controller/build-pico2w/controller.elf.map
+          --blade-map firmware/charger-module/build/charger-module.map
+          --out firmware/controller/build/controller-notices.txt
+
+      - name: Store firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-firmware
+          path: |
+            firmware/controller/build/controller.uf2
+            firmware/controller/build/controller.bin
+            firmware/controller/build/controller.elf
+            firmware/controller/build/controller-factory.bin
+            firmware/controller/build/partition_table.uf2
+            firmware/controller/build/controller.cdx.json
+            firmware/controller/build/controller-notices.txt
 
       - name: Store Pico 2 W firmware
         uses: actions/upload-artifact@v7

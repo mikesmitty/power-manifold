@@ -83,6 +83,14 @@ jobs:
           python3 firmware/tools/sbom.py charger-module
           --out firmware/charger-module/build/charger-module.cdx.json
 
+      # The copyright notices and license texts that the libraries' licenses
+      # ask to go with every binary copy
+      - name: Third-party notices
+        run: >
+          python3 firmware/tools/notices.py charger-module
+          --map firmware/charger-module/build/charger-module.map
+          --out firmware/charger-module/build/charger-module-notices.txt
+
       - name: Store firmware
         uses: actions/upload-artifact@v7
         with:
@@ -92,3 +100,4 @@ jobs:
             firmware/charger-module/build/charger-module.bin
             firmware/charger-module/build/charger-module.hex
             firmware/charger-module/build/charger-module.cdx.json
+            firmware/charger-module/build/charger-module-notices.txt
