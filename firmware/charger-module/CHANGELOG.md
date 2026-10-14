@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.4.0...charger-module-firmware-v0.4.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* **charger-module:** close the VBUS switch onto a converter already at 5 V ([06ac0ae](https://github.com/mikesmitty/power-manifold/commit/06ac0ae3df4c8cf7a0029b76228a4c27502134c0))
+* **charger-module:** hold sinks without PD to the port's current limit ([8f0a2b0](https://github.com/mikesmitty/power-manifold/commit/8f0a2b0355da5794cbcf25870878144284d9fe87))
+
 ## [0.4.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.3.0...charger-module-firmware-v0.4.0) (2026-10-07)
 
 
