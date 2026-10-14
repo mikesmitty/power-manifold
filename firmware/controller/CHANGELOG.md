@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.18.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.17.0...controller-firmware-v0.18.0) (2026-10-14)
+
+
+### Features
+
+* **controller:** add optional auth_read setting to require token for reads ([d92f0f6](https://github.com/mikesmitty/power-manifold/commit/d92f0f6553743f53bb489fd7f9b46d059cf631a9))
+* **controller:** open Wi-Fi setup from the web page ([a133c8d](https://github.com/mikesmitty/power-manifold/commit/a133c8d43faaa46c0e9155172f926fd7c2944cfc))
+* **controller:** show install progress and release notes in Home Assistant ([7c8acdd](https://github.com/mikesmitty/power-manifold/commit/7c8acdd88b5922772ce4145a9582a55bcb8a182b))
+* **controller:** show the board ID and MAC addresses ([ed11109](https://github.com/mikesmitty/power-manifold/commit/ed1110931a06e057b0588e81921a95a08abc5176))
+
+
+### Bug Fixes
+
+* **controller:** send the token on reads only when they need it ([6aeec3c](https://github.com/mikesmitty/power-manifold/commit/6aeec3c1484d276c09a99cc4f18c943aa3d5f2d4))
+
 ## [0.17.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.16.1...controller-firmware-v0.17.0) (2026-10-11)
 
 
