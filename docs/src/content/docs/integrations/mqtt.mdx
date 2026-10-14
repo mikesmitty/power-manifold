@@ -27,7 +27,7 @@ Ports are numbered 1 to 6.
 | `status` | every second, retained | the whole chassis, see below |
 | `port/<n>/telemetry` | every second | one port, see below |
 | `event` | on each event | `{"port", "event", "kind", "code", "arg", "text", "ts"}` |
-| `update/state` | retained | `installed_version` and `latest_version` |
+| `update/state` | retained | `installed_version`, `latest_version`, `release_url` (the release notes), `in_progress` and `update_percentage` (0–100 while an update downloads, else `null`), and `auto` (`ON` or `OFF`) |
 | `blades/state` | retained, on change | `installed_version`, `latest_version` and `release_summary` for the blades: the installed version differs while a [blade update](/guide/updates/#blade-firmware) waits |
 
 **`status` fields:** `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
@@ -70,7 +70,7 @@ saved a few seconds after the last change.
 | `led/set` | light brightness, 0–255 |
 | `charged_mw/set`, `charged_min/set` | when a device counts as charged |
 | `improv/set` | `open`: open Wi-Fi setup for ten minutes |
-| `update/set` | `install`: install the newest known release |
+| `update/set` | `install`: install the newest known release; `check`: ask for a new release now instead of at the daily check; `postpone` or `skip`: hold back [automatic installs](/guide/updates/#automatic-updates) for 7 days, or for the release now offered |
 | `blades/set` | `install`: update every blade whose update is waiting now; their devices lose power for a few seconds |
 | `update/latest` | retained pointer `{"version":"x.y.z","url":"http://…/controller.signed.bin"}` to offer your own release source. The controller uses the newer of this version and the one found by the daily check. |
 

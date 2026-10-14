@@ -26,6 +26,7 @@
 #include "net.h"
 #include "ota_pull.h"
 #include "settings.h"
+#include "update.h"
 #include "update_check.h"
 #include "update_latest.h"
 #include "bus_cap.h"
@@ -35,6 +36,8 @@
 #define BACKOFF_MS       (5 * 1000)
 #define TELEMETRY_MS     1000
 #define STALL_CYCLES     10 // telemetry cycles with every publish refused before reconnecting
+// A release's notes: release-please tags the firmware controller-firmware-v<x.y.z>
+#define RELEASE_NOTES_URL "https://github.com/mikesmitty/power-manifold/releases/tag/controller-firmware-v"
 
 // discovery entity table: per-port sensors + switch + buttons + priority,
 // current-limit, voltage-cap and boot-policy controls + event entity +
@@ -47,7 +50,7 @@
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
 #define PORT_PROTECT     (PORT_SENSOR_N + 13) // retracted: the setting was removed
 #define PORT_ENTITIES    (PORT_SENSOR_N + 14)
-#define CHASSIS_ENTITIES 19
+#define CHASSIS_ENTITIES 20
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -86,6 +89,7 @@ static char in_data[192];   // sized for the update/latest JSON pointer
 static uint16_t in_len;
 
 static unsigned latest_seq_sent; // update_latest_seq() as of the last update/state published
+static int progress_sent = -1;   // update_progress() as of the last update/state published
 
 static char topic_buf[160];
 static char payload_buf[1024]; // largest: a port's event entity config
@@ -149,14 +153,30 @@ static void publish(const char *topic, const char *payload, uint8_t qos,
 
 // ---- incoming commands -----------------------------------------------------
 
+// An install under way, whoever started it (Home Assistant, the page, the
+// API, an automatic install): the share of the image received, 100 once it
+// waits for the restart, -1 when none is under way
+static int update_progress(void) {
+    if (update_reboot_pending()) return 100;
+    if (update_active() || ota_pull_busy()) return (int)update_percent();
+    return -1;
+}
+
 static void publish_update_state(void) {
+    const char *latest = update_latest_newer_than(FW_VERSION) ? update_latest_version() : FW_VERSION;
+    int progress = update_progress();
+    char pct[8] = "null";
+    if (progress >= 0) snprintf(pct, sizeof(pct), "%d", progress);
     snprintf(topic_buf, sizeof(topic_buf), "%s/update/state", base);
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"installed_version\":\"%s\",\"latest_version\":\"%s\",\"auto\":\"%s\"}",
-             FW_VERSION, update_latest_newer_than(FW_VERSION) ? update_latest_version() : FW_VERSION,
+             "{\"installed_version\":\"%s\",\"latest_version\":\"%s\","
+             "\"release_url\":\"" RELEASE_NOTES_URL "%s\",\"in_progress\":%s,"
+             "\"update_percentage\":%s,\"auto\":\"%s\"}",
+             FW_VERSION, latest, latest, progress >= 0 ? "true" : "false", pct,
              g_settings.update_auto ? "ON" : "OFF");
     publish(topic_buf, payload_buf, 1, 1);
     latest_seq_sent = update_latest_seq();
+    progress_sent = progress;
 }
 
 static void handle_command(const char *topic, const char *data) {
@@ -285,6 +305,12 @@ static void handle_command(const char *topic, const char *data) {
         publish_update_state();
     } else if (strcmp(sub, "/update/set") == 0) {
         char e[96];
+        if (!strcasecmp(data, "check")) {
+            // the answer, if it names a newer release, reaches the update
+            // entity through update_latest_seq()
+            if (!update_check_now(e, sizeof(e))) printf("update: %s\n", e);
+            return;
+        }
         if (!strcasecmp(data, "postpone") || !strcasecmp(data, "skip")) {
             bool ok = data[0] == 'p' || data[0] == 'P' ? update_auto_postpone(e, sizeof(e))
                                                        : update_auto_skip(e, sizeof(e));
@@ -761,7 +787,8 @@ static void publish_update_auto_switch(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
-// Postpone and Skip act on automatic installs only.
+// Check for updates asks the update source now instead of at the daily
+// check. Postpone and Skip act on automatic installs only.
 static void publish_update_button(const char *action, const char *name, const char *icon) {
     char object[24];
     snprintf(object, sizeof(object), "update_%s", action);
@@ -937,6 +964,9 @@ static void discovery_publish(int i) {
         break;
     case 17:
         publish_blade_update_entity();
+        break;
+    case 18:
+        publish_update_button("check", "Check for updates", "mdi:refresh");
         break;
     default:
         // retire the fan switch this select replaced from older firmware
@@ -1217,6 +1247,7 @@ void mqtt_poll(uint32_t now_ms) {
         if (now_ms - last_telemetry_ms >= TELEMETRY_MS) {
             last_telemetry_ms = now_ms;
             publish_telemetry();
+            if (update_progress() != progress_sent) publish_update_state(); // at most once a second
         }
         break;
 
