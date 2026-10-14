@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.16.1...charger-module-v0.16.2) (2026-10-14)
+
+
+### Bug Fixes
+
+* **charger-module:** remove unused snubber footprints ([de9d10c](https://github.com/mikesmitty/power-manifold/commit/de9d10ccb97e8f524d2378a1d5e85b9cf0b2e9e7))
+* **charger-module:** type the U4 comparator outputs open-drain ([14a679f](https://github.com/mikesmitty/power-manifold/commit/14a679fca9d26be450e05ec184a06e6586a02a7a))
+* **charger-module:** update to faster-acting fuse for backplane safety ([b361a4e](https://github.com/mikesmitty/power-manifold/commit/b361a4ea4c6c76ee1bfa6db2afa90d1b54b2a405))
+
 ## [0.16.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-v0.16.0...charger-module-v0.16.1) (2026-09-29)
 
 
