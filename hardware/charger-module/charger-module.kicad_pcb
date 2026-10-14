@@ -6673,7 +6673,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net "/TCPP_EN")
 			(pinfunction "OUTA_1")
-			(pintype "output")
+			(pintype "open_collector")
 			(uuid "bab682a3-8bb1-4834-aee4-5ffa4f492faf")
 		)
 		(pad "2" smd oval
@@ -6727,7 +6727,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net "/TCPP_EN")
 			(pinfunction "OUTB_7")
-			(pintype "output")
+			(pintype "open_collector")
 			(uuid "07e46f9d-ec42-4b95-a0e0-776ff390e1f7")
 		)
 		(pad "8" smd oval
