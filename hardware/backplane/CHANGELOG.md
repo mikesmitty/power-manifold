@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.13.2...backplane-v0.14.0) (2026-10-14)
+
+
+### Features
+
+* **backplane:** protect Q2 from a dead-short ([1f3f946](https://github.com/mikesmitty/power-manifold/commit/1f3f946a970c2eec51e81f5ead0972a260906e87))
+
 ## [0.13.2](https://github.com/mikesmitty/power-manifold/compare/backplane-v0.13.1...backplane-v0.13.2) (2026-10-05)
 
 
