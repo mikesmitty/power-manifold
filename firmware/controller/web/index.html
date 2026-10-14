@@ -268,6 +268,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
   <div class="actions">
    <button class="btn pri" type="submit">Save</button>
    <button class="btn" type="button" id="rb">Reboot</button>
+   <button class="btn" type="button" id="wsb">Open Wi-Fi setup</button>
    <span class="sp"></span>
    <label style="display:flex;align-items:center;gap:.4rem;font-weight:400;font-size:.8rem"><input type="checkbox" id="xps">Include passwords and token</label>
    <button class="btn" type="button" id="xpb">Export</button>
@@ -374,6 +375,7 @@ async function tick(){let r,d;try{r=await fetch('/api/v1/status',{headers:rh()})
  if(d.net.mqtt!='off')A.push(['MQTT broker',d.net.mqtt.replace(/_/g,' ')+(d.net.mqtt_problem?': '+d.net.mqtt_problem:'')]);
  const ub=$('uib');const busy=d.update.installing||d.update.restarting;ub.hidden=!d.update.available||busy;ub.textContent='Install '+d.update.latest;$('ucb').disabled=d.update.check=='checking';
  const ua=d.update.available&&!busy&&!['off','none','skipped'].includes(d.update.auto);$('upp').hidden=!ua||d.update.auto=='postponed';$('usk').hidden=!ua;
+ $('wsb').textContent=d.improv=='off'?'Open Wi-Fi setup':'Close Wi-Fi setup';
  $('about').innerHTML=A.map(x=>`<div>${x[0]}<b class="num">${esc(x[1])}</b></div>`).join('');
  d.ports.forEach((p,i)=>{(H[i]=H[i]||[]).push({v:p.v,i:p.i,p:p.p});if(H[i].length>N)H[i].shift();});draw();}
 tick();setInterval(()=>!rl&&tick(),1000);
@@ -444,6 +446,12 @@ $('ucb').onclick=()=>updPost('check','check for updates');
 $('uib').onclick=()=>updPost('latest','install the update');
 $('upp').onclick=()=>updPost('postpone','postpone automatic updates');
 $('usk').onclick=()=>updPost('skip','skip this version');
+// Wi-Fi setup: the same ten-minute window as the button's long hold and Home Assistant's button
+$('wsb').onclick=async()=>{const open=!last||last.improv=='off';let r,d={};
+ try{r=await fetch('/api/v1/improv',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify({open})});d=await r.json();}catch(e){}
+ if(!r){M.textContent='No response from the device.';return;}
+ if(r.status==401&&d.error==BT){unlock(open?'open Wi-Fi setup':'close Wi-Fi setup');return;}
+ M.textContent=r.ok?(open?'Wi-Fi setup is open for ten minutes. The chassis light breathes blue while it is open.':'Wi-Fi setup closed.'):cap(d.error);tick();};
 $('rb').onclick=async()=>{let r;try{r=await fetch('/api/v1/reboot',{method:'POST',headers:hdr()});}catch(e){}
  if(r&&r.status==401){M.textContent=cap(await why(r));return;}M.textContent='Rebooting. This page reloads in a few seconds.';setTimeout(()=>location.reload(),6000);};
 $('xpb').onclick=async()=>{let r;try{r=await fetch('/api/v1/settings/export'+($('xps').checked?'?secrets=1':''),{headers:hdr()});}catch(e){}
