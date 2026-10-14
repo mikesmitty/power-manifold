@@ -65,3 +65,8 @@ Libraries that the firmware builds download, such as the Pico SDK and ST's
 USB-PD stack, are not part of this repository. Each firmware release lists them in
 its SBOM (`.cdx.json`) and carries their copyright notices and license texts in
 a notices file (`controller-notices.txt`, `charger-module-notices.txt`).
+
+Power Manifold is a trademark of Idle Curiosity LLC. The licenses above cover
+the designs, code and documentation, not the name: a product built or modified
+from this repository may say it is based on Power Manifold, but may not be sold
+or distributed under that name.
