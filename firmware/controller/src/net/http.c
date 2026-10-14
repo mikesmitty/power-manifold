@@ -16,6 +16,7 @@
 #include "lwip/tcp.h" // SOF_REUSEADDR on the TCP pcb under the 443 listener
 #include "mbedtls/ssl.h"
 #include "pico/rand.h"
+#include "pico/unique_id.h"
 
 #include "boot_reason_hw.h"
 #include "bus_cap.h"
@@ -49,7 +50,7 @@
 #define HTTPS_PORT      443
 #define MAX_CONNS       4
 #define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
-#define STATUS_JSON_MAX 4192 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the bus voltage, the chassis light, and the update and net blocks, worst case
+#define STATUS_JSON_MAX 4288 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the bus voltage, the chassis light, the board ID and MACs, and the update and net blocks, worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -342,12 +343,20 @@ static void build_status_json(char *out, size_t cap) {
     char vinf[16]; // a number, or null on a board without the divider
     if (vin_fitted()) snprintf(vinf, sizeof(vinf), "%.2f", vin_mv() / 1000.0);
     else snprintf(vinf, sizeof(vinf), "null");
+    // The board's identity: the RP2350's unique ID, and the MAC of each link
+    // the board has, or null
+    char board_id[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
+    pico_get_unique_board_id_string(board_id, sizeof(board_id));
+    char wifi_mac[24], eth_mac[24];
+    json_str_or_null(wifi_mac, sizeof(wifi_mac), net_wifi_mac_str());
+    json_str_or_null(eth_mac, sizeof(eth_mac), eth_mac_str());
     char bladef[20]; // the bundled gen-3 blade firmware, or null
     const blade_image_header_t *bh = blade_bundle_header();
     if (bh) snprintf(bladef, sizeof(bladef), "\"%u.%u.%u\"", bh->major, bh->minor, bh->patch);
     else snprintf(bladef, sizeof(bladef), "null");
     size_t off = (size_t)snprintf(out, cap,
         "{\"name\":\"%s\",\"fw\":\"%s\",\"slot\":\"%s\",\"trial\":%s,"
+        "\"board_id\":\"%s\",\"wifi_mac\":%s,\"eth_mac\":%s,"
         "\"uptime_s\":%lu,\"rssi\":%ld,%s"
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
@@ -356,7 +365,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"chassis_light\":\"%s\","
         "\"blade_fw\":%s,%s%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
-        flash_map_update_pending() ? "true" : "false",
+        flash_map_update_pending() ? "true" : "false", board_id, wifi_mac, eth_mac,
         (unsigned long)(to_ms_since_boot(get_absolute_time()) / 1000),
         (long)net_rssi(), ethf, t.total_mw / 1000.0, t.reserved_mw / 1000.0,
         t.budget_mw / 1000.0, headroom / 1000.0, t.energy_mwh / 1e6,

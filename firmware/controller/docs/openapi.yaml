@@ -1061,6 +1061,9 @@ components:
         - fw
         - slot
         - trial
+        - board_id
+        - wifi_mac
+        - eth_mac
         - uptime_s
         - rssi
         - total_w
@@ -1099,6 +1102,15 @@ components:
         trial:
           type: boolean
           description: The firmware is on trial after an update and not yet kept.
+        board_id:
+          type: string
+          description: The RP2350's unique ID, 16 hexadecimal digits. The same on every boot.
+        wifi_mac:
+          type: [string, 'null']
+          description: The Wi-Fi MAC address; `null` on a controller without Wi-Fi.
+        eth_mac:
+          type: [string, 'null']
+          description: The wired Ethernet MAC address; `null` on a controller without it.
         uptime_s:
           type: integer
           description: Seconds since the controller started.
@@ -1756,6 +1768,9 @@ components:
         fw: 0.16.1
         slot: A
         trial: false
+        board_id: E6614C311B4A8D2F
+        wifi_mac: '28:cd:c1:0e:4f:12'
+        eth_mac: '02:31:1b:4a:8d:2f'
         uptime_s: 274620
         rssi: -58
         eth: 100M full, 192.168.1.40

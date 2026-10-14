@@ -14,6 +14,7 @@ struct netif;
 #if PWRMAN_NET_ETH
 bool eth_init(void); // after lwIP is running; false = no chip found
 bool eth_present(void);
+const char *eth_mac_str(void); // "02:aa:bb:cc:dd:ee", "" without the chip
 bool eth_link(void); // PHY link
 bool eth_up(void);   // link up with an address
 struct netif *eth_netif_ptr(void);
@@ -22,6 +23,7 @@ const char *eth_status_str(void);
 #else
 static inline bool eth_init(void) { return false; }
 static inline bool eth_present(void) { return false; }
+static inline const char *eth_mac_str(void) { return ""; }
 static inline bool eth_link(void) { return false; }
 static inline bool eth_up(void) { return false; }
 static inline struct netif *eth_netif_ptr(void) { return (struct netif *)0; }

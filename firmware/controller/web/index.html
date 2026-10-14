@@ -373,6 +373,7 @@ async function tick(){let r,d;try{r=await fetch('/api/v1/status',{headers:rh()})
  const A=[['Firmware',d.fw+', slot '+d.slot+(d.trial?', on trial':'')],['Blade firmware',d.blade_fw||'\u2013'],['Running for',dur(d.uptime_s)],['Last start',d.boot],
   ['Lights',d.led_mode=='normal'?'normal':'dimmed ('+d.led_mode+')'],['Updates',upd(d.update)]];
  if(d.net.mqtt!='off')A.push(['MQTT broker',d.net.mqtt.replace(/_/g,' ')+(d.net.mqtt_problem?': '+d.net.mqtt_problem:'')]);
+ A.push(['Board ID',d.board_id]);if(d.wifi_mac)A.push(['Wi-Fi MAC',d.wifi_mac]);if(d.eth_mac)A.push(['Ethernet MAC',d.eth_mac]);
  const ub=$('uib');const busy=d.update.installing||d.update.restarting;ub.hidden=!d.update.available||busy;ub.textContent='Install '+d.update.latest;$('ucb').disabled=d.update.check=='checking';
  const ua=d.update.available&&!busy&&!['off','none','skipped'].includes(d.update.auto);$('upp').hidden=!ua||d.update.auto=='postponed';$('usk').hidden=!ua;
  $('wsb').textContent=d.improv=='off'?'Open Wi-Fi setup':'Close Wi-Fi setup';

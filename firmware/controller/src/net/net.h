@@ -46,6 +46,7 @@ const char *net_ip_str(void);  // address of the preferred link, "0.0.0.0" when 
 const char *net_mask_str(void); // its netmask and gateway, "" when down
 const char *net_gw_str(void);
 int32_t net_rssi(void);        // WiFi only, 0 otherwise
+const char *net_wifi_mac_str(void); // "aa:bb:cc:dd:ee:ff", "" without a radio or when it did not start
 uint32_t net_epoch(void);      // unix time from SNTP, 0 until first sync
 
 // WiFi specifics used by Improv provisioning. Without NET_WIFI: no-op / -1.

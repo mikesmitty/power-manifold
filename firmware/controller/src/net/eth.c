@@ -30,6 +30,7 @@ static bool link;
 static uint8_t phy;
 static uint32_t rx_frames, tx_frames, tx_fails;
 static char status[48];
+static char mac_text[18];
 
 static void int_enable(bool en) {
     gpio_set_irq_enabled(PIN_ETH_INT_N, GPIO_IRQ_LEVEL_LOW, en);
@@ -135,6 +136,8 @@ bool eth_init(void) {
         return false;
     }
     present = true;
+    snprintf(mac_text, sizeof(mac_text), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2],
+             mac[3], mac[4], mac[5]);
 
     net_lock();
     if (g_settings.ip_static) {
@@ -163,13 +166,16 @@ bool eth_init(void) {
     int_enable(true);
     irq_set_enabled(IO_IRQ_BANK0, true);
 
-    printf("eth: W6100 v%04x, mac %02x:%02x:%02x:%02x:%02x:%02x\n", w6100_version(), mac[0],
-           mac[1], mac[2], mac[3], mac[4], mac[5]);
+    printf("eth: W6100 v%04x, mac %s\n", w6100_version(), mac_text);
     return true;
 }
 
 bool eth_present(void) {
     return present;
+}
+
+const char *eth_mac_str(void) {
+    return present ? mac_text : "";
 }
 
 bool eth_link(void) {

@@ -21,6 +21,7 @@
 #include "ipc.h"
 #include "led_sched.h"
 #include "manifold.h"
+#include "eth.h"
 #include "mqtt_tls.h"
 #include "net.h"
 #include "ota_pull.h"
@@ -89,7 +90,7 @@ static unsigned latest_seq_sent; // update_latest_seq() as of the last update/st
 static char topic_buf[160];
 static char payload_buf[1024]; // largest: a port's event entity config
 static char blade_state_sent[512]; // the Blade firmware entity's state as last published
-static char device_json[192];
+static char device_json[256];
 
 static void ensure_ids(void) {
     if (uid[0]) return;
@@ -99,10 +100,21 @@ static void ensure_ids(void) {
     snprintf(base, sizeof(base), "pwrman/%s", g_settings.device_name);
     snprintf(client_id, sizeof(client_id), "pwrman-%s", uid);
     snprintf(will_topic, sizeof(will_topic), "%s/availability", base);
+    // The board's unique ID is its serial number. The MAC of each link the
+    // board has lets Home Assistant match the device with what other
+    // integrations know by MAC address.
+    char cns[64] = "";
+    const char *macs[2] = {net_wifi_mac_str(), eth_mac_str()};
+    for (int i = 0; i < 2; i++) {
+        if (!macs[i][0]) continue;
+        size_t n = strlen(cns);
+        snprintf(cns + n, sizeof(cns) - n, "%s[\"mac\",\"%s\"]", n ? "," : "", macs[i]);
+    }
     snprintf(device_json, sizeof(device_json),
              "{\"ids\":[\"pwrman_%s\"],\"name\":\"%s\",\"mf\":\"Power Manifold\","
-             "\"mdl\":\"PM6\",\"sw\":\"%s\"}",
-             uid, g_settings.device_name, FW_VERSION);
+             "\"mdl\":\"PM6\",\"sw\":\"%s\",\"sn\":\"%s\"%s%s%s}",
+             uid, g_settings.device_name, FW_VERSION, full, cns[0] ? ",\"cns\":[" : "", cns,
+             cns[0] ? "]" : "");
 }
 
 bool mqtt_is_connected(void) {

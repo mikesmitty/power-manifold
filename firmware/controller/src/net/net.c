@@ -47,6 +47,7 @@ static uint32_t last_connect_ms;
 static int32_t rssi_dbm;
 static uint32_t rssi_ms;
 static bool rssi_read;
+static char wifi_mac[18]; // read once the radio is up, "" until then
 
 static void start_connect(void) {
     cyw43_arch_wifi_connect_async(g_settings.wifi_ssid,
@@ -75,6 +76,11 @@ void net_init(void) {
     }
     ctx = cyw43_arch_async_context();
     cyw43_arch_enable_sta_mode();
+    // the driver loads the chip's own MAC while it brings STA mode up
+    const uint8_t *m = cyw43_state.mac;
+    if (m[0] | m[1] | m[2] | m[3] | m[4] | m[5])
+        snprintf(wifi_mac, sizeof(wifi_mac), "%02x:%02x:%02x:%02x:%02x:%02x", m[0], m[1], m[2],
+                 m[3], m[4], m[5]);
 
     net_lock();
     netif_set_hostname(wifi_netif(), g_settings.device_name);
@@ -338,6 +344,14 @@ int32_t net_rssi(void) {
     return wifi_up() ? rssi_dbm : 0;
 #else
     return 0;
+#endif
+}
+
+const char *net_wifi_mac_str(void) {
+#if PWRMAN_NET_WIFI
+    return wifi_mac;
+#else
+    return "";
 #endif
 }
 

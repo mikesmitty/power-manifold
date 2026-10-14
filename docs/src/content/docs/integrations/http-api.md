@@ -41,7 +41,9 @@ curl $PM/api/v1/status
 ```jsonc
 {
   "name": "pwrman", "fw": "0.12.0", "slot": "A",
-  "trial": false, "uptime_s": 274620, "rssi": -58,
+  "trial": false, "board_id": "E6614C311B4A8D2F",
+  "wifi_mac": "28:cd:c1:0e:4f:12", "eth_mac": "02:31:1b:4a:8d:2f",
+  "uptime_s": 274620, "rssi": -58,
   "eth": "100M full, 192.168.1.40",
   "total_w": 110.42, "reserved_w": 202.0,
   "budget_w": 240.0, "headroom_w": 38.0,
@@ -216,7 +218,9 @@ blade's firmware version, `null` when unknown), `silent`.
 
 **Status, chassis:** `name`, `total_w`, `reserved_w`, `budget_w`, `headroom_w`,
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `eth`, `improv`, `uptime_s`,
-`fw`, `blade_fw`, `slot`, `trial`, `boot`, `warm_start`, `vin_v`,
+`fw`, `blade_fw`, `slot`, `trial`, `board_id` (the RP2350's unique ID),
+`wifi_mac` and `eth_mac` (`null` on a controller without that connection),
+`boot`, `warm_start`, `vin_v`,
 `ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`,
 `chassis_light`, and the `update` and `net` objects.
 
