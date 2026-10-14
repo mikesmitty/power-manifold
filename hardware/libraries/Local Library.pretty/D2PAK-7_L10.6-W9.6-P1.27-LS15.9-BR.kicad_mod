@@ -370,15 +370,4 @@
 		(uuid "7080d325-3332-4246-807b-e4e962f3ee74")
 	)
 	(embedded_fonts no)
-	(model "${KIPRJMOD}/../libraries/Local Library.3dshapes/D2PAK-7_L10.6-W9.6-P1.27-LS15.9-BR.wrl"
-		(offset
-			(xyz 0 0 0)
-		)
-		(scale
-			(xyz 1 1 1)
-		)
-		(rotate
-			(xyz 0 0 0)
-		)
-	)
 )

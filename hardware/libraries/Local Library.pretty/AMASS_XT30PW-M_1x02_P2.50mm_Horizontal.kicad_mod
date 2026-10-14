@@ -406,15 +406,4 @@
 		(uuid "8c1bda00-0a24-47db-b233-7e748e9c39b2")
 	)
 	(embedded_fonts no)
-	(model "${KIPRJMOD}/../libraries/Local Library.3dshapes/XT30PW-M.step"
-		(offset
-			(xyz -2.5 10 0)
-		)
-		(scale
-			(xyz 1 1 1)
-		)
-		(rotate
-			(xyz -90 0 0)
-		)
-	)
 )

@@ -55,7 +55,11 @@ Third-party material keeps its own terms:
 
 - `hardware/libraries/`: symbols, footprints and 3D models, most of them
   from the KiCad libraries, EasyEDA and part makers.
-- Third-party 3D models inside the board exports in `hardware/CAD/`.
+- Third-party 3D models and fonts embedded in the board files, and the
+  3D models inside the board exports in `hardware/CAD/`.
+- `hardware/licenses/`: the license texts for the openly licensed parts
+  above, which [hardware/THIRD-PARTY.md](hardware/THIRD-PARTY.md) lists with
+  their notices.
 - `firmware/controller/lib/monocypher/`: CC0 or BSD-2-Clause, see its
   `LICENCE.md`.
 - `firmware/tools/licenses/`: the license files of newlib and libgloss, the
