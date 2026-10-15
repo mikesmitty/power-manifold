@@ -19943,7 +19943,7 @@
 				)
 			)
 		)
-		(property "Description" "Low Iq reverse battery protection ideal diode controller, SOT-23-6"
+		(property "Description" "Ideal diode controller with load dump protection, WSON-12"
 			(at 109.22 52.07 0)
 			(hide yes)
 			(show_name no)
