@@ -16,7 +16,9 @@ fi
 
 mkdir -p "$OUTPUT"
 if [ "$2" != "single" ] && [ -e "${MODULE_DIR}/panelize.json" ]; then
-    kikit panelize -p "${MODULE_DIR}/panelize.json" $BATCH_MOD -p :jlcTooling "${MODULE_DIR}/${MODULE}.kicad_pcb" "${OUTPUT}/${MODULE}.kicad_pcb"
+    # KiKit looks for plugin files named in a preset from the working
+    # directory, so it runs from the module's own folder.
+    (cd "$MODULE_DIR" && kikit panelize -p "${MODULE_DIR}/panelize.json" $BATCH_MOD -p :jlcTooling "${MODULE_DIR}/${MODULE}.kicad_pcb" "${OUTPUT}/${MODULE}.kicad_pcb")
     kikit fab jlcpcb --no-drc --assembly --autoname --schematic "${MODULE_DIR}/${MODULE}.kicad_sch" "${OUTPUT}/${MODULE}.kicad_pcb" "$OUTPUT/"
 else
     kikit fab jlcpcb --no-drc --assembly --autoname --schematic "${MODULE_DIR}/${MODULE}.kicad_sch" "${MODULE_DIR}/${MODULE}.kicad_pcb" "$OUTPUT/"

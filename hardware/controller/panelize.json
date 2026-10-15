@@ -1,7 +1,7 @@
 {
     "layout": {
         "hspace": "4mm",
-        "vspace": "2mm",
+        "vspace": "7mm",
         "rows": "4",
         "cols": "1"
     },
@@ -9,10 +9,10 @@
         "tolerance": "10mm"
     },
     "tabs": {
-        "type": "fixed",
-        "hcount": "0",
-        "vcount": "5",
-        "vwidth": "3mm"
+        "type": "plugin",
+        "code": "panel_tabs.py.OffsetTabs",
+        "arg": "14mm, 48mm, 70mm, 92mm",
+        "vwidth": "5mm"
     },
     "cuts": {
         "type": "mousebites",
@@ -23,7 +23,8 @@
     },
     "framing": {
         "type": "railstb",
-        "fillet": "1mm"
+        "fillet": "1mm",
+        "space": "7mm"
     },
     "tooling": {
         "type": "3hole",
