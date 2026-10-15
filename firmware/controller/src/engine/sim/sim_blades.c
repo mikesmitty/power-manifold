@@ -25,8 +25,9 @@
 // ceiling, and a contract only moves when the advertisement is re-sent
 // (send_src_cap) or the sink re-attaches. The gen-3 model is the blade
 // firmware's register file: the port is dark until the controller has
-// configured it, it re-advertises by itself when its limits change, and a
-// fault takes the port down and stays latched until BLADE_CMD_CLEAR_FAULTS.
+// configured it, it offers its power limit at every voltage (up to 5 A),
+// it re-advertises by itself when its limits change, and a fault takes the
+// port down and stays latched until BLADE_CMD_CLEAR_FAULTS.
 
 typedef struct {
     bool     present;
@@ -44,7 +45,8 @@ typedef struct {
     bool     attached;     // sink plugged into the port
     uint16_t req_mv;       // sink's ask
     uint32_t req_ma;
-    uint32_t adv_ma;       // advertised (programmed) current ceiling
+    uint32_t adv_ma;       // gen 2: advertised (programmed) current ceiling
+    uint8_t  adv_w;        // gen 3: power limit, BLADE_REG_MAX_W as stored
     uint16_t adv_mv;       // voltage cap: highest PDO offered
     uint16_t con_mv;       // live contract
     uint32_t con_ma;
@@ -98,9 +100,9 @@ static uint16_t offered_mv(const sim_slot_t *s) {
 }
 
 // A gen-3 port runs only when the blade has EN, a configuration with a
-// current ceiling, and nothing alerting latched.
+// power limit, and nothing alerting latched.
 static bool armed3(const sim_slot_t *s) {
-    return s->en && s->configured && s->port_en && s->adv_ma != 0 &&
+    return s->en && s->configured && s->port_en && s->adv_w != 0 &&
            (s->faults & BLADE_FAULT_ALERTING) == 0;
 }
 
@@ -114,9 +116,17 @@ static void renegotiate(sim_slot_t *s) {
         return;
     }
     s->con_mv = offered_mv(s);
-    // Above 20 V the contract can only be the 21 V PPS range, whose current
-    // field the driver cuts back to stay within PORT_POWER_MAX_MW
-    uint32_t adv = s->con_mv > 20000 ? mpq4242_pdo_current_cap_ma(21000, s->adv_ma, 50) : s->adv_ma;
+    uint32_t adv;
+    if (s->gen == 3) {
+        // the power limit at the contract's voltage, up to 5 A: what the
+        // blade's fixed objects carry, and what it holds a PPS sink to
+        adv = (uint32_t)s->adv_w * 1000000u / s->con_mv;
+        if (adv > BLADE_MAX_MA_LIMIT) adv = BLADE_MAX_MA_LIMIT;
+    } else {
+        // Above 20 V the contract can only be the 21 V PPS range, whose
+        // current field the driver cuts back to stay within PORT_POWER_MAX_MW
+        adv = s->con_mv > 20000 ? mpq4242_pdo_current_cap_ma(21000, s->adv_ma, 50) : s->adv_ma;
+    }
     s->con_ma = s->req_ma < adv ? s->req_ma : adv;
 }
 
@@ -198,7 +208,7 @@ static bool flash_page0_empty(const sim_slot_t *s) {
 static void mcu_reset(sim_slot_t *s, bool from_go) {
     s->configured = false;
     s->port_en = false;
-    s->adv_ma = 0;
+    s->adv_w = 0;
     s->adv_mv = 0;
     s->faults = BLADE_FAULT_RESET;
     s->hr_sent = s->hr_received = 0;
@@ -366,6 +376,7 @@ void sim_model_temps(uint8_t slot) { slots[slot].temp_set = false; }
 bool sim_en(uint8_t slot) { return slots[slot].en; }
 bool sim_fan(void) { return fan; }
 uint32_t sim_advertised_ma(uint8_t slot) { return slots[slot].adv_ma; }
+uint32_t sim_advertised_w(uint8_t slot) { return slots[slot].adv_w; }
 uint16_t sim_advertised_mv(uint8_t slot) { return slots[slot].adv_mv; }
 uint32_t sim_contract_mw(uint8_t slot) { return contract_mw(&slots[slot]); }
 bool     sim_blade_port_en(uint8_t slot) { return slots[slot].port_en; }
@@ -549,6 +560,7 @@ bool mpq4242_read_status(mpq4242_status_t *st) {
     st->contract_mw = status3_mw(s);
     st->selected_pdo = pdo_of(s);
     if (st->selected_pdo == 7) st->selected_pdo = 5; // STATUS2 reports the 21 V range as PDO5 here
+    st->pps = false;
     return true;
 }
 
@@ -619,7 +631,7 @@ bool blade3_read_identity(blade3_identity_t *id) {
     id->minor = h->minor;
     id->patch = h->patch;
     id->reset_cause = BLADE_RESET_POWER;
-    id->caps = BLADE_CAP_PPS;
+    id->caps = BLADE_CAP_PPS | BLADE_CAP_AVS;
     id->boot = s->boot_via_loader ? BLADE_BOOT_VIA_LOADER : 0;
     return true;
 }
@@ -637,6 +649,7 @@ bool blade3_read_status(blade3_status_t *st) {
                            (s->faults ? BLADE_ST_FAULT : 0) |
                            (s->en ? BLADE_ST_EN : 0));
     st->pdo = contract ? pdo_of(s) : 0;
+    st->contract = !contract ? BLADE_CONTRACT_NONE : pdo_of(s) == 7 ? BLADE_CONTRACT_PPS : BLADE_CONTRACT_FIXED;
     st->faults = s->faults;
     st->contract_mv = contract ? s->con_mv : 0;
     st->contract_ma = contract ? (uint16_t)s->con_ma : 0;
@@ -664,7 +677,7 @@ bool blade3_read_config(blade3_config_t *c) {
     const sim_slot_t *s = blade3();
     if (!s) return false;
     c->port_en = s->port_en;
-    c->max_ma = (uint16_t)s->adv_ma;
+    c->max_w = s->adv_w;
     c->max_mv = s->adv_mv;
     c->watch_s = s->watch_s;
     return true;
@@ -674,7 +687,7 @@ bool blade3_write_config(const blade3_config_t *c) {
     sim_slot_t *s = blade3();
     if (!s) return false;
     s->port_en = c->port_en;
-    s->adv_ma = c->max_ma > BLADE_MAX_MA_LIMIT ? BLADE_MAX_MA_LIMIT : c->max_ma; // stored clamped
+    s->adv_w = c->max_w > BLADE_MAX_W_LIMIT ? BLADE_MAX_W_LIMIT : c->max_w; // stored clamped
     s->adv_mv = c->max_mv;
     s->watch_s = c->watch_s;
     s->configured = true;

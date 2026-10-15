@@ -70,7 +70,7 @@ static void fill(settings_t *s) {
     s->auth_read = 1;
     for (int i = 0; i < NUM_PORTS; i++) {
         snprintf(s->port_name[i], sizeof(s->port_name[i]), "Slot %d <b>&", i + 1);
-        s->port_limit_ma[i] = 1000u + 500u * (uint32_t)i;
+        s->port_limit_w[i] = (uint8_t)(20u + 10u * (uint32_t)i);
         static const uint16_t CAPS[NUM_PORTS] = {5000, 9000, 12000, 15000, 20000, 9000};
         s->port_max_mv[i] = CAPS[i];
         s->port_boot[i] = (uint8_t)(i % 3);

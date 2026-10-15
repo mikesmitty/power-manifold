@@ -244,6 +244,7 @@ bool mpq4242_read_status(mpq4242_status_t *s) {
 
     s->attached = (s1 >> 7) & 1u;
     s->selected_pdo = (s2 >> 1) & 0x07u;
+    s->pps = s->selected_pdo >= 6;
     s->contract_mw = (uint32_t)s3 * 500;
 
     uint8_t f = 0;

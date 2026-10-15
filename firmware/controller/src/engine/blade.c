@@ -26,10 +26,10 @@ static uint16_t fold3(uint16_t f) {
     return u;
 }
 
-static blade3_config_t config3(uint32_t max_ma, uint32_t max_mv) {
+static blade3_config_t config3(uint32_t max_w, uint32_t max_mv) {
     blade3_config_t c = {
         .port_en = true,
-        .max_ma = (uint16_t)(max_ma > BLADE_MAX_MA_LIMIT ? BLADE_MAX_MA_LIMIT : max_ma),
+        .max_w = (uint8_t)(max_w > BLADE_MAX_W_LIMIT ? BLADE_MAX_W_LIMIT : max_w),
         .max_mv = (uint16_t)(max_mv > BLADE_MAX_MV_ALL ? BLADE_MAX_MV_ALL : max_mv),
         .watch_s = g_settings.blade_watch_s,
     };
@@ -42,6 +42,7 @@ static bool poll3(blade_status_t *st) {
     st->attached     = (s.status & BLADE_ST_ATTACHED) != 0;
     st->configured   = (s.status & BLADE_ST_CONFIGURED) != 0;
     st->selected_pdo = s.pdo;
+    st->contract     = s.contract <= BLADE_CONTRACT_AVS ? s.contract : PORT_CONTRACT_NONE;
     uint16_t raw     = (uint16_t)(s.faults & BLADE_FAULT_ALERTING);
     st->fault_bits   = fold3(raw);
     st->fault_detail = raw ? (PORT_FAULT_ARG_GEN3 | raw) : 0;
@@ -61,37 +62,44 @@ static bool poll3(blade_status_t *st) {
 // A fresh start, as cycling EN gives a gen-2 part: whatever the blade
 // latched before (its own restart included) is cleared before it is told
 // its limits.
-static uint16_t setup3(uint32_t max_ma, uint32_t max_mv) {
-    blade3_config_t c = config3(max_ma, max_mv);
+static uint16_t setup3(uint32_t max_w, uint32_t max_mv) {
+    blade3_config_t c = config3(max_w, max_mv);
     if (!blade3_probe() || !blade3_command(BLADE_CMD_CLEAR_FAULTS) || !blade3_write_config(&c))
         return PROBE_FAIL_BLADE;
     return 0;
 }
 
-static uint16_t adopt3(uint32_t max_ma, uint32_t max_mv, blade_status_t *st) {
+static uint16_t adopt3(uint32_t max_w, uint32_t max_mv, blade_status_t *st) {
     if (!blade3_probe() || !poll3(st)) return PROBE_FAIL_BLADE;
     if (st->fault_bits) return 0; // the caller's fault path takes it from here
-    blade3_config_t want = config3(max_ma, max_mv), have;
+    blade3_config_t want = config3(max_w, max_mv), have;
     if (!blade3_read_config(&have)) return PROBE_FAIL_BLADE;
     bool same = st->configured && have.port_en == want.port_en &&
-                have.max_ma == want.max_ma && have.max_mv == want.max_mv &&
+                have.max_w == want.max_w && have.max_mv == want.max_mv &&
                 have.watch_s == want.watch_s;
     if (!same && !blade3_write_config(&want)) return PROBE_FAIL_BLADE;
     return 0;
 }
 
-static bool running3(uint32_t *ma, uint32_t *mv) {
+static bool running3(uint32_t *w, uint32_t *mv) {
     blade3_status_t s;
     blade3_config_t c;
     if (!blade3_read_status(&s) || !blade3_read_config(&c)) return false;
     if (!(s.status & BLADE_ST_ATTACHED) || !(s.status & BLADE_ST_CONFIGURED) || !c.port_en)
         return false;
-    *ma = c.max_ma;
+    *w = c.max_w;
     *mv = c.max_mv;
     return true;
 }
 
 // ---- gen 2 -----------------------------------------------------------------
+
+// The MPQ4242 takes one current for every PDO. A power limit becomes the
+// current that gives it at 20 V, which keeps the highest PDO within it.
+static uint32_t ma2(uint32_t w) {
+    uint32_t ma = w * 1000u / 20u;
+    return ma > PORT_HW_MAX_MA ? PORT_HW_MAX_MA : ma;
+}
 
 static bool poll2(bool alert, blade_status_t *st) {
     ina226_reading_t r;
@@ -107,6 +115,7 @@ static bool poll2(bool alert, blade_status_t *st) {
     if (answered) {
         st->attached = m.attached;
         st->selected_pdo = m.selected_pdo;
+        st->contract = !m.selected_pdo ? PORT_CONTRACT_NONE : m.pps ? PORT_CONTRACT_PPS : PORT_CONTRACT_FIXED;
         st->contract_mw = m.contract_mw;
         st->fault_bits = m.fault_bits;
     } else if (!trip) {
@@ -122,18 +131,18 @@ static bool poll2(bool alert, blade_status_t *st) {
 
 // The INA226 first: it is the part that answers on a dark segment, and its
 // emergency trip is fixed at 125 % of the blade's ceiling.
-static uint16_t setup2(uint32_t max_ma, uint32_t max_mv) {
+static uint16_t setup2(uint32_t max_w, uint32_t max_mv) {
     if (!ina226_probe() || !ina226_configure() ||
         !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100))
         return PROBE_FAIL_INA226;
     mpq4242_status_t m = {0};
-    if (!mpq4242_probe() || !mpq4242_read_status(&m) || !mpq4242_configure(max_ma, max_mv) ||
+    if (!mpq4242_probe() || !mpq4242_read_status(&m) || !mpq4242_configure(ma2(max_w), max_mv) ||
         (m.attached && !mpq4242_send_src_cap()))
         return PROBE_FAIL_MPQ4242;
     return 0;
 }
 
-static uint16_t adopt2(uint32_t max_ma, uint32_t max_mv, blade_status_t *st) {
+static uint16_t adopt2(uint32_t max_w, uint32_t max_mv, blade_status_t *st) {
     if (!ina226_probe()) return PROBE_FAIL_INA226;
     if (!mpq4242_probe()) return PROBE_FAIL_MPQ4242;
     if (!poll2(true, st)) return PROBE_FAIL_MPQ4242;
@@ -142,8 +151,8 @@ static uint16_t adopt2(uint32_t max_ma, uint32_t max_mv, blade_status_t *st) {
         !ina226_set_alert_ma((PORT_HW_MAX_MA * 125) / 100))
         return PROBE_FAIL_INA226;
     bool matches = false;
-    if (!mpq4242_config_matches(max_ma, max_mv, &matches)) return PROBE_FAIL_MPQ4242;
-    if (!matches && (!mpq4242_configure(max_ma, max_mv) ||
+    if (!mpq4242_config_matches(ma2(max_w), max_mv, &matches)) return PROBE_FAIL_MPQ4242;
+    if (!matches && (!mpq4242_configure(ma2(max_w), max_mv) ||
                      (st->attached && !mpq4242_send_src_cap())))
         return PROBE_FAIL_MPQ4242;
     return 0;
@@ -176,24 +185,24 @@ bool blade_request_loader(blade_gen_t gen, bool boot_option) {
     return blade3_command(boot_option ? BLADE_CMD_BOOT_OPT : BLADE_CMD_RESET);
 }
 
-uint16_t blade_setup(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv) {
+uint16_t blade_setup(blade_gen_t gen, uint32_t max_w, uint32_t max_mv) {
     switch (gen) {
-    case BLADE_GEN_2: return setup2(max_ma, max_mv);
-    case BLADE_GEN_3: return setup3(max_ma, max_mv);
+    case BLADE_GEN_2: return setup2(max_w, max_mv);
+    case BLADE_GEN_3: return setup3(max_w, max_mv);
     default:          return PROBE_FAIL_NONE;
     }
 }
 
-uint16_t blade_adopt(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv, blade_status_t *st) {
+uint16_t blade_adopt(blade_gen_t gen, uint32_t max_w, uint32_t max_mv, blade_status_t *st) {
     switch (gen) {
-    case BLADE_GEN_2: return adopt2(max_ma, max_mv, st);
-    case BLADE_GEN_3: return adopt3(max_ma, max_mv, st);
+    case BLADE_GEN_2: return adopt2(max_w, max_mv, st);
+    case BLADE_GEN_3: return adopt3(max_w, max_mv, st);
     default:          return PROBE_FAIL_NONE;
     }
 }
 
-bool blade_running_limits(blade_gen_t gen, uint32_t *ma, uint32_t *mv) {
-    return gen == BLADE_GEN_3 && running3(ma, mv);
+bool blade_running_limits(blade_gen_t gen, uint32_t *w, uint32_t *mv) {
+    return gen == BLADE_GEN_3 && running3(w, mv);
 }
 
 bool blade_poll(blade_gen_t gen, bool alert, blade_status_t *st) {
@@ -204,13 +213,13 @@ bool blade_poll(blade_gen_t gen, bool alert, blade_status_t *st) {
     }
 }
 
-bool blade_set_limits(blade_gen_t gen, uint32_t ma, uint32_t mv, bool readvertise) {
+bool blade_set_limits(blade_gen_t gen, uint32_t w, uint32_t mv, bool readvertise) {
     switch (gen) {
     case BLADE_GEN_2:
-        if (!mpq4242_set_max_current_ma(ma) || !mpq4242_set_max_voltage_mv(mv)) return false;
+        if (!mpq4242_set_max_current_ma(ma2(w)) || !mpq4242_set_max_voltage_mv(mv)) return false;
         return !readvertise || mpq4242_send_src_cap();
     case BLADE_GEN_3: {
-        blade3_config_t c = config3(ma, mv);
+        blade3_config_t c = config3(w, mv);
         return blade3_write_config(&c);
     }
     default:

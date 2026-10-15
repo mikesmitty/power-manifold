@@ -262,7 +262,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     </div>
    </fieldset>
    <fieldset class="wide"><legend>Ports</legend>
-    <div class="tw"><table class="ptab"><thead><tr><th>Port</th><th>Name</th><th title="The current every PDO advertises, {{STR(PORT_LIMIT_MIN_MA)}}-{{STR(PORT_LIMIT_MAX_MA)}} mA. The 21 V PPS range stops at 4750 to stay within 100 W.">Limit mA</th><th title="The highest PDO the port advertises">Max V</th><th title="Port state at power-up">At power-up</th><th title="Switch off once charged">Off when charged</th><th title="Switch off this many minutes after a sink attaches, 0 = never">Sleep min</th></tr></thead><tbody id="pt"></tbody></table></div>
+    <div class="tw"><table class="ptab"><thead><tr><th>Port</th><th>Name</th><th title="The most power the port offers at any voltage, {{STR(PORT_LIMIT_MIN_W)}}-{{STR(PORT_LIMIT_MAX_W)}} W">Limit W</th><th title="The highest PDO the port advertises">Max V</th><th title="Port state at power-up">At power-up</th><th title="Switch off once charged">Off when charged</th><th title="Switch off this many minutes after a sink attaches, 0 = never">Sleep min</th></tr></thead><tbody id="pt"></tbody></table></div>
    </fieldset>
   </div>
   <div class="actions">
@@ -330,11 +330,12 @@ function span(n){const s=Math.max(n-1,0);return s<60?s+' s':Math.floor(s/60)+' m
 function chart(i,k,u,dp){const s=H[i]||[],n=s.length,c=COL[hue(last.ports[i])],m=Math.max(...s.map(x=>x[k]),0);
  return `<div class="chart"><div class="cap"><span class="fig">${n?W(s[n-1][k],dp):'0'}<small> ${u}</small></span><span class="num">peak ${W(m,dp)} ${u} in the last ${span(n)}</span></div>${spark(s,k,c,300,96,1)}</div>`;}
 
+const KIND={fixed:'Fixed',pps:'PPS',avs:'SPR AVS'};
 function card(p,i){const h=hue(p),c=COL[h],live=p.state=='active'||p.state=='throttled',s=H[i]||[],
  pct=p.contract_w?Math.min(100,100*p.p/p.contract_w):0;
  let t=[];if(p.t_conv!=null)t.push('converter '+Math.round(p.t_conv)+' \u00b0C');if(p.t_plug!=null)t.push('plug '+Math.round(p.t_plug)+' \u00b0C');
  const body=live?`<div class="row"><div class="big fig">${W(p.p)}<small> W</small></div>
-  <div class="vi num">${W(p.i,2)} A at ${W(p.v,2)} V<div class="mute">${W(p.contract_w,0)} W contract</div></div></div>
+  <div class="vi num">${W(p.i,2)} A at ${W(p.v,2)} V<div class="mute">${W(p.contract_w,0)} W ${p.contract=='pps'||p.contract=='avs'?KIND[p.contract]+' ':''}contract</div></div></div>
   <div class="meter"><i style="width:${pct}%;background:${c}"></i></div>${spark(s.slice(-180),'p',c,160,34)}`
   :`<div class="note">${quiet(p)}</div>`;
  const ctl=p.state=='absent'?'':ask==i?`<span class="ask">Switch off port ${i+1}?<button class="btn sm warn" data-a="off" data-i="${i}">Switch off</button><button class="btn sm" data-a="keep">Cancel</button></span>`
@@ -343,7 +344,7 @@ function card(p,i){const h=hue(p),c=COL[h],live=p.state=='active'||p.state=='thr
   <div class="ch"><span class="led ${led(p)}"></span><span class="pn">${i+1}</span><span class="nm" title="${esc(p.name)}">${esc(p.name)}</span><span class="st${h=='red'?' red':''}">${label(p)}</span></div>
   ${p.update_due?'<div class="wait">Blade update waiting. It runs once the device is unplugged or switched off (drawing under the Charged below threshold), or when the port is switched off and on.</div>':''}${body}<div class="cf"><span class="num cfi"><span>${W(p.e,3)} kWh</span>${t.length?`<span>${t.join(', ')}</span>`:''}</span>${ctl}</div></div>`;}
 
-function detail(i){const p=last.ports[i],f=[['Reserved',p.contract_w?W(p.contract_w,0)+' W':'none'],['Current limit',p.limit_ma+' mA'],
+function detail(i){const p=last.ports[i],f=[['Reserved',p.contract_w?W(p.contract_w,0)+' W':'none'],['Contract',KIND[p.contract]||'none'],['Power limit',p.limit_w+' W'],
  ['Voltage cap',p.max_v+' V'],['At power-up',p.boot],['Converter',p.t_conv!=null?W(p.t_conv)+' \u00b0C':'\u2013'],['Plug',p.t_plug!=null?W(p.t_plug)+' \u00b0C':'\u2013'],['Blade MCU',p.t_mcu!=null?W(p.t_mcu)+' \u00b0C':'\u2013'],['Energy',W(p.e,3)+' kWh']];
  return `<div class="detail"><div class="dh"><h2>Port ${i+1}: ${esc(p.name)}</h2><span class="mute" style="font-size:.78rem">Sampled once a second while this page is open</span></div>
  <div class="charts">${chart(i,'p','W',1)}${chart(i,'i','A',2)}${chart(i,'v','V',2)}</div>
@@ -405,7 +406,7 @@ TABS.forEach(b=>b.onclick=()=>tab(b.dataset.t));
 // settings
 const F=$('f'),M=$('msg'),LK=$('lock');
 $('pt').innerHTML=[1,2,3,4,5,6].map(n=>`<tr><td>${n}</td><td><input name="pn${n}" maxlength="23" placeholder="Port ${n}"></td>
- <td><input name="pl${n}" inputmode="numeric" pattern="[0-9]+" title="{{STR(PORT_LIMIT_MIN_MA)}} to {{STR(PORT_LIMIT_MAX_MA)}}" required></td>
+ <td><input name="pl${n}" inputmode="numeric" pattern="[0-9]+" title="{{STR(PORT_LIMIT_MIN_W)}} to {{STR(PORT_LIMIT_MAX_W)}}" required></td>
  <td><select name="pv${n}">${[5,9,12,15,20].map(v=>`<option value="${v}">${v} V</option>`).join('')}</select></td>
  <td><select name="pb${n}"><option value="on">On</option><option value="off">Off</option><option value="last">As left</option></select></td>
  <td><input type="checkbox" name="pa${n}" aria-label="Port ${n} off when charged"></td>
@@ -421,13 +422,13 @@ async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr
  const d=await r.json();LK.hidden=true;F.hidden=false;
  for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';F.uauto.value=d.update_auto?'on':'off';
  ar=d.auth_read;F.aread.value=ar?'on':'off';F.https.value=d.https?'on':'off';tlsLoad();if(rl){rl=0;tick();flLoad();}
- PN.forEach((e,i)=>e.value=d.port_names[i]||'');PL.forEach((e,i)=>e.value=d.port_limits_ma[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);
+ PN.forEach((e,i)=>e.value=d.port_names[i]||'');PL.forEach((e,i)=>e.value=d.port_limits_w[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);
  PV.forEach((e,i)=>e.value=d.port_max_v[i]);PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);
  const NW=(d.led_night||'').split('-');F.lns.value=NW[0]||'';F.lne.value=NW[1]||'';
  F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;
  M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks the API and this panel, so keep a copy.';return d;}
 F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value.replace('\u2212','-'):F[k].value;b.mqtt_port=b.mqtt_port||1883;
- b.update_auto=F.uauto.value=='on';b.auth_read=F.aread.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_ma=PL.map(e=>+e.value);
+ b.update_auto=F.uauto.value=='on';b.auth_read=F.aread.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_w=PL.map(e=>+e.value);
  b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
  b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;
  let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});d=await r.json();}catch(e){}

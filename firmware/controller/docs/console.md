@@ -49,7 +49,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `port <n> on\|off\|reset\|srccap\|update` | port control; `update` writes the bundled gen-3 blade firmware over whatever the blade runs |
 | `port <n> priority <0-255>` | 0 = highest; sheds from the bottom |
 | `port <n> name <text>\|clear` | label for the web UI and Home Assistant |
-| `port <n> limit <500-5000>` | advertised current ceiling in mA, every PDO |
+| `port <n> limit <5-100>` | power limit in W: the most the port offers at any voltage |
 | `port <n> volt 5\|9\|12\|15\|20` | voltage cap: the highest PDO advertised (20 = the whole table) |
 | `port <n> boot on\|off\|last` | state at power-up |
 | `port <n> autooff on\|off` | switch off once the sink is charged |

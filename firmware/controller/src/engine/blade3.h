@@ -19,6 +19,7 @@ typedef struct {
     uint16_t faults;      // BLADE_FAULT_*, latched on the blade
     uint16_t contract_mv;
     uint16_t contract_ma; // the operating current the sink asked for
+    uint8_t  contract;    // BLADE_CONTRACT_*
     uint8_t  hr_sent;     // PD hard resets the blade sent, wrapping (0 on a blade without the counters)
     uint8_t  hr_received; // ...and the sink sent
     uint16_t vbus_mv;
@@ -31,7 +32,7 @@ typedef struct {
 
 typedef struct {
     bool     port_en;
-    uint16_t max_ma;
+    uint8_t  max_w;       // BLADE_REG_MAX_W, the power limit (PROTO 3)
     uint16_t max_mv;
     uint8_t  watch_s;     // BLADE_REG_WATCH_S (PROTO 2; a PROTO 1 blade ignores it)
 } blade3_config_t;

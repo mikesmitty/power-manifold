@@ -127,12 +127,12 @@ static void test_get_str_at(void) {
 
 static void test_get_int_at(void) {
     long v = 7;
-    const char *j = "{\"port_limits_ma\":[5000, 3000 ,\"x,]\",-1],\"n\":1}";
-    MT_ASSERT(json_get_int_at(j, "port_limits_ma", 0, &v)); MT_ASSERT_EQ(v, 5000);
-    MT_ASSERT(json_get_int_at(j, "port_limits_ma", 1, &v)); MT_ASSERT_EQ(v, 3000);
-    MT_ASSERT(!json_get_int_at(j, "port_limits_ma", 2, &v)); // a string is not a number
-    MT_ASSERT(json_get_int_at(j, "port_limits_ma", 3, &v)); MT_ASSERT_EQ(v, -1);
-    MT_ASSERT(!json_get_int_at(j, "port_limits_ma", 4, &v));
+    const char *j = "{\"port_limits_w\":[100, 60 ,\"x,]\",-1],\"n\":1}";
+    MT_ASSERT(json_get_int_at(j, "port_limits_w", 0, &v)); MT_ASSERT_EQ(v, 100);
+    MT_ASSERT(json_get_int_at(j, "port_limits_w", 1, &v)); MT_ASSERT_EQ(v, 60);
+    MT_ASSERT(!json_get_int_at(j, "port_limits_w", 2, &v)); // a string is not a number
+    MT_ASSERT(json_get_int_at(j, "port_limits_w", 3, &v)); MT_ASSERT_EQ(v, -1);
+    MT_ASSERT(!json_get_int_at(j, "port_limits_w", 4, &v));
     MT_ASSERT(!json_get_int_at(j, "n", 0, &v));      // not an array
     MT_ASSERT(!json_get_int_at(j, "absent", 0, &v));
     MT_ASSERT(!json_get_int_at("{\"a\":[]}", "a", 0, &v));

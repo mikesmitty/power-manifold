@@ -92,7 +92,7 @@ static void print_help(void) {
            "                               update: write the bundled gen-3 blade firmware over what it runs\n"
            "  port <1-%d> priority <0-255>    0 = highest; sheds from the bottom\n"
            "  port <1-%d> name <text>|clear   label for the web UI and Home Assistant\n"
-           "  port <1-%d> limit <500-5000>    advertised current ceiling, mA (21 V PPS: 4750 max)\n"
+           "  port <1-%d> limit <5-100>       power limit, W: the most the port offers at any voltage\n"
            "  port <1-%d> volt 5|9|12|15|20   voltage cap, V: the highest PDO advertised\n"
            "  port <1-%d> boot on|off|last    state at power-up (last = as switched)\n"
            "  port <1-%d> autooff on|off      switch off once the sink is charged\n"
@@ -134,7 +134,7 @@ static void print_help(void) {
 static void print_status(void) {
     telemetry_t t;
     ipc_snapshot_read(&t);
-    printf("port state      gen attach pdo    mV     mA     mW  contract limit cap prio boot  conv  plug  name\n");
+    printf("port state      gen attach pdo type     mV     mA     mW  contract limit cap prio boot  conv  plug  name\n");
     for (int i = 0; i < NUM_PORTS; i++) {
         const port_telemetry_t *p = &t.port[i];
         char conv[8], plug[8]; // a gen-3 blade's thermometers, degC
@@ -143,13 +143,14 @@ static void print_status(void) {
         char state[12];
         if (p->state == PORT_STATE_UPDATE) snprintf(state, sizeof state, "upd %3u%%", p->update_pct);
         else snprintf(state, sizeof state, "%s", port_state_name((port_state_t)p->state));
-        printf("%4d %-10s %3s %-6s %3u %5u %6ld %6lu %7lumW %5lu %2uV %4u %-5s %5s %5s  %s%s%s\n", i + 1,
+        const char *kind = port_contract_name(p->contract);
+        printf("%4d %-10s %3s %-6s %3u %-5s %5u %6ld %6lu %7lumW %4luW %2uV %4u %-5s %5s %5s  %s%s%s\n", i + 1,
                state,
                p->gen == 3 ? "3" : p->gen == 2 ? "2" : "-",
                p->attached ? (p->charged ? "chg" : "yes") : "no",
-               p->selected_pdo, p->bus_mv, (long)p->current_ma,
+               p->selected_pdo, kind ? kind : "-", p->bus_mv, (long)p->current_ma,
                (unsigned long)p->power_mw, (unsigned long)p->contract_mw,
-               (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
+               (unsigned long)g_settings.port_limit_w[i], g_settings.port_max_mv[i] / 1000,
                g_settings.port_priority[i],
                settings_port_boot_name(g_settings.port_boot[i]), conv, plug, settings_port_name(i),
                p->silent ? "  [silent: last answer shown]" : "",
@@ -159,7 +160,7 @@ static void print_status(void) {
            (unsigned long)t.total_mw, (unsigned long)t.reserved_mw,
            (unsigned long)t.budget_mw, t.fan_on ? "on" : "off",
            t.fan_auto ? " (auto)" : "", t.alert_active ? "ACTIVE" : "clear");
-    if (vin_fitted()) printf(" bus %s%s", vin_status_str(), bus_cap_on() ? " (ports capped at 3 A)" : "");
+    if (vin_fitted()) printf(" bus %s%s", vin_status_str(), bus_cap_on() ? " (ports capped at 60 W)" : "");
     printf("\n");
     printf("charged: under %umW for %umin", g_settings.charged_mw, g_settings.charged_min);
     if (!g_settings.charged_mw) printf(" (detection off)");
@@ -208,7 +209,7 @@ static void print_info(void) {
 #endif
     printf("bus: %s", vin_status_str());
     if (vin_fitted()) printf(" (cal %u.%03u)", g_settings.vin_cal / 1000, g_settings.vin_cal % 1000);
-    if (bus_cap_on()) printf(", ports capped at %u A until it holds %u.%u V for %u s", BUS_CAP_MA / 1000,
+    if (bus_cap_on()) printf(", ports capped at %u W until it holds %u.%u V for %u s", BUS_CAP_W,
                              BUS_CAP_OFF_MV / 1000, (BUS_CAP_OFF_MV % 1000) / 100, BUS_CAP_HOLD_MS / 1000);
     printf("\n");
     printf("ip: %s (%s)\n", net_up() ? net_ip_str() : "none",
@@ -763,14 +764,14 @@ static void run_line(char *l) {
         }
         if (!strcmp(op, "limit")) {
             const char *v = strtok_r(NULL, " \t", &save);
-            int ma = v ? atoi(v) : 0;
-            if (!v || ma < PORT_LIMIT_MIN_MA || ma > PORT_LIMIT_MAX_MA) {
-                printf("usage: port <1-%d> limit <%d-%d> (mA)\n", NUM_PORTS, PORT_LIMIT_MIN_MA, PORT_LIMIT_MAX_MA);
+            int w = v ? atoi(v) : 0;
+            if (!v || w < PORT_LIMIT_MIN_W || w > PORT_LIMIT_MAX_W) {
+                printf("usage: port <1-%d> limit <%d-%d> (W)\n", NUM_PORTS, PORT_LIMIT_MIN_W, PORT_LIMIT_MAX_W);
                 return;
             }
-            g_settings.port_limit_ma[port] = (uint32_t)ma;
-            engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = port, .arg = (uint32_t)ma};
-            printf(ipc_cmd_push(&c) ? "port %u limit %d mA ('save' to persist)\n" : "queue full\n", port + 1, ma);
+            g_settings.port_limit_w[port] = (uint8_t)w;
+            engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = port, .arg = (uint32_t)w};
+            printf(ipc_cmd_push(&c) ? "port %u limit %d W ('save' to persist)\n" : "queue full\n", port + 1, w);
             return;
         }
         if (!strcmp(op, "volt")) {

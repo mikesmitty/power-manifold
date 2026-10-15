@@ -361,7 +361,7 @@ static void build_status_json(char *out, size_t cap) {
         "\"total_w\":%.2f,\"reserved_w\":%.1f,\"budget_w\":%.1f,"
         "\"headroom_w\":%.1f,\"energy_kwh\":%.3f,\"fan\":\"%s\","
         "\"fan_mode\":\"%s\",\"alert\":%s,\"improv\":\"%s\",\"boot\":\"%s\",\"warm_start\":%s,"
-        "\"vin_v\":%s,\"ceiling_ma\":%lu,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
+        "\"vin_v\":%s,\"ceiling_w\":%lu,\"problem\":%s,\"problems\":\"%s\",\"led_mode\":\"%s\",\"led_now\":%u,"
         "\"chassis_light\":\"%s\","
         "\"blade_fw\":%s,%s%s\"ports\":[",
         g_settings.device_name, FW_VERSION, flash_map_slot_name(),
@@ -372,7 +372,7 @@ static void build_status_json(char *out, size_t cap) {
         t.fan_on ? "on" : "off",
         t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
         t.alert_active ? "true" : "false", improv_state_str(), boot_text,
-        t.warm_start ? "true" : "false", vinf, (unsigned long)bus_cap_ma(),
+        t.warm_start ? "true" : "false", vinf, (unsigned long)bus_cap_w(),
         n_problems ? "true" : "false", problems_json, led_mode_name(led_sched_current()),
         led_sched_level(&g_settings, led_sched_current()), chassis_light_name(), bladef,
         updf, netf);
@@ -381,24 +381,26 @@ static void build_status_json(char *out, size_t cap) {
         const port_telemetry_t *p = &t.port[i];
         static char pn[PORT_NAME_MAX * 6 + 1]; // static: IRQ stack
         json_escape(pn, sizeof(pn), settings_port_name((unsigned)i));
-        char tc[8], tp[8], tm[8], fw[20] = "null";
+        char tc[8], tp[8], tm[8], fw[20] = "null", kind[8] = "null";
         port_temp_text(tc, sizeof(tc), p->temp_conv_dc, "null");
         port_temp_text(tp, sizeof(tp), p->temp_plug_dc, "null");
         port_temp_text(tm, sizeof(tm), p->temp_mcu_dc, "null");
+        if (port_contract_name(p->contract))
+            snprintf(kind, sizeof(kind), "\"%s\"", port_contract_name(p->contract));
         if (p->blade_fw)
             snprintf(fw, sizeof(fw), "\"%u.%u.%u\"", (unsigned)(p->blade_fw >> 16),
                      (unsigned)(p->blade_fw >> 8 & 0xFF), (unsigned)(p->blade_fw & 0xFF));
         off += (size_t)snprintf(out + off, cap - off,
             "%s{\"name\":\"%s\",\"state\":\"%s\",\"gen\":%u,\"attached\":%s,\"charged\":%s,\"pdo\":%u,"
-            "\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
-            "\"limit_ma\":%lu,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u,"
+            "\"contract\":%s,\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,\"contract_w\":%.1f,\"prio\":%u,"
+            "\"limit_w\":%u,\"max_v\":%u,\"boot\":\"%s\",\"fault\":%u,"
             "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u,"
             "\"update_due\":%s,\"fw\":%s,\"silent\":%s}",
             i ? "," : "", pn, port_state_name((port_state_t)p->state), p->gen,
-            p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo,
+            p->attached ? "true" : "false", p->charged ? "true" : "false", p->selected_pdo, kind,
             p->bus_mv / 1000.0, p->current_ma / 1000.0, p->power_mw / 1000.0,
             p->energy_mwh / 1e6, p->contract_mw / 1000.0, g_settings.port_priority[i],
-            (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
+            g_settings.port_limit_w[i], g_settings.port_max_mv[i] / 1000,
             settings_port_boot_name(g_settings.port_boot[i]), p->fault_bits, tc, tp, tm, p->update_pct,
             p->update_due ? "true" : "false", fw, p->silent ? "true" : "false");
     }
@@ -538,7 +540,7 @@ static size_t build_metrics(char *out, size_t cap) {
         {"pwrman_port_power_watts", "gauge"},     {"pwrman_port_energy_kwh_total", "counter"},
         {"pwrman_port_contract_watts", "gauge"},  {"pwrman_port_priority", "gauge"},
         {"pwrman_port_attached", "gauge"},        {"pwrman_port_pdo", "gauge"},
-        {"pwrman_port_fault_bits", "gauge"},      {"pwrman_port_limit_amps", "gauge"},
+        {"pwrman_port_fault_bits", "gauge"},      {"pwrman_port_limit_watts", "gauge"},
         {"pwrman_port_max_volts", "gauge"},       {"pwrman_port_charged", "gauge"},
         {"pwrman_port_state_info", "gauge"},
     };
@@ -558,7 +560,7 @@ static size_t build_metrics(char *out, size_t cap) {
             case 6: M_PUT("} %d\n", p->attached ? 1 : 0); break;
             case 7: M_PUT("} %u\n", p->selected_pdo); break;
             case 8: M_PUT("} %u\n", p->fault_bits); break;
-            case 9: M_PUT("} %.2f\n", g_settings.port_limit_ma[i] / 1000.0); break;
+            case 9: M_PUT("} %u\n", g_settings.port_limit_w[i]); break;
             case 10: M_PUT("} %u\n", g_settings.port_max_mv[i] / 1000); break;
             case 11: M_PUT("} %d\n", p->charged ? 1 : 0); break;
             default: M_PUT(",state=\"%s\"} 1\n", port_state_name((port_state_t)p->state)); break;
@@ -802,15 +804,15 @@ static void settings_post(conn_t *c, const char *body, bool via_setup) {
     bool https_changed = g_settings.https != s.https;
     bool link_changed = g_settings.mqtt_tls != s.mqtt_tls || g_settings.mqtt_ca_len != s.mqtt_ca_len ||
                         memcmp(g_settings.mqtt_ca, s.mqtt_ca, sizeof(s.mqtt_ca)) != 0;
-    uint32_t old_limit[NUM_PORTS];
+    uint8_t old_limit[NUM_PORTS];
     uint16_t old_volt[NUM_PORTS];
-    memcpy(old_limit, g_settings.port_limit_ma, sizeof(old_limit));
+    memcpy(old_limit, g_settings.port_limit_w, sizeof(old_limit));
     memcpy(old_volt, g_settings.port_max_mv, sizeof(old_volt));
     g_settings = s;
 
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
-        if (old_limit[i] != s.port_limit_ma[i]) {
-            engine_cmd_t cmd = {.op = CMD_PORT_LIMIT, .port = i, .arg = s.port_limit_ma[i]};
+        if (old_limit[i] != s.port_limit_w[i]) {
+            engine_cmd_t cmd = {.op = CMD_PORT_LIMIT, .port = i, .arg = s.port_limit_w[i]};
             ipc_cmd_push(&cmd);
         }
         if (old_volt[i] != s.port_max_mv[i]) {

@@ -76,7 +76,7 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
         n = put(buf, cap, n, vin_low() ? "bus voltage low, " : vin_high() ? "bus voltage high, "
                                                            : "bus voltage sagging, ");
         n = put(buf, cap, n, vin_status_str());
-        if (bus_cap_on()) n = put(buf, cap, n, ", ports capped at 3 A");
+        if (bus_cap_on()) n = put(buf, cap, n, ", ports capped at 60 W");
         count++;
     }
     return count;

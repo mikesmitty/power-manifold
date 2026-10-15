@@ -5,7 +5,7 @@
 #include "manifold.h"
 #include "sim_blades.h"
 
-// A 60-second loop against the default settings (360 W budget, 5 A port
+// A 60-second loop against the default settings (360 W budget, 100 W port
 // limit, priority = port index). Slots are 0-based; ports 1-6 to the user.
 // Ports 4 and 5 hold gen-3 blades, the rest gen-2 ones.
 //

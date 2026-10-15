@@ -65,7 +65,8 @@ void sim_model_temps(uint8_t slot);
 // inspection hooks for tests
 bool     sim_en(uint8_t slot);
 bool     sim_fan(void);
-uint32_t sim_advertised_ma(uint8_t slot); // last programmed PDO ceiling
+uint32_t sim_advertised_ma(uint8_t slot); // gen 2: last programmed PDO ceiling
+uint32_t sim_advertised_w(uint8_t slot);  // gen 3: last programmed power limit
 uint16_t sim_advertised_mv(uint8_t slot); // last programmed voltage cap
 uint32_t sim_contract_mw(uint8_t slot);   // live contract (gen 2: STATUS3 rounding)
 bool     sim_blade_port_en(uint8_t slot); // gen 3: BLADE_CTL_PORT_EN as written

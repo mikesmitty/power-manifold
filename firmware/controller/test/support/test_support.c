@@ -51,7 +51,7 @@ void support_reset(uint32_t budget_mw) {
     memset(&g_settings, 0, sizeof(g_settings));
     g_settings.budget_mw = budget_mw;
     for (int i = 0; i < NUM_PORTS; i++) {
-        g_settings.port_limit_ma[i] = 5000;
+        g_settings.port_limit_w[i] = PORT_LIMIT_MAX_W;
         g_settings.port_max_mv[i] = PORT_VOLT_MAX_MV;
         g_settings.port_priority[i] = (uint8_t)i;
     }

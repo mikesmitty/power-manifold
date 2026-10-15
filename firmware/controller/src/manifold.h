@@ -67,6 +67,7 @@ typedef struct {
     bool     attached;
     bool     charged;       // attached sink's draw stayed under the charged floor (see settings)
     uint8_t  selected_pdo;  // 1-7, 0 = none
+    uint8_t  contract;      // PORT_CONTRACT_*: the kind of contract in place
     uint16_t fault_bits;    // PORT_FAULT_* accumulated since last clear
     uint16_t bus_mv;        // VBUS at the blade's meter
     int32_t  current_ma;    // port current (signed on a gen-2 blade's INA226)
@@ -86,6 +87,23 @@ typedef struct {
 } port_telemetry_t;
 
 #define PORT_TEMP_NONE INT16_MIN // the value the blade uses for an open NTC as well
+
+// The kind of PD contract a port has: the values of blade_regs.h
+// BLADE_CONTRACT_*
+#define PORT_CONTRACT_NONE  0
+#define PORT_CONTRACT_FIXED 1
+#define PORT_CONTRACT_PPS   2
+#define PORT_CONTRACT_AVS   3 // SPR AVS
+
+// "fixed", "pps", "avs", or NULL without a contract
+static inline const char *port_contract_name(uint8_t contract) {
+    switch (contract) {
+    case PORT_CONTRACT_FIXED: return "fixed";
+    case PORT_CONTRACT_PPS:   return "pps";
+    case PORT_CONTRACT_AVS:   return "avs";
+    default:                  return NULL;
+    }
+}
 
 // "37.5" (or "-0.5"), else `none` without a reading.
 static inline void port_temp_text(char *out, size_t cap, int16_t dc, const char *none) {
@@ -120,27 +138,29 @@ typedef enum {
     CMD_LED_BRIGHTNESS,  // arg = 0-255
     CMD_LED_IDENTIFY,    // arg = ms: flash the whole chain (Improv identify)
     CMD_LED_CHASSIS,     // arg = LED_CHASSIS_* flags shown on the chassis light
-    CMD_PORT_LIMIT,      // port, arg = mA: new advertised current ceiling (g_settings already holds it)
+    CMD_PORT_LIMIT,      // port, arg = W: new power limit (g_settings already holds it)
     CMD_PORT_VOLT,       // port, arg = mV: new voltage cap (g_settings already holds it)
     CMD_LED_HOLD,        // arg = 0-255: front-button hold progress shown on the chain (led_pattern.h)
     CMD_LED_ACK,         // arg = ms: brief white flash of the whole chain (a button press registered)
     CMD_PORT_UPDATE,     // port: write the bundled firmware to a gen-3 blade, whatever it runs (blade_update.h)
     CMD_SIM,             // FAKE_BLADES only: fault injection, arg packed per engine/sim/sim_inject.h
     CMD_I2C_DIAG,        // real builds only: bench bus access, arg packed per engine/i2c_diag.h
-    CMD_SET_CEILING,     // arg = mA: a current limit applied to every port on top of its own setting; 0 removes it (bus_cap.h)
+    CMD_SET_CEILING,     // arg = W: a power limit applied to every port on top of its own setting; 0 removes it (bus_cap.h)
 } cmd_op_t;
 
-// Per-port advertised current ceiling (settings port_limit_ma). It is the
-// current field of every PDO the blade advertises, so the wattage ceiling
-// scales with the voltage the sink picks, up to PORT_POWER_MAX_MW: a PDO
-// whose top voltage would take that current past 100 W advertises less (the
-// 21 V PPS range stops at 4.75 A). The blade's own hardware limit is
-// PORT_HW_MAX_MA; on a gen-2 blade the INA226 emergency trip sits at 125 %
-// of that and does not move with the setting (the MPQ4242 enforces its own
-// OCP). A gen-3 blade holds its own limits and needs no trip from here.
+// Per-port power limit (settings port_limit_w): the most a port offers, in
+// watts. A gen-3 blade gives each fixed PDO the current that keeps it
+// within this power at its voltage, up to 5 A and what the cable carries
+// (blade_regs.h BLADE_REG_MAX_W), so a port turned down to 40 W offers
+// 40 W whichever voltage the sink picks. A gen-2 blade takes it as a
+// current at 20 V (blade.c). The budget throttles a port by lowering the
+// same limit. The blade's own hardware limit is PORT_HW_MAX_MA; on a gen-2
+// blade the INA226 emergency trip sits at 125 % of that and does not move
+// with the setting (the MPQ4242 enforces its own OCP). A gen-3 blade holds
+// its own limits and needs no trip from here.
 #define PORT_HW_MAX_MA    5000
-#define PORT_LIMIT_MIN_MA 500
-#define PORT_LIMIT_MAX_MA PORT_HW_MAX_MA
+#define PORT_LIMIT_MIN_W  5
+#define PORT_LIMIT_MAX_W  100
 #define PORT_POWER_MAX_MW 100000
 
 // Per-port voltage cap (settings port_max_mv): the highest PDO the blade

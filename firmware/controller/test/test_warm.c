@@ -196,7 +196,7 @@ static void test_changed_settings_reconfigure(void) {
     uint32_t en0 = sim_en_change_count(0);
     // settings changed underneath (an import, say): the adopted blade is
     // brought in line and, with a sink attached, re-advertised
-    g_settings.port_limit_ma[0] = 1000;
+    g_settings.port_limit_w[0] = 20;
     g_settings.port_max_mv[1] = 9000;
     MT_ASSERT_EQ(warm_reboot(), 0x03);
     tick_ms(100);
@@ -305,13 +305,13 @@ static void test_turned_down_port_keeps_its_offer(void) {
     sim_attach(0, 20000, 5000); // wants 100 W, 60 W free
     tick(2);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_THROTTLED);
-    MT_ASSERT_EQ(sim_advertised_ma(0), 3000);
+    MT_ASSERT_EQ(sim_advertised_w(0), 60);
     uint32_t caps0 = sim_src_cap_count(0), caps1 = sim_src_cap_count(1);
 
     MT_ASSERT_EQ(warm_reboot(), 0x03);
     tick_ms(200);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_THROTTLED);
-    MT_ASSERT_EQ(sim_advertised_ma(0), 3000);
+    MT_ASSERT_EQ(sim_advertised_w(0), 60);
     MT_ASSERT_EQ(sim_src_cap_count(0), caps0); // nothing new sent to either device
     MT_ASSERT_EQ(sim_src_cap_count(1), caps1);
     MT_ASSERT_EQ(budget_port_reservation(0), 60000);
@@ -320,7 +320,7 @@ static void test_turned_down_port_keeps_its_offer(void) {
     sim_detach(1);
     tick(3);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
-    MT_ASSERT_EQ(sim_advertised_ma(0), 5000);
+    MT_ASSERT_EQ(sim_advertised_w(0), 100);
 }
 
 static void test_fan_state_adopted(void) {

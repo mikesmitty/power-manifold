@@ -40,7 +40,11 @@ typedef struct {
     char     device_name[32]; // hostname / mDNS / MQTT topic id
     char     api_token[33];   // empty = REST mutations unauthenticated
     uint32_t budget_mw;       // chassis power budget
-    uint32_t port_limit_ma[NUM_PORTS]; // per-port PDO current ceiling
+    // The per-port current limit of layouts 1 to 22, replaced by
+    // port_limit_w. settings_save keeps it at the current that gives the
+    // power limit at 20 V, which is what an older firmware that reads this
+    // record goes by.
+    uint32_t retired_limit_ma[NUM_PORTS];
     uint8_t  port_priority[NUM_PORTS]; // 0 = highest; throttle victims picked from the bottom
     uint8_t  led_brightness;  // 0-255
     // -- added in layout version 2 (older records upgrade on load) --
@@ -110,6 +114,8 @@ typedef struct {
     uint8_t  https;            // 1: the web server listens on 443 and port 80 only redirects (net/https.h)
     // -- added in layout version 22 --
     uint8_t  auth_read;        // 1: reading status, faults, certificate details and /metrics also needs the API token, once one is stored
+    // -- added in layout version 23 --
+    uint8_t  port_limit_w[NUM_PORTS]; // per-port power limit in watts, PORT_LIMIT_MIN_W to PORT_LIMIT_MAX_W (manifold.h)
     uint32_t crc; // must remain last
 } settings_t;
 

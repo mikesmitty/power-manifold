@@ -46,6 +46,7 @@ bool blade3_read_status(blade3_status_t *s) {
     s->faults       = u16(b + BLADE_REG_FAULT - BLADE_REG_STATUS);
     s->contract_mv  = u16(b + BLADE_REG_CONTRACT_MV - BLADE_REG_STATUS);
     s->contract_ma  = u16(b + BLADE_REG_CONTRACT_MA - BLADE_REG_STATUS);
+    s->contract     = b[BLADE_REG_CONTRACT - BLADE_REG_STATUS];
     s->hr_sent      = b[BLADE_REG_HR_SENT - BLADE_REG_STATUS];
     s->hr_received  = b[BLADE_REG_HR_RECEIVED - BLADE_REG_STATUS];
     s->vbus_mv      = u16(b + BLADE_REG_VBUS_MV - BLADE_REG_STATUS);
@@ -58,19 +59,19 @@ bool blade3_read_status(blade3_status_t *s) {
 }
 
 bool blade3_read_config(blade3_config_t *c) {
-    uint8_t ctl, lim[5];
+    uint8_t ctl, lim[BLADE_REG_END - BLADE_REG_MAX_MV]; // MAX_MV, WATCH_S, MAX_W
     if (!read_regs(BLADE_REG_CONTROL, &ctl, 1)) return false;
-    if (!read_regs(BLADE_REG_MAX_MA, lim, sizeof lim)) return false;
+    if (!read_regs(BLADE_REG_MAX_MV, lim, sizeof lim)) return false;
     c->port_en = (ctl & BLADE_CTL_PORT_EN) != 0;
-    c->max_ma = u16(lim);
-    c->max_mv = u16(lim + 2);
-    c->watch_s = lim[4];
+    c->max_mv = u16(lim);
+    c->watch_s = lim[BLADE_REG_WATCH_S - BLADE_REG_MAX_MV];
+    c->max_w = lim[BLADE_REG_MAX_W - BLADE_REG_MAX_MV];
     return true;
 }
 
 bool blade3_write_config(const blade3_config_t *c) {
-    uint8_t lim[6] = {BLADE_REG_MAX_MA, (uint8_t)c->max_ma, (uint8_t)(c->max_ma >> 8),
-                      (uint8_t)c->max_mv, (uint8_t)(c->max_mv >> 8), c->watch_s};
+    uint8_t lim[5] = {BLADE_REG_MAX_MV, (uint8_t)c->max_mv, (uint8_t)(c->max_mv >> 8), c->watch_s,
+                      c->max_w};
     if (!write_regs(lim, sizeof lim)) return false;
     uint8_t ctl[2] = {BLADE_REG_CONTROL, c->port_en ? BLADE_CTL_PORT_EN : 0};
     return write_regs(ctl, sizeof ctl);

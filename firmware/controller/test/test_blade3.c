@@ -46,7 +46,7 @@ static void test_probe_configures_the_blade(void) {
     MT_ASSERT_EQ(tele.port[0].gen, 3);
     MT_ASSERT(sim_en(0));
     MT_ASSERT(sim_blade_port_en(0));
-    MT_ASSERT_EQ(sim_advertised_ma(0), 5000);
+    MT_ASSERT_EQ(sim_advertised_w(0), 100);
     MT_ASSERT_EQ(sim_advertised_mv(0), PORT_VOLT_MAX_MV);
     MT_ASSERT_EQ(sim_blade_config_writes(0), 1);
     MT_ASSERT_EQ(sim_blade_clear_count(0), 1); // the restart it booted with is cleared
@@ -96,11 +96,58 @@ static void test_pps_contract_at_21v(void) {
     support_reset(360000);
     seat3(0);
     tick(2);
-    sim_attach(0, 21000, 5000); // the 21 V range advertises 4.75 A: 99.75 W
+    sim_attach(0, 21000, 5000); // the blade holds a PPS sink to 100 W: 4.761 A at 21 V
     tick(2);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
-    MT_ASSERT_EQ(budget_port_reservation(0), 99750); // exact: no 0.5 W register rounding
+    MT_ASSERT_EQ(budget_port_reservation(0), 99981); // exact: no 0.5 W register rounding
     MT_ASSERT_EQ(tele.port[0].selected_pdo, 7);
+    MT_ASSERT_EQ(tele.port[0].contract, PORT_CONTRACT_PPS);
+
+    sim_detach(0);
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].contract, PORT_CONTRACT_NONE);
+    sim_attach(0, 20000, 3000);
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].contract, PORT_CONTRACT_FIXED);
+}
+
+// The budget turns a port down in watts: the sink gets the same power
+// whichever voltage it picks, up to 5 A
+static void test_a_throttled_port_offers_its_watts_at_every_voltage(void) {
+    support_reset(120000);
+    g_settings.port_priority[0] = 0;
+    g_settings.port_priority[1] = 1;
+    seat3(0);
+    seat3(1);
+    tick(2);
+    sim_attach(1, 9000, 5000); // 45 W at 9 V
+    tick(2);
+    sim_attach(0, 20000, 5000); // 100 W: port 2 keeps what is left
+    tick(3);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(sim_advertised_w(1), 20);
+    MT_ASSERT_EQ(sim_contract_mw(1), 19998); // 20 W at 9 V: 2.222 A, not 20 W at 20 V's 1 A
+    MT_ASSERT(budget_reserved() <= 120000);
+}
+
+// While the DC bus sags every port is held to 60 W, whichever voltage its
+// sink uses
+static void test_the_bus_cap_is_a_power(void) {
+    support_reset(600000);
+    seat3(0);
+    tick(2);
+    sim_attach(0, 9000, 5000);
+    tick(2);
+    MT_ASSERT_EQ(sim_contract_mw(0), 45000);
+    port_fsm_set_ceiling(60);
+    tick(2);
+    MT_ASSERT_EQ(sim_advertised_w(0), 60);
+    MT_ASSERT_EQ(sim_contract_mw(0), 45000); // 9 V at 5 A is within 60 W: nothing to give up
+    sim_detach(0);
+    sim_attach(0, 20000, 5000);
+    tick(2);
+    MT_ASSERT_EQ(sim_contract_mw(0), 60000);
+    port_fsm_set_ceiling(0);
 }
 
 static void test_throttle_needs_no_src_cap(void) {
@@ -119,7 +166,7 @@ static void test_throttle_needs_no_src_cap(void) {
     tick(3);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
     MT_ASSERT_EQ(port_state(1), PORT_STATE_THROTTLED);
-    MT_ASSERT(sim_advertised_ma(1) < 5000);
+    MT_ASSERT(sim_advertised_w(1) < 100);
     MT_ASSERT_EQ(sim_src_cap_count(1), 0); // the new ceiling was written; the blade re-advertised
     MT_ASSERT(budget_port_reservation(0) + budget_port_reservation(1) <= 120000);
     MT_ASSERT_EQ(sim_contract_mw(1), budget_port_reservation(1));
@@ -127,7 +174,7 @@ static void test_throttle_needs_no_src_cap(void) {
     sim_detach(0);
     tick(3);
     MT_ASSERT_EQ(port_state(1), PORT_STATE_ACTIVE); // restored
-    MT_ASSERT_EQ(sim_advertised_ma(1), 5000);
+    MT_ASSERT_EQ(sim_advertised_w(1), 100);
     MT_ASSERT_EQ(budget_port_reservation(1), 100000);
 }
 
@@ -271,12 +318,12 @@ static void test_warm_adoption_rewrites_a_changed_config(void) {
     MT_ASSERT_EQ(budget_port_reservation(0), 100000);
     uint32_t writes = sim_blade_config_writes(0);
 
-    g_settings.port_limit_ma[0] = 3000; // the setting changed before the reboot took
+    g_settings.port_limit_w[0] = 60; // the setting changed before the reboot took
     MT_ASSERT_EQ(warm_reboot(), 0x01);
     tick(3);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
     MT_ASSERT_EQ(sim_blade_config_writes(0), writes + 1);
-    MT_ASSERT_EQ(sim_advertised_ma(0), 3000);
+    MT_ASSERT_EQ(sim_advertised_w(0), 60);
     MT_ASSERT_EQ(budget_port_reservation(0), 60000); // the blade renegotiated on its own
 }
 
@@ -311,11 +358,11 @@ static void test_limit_and_cap_commands(void) {
     tick(2);
     MT_ASSERT_EQ(budget_port_reservation(0), 100000);
 
-    g_settings.port_limit_ma[0] = 3000;
-    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 3000};
+    g_settings.port_limit_w[0] = 60;
+    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 60};
     port_fsm_cmd(0, &c);
     tick(2);
-    MT_ASSERT_EQ(sim_advertised_ma(0), 3000);
+    MT_ASSERT_EQ(sim_advertised_w(0), 60);
     MT_ASSERT_EQ(sim_advertised_mv(0), PORT_VOLT_MAX_MV); // the cap rode along unchanged
     MT_ASSERT_EQ(budget_port_reservation(0), 60000);
     MT_ASSERT_EQ(sim_src_cap_count(0), 0);
@@ -325,9 +372,9 @@ static void test_limit_and_cap_commands(void) {
     port_fsm_cmd(0, &c);
     tick(2);
     MT_ASSERT_EQ(sim_advertised_mv(0), 9000);
-    MT_ASSERT_EQ(sim_advertised_ma(0), 3000); // and the ceiling stayed
+    MT_ASSERT_EQ(sim_advertised_w(0), 60); // and the power limit stayed
     MT_ASSERT_EQ(tele.port[0].bus_mv, 9000);
-    MT_ASSERT_EQ(budget_port_reservation(0), 27000);
+    MT_ASSERT_EQ(budget_port_reservation(0), 45000); // 60 W at 9 V would be 6.67 A: 5 A is the most
 
     c = (engine_cmd_t){.op = CMD_PORT_SRC_CAP, .port = 0};
     port_fsm_cmd(0, &c);
@@ -486,6 +533,8 @@ void run_blade3_tests(void) {
     mt_run("blade3: port is dark until configured", test_port_is_dark_until_configured);
     mt_run("blade3: attach, contract, telemetry, detach", test_attach_contract_and_telemetry);
     mt_run("blade3: PPS contract at 21 V", test_pps_contract_at_21v);
+    mt_run("blade3: a throttled port offers its watts at every voltage", test_a_throttled_port_offers_its_watts_at_every_voltage);
+    mt_run("blade3: the bus cap is a power", test_the_bus_cap_is_a_power);
     mt_run("blade3: throttle needs no src_cap", test_throttle_needs_no_src_cap);
     mt_run("blade3: fault is cleared after the controller saw it", test_fault_is_cleared_after_the_controller_saw_it);
     mt_run("blade3: OCP trip through the alert line", test_ocp_trip_through_the_alert_line);

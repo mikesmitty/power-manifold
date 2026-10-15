@@ -15,7 +15,7 @@
 //   base/port/N/telemetry      1 Hz per-port JSON (N = 1-based)
 //   base/port/N/set            command: ON/OFF (admin enable), hard_reset, src_cap
 //   base/port/N/priority/set   command: 0-255 (0 = highest)
-//   base/port/N/limit/set      command: advertised current ceiling, mA (500-5000)
+//   base/port/N/limit/set      command: power limit, W (5-100)
 //   base/port/N/boot/set       command: on/off/last — administrative state at power-up
 //   base/port/N/autooff/set    command: ON/OFF — switch the port off once its sink is charged
 //   base/port/N/sleep/set      command: minutes after attach to switch off (0 = never)

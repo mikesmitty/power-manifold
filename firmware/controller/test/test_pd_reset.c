@@ -30,7 +30,7 @@ static void test_hard_resets_are_reported(void) {
     MT_ASSERT_EQ(e->code, PD_RESET_RECEIVED);
     MT_ASSERT_EQ(e->arg, PD_RESET_NO_READV); // no new offer since the device plugged in
 
-    g_settings.port_limit_ma[0] = 3000; // a new offer goes out
+    g_settings.port_limit_w[0] = 60; // a new offer goes out
     tick(1);
     tick_ms(200);
     sim_pd_hard_reset(0, false);

@@ -386,7 +386,7 @@ paths:
               examples:
                 range:
                   value:
-                    error: 'port_limits_ma: 500-5000 mA each'
+                    error: 'port_limits_w: 5-100 W each'
                 https:
                   value:
                     error: 'https: install a certificate first (POST /api/v1/tls)'
@@ -1078,7 +1078,7 @@ components:
         - boot
         - warm_start
         - vin_v
-        - ceiling_ma
+        - ceiling_w
         - problem
         - problems
         - led_mode
@@ -1158,12 +1158,12 @@ components:
         vin_v:
           type: [number, 'null']
           description: Input voltage; `null` on hardware that does not measure it.
-        ceiling_ma:
+        ceiling_w:
           type: integer
           description: |
-            The current every port is held to while the input voltage is low,
-            in mA, or 0 when no cap applies. See
-            [Ports capped at 3 A](https://docs.powermanifold.io/guide/troubleshooting/#ports-capped-at-3-a).
+            The power every port is held to while the input voltage is low,
+            in watts, or 0 when no cap applies. See
+            [Ports capped at 60 W](https://docs.powermanifold.io/guide/troubleshooting/#ports-capped-at-60-w).
         problem:
           type: boolean
           description: Something needs attention.
@@ -1210,13 +1210,14 @@ components:
         - attached
         - charged
         - pdo
+        - contract
         - v
         - i
         - p
         - e
         - contract_w
         - prio
-        - limit_ma
+        - limit_w
         - max_v
         - boot
         - fault
@@ -1253,7 +1254,19 @@ components:
           type: integer
           minimum: 0
           maximum: 7
-          description: The power offer the device chose, 1–7; 0 for none.
+          description: |
+            The power offer the device chose, 1–7, as the port listed them
+            when it chose; 0 for none. The list changes with the voltage cap,
+            so the same number can mean a different offer on another port.
+            `contract` says what kind of offer it is.
+        contract:
+          type: [string, 'null']
+          enum: [fixed, pps, avs, null]
+          description: |
+            The kind of contract: `fixed` (a fixed voltage), `pps`
+            (Programmable Power Supply, the voltage and a current limit
+            set by the device), `avs` (SPR Adjustable Voltage Supply, the
+            voltage set by the device), or `null` without one.
         v:
           type: number
           description: Output voltage, in volts.
@@ -1272,9 +1285,13 @@ components:
         prio:
           type: integer
           description: Priority; 0 is the most important.
-        limit_ma:
+        limit_w:
           type: integer
-          description: The port's current limit, in mA.
+          minimum: 5
+          maximum: 100
+          description: |
+            The port's power limit, in watts: the most it offers at any
+            voltage, up to 5 A.
         max_v:
           type: integer
           description: The highest voltage the port offers.
@@ -1644,14 +1661,14 @@ components:
             type: string
             maxLength: 23
           description: Port names; empty for the default name.
-        port_limits_ma:
+        port_limits_w:
           type: array
           maxItems: 6
           items:
             type: integer
-            minimum: 500
-            maximum: 5000
-          description: Current limit per port, in mA.
+            minimum: 5
+            maximum: 100
+          description: Power limit per port, in watts.
         port_max_v:
           type: array
           maxItems: 6
@@ -1786,7 +1803,7 @@ components:
         boot: power-on
         warm_start: false
         vin_v: 24.06
-        ceiling_ma: 0
+        ceiling_w: 0
         problem: false
         problems: ''
         led_mode: normal
@@ -1817,32 +1834,32 @@ components:
           mqtt_problem: null
         ports:
           - {name: Laptop, state: active, gen: 3, attached: true, charged: false, pdo: 5,
-             v: 20.021, i: 2.712, p: 54.30, e: 6.211, contract_w: 65.0, prio: 0,
-             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: 54.9,
+             contract: fixed, v: 20.021, i: 2.712, p: 54.30, e: 6.211, contract_w: 65.0, prio: 0,
+             limit_w: 100, max_v: 20, boot: 'on', fault: 0, t_conv: 54.9,
              t_plug: 41.3, t_mcu: 36.2, progress: 0, update_due: false, fw: 0.2.0,
              silent: false}
           - {name: Phone, state: active, gen: 3, attached: true, charged: false, pdo: 2,
-             v: 9.004, i: 2.180, p: 19.63, e: 1.402, contract_w: 27.0, prio: 1,
-             limit_ma: 3000, max_v: 9, boot: 'on', fault: 0, t_conv: 41.2,
+             contract: fixed, v: 9.004, i: 2.180, p: 19.63, e: 1.402, contract_w: 27.0, prio: 1,
+             limit_w: 60, max_v: 9, boot: 'on', fault: 0, t_conv: 41.2,
              t_plug: 33.0, t_mcu: 34.8, progress: 0, update_due: false, fw: 0.2.0,
              silent: false}
           - {name: Port 3, state: idle, gen: 3, attached: false, charged: false, pdo: 0,
-             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 2,
-             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: 30.1,
+             contract: null, v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 2,
+             limit_w: 100, max_v: 20, boot: 'on', fault: 0, t_conv: 30.1,
              t_plug: 29.4, t_mcu: 31.0, progress: 0, update_due: false, fw: 0.2.0,
              silent: false}
           - {name: Port 4, state: idle, gen: 3, attached: false, charged: false, pdo: 0,
-             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 3,
-             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: 29.8,
+             contract: null, v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 3,
+             limit_w: 100, max_v: 20, boot: 'on', fault: 0, t_conv: 29.8,
              t_plug: 29.0, t_mcu: 30.7, progress: 0, update_due: false, fw: 0.2.0,
              silent: false}
           - {name: Port 5, state: disabled, gen: 3, attached: false, charged: false, pdo: 0,
-             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 4,
-             limit_ma: 5000, max_v: 20, boot: last, fault: 0, t_conv: 28.9,
+             contract: null, v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 4,
+             limit_w: 100, max_v: 20, boot: last, fault: 0, t_conv: 28.9,
              t_plug: 28.5, t_mcu: 30.2, progress: 0, update_due: false, fw: 0.2.0,
              silent: false}
           - {name: Port 6, state: absent, gen: 0, attached: false, charged: false, pdo: 0,
-             v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 5,
-             limit_ma: 5000, max_v: 20, boot: 'on', fault: 0, t_conv: null,
+             contract: null, v: 0.0, i: 0.0, p: 0.0, e: 0.0, contract_w: 0.0, prio: 5,
+             limit_w: 100, max_v: 20, boot: 'on', fault: 0, t_conv: null,
              t_plug: null, t_mcu: null, progress: 0, update_due: false, fw: null,
              silent: false}

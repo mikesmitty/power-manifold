@@ -36,4 +36,4 @@ bool bus_cap_poll(uint32_t now_ms, uint32_t vin_mv) {
 
 bool bus_cap_on(void) { return on; }
 
-uint32_t bus_cap_ma(void) { return on ? BUS_CAP_MA : 0; }
+uint32_t bus_cap_w(void) { return on ? BUS_CAP_W : 0; }

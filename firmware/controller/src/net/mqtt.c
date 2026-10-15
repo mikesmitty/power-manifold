@@ -40,13 +40,13 @@
 #define RELEASE_NOTES_URL "https://github.com/mikesmitty/power-manifold/releases/tag/controller-firmware-v"
 
 // discovery entity table: per-port sensors + switch + buttons + priority,
-// current-limit, voltage-cap and boot-policy controls + event entity +
+// power-limit, voltage-cap and boot-policy controls + event entity +
 // charge controls + the thermometers a gen-3 blade carries (published while
 // the port holds one, retracted for a gen-2 blade, left as they are while
 // the slot is empty or still probing); chassis sensors + fan + BLE
 // provisioning button (the last chassis step retracts the pre-select fan
 // switch config)
-#define PORT_SENSOR_N    5
+#define PORT_SENSOR_N    6
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
 #define PORT_PROTECT     (PORT_SENSOR_N + 13) // retracted: the setting was removed
 #define PORT_ENTITIES    (PORT_SENSOR_N + 14)
@@ -188,10 +188,10 @@ static void handle_command(const char *topic, const char *data) {
     unsigned port;
     if (sscanf(sub, "/port/%u/limit/set", &port) == 1 &&
         strstr(sub, "/limit/set") != NULL && port >= 1 && port <= NUM_PORTS) {
-        int ma = atoi(data); // HA sends the box value, possibly as "3000.0"
-        if (data[0] >= '0' && data[0] <= '9' && ma >= PORT_LIMIT_MIN_MA && ma <= PORT_LIMIT_MAX_MA) {
-            g_settings.port_limit_ma[port - 1] = (uint32_t)ma;
-            engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = (uint8_t)(port - 1), .arg = (uint32_t)ma};
+        int w = atoi(data); // HA sends the box value, possibly as "60.0"
+        if (data[0] >= '0' && data[0] <= '9' && w >= PORT_LIMIT_MIN_W && w <= PORT_LIMIT_MAX_W) {
+            g_settings.port_limit_w[port - 1] = (uint8_t)w;
+            engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = (uint8_t)(port - 1), .arg = (uint32_t)w};
             ipc_cmd_push(&c);
             settings_save_later();
         }
@@ -474,6 +474,8 @@ static const sensor_spec_t PORT_SENSORS[PORT_SENSOR_N] = {
     {"current", "current", "current", "A",   MEASUREMENT, "{{ value_json.i }}"},
     {"energy",  "energy",  "energy",  "kWh", TOTALINC,    "{{ value_json.e }}"},
     {"state",   "state",   NULL,      NULL,  "",          "{{ value_json.state }}"},
+    // the kind of contract: fixed, pps or avs, none without one
+    {"contract", "contract", NULL,     NULL,  "",          "{{ value_json.contract or 'none' }}"},
 };
 
 static void discovery_config_topic(const char *component, const char *object) {
@@ -570,13 +572,13 @@ static void publish_port_limit_number(unsigned port) {
     snprintf(object, sizeof(object), "p%u_limit", port);
     discovery_config_topic("number", object);
     snprintf(payload_buf, sizeof(payload_buf),
-             "{\"~\":\"%s\",\"name\":\"%s current limit\","
+             "{\"~\":\"%s\",\"name\":\"%s power limit\","
              "\"uniq_id\":\"pwrman_%s_%s\",\"cmd_t\":\"~/port/%u/limit/set\","
              "\"stat_t\":\"~/port/%u/telemetry\","
-             "\"val_tpl\":\"{{ value_json.limit_ma }}\",\"unit_of_meas\":\"mA\","
-             "\"min\":%d,\"max\":%d,\"step\":20,\"mode\":\"box\",\"ic\":\"mdi:current-dc\","
+             "\"val_tpl\":\"{{ value_json.limit_w }}\",\"unit_of_meas\":\"W\",\"dev_cla\":\"power\","
+             "\"min\":%d,\"max\":%d,\"step\":1,\"mode\":\"box\",\"ic\":\"mdi:flash\","
              "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
-             base, port_label(port), uid, object, port, port, PORT_LIMIT_MIN_MA, PORT_LIMIT_MAX_MA,
+             base, port_label(port), uid, object, port, port, PORT_LIMIT_MIN_W, PORT_LIMIT_MAX_W,
              device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -1071,7 +1073,7 @@ static void publish_telemetry(void) {
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
              "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
              "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\","
-             "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_ma\":%lu}",
+             "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_w\":%lu}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -1081,7 +1083,7 @@ static void publish_telemetry(void) {
              n_problems ? "ON" : "OFF", problems_json, g_settings.charged_mw,
              g_settings.charged_min, led_mode_name(led_sched_current()),
              vin_fitted() ? "true" : "false",
-             vin_mv() / 1000.0, (unsigned long)bus_cap_ma());
+             vin_mv() / 1000.0, (unsigned long)bus_cap_w());
     publish(topic_buf, payload_buf, 0, 1);
     publish_blade_state(&t);
 
@@ -1089,10 +1091,12 @@ static void publish_telemetry(void) {
         const port_telemetry_t *p = &t.port[i];
         port_gen[i] = p->gen;
         snprintf(topic_buf, sizeof(topic_buf), "%s/port/%u/telemetry", base, i + 1);
-        char tc[8], tp[8], tm[8], fw[20] = "null";
+        char tc[8], tp[8], tm[8], fw[20] = "null", kind[8] = "null";
         port_temp_text(tc, sizeof(tc), p->temp_conv_dc, "null");
         port_temp_text(tp, sizeof(tp), p->temp_plug_dc, "null");
         port_temp_text(tm, sizeof(tm), p->temp_mcu_dc, "null");
+        if (port_contract_name(p->contract))
+            snprintf(kind, sizeof(kind), "\"%s\"", port_contract_name(p->contract));
         if (p->blade_fw) {
             char v[16];
             version_text(v, sizeof(v), p->blade_fw);
@@ -1107,16 +1111,16 @@ static void publish_telemetry(void) {
         }
         snprintf(payload_buf, sizeof(payload_buf),
                  "{\"state\":\"%s\",\"gen\":%u,\"v\":%.3f,\"i\":%.3f,\"p\":%.2f,\"e\":%.3f,"
-                 "\"pdo\":%u,\"contract_w\":%.1f,\"prio\":%u,\"limit_ma\":%lu,\"max_v\":%u,"
+                 "\"pdo\":%u,\"contract\":%s,\"contract_w\":%.1f,\"prio\":%u,\"limit_w\":%u,\"max_v\":%u,"
                  "\"boot\":\"%s\",\"charged\":%s,\"auto_off\":%s,\"sleep_min\":%u,"
                  "\"fault\":%u,\"last_fault\":\"%s\",\"last_fault_at\":%lu,"
                  "\"t_conv\":%s,\"t_plug\":%s,\"t_mcu\":%s,\"progress\":%u,"
                  "\"update_due\":%s,\"fw\":%s,\"silent\":%s}",
                  port_state_name((port_state_t)p->state), p->gen, p->bus_mv / 1000.0,
                  p->current_ma / 1000.0, p->power_mw / 1000.0,
-                 p->energy_mwh / 1e6, p->selected_pdo,
+                 p->energy_mwh / 1e6, p->selected_pdo, kind,
                  p->contract_mw / 1000.0, g_settings.port_priority[i],
-                 (unsigned long)g_settings.port_limit_ma[i], g_settings.port_max_mv[i] / 1000,
+                 g_settings.port_limit_w[i], g_settings.port_max_mv[i] / 1000,
                  settings_port_boot_name(g_settings.port_boot[i]),
                  p->charged ? "true" : "false",
                  (g_settings.port_auto_off >> i) & 1 ? "true" : "false",

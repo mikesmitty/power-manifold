@@ -13,7 +13,7 @@
 // this against a pair of sectors in RAM.
 
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    22
+#define SETTINGS_VERSION    23
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -41,6 +41,7 @@
 #define SETTINGS_V19_PAYLOAD ALIGN4(offsetof(settings_t, update_postpone))
 #define SETTINGS_V20_PAYLOAD ALIGN4(offsetof(settings_t, https))
 #define SETTINGS_V21_PAYLOAD ALIGN4(offsetof(settings_t, auth_read))
+#define SETTINGS_V22_PAYLOAD ALIGN4(offsetof(settings_t, port_limit_w))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -66,7 +67,8 @@ _Static_assert(SETTINGS_V18_PAYLOAD == 2848, "settings v18 layout moved");
 _Static_assert(SETTINGS_V19_PAYLOAD == 2976, "settings v19 layout moved");
 _Static_assert(SETTINGS_V20_PAYLOAD == 3036, "settings v20 layout moved");
 _Static_assert(SETTINGS_V21_PAYLOAD == 3036, "settings v21 layout moved"); // https fit in v20's padding
-_Static_assert(offsetof(settings_t, crc) == 3036, "settings v22 layout moved"); // auth_read fit in v20's padding
+_Static_assert(SETTINGS_V22_PAYLOAD == 3036, "settings v22 layout moved"); // auth_read fit in v20's padding
+_Static_assert(offsetof(settings_t, crc) == 3044, "settings v23 layout moved");
 _Static_assert(sizeof(settings_t) <= SETTINGS_SECTOR_SIZE, "settings record outgrew its sector");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
@@ -121,6 +123,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t record_payload_len(const settings_t *s) {
     switch (s->version) {
     case SETTINGS_VERSION: return payload_len();
+    case 22:               return SETTINGS_V22_PAYLOAD;
     case 21:               return SETTINGS_V21_PAYLOAD;
     case 20:               return SETTINGS_V20_PAYLOAD;
     case 19:               return SETTINGS_V19_PAYLOAD;
@@ -183,7 +186,8 @@ void settings_defaults(void) {
     g_settings.mqtt_port = 1883;
     g_settings.budget_mw = 360 * 1000; // 15A @ 24V; tune to the chassis supply
     for (int i = 0; i < NUM_PORTS; i++) {
-        g_settings.port_limit_ma[i] = 5000;
+        g_settings.port_limit_w[i] = PORT_LIMIT_MAX_W;
+        g_settings.retired_limit_ma[i] = PORT_LIMIT_MAX_W * 1000u / 20u;
         g_settings.port_max_mv[i] = PORT_VOLT_MAX_MV;
         g_settings.port_priority[i] = i;
     }
@@ -285,6 +289,15 @@ void settings_load(void) {
         }
         if (g_settings.version < 21) g_settings.https = 0;
         if (g_settings.version < 22) g_settings.auth_read = 0;
+        if (g_settings.version < 23) {
+            // the current limit becomes the power it gives at 20 V
+            for (int i = 0; i < NUM_PORTS; i++) {
+                uint32_t w = g_settings.retired_limit_ma[i] * 20u / 1000u;
+                if (w < PORT_LIMIT_MIN_W) w = PORT_LIMIT_MIN_W;
+                if (w > PORT_LIMIT_MAX_W) w = PORT_LIMIT_MAX_W;
+                g_settings.port_limit_w[i] = (uint8_t)w;
+            }
+        }
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();
@@ -311,6 +324,9 @@ bool settings_save(void) {
         if (trial_slot < 0) trial_slot = target;
         target = trial_slot;
     }
+
+    for (int i = 0; i < NUM_PORTS; i++)
+        g_settings.retired_limit_ma[i] = (uint32_t)g_settings.port_limit_w[i] * 1000u / 20u;
 
     g_settings.seq++;
     g_settings.magic = SETTINGS_MAGIC;

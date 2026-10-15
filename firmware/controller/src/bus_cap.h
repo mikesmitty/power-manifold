@@ -3,24 +3,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Bus-sag current cap. When the DC bus is pulled down by the load (a long
+// Bus-sag power cap. When the DC bus is pulled down by the load (a long
 // input lead at 30 A, a battery near empty, a 24 V supply trimmed low) and
 // reaches the backplane's under-voltage threshold, a little under 18 V, the
 // backplane switches the whole bus off: every port and the controller with
 // it. This module acts before that point. While the bus is under 20 V it
-// caps every port's advertised current at 3 A, so no sink can hold a 5 A
-// PDO or APDO and no port delivers more than 60 W. Sinks that are attached
-// renegotiate to a smaller contract; no port is switched off. The cap also
-// keeps each slot connector within its current rating: a slot feeds its
-// blade through six VIN pins rated about 1.1 A each, and a gen-3 blade at
-// full output on a bus this low runs its converter in boost and can draw
-// more than that. The numbers are fixed, not settings: this is a safety
-// cut-off.
+// caps every port's power limit at 60 W, so no port delivers more than
+// 60 W. Sinks that are attached renegotiate to a smaller contract; no port
+// is switched off. The cap also keeps each slot connector within its
+// current rating: a slot feeds its blade through six VIN pins rated about
+// 1.1 A each, and a gen-3 blade at full output on a bus this low runs its
+// converter in boost and can draw more than that. What a blade draws
+// follows the power it delivers, not its output current, so the cap is a
+// power. The numbers are fixed, not settings: this is a safety cut-off.
 //
 // Hardware-free. Core 0 calls bus_cap_poll with the bus monitor's reading
 // (vin.h) and, when the cap changes, sends the engine CMD_SET_CEILING.
 
-#define BUS_CAP_MA      3000  // the per-port current limit while the cap is on
+#define BUS_CAP_W       60    // the per-port power limit while the cap is on
 #define BUS_CAP_ON_MV   20000 // the cap goes on when the bus reads below this
 #define BUS_CAP_OFF_MV  20500 // and comes off once the bus has stayed at or above this
 #define BUS_CAP_HOLD_MS 30000 // for this long without a dip
@@ -39,4 +39,4 @@ void bus_cap_init(void);
 // put the same load back on the same supply.
 bool bus_cap_poll(uint32_t now_ms, uint32_t vin_mv);
 bool bus_cap_on(void);
-uint32_t bus_cap_ma(void); // BUS_CAP_MA while on, 0 otherwise
+uint32_t bus_cap_w(void); // BUS_CAP_W while on, 0 otherwise

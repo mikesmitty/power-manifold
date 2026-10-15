@@ -41,6 +41,7 @@ typedef struct {
     bool     attached;
     bool     configured;   // gen 3: the blade still holds what it was given (a restart clears it); gen 2: always
     uint8_t  selected_pdo; // 1-7, 0 = none
+    uint8_t  contract;     // PORT_CONTRACT_*
     uint16_t fault_bits;   // PORT_FAULT_*, 0 while nothing is latched
     uint32_t fault_detail; // for EVT_FAULT's arg: the INA226 trip flag (gen 2), the raw blade word under PORT_FAULT_ARG_GEN3 (gen 3)
     uint32_t contract_mw;
@@ -76,29 +77,30 @@ bool blade_identity(blade_gen_t gen, blade_identity_t *id);
 // the caller picks a moment when nothing is plugged in, or has been told to.
 bool blade_request_loader(blade_gen_t gen, bool boot_option);
 
-// Probe steps: 0 on success, else a PROBE_FAIL_* code.
+// Probe steps: 0 on success, else a PROBE_FAIL_* code. Limits are the power
+// limit in watts and the voltage cap in mV.
 // A freshly powered blade: configure it from scratch.
-uint16_t blade_setup(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv);
+uint16_t blade_setup(blade_gen_t gen, uint32_t max_w, uint32_t max_mv);
 // A blade adopted powered at a warm start: read what latched while the
 // controller was down (st->fault_bits, for the caller to act on), then check
 // its configuration against ours and rewrite it — re-advertising to an
 // attached sink — only when it differs, so a live contract is not interrupted.
-uint16_t blade_adopt(blade_gen_t gen, uint32_t max_ma, uint32_t max_mv, blade_status_t *st);
+uint16_t blade_adopt(blade_gen_t gen, uint32_t max_w, uint32_t max_mv, blade_status_t *st);
 // The limits a gen-3 blade holds while a device is on its port and the
 // blade still has the configuration it was given: what a restarted
 // controller leaves running. False otherwise, and always
 // for a gen-2 blade, whose limits are not read back.
-bool blade_running_limits(blade_gen_t gen, uint32_t *ma, uint32_t *mv);
+bool blade_running_limits(blade_gen_t gen, uint32_t *w, uint32_t *mv);
 
 // Telemetry, contract and faults. `alert` also reads the latch only the
 // alert sweep clears (a gen-2 blade's INA226). False: the blade did not
 // answer; st keeps its previous values.
 bool blade_poll(blade_gen_t gen, bool alert, blade_status_t *st);
 
-// The advertised current ceiling and voltage cap. A gen-3 blade
-// re-advertises on its own when its table changes; a gen-2 part has to be
-// asked, which `readvertise` does.
-bool blade_set_limits(blade_gen_t gen, uint32_t ma, uint32_t mv, bool readvertise);
+// The power limit and voltage cap. A gen-3 blade re-advertises on its own
+// when its table changes; a gen-2 part has to be asked, which `readvertise`
+// does.
+bool blade_set_limits(blade_gen_t gen, uint32_t w, uint32_t mv, bool readvertise);
 bool blade_send_src_cap(blade_gen_t gen);
 bool blade_hard_reset(blade_gen_t gen);
 

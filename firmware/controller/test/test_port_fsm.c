@@ -101,17 +101,17 @@ static void test_limit_applies_live(void) {
     tick(2);
     MT_ASSERT_EQ(sim_contract_mw(0), 60000);
     uint32_t caps = sim_src_cap_count(0);
-    g_settings.port_limit_ma[0] = 1000; // core 0 stores it, then commands the engine
-    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 1000};
+    g_settings.port_limit_w[0] = 20; // core 0 stores it, then commands the engine
+    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 20};
     port_fsm_cmd(0, &c);
     tick(2);
-    MT_ASSERT_EQ(sim_advertised_ma(0), 1000);
+    MT_ASSERT_EQ(sim_advertised_ma(0), 1000); // a gen-2 blade takes 20 W as 1 A at 20 V
     MT_ASSERT_EQ(sim_src_cap_count(0), caps + 1); // renegotiated at once
     MT_ASSERT_EQ(sim_contract_mw(0), 20000);       // 20 V x 1 A
     MT_ASSERT_EQ(budget_port_reservation(0), 20000);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
     MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250); // the emergency trip does not follow the cap
-    // the ceiling sticks across a detach / re-attach
+    // the limit sticks across a detach / re-attach
     sim_detach(0);
     tick(2);
     sim_attach(0, 20000, 3000);
@@ -124,8 +124,8 @@ static void test_limit_set_while_idle(void) {
     sim_set_present(0, true);
     tick(2);
     uint32_t caps = sim_src_cap_count(0);
-    g_settings.port_limit_ma[0] = 1500;
-    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 1500};
+    g_settings.port_limit_w[0] = 30;
+    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 0, .arg = 30};
     port_fsm_cmd(0, &c);
     MT_ASSERT_EQ(sim_advertised_ma(0), 1500);
     MT_ASSERT_EQ(sim_src_cap_count(0), caps); // nobody to renegotiate with
@@ -443,8 +443,8 @@ void run_port_fsm_tests(void) {
     mt_run("fsm: attach 12V lands PDO3", test_attach_12v_contract);
     mt_run("fsm: attach 15V lands PDO4", test_attach_15v_contract);
     mt_run("fsm: small contract reserves base", test_small_contract_reserves_base);
-    mt_run("fsm: current limit applies live", test_limit_applies_live);
-    mt_run("fsm: current limit set while idle", test_limit_set_while_idle);
+    mt_run("fsm: power limit applies live", test_limit_applies_live);
+    mt_run("fsm: power limit set while idle", test_limit_set_while_idle);
     mt_run("fsm: voltage cap applies live", test_volt_cap_applies_live);
     mt_run("fsm: voltage cap from probe and while idle", test_volt_cap_from_probe);
     mt_run("fsm: detach returns to idle", test_detach_returns_to_idle);

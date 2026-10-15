@@ -15,7 +15,8 @@ The firmware runs on two cores. **Only core 1 accesses the backplane.**
   WS2812C status LEDs via PIO. When a new contract would exceed the chassis
   budget, strictly lower-priority ports are renegotiated downward first
   (worst priority first, 15 W floor); only if that isn't enough does the
-  newcomer get clamped. Throttled ports recover automatically when budget
+  newcomer get clamped. A port is turned down by lowering its power limit,
+  so its sink gets the same power whichever voltage it uses. Throttled ports recover automatically when budget
   frees up, highest priority first. Per-port priority: `port <n> priority`
   in the CLI (0 = highest, default = port number).
 - **Core 0 — management** (`src/net/`, `src/cli.c`): lwIP over CYW43 WiFi
@@ -108,8 +109,10 @@ priority alone.
   the register map in `firmware/charger-module/include/blade_regs.h`, which
   this firmware includes as-is. Its MCU runs from the slot's 5 V, so it
   answers with EN low, and its port stays dark until it has been given a
-  current ceiling and a voltage cap and told to advertise — the probe does
-  both. It re-advertises by itself whenever its limits change, meters VBUS
+  power limit and a voltage cap and told to advertise — the probe does
+  both. It offers the power limit at every voltage: each fixed PDO carries
+  the limit divided by its voltage, up to 5 A, and it reports which kind
+  of contract it holds (fixed, PPS or SPR AVS). It re-advertises by itself whenever its limits change, meters VBUS
   and the port current itself, reports its converter, receptacle and MCU
   temperatures (the status table, the JSON, `/metrics` and two Home
   Assistant sensors per port carry them), and carries its own
@@ -211,7 +214,7 @@ The following events do not switch a port off. Each is handled as described:
   port ([Blade firmware updates](flash-and-updates.md#blade-firmware-updates)).
 - **A controller update that does not stick**: a trial image changes
   nothing about a blade.
-- **A sagging DC bus**: the ports are capped at 3 A, never cut
+- **A sagging DC bus**: the ports are capped at 60 W, never cut
   ([Bus voltage](#bus-voltage)).
 - **One bad read.** A presence read that says a seated blade has left is
   taken again before it is believed; an expander whose configuration word
@@ -251,15 +254,15 @@ ADC pin, so there the monitor reports *not present* and every surface leaves
 it out.
 
 **Bus-sag cap.** Before the bus gets near that cut, the firmware takes
-load off it: while the bus reads under 20.0 V every port's advertised
-current is capped at 3 A, chassis-wide, under whatever the port's own
-limit is. No sink can then hold a 5 A PDO or APDO and no port delivers
-more than 60 W; sinks that are attached are sent the new table and
-renegotiate within it, and nothing is switched off. The cap also keeps
-each slot connector within its current rating: a slot feeds its blade
-through six VIN pins rated about 1.1 A each, and a gen-3 blade at full
-output on a bus this low runs its converter in boost and can draw more
-than that. The cap comes off
+load off it: while the bus reads under 20.0 V every port's power limit is
+capped at 60 W, chassis-wide, under whatever the port's own limit is. No
+port then delivers more than 60 W; sinks that are attached are sent the
+new table and renegotiate within it, and nothing is switched off. The cap
+also keeps each slot connector within its current rating: a slot feeds
+its blade through six VIN pins rated about 1.1 A each, and a gen-3 blade
+at full output on a bus this low runs its converter in boost and can draw
+more than that. What a blade draws follows the power it delivers, not its
+output current, which is why the cap is a power. The cap comes off
 once the bus has held 20.5 V for 30 s without a dip. At power-up the
 first reading is judged against 20.5 V rather than 20.0 V, so a chassis
 that has just been cut by the backplane and comes back on a marginal
@@ -267,7 +270,7 @@ supply brings its blades up under the cap and leaves it only once the
 voltage has recovered, without immediately reapplying the full load. The
 numbers are fixed, not settings: this is a safety cut-off (`src/bus_cap.c`). While it is on, the
 problem indicator says so (`bus voltage sagging, 19.80 V, ports capped at
-3 A`), `ceiling_ma` in the status JSON and MQTT status is 3000 (0
+60 W`), `ceiling_w` in the status JSON and MQTT status is 60 (0
 otherwise), the page's chassis summary and the console's `status` and
 `info` note it, and a line is logged each way. A board without the
 divider never caps.

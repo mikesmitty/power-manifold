@@ -34,7 +34,7 @@ static void test_cap_off_on_a_healthy_bus(void) {
     start();
     MT_ASSERT_EQ(feed(24000, 60000), 0);
     MT_ASSERT(!bus_cap_on());
-    MT_ASSERT_EQ(bus_cap_ma(), 0);
+    MT_ASSERT_EQ(bus_cap_w(), 0);
 }
 
 static void test_cap_goes_on_under_20v_and_off_after_30s_above_20v5(void) {
@@ -43,7 +43,7 @@ static void test_cap_goes_on_under_20v_and_off_after_30s_above_20v5(void) {
     MT_ASSERT_EQ(feed(20000, 1000), 0); // at the threshold: not under it
     MT_ASSERT_EQ(feed(19990, 100), 1);  // the first reading under 20 V
     MT_ASSERT(bus_cap_on());
-    MT_ASSERT_EQ(bus_cap_ma(), BUS_CAP_MA);
+    MT_ASSERT_EQ(bus_cap_w(), BUS_CAP_W);
 
     MT_ASSERT_EQ(feed(20400, 60000), 0); // recovered, but not to 20.5 V: stays on
     MT_ASSERT_EQ(feed(20500, 29900), 0); // 20.5 V, not yet for 30 s
@@ -102,7 +102,7 @@ static void test_ceiling_caps_an_attached_port(void) {
     MT_ASSERT_EQ(sim_advertised_ma(0), 5000);
     MT_ASSERT_EQ(sim_contract_mw(0), 100000);
 
-    port_fsm_set_ceiling(BUS_CAP_MA);
+    port_fsm_set_ceiling(BUS_CAP_W);
     tick(2);
     MT_ASSERT_EQ(sim_advertised_ma(0), 3000);
     MT_ASSERT_EQ(sim_contract_mw(0), 60000); // the sink renegotiated within the cap
@@ -117,7 +117,7 @@ static void test_ceiling_caps_an_attached_port(void) {
 
 static void test_ceiling_applies_to_a_blade_that_comes_up_under_it(void) {
     support_reset(600000);
-    port_fsm_set_ceiling(BUS_CAP_MA); // as at a power-up on a sagging bus
+    port_fsm_set_ceiling(BUS_CAP_W); // as at a power-up on a sagging bus
     seat_and_attach(2, 20000, 5000);
     MT_ASSERT_EQ(sim_advertised_ma(2), 3000);
     MT_ASSERT_EQ(sim_contract_mw(2), 60000);
@@ -133,16 +133,16 @@ static void test_ceiling_applies_to_a_blade_that_comes_up_under_it(void) {
 
 static void test_ceiling_stays_under_a_port_limit_setting(void) {
     support_reset(600000);
-    g_settings.port_limit_ma[1] = 2000; // a port set lower than the cap keeps its own limit
+    g_settings.port_limit_w[1] = 40; // a port set lower than the cap keeps its own limit
     seat_and_attach(1, 20000, 5000);
     MT_ASSERT_EQ(sim_advertised_ma(1), 2000);
-    port_fsm_set_ceiling(BUS_CAP_MA);
+    port_fsm_set_ceiling(BUS_CAP_W);
     tick(2);
     MT_ASSERT_EQ(sim_advertised_ma(1), 2000);
 
     // raising the setting while capped lands on the cap, not the setting
-    g_settings.port_limit_ma[1] = 5000;
-    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 1, .arg = 5000};
+    g_settings.port_limit_w[1] = 100;
+    engine_cmd_t c = {.op = CMD_PORT_LIMIT, .port = 1, .arg = 100};
     port_fsm_cmd(1, &c);
     tick(2);
     MT_ASSERT_EQ(sim_advertised_ma(1), 3000);
@@ -158,7 +158,7 @@ static void test_ceiling_and_a_budget_clamp(void) {
     MT_ASSERT_EQ(port_state(5), PORT_STATE_THROTTLED);
     MT_ASSERT_EQ(sim_advertised_ma(5), 2000);
 
-    port_fsm_set_ceiling(BUS_CAP_MA);
+    port_fsm_set_ceiling(BUS_CAP_W);
     tick(2);
     MT_ASSERT_EQ(sim_advertised_ma(0), 3000); // the active port follows the cap;
     tick(200);                                // the clamped one takes the freed 40 W, up to the cap
@@ -166,7 +166,7 @@ static void test_ceiling_and_a_budget_clamp(void) {
     MT_ASSERT_EQ(sim_contract_mw(5), 60000);
     MT_ASSERT_EQ(port_state(5), PORT_STATE_THROTTLED); // it still wants its 100 W
     MT_ASSERT_EQ(budget_reserved(), 120000);
-    // ...but is not made to renegotiate the same 3 A every second for it
+    // ...but is not made to renegotiate the same 60 W every second for it
     uint32_t caps = sim_src_cap_count(5);
     tick(500);
     MT_ASSERT_EQ(sim_src_cap_count(5), caps);

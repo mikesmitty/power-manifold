@@ -82,15 +82,15 @@ int main(void) {
 
     // The bus voltage is read once before the engine starts: a chassis that
     // powers up on a sagging bus then brings its first blade up under the
-    // 3 A cap (bus_cap.h). The command waits in the queue for the engine's
+    // 60 W cap (bus_cap.h). The command waits in the queue for the engine's
     // first pass, which dispatches commands before it touches a port.
     vin_init(); // the bus-voltage divider, where the board has one
     vin_poll(to_ms_since_boot(get_absolute_time()));
     bus_cap_init();
     if (bus_cap_poll(to_ms_since_boot(get_absolute_time()), vin_mv())) {
-        engine_cmd_t c = {.op = CMD_SET_CEILING, .arg = bus_cap_ma()};
+        engine_cmd_t c = {.op = CMD_SET_CEILING, .arg = bus_cap_w()};
         ipc_cmd_push(&c);
-        printf("bus: %s at power-up, ports capped at %u A\n", vin_status_str(), BUS_CAP_MA / 1000);
+        printf("bus: %s at power-up, ports capped at %u W\n", vin_status_str(), BUS_CAP_W);
     }
 
     // Core 1: charger management engine (sole owner of I2C/expander/LEDs).
@@ -137,9 +137,9 @@ int main(void) {
         log_sink_poll(now_ms);
         vin_poll(now_ms);
         if (bus_cap_poll(now_ms, vin_mv())) {
-            engine_cmd_t c = {.op = CMD_SET_CEILING, .arg = bus_cap_ma()};
+            engine_cmd_t c = {.op = CMD_SET_CEILING, .arg = bus_cap_w()};
             ipc_cmd_push(&c);
-            if (bus_cap_on()) printf("bus: %s, ports capped at %u A\n", vin_status_str(), BUS_CAP_MA / 1000);
+            if (bus_cap_on()) printf("bus: %s, ports capped at %u W\n", vin_status_str(), BUS_CAP_W);
             else printf("bus: %s for %u s, port cap lifted\n", vin_status_str(), BUS_CAP_HOLD_MS / 1000);
         }
 
