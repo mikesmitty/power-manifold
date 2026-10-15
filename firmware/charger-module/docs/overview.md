@@ -179,6 +179,10 @@ ninja -C build
 
 produces `build/charger-module.elf`, `.bin` and `.hex`: 44 KB of the 64 KB
 of flash. `-DBLADE_WATCHDOG=OFF` builds without the independent watchdog.
+`-DBLADE_BENCH_EVM=ON` builds a bench image for a TPS55288EVM-045 wired in
+place of the blade's converter. The EVM has no external VCC supply, so this
+image keeps the converter on its internal VCC. Never load it onto a blade:
+there the internal VCC would drive the slot's 5 V rail.
 The controller's build picks `build/charger-module.bin` up from here as the
 image it bundles (its `BLADE_IMAGE` option).
 

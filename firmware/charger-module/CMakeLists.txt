@@ -12,6 +12,7 @@ include(cmake/cmsis.cmake)
 include(cmake/st_usbpd.cmake)
 
 option(BLADE_WATCHDOG "Independent watchdog (frozen while a debugger holds the core)" ON)
+option(BLADE_BENCH_EVM "Bench image for the TPS55288EVM-045 stand-in: the converter keeps its internal VCC" OFF)
 
 add_executable(charger-module
     src/main.c
@@ -60,6 +61,9 @@ set_source_files_properties(${USBPD_SOURCES} PROPERTIES COMPILE_OPTIONS "-w")
 target_link_libraries(charger-module PRIVATE ${USBPD_CORE_LIBRARY})
 if(BLADE_WATCHDOG)
     target_compile_definitions(charger-module PRIVATE BLADE_WATCHDOG=1)
+endif()
+if(BLADE_BENCH_EVM)
+    target_compile_definitions(charger-module PRIVATE BLADE_BENCH_EVM=1)
 endif()
 
 set(CPU_FLAGS -mcpu=cortex-m0plus -mthumb)

@@ -45,10 +45,20 @@ uint8_t tps55288_mode_byte(const tps55288_mode_t *m) {
     uint8_t b = TPS55288_MODE_HICCUP;
     if (m->output_on) b |= TPS55288_MODE_OE;
     if (m->discharge) b |= TPS55288_MODE_DISCHG;
+#ifdef BLADE_BENCH_EVM
+    // The TPS55288EVM-045 straps its MODE pin for internal VCC and forced
+    // PWM, and nothing on it supplies an external VCC. The register takes
+    // over from the pin in every write, with the VCC bit clear, so the
+    // converter keeps its own supply and runs PFM at light load as on a
+    // blade. Address 0x74 is the same either way.
+    b |= TPS55288_MODE_BY_REG;
+    if (m->forced_pwm) b |= TPS55288_MODE_FPWM;
+#else
     // As strapped, bits 3-0 stay 0 and the MODE pin rules. Forced PWM takes
     // the register's word for all three settings, so it repeats the pin's
     // other two: external VCC, address 0x74.
     if (m->forced_pwm) b |= TPS55288_MODE_BY_REG | TPS55288_MODE_FPWM | TPS55288_MODE_VCC_EXT;
+#endif
     return b;
 }
 

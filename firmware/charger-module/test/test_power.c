@@ -24,6 +24,14 @@ static uint8_t tcpp_ctrl(void) { return fake_bus_peek(ADDR_TCPP02, TCPP02_REG_AC
 static uint8_t conv_mode(void) { return fake_bus_peek(ADDR_TPS55288, TPS55288_REG_MODE); }
 static uint32_t ilim(void) { return tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_IOUT_LIMIT)); }
 
+// The low mode bits outside forced PWM: a blade leaves them to its MODE pin,
+// and the bench image for the TPS55288EVM-045 sets PFM through the register.
+#ifdef BLADE_BENCH_EVM
+#define AS_STRAPPED TPS55288_MODE_BY_REG
+#else
+#define AS_STRAPPED 0
+#endif
+
 static void port_comes_up_in_hibernate(void) {
     fake_board_reset();
     power_init();
@@ -67,7 +75,7 @@ static void vbus_on_closes_onto_5v(void) {
     MT_ASSERT(power_vbus_is_on());
     MT_ASSERT(tcpp_ctrl() & TCPP02_CTRL_GDP);
     MT_ASSERT(conv_mode() & TPS55288_MODE_OE);
-    MT_ASSERT_EQ(conv_mode() & 0x0F, 0); // as strapped
+    MT_ASSERT_EQ(conv_mode() & 0x0F, AS_STRAPPED); // as strapped
     MT_ASSERT(!fake_board_closed_early());
     MT_ASSERT(fake_board_vbus_mv() >= 4750 && fake_board_vbus_mv() <= 5250);
     MT_ASSERT(fake_board_peak_vbus_mv() <= 5250);
@@ -81,7 +89,7 @@ static void vbus_on_with_charge_left_above_5v(void) {
     MT_ASSERT_EQ(power_vbus_on(), POWER_OK); // nothing but the converter to pull it down
     MT_ASSERT(!fake_board_closed_early());
     MT_ASSERT(fake_board_peak_vbus_mv() <= 5250);
-    MT_ASSERT_EQ(conv_mode() & 0x0F, 0); // back as strapped
+    MT_ASSERT_EQ(conv_mode() & 0x0F, AS_STRAPPED); // back as strapped
     MT_ASSERT(!fake_board_comparator_tripped());
 }
 
@@ -129,7 +137,7 @@ static void step_down_unloaded(void) {
     MT_ASSERT(fake_board_vbus_mv() >= 8550 && fake_board_vbus_mv() <= 9450);
     MT_ASSERT(!fake_board_comparator_tripped()); // the threshold came down last
     MT_ASSERT_EQ(fake_board_trip_mv() / 100, 107);
-    MT_ASSERT_EQ(conv_mode() & 0x0F, 0); // back as strapped
+    MT_ASSERT_EQ(conv_mode() & 0x0F, AS_STRAPPED); // back as strapped
     MT_ASSERT(conv_mode() & TPS55288_MODE_OE);
 }
 

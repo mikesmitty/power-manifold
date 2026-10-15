@@ -37,6 +37,26 @@ static void limit_matches_datasheet(void) {
     MT_ASSERT_EQ(tps55288_ilim_ma(0xFF), TPS55288_IOUT_MAX_MA);
 }
 
+#ifdef BLADE_BENCH_EVM
+// The bench image for the TPS55288EVM-045 always takes the settings from
+// the register instead of the pin, so the VCC bit must stay clear in every
+// byte.
+static void bench_mode_keeps_vcc_internal(void) {
+    for (int i = 0; i < 8; i++) {
+        tps55288_mode_t x = {.output_on = i & 1, .discharge = (i >> 1) & 1, .forced_pwm = (i >> 2) & 1};
+        uint8_t b = tps55288_mode_byte(&x);
+        MT_ASSERT(b & TPS55288_MODE_BY_REG);
+        MT_ASSERT(!(b & TPS55288_MODE_VCC_EXT));
+        MT_ASSERT(!(b & TPS55288_MODE_I2CADD));
+        MT_ASSERT_EQ(!!(b & TPS55288_MODE_FPWM), x.forced_pwm);
+        MT_ASSERT_EQ(!!(b & TPS55288_MODE_OE), x.output_on);
+        MT_ASSERT_EQ(!!(b & TPS55288_MODE_DISCHG), x.discharge);
+        MT_ASSERT(b & TPS55288_MODE_HICCUP);
+    }
+    tps55288_mode_t m = {.output_on = true, .forced_pwm = true};
+    MT_ASSERT_EQ(tps55288_mode_byte(&m), 0xA3);
+}
+#else
 static void mode_as_strapped_leaves_the_pin_in_charge(void) {
     for (int on = 0; on < 2; on++) {
         for (int dis = 0; dis < 2; dis++) {
@@ -63,13 +83,18 @@ static void forced_pwm_keeps_vcc_external(void) {
         MT_ASSERT(!(b & TPS55288_MODE_I2CADD));
     }
 }
+#endif
 
 static void init_leaves_the_output_off(void) {
     fake_bus_reset();
     fake_bus_poke(ADDR_TPS55288, TPS55288_REG_MODE, 0xA0); // as if left running
     MT_ASSERT(tps55288_probe());
     MT_ASSERT(tps55288_init(TPS55288_SR_2V5_PER_MS));
+#ifdef BLADE_BENCH_EVM
+    MT_ASSERT_EQ(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_MODE), 0x21);
+#else
     MT_ASSERT_EQ(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_MODE), 0x20);
+#endif
     MT_ASSERT_EQ(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_VOUT_FS), 0x03);
     MT_ASSERT_EQ(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_CDC), 0xA0); // OCP indication masked
     MT_ASSERT_EQ(fake_bus_peek(ADDR_TPS55288, TPS55288_REG_REF_LSB), 0xD2);
@@ -102,8 +127,12 @@ void run_tps55288_tests(void) {
     mt_run("tps55288: every PPS step is reachable", ref_steps_are_pps_steps);
     mt_run("tps55288: reference is clamped to the output range", ref_is_clamped);
     mt_run("tps55288: current limit codes match the datasheet", limit_matches_datasheet);
+#ifdef BLADE_BENCH_EVM
+    mt_run("tps55288: the bench image keeps VCC internal", bench_mode_keeps_vcc_internal);
+#else
     mt_run("tps55288: as strapped, MODE leaves the pin in charge", mode_as_strapped_leaves_the_pin_in_charge);
     mt_run("tps55288: forced PWM keeps VCC external", forced_pwm_keeps_vcc_external);
+#endif
     mt_run("tps55288: init leaves the output off", init_leaves_the_output_off);
     mt_run("tps55288: a voltage change is one transfer", voltage_is_one_transfer);
     mt_run("tps55288: an absent part fails every call", absent_part_fails);

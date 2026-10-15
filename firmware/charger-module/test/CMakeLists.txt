@@ -14,7 +14,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
 add_compile_options(-Wall -Wextra -g)
 
-add_executable(blade_tests
+set(BLADE_TEST_SOURCES
     ../src/ovp.c
     ../src/pdo.c
     ../src/port.c
@@ -40,15 +40,19 @@ add_executable(blade_tests
     test_main.c
 )
 
-target_include_directories(blade_tests PRIVATE
-    ../include
-    ../src
-    ../src/hw
-    support
-)
-
-target_compile_definitions(blade_tests PRIVATE ${FW_VERSION_DEFINITIONS})
-target_link_libraries(blade_tests m)
-
+# The same suite runs twice: once as a blade is built, and once as the bench
+# image for the TPS55288EVM-045 (BLADE_BENCH_EVM) is built.
 enable_testing()
-add_test(NAME blade_tests COMMAND blade_tests)
+foreach(variant blade_tests blade_bench_tests)
+    add_executable(${variant} ${BLADE_TEST_SOURCES})
+    target_include_directories(${variant} PRIVATE
+        ../include
+        ../src
+        ../src/hw
+        support
+    )
+    target_compile_definitions(${variant} PRIVATE ${FW_VERSION_DEFINITIONS})
+    target_link_libraries(${variant} m)
+    add_test(NAME ${variant} COMMAND ${variant})
+endforeach()
+target_compile_definitions(blade_bench_tests PRIVATE BLADE_BENCH_EVM=1)
