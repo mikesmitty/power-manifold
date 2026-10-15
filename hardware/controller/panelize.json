@@ -10,8 +10,8 @@
     },
     "tabs": {
         "type": "plugin",
-        "code": "panel_tabs.py.OffsetTabs",
-        "arg": "14mm, 48mm, 70mm, 92mm",
+        "code": "../panel_tabs.py.OffsetTabs",
+        "arg": "14mm, 48mm, 70mm, 93mm",
         "vwidth": "5mm"
     },
     "cuts": {

@@ -35,5 +35,8 @@
         "hoffset": "10mm",
         "voffset": "3.85mm",
         "opening": "2mm"
+    },
+    "post": {
+        "refillzones": true
     }
 }
