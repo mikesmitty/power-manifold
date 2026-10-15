@@ -15,13 +15,19 @@ You can add Home Assistant later.
 
 ## What you need
 
-- **A 24 V DC power supply** with an XT60 lead. Power Manifold is rated for
+- **A 24 V DC power supply** certified to IEC 62368-1 (UL 62368-1 in the US
+  and Canada). Power Manifold is rated for
   24 V +20 %/−15 %. Choose its size by adding up the ratings of the chargers
   your devices would otherwise use. A laptop with a 65 W charger counts as
   65 W, even when it draws less.
   [Sharing power](/guide/sharing-power/#the-budget) explains why. The
   default power budget is 360 W (15 A at 24 V). If your
   supply is smaller, you'll lower the budget to match in step 5 below.
+- **An XT60 lead** from the supply, rated for at least 30 A, or for the
+  supply's full output current if that is higher. That usually means 12 AWG
+  (3.3 mm²) wire. Keep it short: a 1 m lead of 12 AWG wire loses about 0.3 V
+  at 30 A. A lead that is too long or too thin lets the voltage sag under
+  load, which [limits every port to 3 A](/guide/sharing-power/#when-the-input-voltage-drops).
 - **USB-C cables.** An ordinary cable carries up to 3 A (60 W). For more
   than 60 W at 20 V a device needs a 5 A cable with an e-marker chip, which
   is usually sold as a "100 W" or "240 W" cable.
