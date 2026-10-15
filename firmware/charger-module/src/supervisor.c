@@ -123,13 +123,13 @@ static bool take_controller_input(void) {
         cfg = c;
         console_str("config: port ");
         console_str(cfg.port_en ? "on, " : "off, ");
-        console_dec(cfg.max_ma);
-        console_str(" mA, ");
+        console_dec(cfg.max_w);
+        console_str(" W, ");
         console_dec(cfg.max_mv);
         console_str(" mV, watch ");
         console_dec(cfg.watch_s);
         console_str(" s\n");
-        if (port_set_limits(cfg.max_ma, cfg.max_mv)) stack_send_capabilities();
+        if (port_set_limits(cfg.max_w, cfg.max_mv)) stack_send_capabilities();
         // and a sink without a contract: what the CC line advertises, and
         // what the converter lets it draw
         stack_set_rp(port_rp());
@@ -289,7 +289,7 @@ void supervisor_run(void) {
 
     bool alerting = (faults_now() & BLADE_FAULT_ALERTING) != 0;
     bool allowed = line_up && !alerting && en && power_converter_ready() && cfg.port_en &&
-                   cfg.max_ma != 0;
+                   cfg.max_w != 0;
     if (alerting && line_up) {
         stack_port_disarm();
         power_port_down();

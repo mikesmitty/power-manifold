@@ -53,7 +53,7 @@ The firmware's share is the order of operations (`power.c`):
 
 The port is **armed** while the slot's EN is high and the converter has
 answered since it rose, the controller has enabled the port and given it a
-current ceiling, and no fault that pulls ALERT# is latched. Otherwise it is
+power limit, and no fault that pulls ALERT# is latched. Otherwise it is
 dark: the TCPP02 in hibernate with its CC switches open, so a sink sees no
 source at all.
 
@@ -62,11 +62,30 @@ the table `pdo.c` builds from the controller's limits and the cable, and
 hands each accepted request to the power path. New limits from the
 controller reach an attached sink as fresh Source_Capabilities.
 
+The table follows PD 3.2 for a 100 W port whose power can be turned down
+(a Managed Capability Port): fixed 5, 9, 12, 15 and 20 V, SPR AVS from 9 V
+to 20 V, and PPS from 5 V to 21 V. Each fixed object's current is the
+controller's power limit divided by its voltage, up to 5 A and what the
+cable carries; SPR AVS takes the currents of the 15 V and 20 V objects for
+its two halves. PPS is figured at 20 V and carries the PPS Power Limited
+flag whenever 21 V at that current would pass the power limit, and the
+converter then holds the sink to the power limit at the voltage it asks
+for. The voltage cap takes out the fixed objects above it, takes SPR AVS
+down to 9–15 V or out with 15 V, and narrows PPS to 5–11 V or takes it out
+(the [register map](register-map.md#backplane-register-map) has the
+details). An SPR AVS contract runs like a fixed one, with the converter's
+limit above the advertised current; only PPS has a current limit the sink
+sets. The stack is told which kind each APDO contract is, because only
+PPS ends in a hard reset when the sink stays silent for 15 s. A
+Get_Source_Info gets the port's maximum (100 W), present (the power
+limit, 60 W at most on a cable without a 5 A e-marker), reported and
+guaranteed (5 W) powers.
+
 A sink without USB PD never reads the table. It goes by the Type-C current
-on the CC line, which follows the controller's limit: 3 A from 3000 mA up,
-1.5 A from 1500 mA, and Default USB below that. The converter holds such a
-sink, and any sink before its first contract, to the same current: `MAX_MA`
-up to 3 A, with the fixed-contract margin. ST's CAD takes a new level only
+on the CC line, which follows the power limit at 5 V: 3 A from 15 W up,
+1.5 A from 7.5 W, and Default USB below that. The converter holds such a
+sink, and any sink before its first contract, to the same current: the
+power limit at 5 V, up to 3 A, with the fixed-contract margin. ST's CAD takes a new level only
 while nothing is attached, so for an attached sink without a contract the
 glue writes it to the UCPD directly. During a PD 3 contract the policy
 engine moves the level itself for collision avoidance.

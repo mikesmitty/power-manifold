@@ -28,8 +28,9 @@
 #define BLADE_WHO_AM_I        0xB3
 // The map below, as both the blade firmware and the controller's driver
 // (firmware/controller/src/engine/blade3.c) speak it. Bumped when a change
-// would mislead an older controller.
-#define BLADE_PROTO_VERSION   2
+// would mislead an older controller. 3 replaced the current limit MAX_MA
+// with the power limit MAX_W at a new address, and added CONTRACT.
+#define BLADE_PROTO_VERSION   3
 
 // identity, read-only
 #define BLADE_REG_WHO_AM_I    0x00
@@ -54,6 +55,7 @@
 // counters reads 0 in both.
 #define BLADE_REG_HR_SENT     0x18 // u8
 #define BLADE_REG_HR_RECEIVED 0x19 // u8
+#define BLADE_REG_CONTRACT    0x1A // u8, BLADE_CONTRACT_*, the kind of contract in place (PROTO 3)
 
 // telemetry, read-only
 #define BLADE_REG_VBUS_MV     0x20 // u16, at the receptacle
@@ -64,13 +66,16 @@
 #define BLADE_REG_TEMP_MCU    0x2A // i16, 0.1 degC
 
 // configuration, read/write
+// 0x42 and 0x43 held MAX_MA, a current limit in mA, until PROTO 3. They
+// are unused now and ignore writes, so a controller that still writes a
+// current there cannot have it taken as a power.
 #define BLADE_REG_CONTROL     0x40 // BLADE_CTL_*
 #define BLADE_REG_COMMAND     0x41 // BLADE_CMD_*, write-only, reads 0
-#define BLADE_REG_MAX_MA      0x42 // u16, current field of every advertised PDO
 #define BLADE_REG_MAX_MV      0x44 // u16, voltage cap, see BLADE_MAX_MV_ALL
 #define BLADE_REG_WATCH_S     0x46 // u8, seconds: with EN low and no transaction for this long the blade resets into its bootloader, 0 = never (PROTO 2)
+#define BLADE_REG_MAX_W       0x47 // u8, power limit in watts, see BLADE_MAX_W_LIMIT (PROTO 3)
 
-#define BLADE_REG_END         0x47 // one past the last register
+#define BLADE_REG_END         0x48 // one past the last register
 
 #define BLADE_RESET_POWER     (1u << 0) // power-on / brown-out
 #define BLADE_RESET_PIN       (1u << 1) // NRST
@@ -79,6 +84,7 @@
 #define BLADE_RESET_OTHER     (1u << 4) // option-byte load, low-power, window watchdog
 
 #define BLADE_CAP_PPS         (1u << 0)
+#define BLADE_CAP_AVS         (1u << 1) // SPR AVS (PROTO 3)
 
 // Every reset lands in the ROM bootloader (option bytes nBOOT_SEL=1,
 // nBOOT0=0): the firmware only runs once the controller has checked it and
@@ -94,6 +100,11 @@
 #define BLADE_ST_CONFIGURED   (1u << 5) // configuration written since the MCU started
 #define BLADE_ST_FAULT        (1u << 6) // BLADE_REG_FAULT is non-zero
 #define BLADE_ST_EN           (1u << 7) // the slot's EN line as the blade sees it
+
+#define BLADE_CONTRACT_NONE   0 // no explicit contract
+#define BLADE_CONTRACT_FIXED  1
+#define BLADE_CONTRACT_PPS    2
+#define BLADE_CONTRACT_AVS    3 // SPR AVS
 
 #define BLADE_FAULT_OVP        (1u << 0)  // VBUS over-voltage comparator opened the switch
 #define BLADE_FAULT_OCP_VBUS   (1u << 1)  // TCPP02 VBUS over-current latch
@@ -134,13 +145,21 @@
 // there, or the end of the transfer, and it never happened.
 #define BLADE_CMD_GUARDED(cmd) ((cmd) == BLADE_CMD_RESET || (cmd) == BLADE_CMD_BOOT_OPT)
 
-// Limits of the blade hardware; values written past them are stored clamped.
+// Power limit: the most a port offers, in watts. Each fixed PDO gets the
+// current that keeps it within this power at its voltage, up to 5 A and
+// what the cable carries. A value written past this one is stored clamped
+// to it; 0 means the port offers nothing.
+#define BLADE_MAX_W_LIMIT     100
+// The current no object goes past, whatever the power limit: the blade
+// hardware's, and the most a USB-C cable carries.
 #define BLADE_MAX_MA_LIMIT    5000
-// Voltage cap: fixed PDOs above it and PPS ranges reaching above it are
-// withheld, 5 V always stays.
+// Voltage cap: fixed PDOs above it are withheld, 5 V always stays. SPR AVS
+// is offered while 15 V is, up to 20 V when 20 V is offered too. PPS is one
+// range, the widest that fits under the cap: 5 - 21 V, or 5 - 11 V under a
+// cap from 11 V to 19.99 V, or none.
 //
 // 20 V is the exception. Taken literally, a 20 V cap would withhold the
-// 3.3 - 21 V PPS range, which reaches 1 V past it. Instead 20000 or more
+// 5 - 21 V PPS range, which reaches 1 V past it. Instead 20000 or more
 // means no cap at all: the whole table is advertised, the 21 V range
 // included. The controller's PORT_VOLT_MAX_MV works the same way.
 #define BLADE_MAX_MV_ALL      20000

@@ -37,7 +37,7 @@ static void refresh_status(void) {
 }
 
 static bool writable(uint8_t reg) {
-    return reg == BLADE_REG_CONTROL || (reg >= BLADE_REG_MAX_MA && reg < BLADE_REG_END);
+    return reg == BLADE_REG_CONTROL || (reg >= BLADE_REG_MAX_MV && reg < BLADE_REG_END);
 }
 
 static void push_command(uint8_t cmd) {
@@ -60,8 +60,7 @@ static void commit(void) {
     any_staged = false;
 
     img[BLADE_REG_CONTROL] &= BLADE_CTL_PORT_EN;
-    if (get16(img, BLADE_REG_MAX_MA) > BLADE_MAX_MA_LIMIT)
-        put16(BLADE_REG_MAX_MA, BLADE_MAX_MA_LIMIT);
+    if (img[BLADE_REG_MAX_W] > BLADE_MAX_W_LIMIT) img[BLADE_REG_MAX_W] = BLADE_MAX_W_LIMIT;
     configured = true;
     config_changed = true;
     refresh_status();
@@ -85,7 +84,7 @@ void regmap_init(uint8_t reset_cause) {
     img[BLADE_REG_FW_MINOR] = FW_MINOR;
     img[BLADE_REG_FW_PATCH] = FW_PATCH;
     img[BLADE_REG_RESET_CAUSE] = reset_cause;
-    img[BLADE_REG_CAPS] = BLADE_CAP_PPS;
+    img[BLADE_REG_CAPS] = BLADE_CAP_PPS | BLADE_CAP_AVS;
     put16(BLADE_REG_FAULT, BLADE_FAULT_RESET);
     refresh_status();
     memcpy(snap, img, sizeof snap);
@@ -141,6 +140,7 @@ void regmap_stop(void) {
 void regmap_publish(const regmap_live_t *live) {
     img[BLADE_REG_STATUS] = live->status;
     img[BLADE_REG_PDO] = live->pdo;
+    img[BLADE_REG_CONTRACT] = live->contract;
     put16(BLADE_REG_CONTRACT_MV, live->contract_mv);
     put16(BLADE_REG_CONTRACT_MA, live->contract_ma);
     img[BLADE_REG_HR_SENT] = live->hr_sent;
@@ -165,7 +165,7 @@ uint16_t regmap_faults(void) {
 
 bool regmap_config(regmap_config_t *out) {
     out->port_en = (img[BLADE_REG_CONTROL] & BLADE_CTL_PORT_EN) != 0;
-    out->max_ma = get16(img, BLADE_REG_MAX_MA);
+    out->max_w = img[BLADE_REG_MAX_W];
     out->max_mv = get16(img, BLADE_REG_MAX_MV);
     out->watch_s = img[BLADE_REG_WATCH_S];
     bool changed = config_changed;

@@ -23,7 +23,7 @@ USBPD_StatusTypeDef USBPD_PWR_IF_SetProfile(uint8_t PortNum) {
     (void)PortNum;
     const pdo_request_t *req = port_pending();
     if (!req) return USBPD_ERROR;
-    if (power_set(req->mv, req->limit_ma, req->pps) != POWER_OK)
+    if (power_set(req->mv, req->limit_ma, req->kind == PDO_PPS) != POWER_OK)
         return USBPD_ERROR;
     port_delivered();
     return USBPD_OK;
@@ -60,8 +60,8 @@ USBPD_StatusTypeDef USBPD_PWR_IF_Disable_VConn(uint8_t PortNum, CCxPin_TypeDef C
     return BSP_USBPD_PWR_VCONNOff(PortNum, cc_pin(CC)) == BSP_ERROR_NONE ? USBPD_OK : USBPD_ERROR;
 }
 
-// Size comes back in bytes. To a PD 2.0 partner the PPS objects are left
-// out: it has no notion of them.
+// Size comes back in bytes. To a PD 2.0 partner the PPS and AVS objects are
+// left out: it has no notion of them.
 void USBPD_PWR_IF_GetPortPDOs(uint8_t PortNum, USBPD_CORE_DataInfoType_TypeDef DataId,
                               uint8_t *Ptr, uint32_t *Size) {
     *Size = 0;
@@ -70,7 +70,7 @@ void USBPD_PWR_IF_GetPortPDOs(uint8_t PortNum, USBPD_CORE_DataInfoType_TypeDef D
     const pdo_table_t *t = port_table();
     bool rev2 = DPM_Params[PortNum].PE_SpecRevision == USBPD_SPECIFICATION_REV2;
     for (uint8_t i = 0; i < t->count; i++) {
-        if (rev2 && pdo_is_pps(t->obj[i])) continue;
+        if (rev2 && pdo_is_apdo(t->obj[i])) continue;
         memcpy(Ptr + *Size, &t->obj[i], 4);
         *Size += 4;
     }

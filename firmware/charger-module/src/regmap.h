@@ -13,6 +13,7 @@
 typedef struct {
     uint8_t  status;       // BLADE_ST_* but CONFIGURED and FAULT, which are kept here
     uint8_t  pdo;
+    uint8_t  contract;     // BLADE_CONTRACT_*
     uint16_t contract_mv;
     uint16_t contract_ma;
     uint8_t  hr_sent;      // BLADE_REG_HR_SENT
@@ -27,7 +28,7 @@ typedef struct {
 
 typedef struct {
     bool     port_en;
-    uint16_t max_ma;
+    uint8_t  max_w;
     uint16_t max_mv;
     uint8_t  watch_s;  // BLADE_REG_WATCH_S
 } regmap_config_t;

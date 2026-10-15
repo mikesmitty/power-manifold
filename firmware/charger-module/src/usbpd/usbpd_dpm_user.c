@@ -203,6 +203,15 @@ void USBPD_DPM_GetDataInfo(uint8_t PortNum, USBPD_CORE_DataInfoType_TypeDef Data
         memcpy(Ptr, &st, *Size);
         break;
     }
+    case USBPD_CORE_SOURCE_INFO: {
+        // Both data objects of PD 3.2 v1.2. The core sends as many objects
+        // as this fills, from a buffer with room for eight.
+        uint32_t sido[2];
+        port_source_info(sido);
+        *Size = sizeof sido;
+        memcpy(Ptr, sido, sizeof sido);
+        break;
+    }
     case USBPD_CORE_REVISION: {
         USBPD_RevisionDO_TypeDef rev = {
             .b.Revision_major = USBPD_REV_MAJOR,
@@ -226,9 +235,15 @@ void USBPD_DPM_SetDataInfo(uint8_t PortNum, USBPD_CORE_DataInfoType_TypeDef Data
 }
 
 USBPD_StatusTypeDef USBPD_DPM_EvaluateRequest(uint8_t PortNum, USBPD_CORE_PDO_Type_TypeDef *PtrPowerObject) {
-    (void)PortNum;
     if (!stack_port_armed() || !port_request(received_rdo)) return USBPD_REJECT;
-    *PtrPowerObject = port_pending()->pps ? USBPD_CORE_PDO_TYPE_APDO : USBPD_CORE_PDO_TYPE_FIXED;
+    pdo_kind_t kind = port_pending()->kind;
+    *PtrPowerObject = kind == PDO_FIXED ? USBPD_CORE_PDO_TYPE_FIXED : USBPD_CORE_PDO_TYPE_APDO;
+    // Which kind of APDO it is. The core reads this once the new contract is
+    // in place: a PPS contract runs SourcePPSCommTimer, which ends it with a
+    // hard reset when the sink stays silent for tPPSTimeout, and an AVS
+    // contract does not (PD 3.2 section 7.31.16.2). The core never sets it
+    // itself, so a stale value would follow the next APDO contract.
+    DPM_Params[PortNum].SPR_APDO = kind == PDO_AVS ? USBPD_SPR_APDO_AVS : USBPD_SPR_APDO_PPS;
     return USBPD_ACCEPT;
 }
 

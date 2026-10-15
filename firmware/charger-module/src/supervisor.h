@@ -5,7 +5,7 @@
 //
 // The port is armed while all of this holds, and dark otherwise:
 //   - the slot's EN is high and the converter has been set up since it rose,
-//   - the controller has enabled the port and given it a current ceiling,
+//   - the controller has enabled the port and given it a power limit,
 //   - no fault that pulls ALERT# is latched.
 // A fault takes TCPP_EN low as well; the line comes up again when the
 // controller clears the faults.

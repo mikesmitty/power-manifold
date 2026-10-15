@@ -47,7 +47,7 @@ static void identity(void) {
     MT_ASSERT_EQ(id[3], FW_MINOR);
     MT_ASSERT_EQ(id[4], FW_PATCH);
     MT_ASSERT_EQ(id[5], BLADE_RESET_POWER);
-    MT_ASSERT_EQ(id[6], BLADE_CAP_PPS);
+    MT_ASSERT_EQ(id[6], BLADE_CAP_PPS | BLADE_CAP_AVS);
     MT_ASSERT_EQ(id[7], 0); // factory option bytes until told otherwise
     regmap_set_boot(BLADE_BOOT_VIA_LOADER);
     MT_ASSERT_EQ(read8(BLADE_REG_BOOT), BLADE_BOOT_VIA_LOADER);
@@ -61,10 +61,10 @@ static void watch_register_and_transactions(void) {
     regmap_init(0);
     regmap_config_t c;
     MT_ASSERT_EQ(regmap_transactions(), 0);
-    uint8_t limits[5] = {0xB8, 0x0B, 0x20, 0x4E, 30}; // 3000 mA, 20000 mV, watch 30 s
-    bus_write(BLADE_REG_MAX_MA, limits, sizeof limits);
+    uint8_t limits[4] = {0x20, 0x4E, 30, 60}; // 20000 mV, watch 30 s, 60 W
+    bus_write(BLADE_REG_MAX_MV, limits, sizeof limits);
     MT_ASSERT(regmap_config(&c));
-    MT_ASSERT_EQ(c.max_ma, 3000);
+    MT_ASSERT_EQ(c.max_w, 60);
     MT_ASSERT_EQ(c.max_mv, 20000);
     MT_ASSERT_EQ(c.watch_s, 30);
     MT_ASSERT_EQ(read8(BLADE_REG_WATCH_S), 30);
@@ -72,7 +72,7 @@ static void watch_register_and_transactions(void) {
     write8(BLADE_REG_WATCH_S, 0);
     MT_ASSERT(regmap_config(&c));
     MT_ASSERT_EQ(c.watch_s, 0);
-    MT_ASSERT_EQ(c.max_ma, 3000); // the limits stay
+    MT_ASSERT_EQ(c.max_w, 60); // the limits stay
 }
 
 static void starts_dark_and_flagged(void) {
@@ -80,7 +80,7 @@ static void starts_dark_and_flagged(void) {
     regmap_config_t c;
     MT_ASSERT(!regmap_config(&c));
     MT_ASSERT(!c.port_en);
-    MT_ASSERT_EQ(c.max_ma, 0);
+    MT_ASSERT_EQ(c.max_w, 0);
     MT_ASSERT_EQ(regmap_faults(), BLADE_FAULT_RESET); // a restart is never silent
     MT_ASSERT_EQ(read8(BLADE_REG_STATUS), BLADE_ST_FAULT);
     MT_ASSERT_EQ(read8(BLADE_REG_RESET_CAUSE), BLADE_RESET_WATCHDOG);
@@ -90,13 +90,14 @@ static void telemetry(void) {
     regmap_init(0);
     regmap_live_t live = {
         .status = BLADE_ST_ATTACHED | BLADE_ST_CONTRACT | BLADE_ST_VBUS_ON | BLADE_ST_EN,
-        .pdo = 5, .contract_mv = 20000, .contract_ma = 3250,
+        .pdo = 5, .contract = BLADE_CONTRACT_FIXED, .contract_mv = 20000, .contract_ma = 3250,
         .hr_sent = 2, .hr_received = 7,
         .vbus_mv = 19876, .iout_ma = 3011, .vout_mv = 19950,
         .temp_conv_dc = 612, .temp_plug_dc = -35, .temp_mcu_dc = 480,
     };
     regmap_publish(&live);
     MT_ASSERT_EQ(read8(BLADE_REG_PDO), 5);
+    MT_ASSERT_EQ(read8(BLADE_REG_CONTRACT), BLADE_CONTRACT_FIXED);
     MT_ASSERT_EQ(read16(BLADE_REG_CONTRACT_MV), 20000);
     MT_ASSERT_EQ(read16(BLADE_REG_CONTRACT_MA), 3250);
     MT_ASSERT_EQ(read8(BLADE_REG_HR_SENT), 2);
@@ -133,40 +134,58 @@ static void configuration_lands_at_the_end(void) {
     regmap_config_t c;
 
     regmap_addressed(false);
-    regmap_rx(BLADE_REG_MAX_MA);
-    regmap_rx(0xB8); // 3000 = 0x0BB8
+    regmap_rx(BLADE_REG_MAX_MV);
+    regmap_rx(0x20); // 20000 = 0x4E20
     MT_ASSERT(!regmap_config(&c));
-    MT_ASSERT_EQ(c.max_ma, 0); // half a value is no value
-    regmap_rx(0x0B);
-    regmap_rx(0x20); // 20000 = 0x4E20, the pointer ran on into MAX_MV
+    MT_ASSERT_EQ(c.max_mv, 0); // half a value is no value
     regmap_rx(0x4E);
+    regmap_rx(0);  // WATCH_S
+    regmap_rx(60); // the pointer ran on into MAX_W
     MT_ASSERT(!regmap_config(&c));
     regmap_stop();
 
     MT_ASSERT(regmap_config(&c));
-    MT_ASSERT_EQ(c.max_ma, 3000);
+    MT_ASSERT_EQ(c.max_w, 60);
     MT_ASSERT_EQ(c.max_mv, 20000);
     MT_ASSERT(!c.port_en);
     MT_ASSERT(!regmap_config(&c)); // reported once
-    MT_ASSERT_EQ(c.max_ma, 3000);  // ...but always readable
+    MT_ASSERT_EQ(c.max_w, 60);     // ...but always readable
 
-    MT_ASSERT_EQ(read16(BLADE_REG_MAX_MA), 3000);
+    MT_ASSERT_EQ(read8(BLADE_REG_MAX_W), 60);
     MT_ASSERT(read8(BLADE_REG_STATUS) & BLADE_ST_CONFIGURED);
 
     write8(BLADE_REG_CONTROL, BLADE_CTL_PORT_EN);
     MT_ASSERT(regmap_config(&c));
     MT_ASSERT(c.port_en);
-    MT_ASSERT_EQ(c.max_ma, 3000);
+    MT_ASSERT_EQ(c.max_w, 60);
+}
+
+// 0x42 and 0x43 held a current limit before PROTO 3. They take nothing now,
+// and an older controller's limits write, which starts there, still lands
+// its cap and watch period without being read as a power.
+static void the_old_current_register_is_gone(void) {
+    regmap_init(0);
+    regmap_config_t c;
+    write16(0x42, 3000);
+    MT_ASSERT(!regmap_config(&c));
+    MT_ASSERT_EQ(read16(0x42), 0);
+
+    uint8_t old_limits[5] = {0xB8, 0x0B, 0x20, 0x4E, 30}; // 3000 mA, 20000 mV, watch 30 s
+    bus_write(0x42, old_limits, sizeof old_limits);
+    MT_ASSERT(regmap_config(&c));
+    MT_ASSERT_EQ(c.max_mv, 20000);
+    MT_ASSERT_EQ(c.watch_s, 30);
+    MT_ASSERT_EQ(c.max_w, 0);
 }
 
 static void configuration_is_clamped(void) {
     regmap_init(0);
     regmap_config_t c;
-    write16(BLADE_REG_MAX_MA, 6000);
+    write8(BLADE_REG_MAX_W, 250);
     write8(BLADE_REG_CONTROL, 0xFF);
     MT_ASSERT(regmap_config(&c));
-    MT_ASSERT_EQ(c.max_ma, BLADE_MAX_MA_LIMIT);
-    MT_ASSERT_EQ(read16(BLADE_REG_MAX_MA), BLADE_MAX_MA_LIMIT); // what the controller reads back
+    MT_ASSERT_EQ(c.max_w, BLADE_MAX_W_LIMIT);
+    MT_ASSERT_EQ(read8(BLADE_REG_MAX_W), BLADE_MAX_W_LIMIT); // what the controller reads back
     MT_ASSERT_EQ(read8(BLADE_REG_CONTROL), BLADE_CTL_PORT_EN);
 }
 
@@ -252,9 +271,10 @@ static void reset_commands_need_their_complement(void) {
     MT_ASSERT_EQ(regmap_command(), (uint8_t)~BLADE_CMD_RESET); // a command nobody knows, and no reset
     MT_ASSERT_EQ(regmap_command(), 0);
 
-    // a limits write whose pointer lost a bit: 1285 mA's high byte lands on
-    // the command register as the boot-option command
-    uint8_t limits[5] = {0x05, 0x05, 0x20, 0x4E, 120};
+    // a limits write meant for MAX_MV whose pointer lost a bit (0x44 to
+    // 0x40): a 1285 mV cap's high byte lands on the command register as the
+    // boot-option command
+    uint8_t limits[4] = {0x05, 0x05, 0, 60};
     bus_write(BLADE_REG_CONTROL, limits, sizeof limits);
     MT_ASSERT_EQ(regmap_command(), 0);
 
@@ -267,11 +287,11 @@ static void reset_commands_need_their_complement(void) {
     MT_ASSERT_EQ(regmap_command(), 0);
 
     // the others are as they were, and the pointer moves on past a guarded pair
-    write16(BLADE_REG_MAX_MA, 3000);
-    uint8_t then[3] = {BLADE_CMD_RESET, (uint8_t)~BLADE_CMD_RESET, 0xB9};
-    bus_write(BLADE_REG_COMMAND, then, 3);
+    write16(BLADE_REG_MAX_MV, 20000);
+    uint8_t then[5] = {BLADE_CMD_RESET, (uint8_t)~BLADE_CMD_RESET, 0, 0, 0x21};
+    bus_write(BLADE_REG_COMMAND, then, 5);
     MT_ASSERT_EQ(regmap_command(), BLADE_CMD_RESET);
-    MT_ASSERT_EQ(read16(BLADE_REG_MAX_MA), 3001); // 0x0BB8 with its low byte rewritten
+    MT_ASSERT_EQ(read16(BLADE_REG_MAX_MV), 20001); // 0x4E20 with its low byte rewritten
     write8(BLADE_REG_COMMAND, BLADE_CMD_SRC_CAP);
     MT_ASSERT_EQ(regmap_command(), BLADE_CMD_SRC_CAP);
 }
@@ -283,6 +303,7 @@ void run_regmap_tests(void) {
     mt_run("regmap: telemetry", telemetry);
     mt_run("regmap: a read sees one snapshot", a_read_sees_one_snapshot);
     mt_run("regmap: configuration lands at the end of the transfer", configuration_lands_at_the_end);
+    mt_run("regmap: the old current register is gone", the_old_current_register_is_gone);
     mt_run("regmap: configuration is clamped", configuration_is_clamped);
     mt_run("regmap: read-only registers ignore writes", read_only_registers_stay);
     mt_run("regmap: reads and writes past the end", past_the_end);

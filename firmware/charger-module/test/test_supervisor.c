@@ -43,9 +43,10 @@ static uint16_t ctl_read16(uint8_t reg) {
     return v;
 }
 
-static void ctl_configure(uint16_t max_ma, uint16_t max_mv, bool port_en) {
-    uint8_t limits[4] = {(uint8_t)max_ma, (uint8_t)(max_ma >> 8), (uint8_t)max_mv, (uint8_t)(max_mv >> 8)};
-    ctl_write(BLADE_REG_MAX_MA, limits, sizeof limits);
+static void ctl_configure(uint8_t max_w, uint16_t max_mv, bool port_en) {
+    uint8_t cap[2] = {(uint8_t)max_mv, (uint8_t)(max_mv >> 8)};
+    ctl_write(BLADE_REG_MAX_MV, cap, sizeof cap);
+    ctl_write(BLADE_REG_MAX_W, &max_w, 1);
     uint8_t control = port_en ? BLADE_CTL_PORT_EN : 0;
     ctl_write(BLADE_REG_CONTROL, &control, 1);
 }
@@ -104,7 +105,7 @@ static void en_alone_does_not_arm(void) {
 
 static void configuration_alone_does_not_arm(void) {
     boot();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(!stack_port_armed()); // EN is low
     MT_ASSERT_EQ(port_table()->count, 7); // but the table is ready for it
@@ -112,7 +113,7 @@ static void configuration_alone_does_not_arm(void) {
 
 static void arms_when_everything_is_there(void) {
     boot();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     en_high();
     run_ms(20);
     MT_ASSERT(!stack_port_armed()); // the converter gets its time to wake
@@ -128,10 +129,10 @@ static void a_ceiling_of_zero_is_off(void) {
     ctl_configure(0, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(!stack_port_armed());
-    ctl_configure(3000, BLADE_MAX_MV_ALL, false);
+    ctl_configure(60, BLADE_MAX_MV_ALL, false);
     run_ms(10);
     MT_ASSERT(!stack_port_armed());
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(10);
     MT_ASSERT(stack_port_armed());
 }
@@ -139,16 +140,16 @@ static void a_ceiling_of_zero_is_off(void) {
 static void port_disable_and_en_low_disarm(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(stack_port_armed());
 
-    ctl_configure(3000, BLADE_MAX_MV_ALL, false);
+    ctl_configure(60, BLADE_MAX_MV_ALL, false);
     run_ms(5);
     MT_ASSERT(!stack_port_armed());
     MT_ASSERT_EQ(fake_bus_peek(ADDR_TCPP02, TCPP02_REG_ACK), 0x48); // hibernate, VBUS discharge
 
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(5);
     MT_ASSERT(stack_port_armed());
 
@@ -166,25 +167,25 @@ static void port_disable_and_en_low_disarm(void) {
 static void new_limits_go_to_the_sink(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     unsigned sent = fake_stack_capabilities_sent();
 
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true); // the same again
+    ctl_configure(60, BLADE_MAX_MV_ALL, true); // the same again
     run_ms(5);
     MT_ASSERT_EQ(fake_stack_capabilities_sent(), sent);
 
-    ctl_configure(1500, BLADE_MAX_MV_ALL, true); // the budget arbiter throttles the port
+    ctl_configure(30, BLADE_MAX_MV_ALL, true); // the budget arbiter throttles the port
     run_ms(5);
     MT_ASSERT(fake_stack_capabilities_sent() > sent);
-    MT_ASSERT_EQ(pdo_fixed_ma(port_table()->obj[0]), 1500);
+    MT_ASSERT_EQ(pdo_fixed_ma(port_table()->obj[4]), 1500); // 20 V at 30 W
     MT_ASSERT(stack_port_armed());
 }
 
 static void a_sink_without_a_contract_gets_the_limit_too(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT_EQ(fake_stack_rp(), PORT_RP_3A0);
     // a sink attaches and never asks for a contract
@@ -193,12 +194,12 @@ static void a_sink_without_a_contract_gets_the_limit_too(void) {
     uint8_t reg = TPS55288_REG_IOUT_LIMIT;
     MT_ASSERT_EQ(tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, reg)), 3300);
 
-    ctl_configure(2000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(10, BLADE_MAX_MV_ALL, true);
     run_ms(5);
     MT_ASSERT_EQ(fake_stack_rp(), PORT_RP_1A5);
     MT_ASSERT_EQ(tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, reg)), 2200);
 
-    ctl_configure(1000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(5, BLADE_MAX_MV_ALL, true);
     run_ms(5);
     MT_ASSERT_EQ(fake_stack_rp(), PORT_RP_DEFAULT);
     MT_ASSERT_EQ(tps55288_ilim_ma(fake_bus_peek(ADDR_TPS55288, reg)), 1100);
@@ -209,7 +210,7 @@ static void a_sink_without_a_contract_gets_the_limit_too(void) {
 static void commands_reach_the_stack(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     unsigned sent = fake_stack_capabilities_sent();
     ctl_command(BLADE_CMD_SRC_CAP);
@@ -222,7 +223,7 @@ static void commands_reach_the_stack(void) {
 static void over_voltage_trip_takes_the_port_down(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
 
     fake_board_set_vout_mv(9000); // above the threshold, however briefly
@@ -249,7 +250,7 @@ static void over_voltage_trip_takes_the_port_down(void) {
 static void a_fault_that_persists_comes_back(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     fake_board_set_temps_dc(250, TEMP_LIMIT_PLUG_DC + 1);
     run_ms(60);
@@ -270,7 +271,7 @@ static void a_fault_that_persists_comes_back(void) {
 static void a_hot_reading_has_to_hold(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
 
     // Three samples past the limit, then back: a glitch, not a fault
@@ -304,7 +305,7 @@ static void a_blind_sensor_is_a_fault(void) {
     boot();
     fake_board_set_temps_dc(SENSE_TEMP_OPEN_DC, 250);
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(!stack_port_armed());
     MT_ASSERT(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_OT_CONV);
@@ -314,7 +315,7 @@ static void a_blind_sensor_is_a_fault(void) {
 static void armed_and_cool(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(stack_port_armed());
     MT_ASSERT_EQ(fake_stack_alerts_sent(), 0);
@@ -396,7 +397,7 @@ static void a_trip_holds_until_under_the_warning_level(void) {
     run_ms(20);
     ctl_command(BLADE_CMD_CLEAR_FAULTS);
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(!stack_port_armed());
     MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_ALERTING, BLADE_FAULT_OT_PLUG);
@@ -455,7 +456,7 @@ static void a_missing_part_is_a_fault(void) {
 
     boot();
     fake_board_set_en(true); // EN high, and no converter answers
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_BUS);
     MT_ASSERT(!stack_port_armed());
@@ -464,7 +465,7 @@ static void a_missing_part_is_a_fault(void) {
 static void stack_failures_are_faults(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     supervisor_power_failed();
     run_ms(2);
@@ -474,7 +475,7 @@ static void stack_failures_are_faults(void) {
     boot();
     supervisor_stack_failed();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     MT_ASSERT(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_PD);
     MT_ASSERT(!stack_port_armed());
@@ -483,7 +484,7 @@ static void stack_failures_are_faults(void) {
 static void telemetry_reaches_the_controller(void) {
     boot();
     en_high();
-    ctl_configure(5000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(100, BLADE_MAX_MV_ALL, true);
     run_ms(200);
     fake_board_set_temps_dc(612, 388);
     port_attach();
@@ -505,7 +506,7 @@ static void telemetry_reaches_the_controller(void) {
 static void reset_and_boot_option_commands(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(100);
     MT_ASSERT(stack_port_armed());
     ctl_command(BLADE_CMD_RESET);
@@ -536,7 +537,7 @@ static void reset_and_boot_option_commands(void) {
 static void a_silent_controller_resets_the_blade(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     run_ms(3000);
     MT_ASSERT_EQ(fake_board_loader_resets(), 0); // watch 0: never
 
@@ -562,7 +563,7 @@ static void a_silent_controller_resets_the_blade(void) {
 static void en_low_with_a_talking_controller_is_left_alone(void) {
     boot();
     en_high();
-    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
     uint8_t watch = 2;
     ctl_write(BLADE_REG_WATCH_S, &watch, 1);
     en_low();
