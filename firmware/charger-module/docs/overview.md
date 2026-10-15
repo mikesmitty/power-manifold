@@ -149,16 +149,22 @@ the host tests.
 ### ST's stack
 
 Fetched at configure time, none of it kept in this repository
-(`cmake/st_usbpd.cmake`), at the versions X-CUBE-TCPP 4.2.0 ships together:
+(`cmake/st_usbpd.cmake`). The device layer and the drivers are the versions
+X-CUBE-TCPP 4.2.0 ships. The core is newer than that package's 5.3.0: 5.4
+is the first release that implements PD 3.2 and SPR AVS.
 
 | Component | Version | License |
 | --- | --- | --- |
-| `stm32-mw-usbpd-core`, the policy engine and protocol layer, a binary library | 5.3.0, `PD3_CONFIG_SPR` | SLA0044: ST microcontrollers only |
+| `stm32-mw-usbpd-core`, the policy engine and protocol layer, a binary library | 5.4.1, `PD3_CONFIG_SPR` | SLA0044: ST microcontrollers only |
 | `stm32-mw-usbpd-device-g0`, the UCPD device layer | 3.5.2 | SLA0044 |
 | `stm32g0xx_hal_driver`, of which only the LL drivers are built | 1.4.5 | BSD-3-Clause |
 
-`PD3_CONFIG_SPR` is the smallest build of the core with both PPS and the
-structured VDMs that read a cable's e-marker. The stack runs without an RTOS:
+`PD3_CONFIG_SPR` is the smallest build of the core with PPS, SPR AVS and the
+structured VDMs that read a cable's e-marker. ST has not published the 5.4
+core together with the G0 device layer; the device layer's notes give it as
+compatible with core 4.1.0 and later, and the one device-layer change ST
+made for 5.4.1 elsewhere (a fast role swap callback in the PHY interface) is
+already in G0 3.5.2. The stack runs without an RTOS:
 `USBPD_DPM_Run` is the main loop and calls the supervisor once per turn.
 It uses UCPD1, DMA1 channels 2 and 4, and TIM1.
 

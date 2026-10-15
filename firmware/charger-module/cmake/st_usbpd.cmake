@@ -1,5 +1,8 @@
-# ST's USB Power Delivery stack, the set X-CUBE-TCPP 4.2.0 ships together
-# for the STM32G0 with a TCPP02:
+# ST's USB Power Delivery stack for the STM32G0 with a TCPP02. The device
+# layer and the drivers are the ones X-CUBE-TCPP 4.2.0 ships; the core is
+# newer than that package's 5.3.0, because 5.4 is the first release with
+# PD 3.2 and SPR AVS. The G0 device layer has had no release since 3.5.2,
+# and its notes give it as compatible with core 4.1.0 and later.
 #   - the core (policy engine, protocol layer): a binary library plus a
 #     little source, licence SLA0044, for use on ST microcontrollers only
 #   - the STM32G0 device layer (UCPD peripheral, cable detection), SLA0044
@@ -11,7 +14,7 @@ include(FetchContent)
 
 FetchContent_Declare(usbpd_core
     GIT_REPOSITORY https://github.com/STMicroelectronics/stm32-mw-usbpd-core
-    GIT_TAG v5.3.0
+    GIT_TAG v5.4.1
     GIT_SHALLOW TRUE
     SOURCE_SUBDIR _none
 )
