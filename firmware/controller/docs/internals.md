@@ -236,14 +236,15 @@ the web console, `POST /api/v1/settings` ignores `vin_cal`, and a settings
 export leaves it out. The reading is `vin_v` in the status
 JSON and the MQTT status, a *Bus voltage* sensor in Home Assistant,
 `pwrman_bus_volts` on `/metrics`, part of the chassis summary on the page,
-`vin` and a line in `info` and `status` on the console. The hardware is
-rated for 20 to 28 V and the backplane opens the bus near 17.7 V (and closes
-it again near 19.3 V), so a bus under 19 V or over 29 V (half a volt of
-hysteresis either way) raises the problem indicator and logs a line; the
-crossing of the 19 V flag, either way, also goes into the fault log, since
-the cut a volt further down restarts the controller and would otherwise
-leave no trace. The Pico 2 W carrier has no path from VIN to an ADC pin, so
-there the monitor reports *not present* and every surface leaves it out.
+`vin` and a line in `info` and `status` on the console. The declared input
+is 24 V −15 %/+20 % (20.4 to 28.8 V) and the backplane opens the bus near
+17.7 V (and closes it again near 19.3 V), so a bus under 19 V or over 29 V
+(half a volt of hysteresis either way) raises the problem indicator and logs
+a line; the crossing of the 19 V flag, either way, also goes into the fault
+log, since the cut a volt further down restarts the controller and would
+otherwise leave no trace. The Pico 2 W carrier has no path from VIN to an
+ADC pin, so there the monitor reports *not present* and every surface leaves
+it out.
 
 **Bus-sag cap.** Before the bus gets near that cut, the firmware takes
 load off it: while the bus reads under 20.0 V every port's advertised
