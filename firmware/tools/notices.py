@@ -306,6 +306,17 @@ def firmware_version(header_path: pathlib.Path) -> str:
     return m.group(1)
 
 
+def license_text(path: pathlib.Path) -> str:
+    """A license file's text. ST's SLA0044 Rev 6 file is Windows-1252, not
+    UTF-8 (its quotes are single bytes), so a file that is not valid UTF-8 is
+    read as that instead of losing those characters."""
+    raw = path.read_bytes()
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("cp1252", errors="replace")
+
+
 def write(out: pathlib.Path, title: str, intro: list, images: list) -> None:
     text = [title, "=" * len(title), ""] + intro
     seen = {}  # license text -> the component it was first given for
@@ -318,7 +329,7 @@ def write(out: pathlib.Path, title: str, intro: list, images: list) -> None:
         for c, lines, headers in image.entries():
             text += ["", RULE, c.name, c.url, f"Used under: {c.license}"]
             # leading blank lines go, the indentation of the first line stays
-            bodies = [re.sub(r"^(?:[ \t]*\n)+", "", (image.roots[c.root] / t).read_text(errors="replace")).rstrip()
+            bodies = [re.sub(r"^(?:[ \t]*\n)+", "", license_text(image.roots[c.root] / t)).rstrip()
                       for t in c.texts]
             # a file header carries its own copyright lines, and so may a license text
             lines = [l for l in lines if c.texts and not any(l in b for b in bodies)]
