@@ -81,15 +81,15 @@ have priority 0, no other port can turn them down while they run.
 
 ## When the input voltage drops
 
-If the supply voltage falls below 20 V, every port is limited to 3 A (60 W
-at most) until the voltage has been above 20.5 V for 30 seconds. Devices are offered less, but nothing is switched
+If the supply voltage falls below 20 V, every port is limited to 60 W
+until the voltage has been above 20.5 V for 30 seconds. Devices are offered less, but nothing is switched
 off. This is a safety limit and applies to every port, priority 0
 included. Use a supply whose voltage stays well above 20 V under load. While this is happening the web interface and Home Assistant show a
 problem saying the ports are capped.
 
 If you see this often, your supply is too small for your devices, or its
 cable is too thin. Lower the budget or use a bigger supply. See
-[Troubleshooting](/guide/troubleshooting/#ports-capped-at-3-a).
+[Troubleshooting](/guide/troubleshooting/#ports-capped-at-60-w).
 
 ## The fan
 

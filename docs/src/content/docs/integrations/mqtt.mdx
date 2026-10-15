@@ -34,12 +34,13 @@ Ports are numbered 1 to 6.
 `energy_kwh`, `fan`, `fan_mode`, `alert`, `rssi`, `uptime_s`, `led`,
 `led_mode`, `fw`, `boot` (why it last started), `problem` and `problems`,
 `charged_mw`, `charged_min`, the input voltage `vin_v` (`vin` is false
-when it isn't measured), and `ceiling_ma` (3000 while [low input voltage caps
-the ports](/guide/troubleshooting/#ports-capped-at-3-a),
+when it isn't measured), and `ceiling_w` (60 while [low input voltage caps
+the ports](/guide/troubleshooting/#ports-capped-at-60-w),
 else 0).
 
 **`port/<n>/telemetry` fields:** `state`, `gen` (blade generation), `v`,
-`i`, `p`, `e` (kWh), `contract_w`, `pdo`, `prio`, `limit_ma`, `max_v`,
+`i`, `p`, `e` (kWh), `contract_w`, `pdo`, `contract` (`fixed`, `pps`,
+`avs`, or `null` without a contract), `prio`, `limit_w`, `max_v`,
 `boot`, `charged`, `auto_off`, `sleep_min`, `fault`, `last_fault`,
 `last_fault_at`, the blade temperatures `t_conv`, `t_plug` and `t_mcu` in
 °C (`null` when there's no reading), `progress` (0–100 during a blade
@@ -60,7 +61,7 @@ saved a few seconds after the last change.
 | --- | --- |
 | `port/<n>/set` | `ON`, `OFF`, `hard_reset` or `src_cap` (re-announce) |
 | `port/<n>/priority/set` | 0–255, 0 = most important |
-| `port/<n>/limit/set` | current limit in mA, 500–5000 |
+| `port/<n>/limit/set` | power limit in watts, 5–100 |
 | `port/<n>/volt/set` | voltage cap: `5`, `9`, `12`, `15` or `20` |
 | `port/<n>/boot/set` | power-up state: `on`, `off` or `last` |
 | `port/<n>/autooff/set` | switch off once charged: `ON` or `OFF` |

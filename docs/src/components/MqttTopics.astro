@@ -12,11 +12,11 @@ const STATUS = {
 	total_w: 110.42, reserved_w: 202.0, budget_w: 240.0, headroom_w: 38.0, energy_kwh: 17.85,
 	fan: 'ON', fan_mode: 'auto', alert: false, rssi: -58, uptime_s: 274620, led: 48,
 	fw: '0.12.0', boot: 'power-on', problem: 'OFF', problems: '', charged_mw: 500, charged_min: 10,
-	led_mode: 'normal', vin: true, vin_v: 24.06, ceiling_ma: 0,
+	led_mode: 'normal', vin: true, vin_v: 24.06, ceiling_w: 0,
 };
 const TELEMETRY = {
-	state: 'active', gen: 3, v: 20.021, i: 2.712, p: 54.3, e: 6.211, pdo: 5, contract_w: 65.0,
-	prio: 2, limit_ma: 5000, max_v: 20, boot: 'on', charged: false, auto_off: false, sleep_min: 0,
+	state: 'active', gen: 3, v: 20.021, i: 2.712, p: 54.3, e: 6.211, pdo: 5, contract: 'fixed',
+	contract_w: 65.0, prio: 2, limit_w: 100, max_v: 20, boot: 'on', charged: false, auto_off: false, sleep_min: 0,
 	fault: 0, last_fault: '', last_fault_at: 0, t_conv: 54.9, t_plug: 41.3, t_mcu: 36.2,
 	progress: 0, update_due: false, fw: '0.2.0', silent: false,
 };
@@ -32,7 +32,7 @@ const TREE: (Leaf | Branch)[] = [
 			{ name: 'telemetry', dir: 'out', note: 'one port, every second', example: TELEMETRY },
 			{ name: 'set', dir: 'in', note: 'ON, OFF, hard_reset or src_cap' },
 			{ name: 'priority/set', dir: 'in', note: '0–255, 0 = most important' },
-			{ name: 'limit/set', dir: 'in', note: 'current limit, 500–5000 mA' },
+			{ name: 'limit/set', dir: 'in', note: 'power limit, 5–100 W' },
 			{ name: 'volt/set', dir: 'in', note: 'voltage cap: 5, 9, 12, 15 or 20' },
 			{ name: 'boot/set', dir: 'in', note: 'at power-up: on, off or last' },
 			{ name: 'autooff/set', dir: 'in', note: 'switch off once charged: ON or OFF' },

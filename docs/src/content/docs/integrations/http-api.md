@@ -49,15 +49,15 @@ curl $PM/api/v1/status
   "budget_w": 240.0, "headroom_w": 38.0,
   "energy_kwh": 17.850, "fan": "on", "fan_mode": "auto",
   "alert": false, "improv": "off", "boot": "power-on",
-  "warm_start": false, "vin_v": 24.06, "ceiling_ma": 0,
+  "warm_start": false, "vin_v": 24.06, "ceiling_w": 0,
   "problem": false, "problems": "",
   "led_mode": "normal", "led_now": 48,
   "chassis_light": "ok", "blade_fw": "0.2.0",
   "ports": [
     {"name": "Laptop", "state": "active", "gen": 3,
      "attached": true, "charged": false, "pdo": 5,
-     "v": 20.021, "i": 2.712, "p": 54.30, "e": 6.211,
-     "contract_w": 65.0, "prio": 2, "limit_ma": 5000,
+     "contract": "fixed", "v": 20.021, "i": 2.712, "p": 54.30, "e": 6.211,
+     "contract_w": 65.0, "prio": 2, "limit_w": 100,
      "max_v": 20, "boot": "on", "fault": 0,
      "t_conv": 54.9, "t_plug": 41.3, "t_mcu": 36.2,
      "progress": 0, "update_due": false, "fw": "0.2.0",
@@ -191,7 +191,7 @@ device name, the device name with `.local`, or one of its
 first-time setup, a settings change must be sent with
 `Content-Type: application/json`, or it gets `415`.
 A bad value gets `400` with the reason, such as
-`{"error": "port_limits_ma: 500-5000 mA each"}`.
+`{"error": "port_limits_w: 5-100 W each"}`.
 
 </details>
 
@@ -211,7 +211,8 @@ With `auth_read` on, `GET /api/v1/status`, `GET /api/v1/faults`,
 `GET /api/v1/tls` and `GET /metrics` also need the token.
 
 **Status, per port:** `name`, `state`, `gen` (blade generation), `v`, `i`, `p`, `e`, `pdo`,
-`contract_w`, `prio`, `limit_ma`, `max_v`, `boot`, `attached`, `charged`,
+`contract` (`fixed`, `pps`, `avs`, or `null` without a contract),
+`contract_w`, `prio`, `limit_w`, `max_v`, `boot`, `attached`, `charged`,
 `fault`, `t_conv`, `t_plug`, `t_mcu`, `progress`, `update_due` (a
 [blade update](/guide/updates/#blade-firmware) is waiting), `fw` (the
 blade's firmware version, `null` when unknown), `silent`.
@@ -221,7 +222,7 @@ blade's firmware version, `null` when unknown), `silent`.
 `fw`, `blade_fw`, `slot`, `trial`, `board_id` (the RP2350's unique ID),
 `wifi_mac` and `eth_mac` (`null` on a controller without that connection),
 `boot`, `warm_start`, `vin_v`,
-`ceiling_ma`, `problem`, `problems`, `led_mode`, `led_now`,
+`ceiling_w`, `problem`, `problems`, `led_mode`, `led_now`,
 `chassis_light`, and the `update` and `net` objects.
 
 **Status, `update`:** `available` (a newer release is known), `latest`
@@ -290,12 +291,12 @@ the same keys, so you can edit an export and post it back.
 | Updates | `update_auto` (`true`: new releases install by themselves) |
 | Power | `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`, `charged_mw`, `charged_min` |
 | Lights | `led_brightness`, `led_boot`, `led_dim`, `led_night`, `led_idle_min`, `tz_offset_min` |
-| Ports (arrays of six) | `port_names`, `port_limits_ma`, `port_max_v`, `port_priorities`, `port_boot`, `port_auto_off`, `port_sleep_min` |
+| Ports (arrays of six) | `port_names`, `port_limits_w`, `port_max_v`, `port_priorities`, `port_boot`, `port_auto_off`, `port_sleep_min` |
 
 `vin_cal`, the input voltage trim, appears in `GET /api/v1/settings` but
 not in exports, and posting it changes nothing. It belongs to the unit's
 own measuring circuit and can't be changed over the API, because the
-[3 A cap on a sagging input](/guide/troubleshooting/#ports-capped-at-3-a)
+[60 W cap on a sagging input](/guide/troubleshooting/#ports-capped-at-60-w)
 acts on the trimmed reading. The cap is a safety limit: at a low input
 voltage, a blade at full output would draw more current than the pins of
 its connector are rated for.

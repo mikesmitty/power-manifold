@@ -1,6 +1,6 @@
 ---
 title: Port settings
-description: Name your ports, choose which come on at power-up, limit voltage and current, and switch ports off when a device has finished charging.
+description: Name your ports, choose which come on at power-up, limit voltage and power, and switch ports off when a device has finished charging.
 sidebar:
   order: 3
 ---
@@ -43,17 +43,18 @@ order. This stops six devices from starting all at once.
 The voltage cap is the highest voltage a port offers. Choose 5, 9, 12, 15
 or 20 V. The default is 20 V, which offers everything.
 
-The cap applies to PPS (Programmable Power Supply) as well. A port offers
-two PPS ranges, 3.3–11 V and 3.3–21 V, and offers a range only when all of
-it fits under the cap:
+Besides the fixed voltages, a port offers two ranges in which the device
+chooses its own voltage: PPS (Programmable Power Supply) and SPR AVS
+(Adjustable Voltage Supply). The cap applies to them as well:
 
-| Cap | PPS ranges offered |
-|---|---|
-| 5 V or 9 V | none |
-| 12 V or 15 V | 3.3–11 V |
-| 20 V | 3.3–11 V and 3.3–21 V |
+| Cap | PPS | SPR AVS |
+|---|---|---|
+| 5 V or 9 V | none | none |
+| 12 V | 5–11 V | none |
+| 15 V | 5–11 V | 9–15 V |
+| 20 V | 5–21 V | 9–20 V |
 
-The 20 V cap is the one exception: it still offers the 3.3–21 V range,
+The 20 V cap is the one exception: it still offers the 5–21 V PPS range,
 which goes slightly above 20 V.
 
 Use a lower cap to protect a device that shouldn't get a high voltage. For
@@ -63,15 +64,15 @@ example:
   fully trust.
 - **9 V** to limit the charging power of a phone.
 
-## Current limit
+## Power limit
 
-The current limit is the most current a port offers at any voltage, from
-500 to 5000 mA. Power scales with the voltage the device picks: a 3000 mA
-limit means 15 W at 5 V and 60 W at 20 V.
+The power limit is the most power a port offers, from 5 to 100 W. The
+port offers that power at every voltage, up to 5 A. A 60 W limit means
+5 A at 5, 9 and 12 V, 4 A at 15 V and 3 A at 20 V.
 
 The limit only sets what the port offers. A device that requests more
 receives the limited amount and is not switched off. Devices without USB
-Power Delivery are held to the limit too, up to 3 A.
+Power Delivery are held to the limit too, at 5 V and up to 3 A.
 
 Try a cap, a limit and a cable to see what a port offers:
 

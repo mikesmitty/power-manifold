@@ -1,16 +1,16 @@
 ---
-// Try a voltage cap, current limit and cable, and see what the port offers
+// Try a voltage cap, power limit and cable, and see what the port offers
 // a device: one bar per voltage option, 0 to 100 W. The rules are in
 // port-offer.ts, shared with the script below.
 import { CAPS, offers } from './port-offer';
 
 // Shown before the script runs, and without it: the page's own example.
 const CAP = 20;
-const LIMIT = 3000;
+const LIMIT = 60;
 const CABLE = 5000;
 const rows = offers(CAP, LIMIT, CABLE);
 const amps = (a: number) => `${a.toFixed(2)} A`;
-const why = { limit: 'set by the current limit', cable: 'set by the cable', '100 W': 'set by the 100 W ceiling' };
+const why = { limit: 'set by the power limit', cable: 'set by the cable', '5 A': 'set by the 5 A maximum' };
 ---
 
 <figure class="offer not-content" data-cap={CAP} data-limit={LIMIT} data-cable={CABLE}>
@@ -24,8 +24,8 @@ const why = { limit: 'set by the current limit', cable: 'set by the cable', '100
 			</div>
 		</div>
 		<label class="of-control">
-			<span class="of-name">Current limit <b class="of-limit">{LIMIT} mA</b></span>
-			<input type="range" min="500" max="5000" step="500" value={LIMIT} />
+			<span class="of-name">Power limit <b class="of-limit">{LIMIT} W</b></span>
+			<input type="range" min="5" max="100" step="5" value={LIMIT} />
 		</label>
 		<div class="of-control" role="group" aria-label="Cable">
 			<span class="of-name">Cable</span>
@@ -48,15 +48,15 @@ const why = { limit: 'set by the current limit', cable: 'set by the cable', '100
 	</div>
 
 	<figcaption>
-		Bars run from 0 to 100 W. A PPS range is shown at its top voltage. A device picks one option, and
-		power sharing can still turn the port down when the supply is short.
+		Bars run from 0 to 100 W. SPR AVS and PPS are shown at the top of their range. A device picks one
+		option, and power sharing can still turn the port down when the supply is short.
 	</figcaption>
 </figure>
 
 <script>
 	import { offers } from './port-offer';
 
-	const why = { limit: 'set by the current limit', cable: 'set by the cable', '100 W': 'set by the 100 W ceiling' };
+	const why = { limit: 'set by the power limit', cable: 'set by the cable', '5 A': 'set by the 5 A maximum' };
 
 	for (const fig of document.querySelectorAll<HTMLElement>('.offer')) {
 		let cap = Number(fig.dataset.cap);
@@ -69,10 +69,11 @@ const why = { limit: 'set by the current limit', cable: 'set by the cable', '100
 		const show = () => {
 			fig.querySelectorAll<HTMLButtonElement>('[data-cap]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.cap) === cap)));
 			fig.querySelectorAll<HTMLButtonElement>('[data-cable]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.cable) === cable)));
-			limitEl.textContent = `${limit} mA`;
+			limitEl.textContent = `${limit} W`;
 			offers(cap, limit, cable).forEach((r, i) => {
 				const row = rows[i];
 				row.classList.toggle('gone', !r.offered);
+				row.querySelector<HTMLElement>('.of-label')!.textContent = r.label;
 				row.querySelector<HTMLElement>('.of-track i')!.style.width = `${r.offered ? r.watts : 0}%`;
 				row.querySelector<HTMLElement>('.of-value')!.textContent = r.offered
 					? `${r.amps.toFixed(2)} A · ${Math.round(r.watts)} W`
