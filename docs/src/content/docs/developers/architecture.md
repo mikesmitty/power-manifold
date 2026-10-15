@@ -133,7 +133,7 @@ The backplane signals land on GP1 (EXP_RST#) and GP8 (MUX_RST#) through 2N7002 o
 > * **Status lights:** The status strip sits behind the faceplate with each port's light above its USB-C port, so a slot's light shows whether or not a blade is seated.
 > * **Management card at the faceplate:** The controller card's RJ45 MagJack aligns flush with the front faceplate to the left of ports 1–6.
 > * **Ethernet grounding and ESD:** The RJ45 shield bonds to the chassis through its EMI spring fingers; the magnetics' center taps terminate Bob-Smith style into the chassis-bonded ground region (§7.3).
-> * **Thermal distribution:** Each blade uses copper pours with thermal via arrays under the TPS55288 and the output FET's drain to carry heat into the card-edge ground planes (PGND pins A8–A10, B2–B9). Two NTCs, at the converter and at the receptacle, are read out by the controller, and the blade trips its own port on them (100 °C / 70 °C, held for 50 ms).
+> * **Thermal distribution:** Each blade uses copper pours with thermal via arrays under the TPS55288 and the output FET's drain to carry heat into the card-edge ground planes (PGND pins A8–A10, B2–B9). Two NTCs, at the converter and at the receptacle, are read out by the controller, and the blade trips its own port on them (100 °C / 70 °C, held for 50 ms) and keeps it off until the reading is under the warning level (85 °C / 60 °C).
 
 ## 6. Firmware architecture and supervisory state machine
 

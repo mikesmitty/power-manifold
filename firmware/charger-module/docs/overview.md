@@ -91,8 +91,11 @@ Get_Status reply then reports *Warning* with the over-temperature event
 flag until the reading falls 5 °C below the level. It reports *Over
 temperature* once a trip has latched, and *Normal* otherwise. The port
 keeps running on a warning. The specification only requires the sink to
-fetch Status in response. All four temperatures are provisional until
-the blade has been measured in the closed chassis.
+fetch Status in response. A trip holds until the reading is under the
+warning level: until then the fault comes back after every clear, so a
+port that tripped stays off until it has cooled instead of switching on
+again at the limit. All four temperatures are provisional until the blade
+has been measured in the closed chassis.
 
 ## Pin map
 

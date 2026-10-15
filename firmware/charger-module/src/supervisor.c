@@ -157,8 +157,14 @@ static bool take_controller_input(void) {
     return false;
 }
 
-static uint8_t hot_for(uint8_t samples, int16_t t_dc, int16_t limit_dc) {
+// Counts consecutive samples past the limit; TEMP_TRIP_SAMPLES of them is a
+// trip. A trip then holds until the reading is under the warning level, so
+// the fault comes back after every clear until the port has cooled, instead
+// of the port switching on again at the limit. A sensor without a reading is
+// past its limit.
+static uint8_t hot_for(uint8_t samples, int16_t t_dc, int16_t limit_dc, int16_t warn_dc) {
     bool past = t_dc == SENSE_TEMP_OPEN_DC || t_dc > limit_dc;
+    if (samples >= TEMP_TRIP_SAMPLES && t_dc >= warn_dc) past = true;
     if (!past) return 0;
     return samples < TEMP_TRIP_SAMPLES ? (uint8_t)(samples + 1) : samples;
 }
@@ -194,8 +200,8 @@ static bool warm_for(bool *warm, uint8_t *samples, int16_t t_dc, int16_t warn_dc
 }
 
 static uint16_t temperature_faults(void) {
-    hot_conv = hot_for(hot_conv, live.temp_conv_dc, TEMP_LIMIT_CONV_DC);
-    hot_plug = hot_for(hot_plug, live.temp_plug_dc, TEMP_LIMIT_PLUG_DC);
+    hot_conv = hot_for(hot_conv, live.temp_conv_dc, TEMP_LIMIT_CONV_DC, TEMP_WARN_CONV_DC);
+    hot_plug = hot_for(hot_plug, live.temp_plug_dc, TEMP_LIMIT_PLUG_DC, TEMP_WARN_PLUG_DC);
     bool conv_now_warm = warm_for(&warm_conv, &warm_conv_n, live.temp_conv_dc, TEMP_WARN_CONV_DC);
     bool plug_now_warm = warm_for(&warm_plug, &warm_plug_n, live.temp_plug_dc, TEMP_WARN_PLUG_DC);
     if (conv_now_warm || plug_now_warm) stack_send_alert_otp();

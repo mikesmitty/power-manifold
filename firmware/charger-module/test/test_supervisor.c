@@ -383,6 +383,55 @@ static void a_trip_reports_over_temperature(void) {
     MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_NORMAL);
 }
 
+static void a_trip_holds_until_under_the_warning_level(void) {
+    armed_and_cool();
+    fake_board_set_temps_dc(250, TEMP_LIMIT_PLUG_DC + 1);
+    run_ms(60);
+    MT_ASSERT(!stack_port_armed());
+
+    // Back at the limit: the fault comes back after the controller's clear,
+    // through the EN cycle it gives a faulted port
+    fake_board_set_temps_dc(250, TEMP_LIMIT_PLUG_DC);
+    en_low();
+    run_ms(20);
+    ctl_command(BLADE_CMD_CLEAR_FAULTS);
+    en_high();
+    ctl_configure(3000, BLADE_MAX_MV_ALL, true);
+    run_ms(200);
+    MT_ASSERT(!stack_port_armed());
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_ALERTING, BLADE_FAULT_OT_PLUG);
+    MT_ASSERT_EQ(supervisor_temperature(), SUPERVISOR_TEMP_OVER);
+
+    // At the warning level: still held
+    fake_board_set_temps_dc(250, TEMP_WARN_PLUG_DC);
+    ctl_command(BLADE_CMD_CLEAR_FAULTS);
+    run_ms(20);
+    MT_ASSERT(!stack_port_armed());
+    MT_ASSERT(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_OT_PLUG);
+
+    // Under it, the next clear brings the port back
+    fake_board_set_temps_dc(250, TEMP_WARN_PLUG_DC - 1);
+    run_ms(20);
+    ctl_command(BLADE_CMD_CLEAR_FAULTS);
+    run_ms(20);
+    MT_ASSERT(stack_port_armed());
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_FAULT), 0);
+
+    // The converter holds the same way, against its own warning level
+    fake_board_set_temps_dc(TEMP_LIMIT_CONV_DC + 1, 250);
+    run_ms(60);
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC, 250);
+    ctl_command(BLADE_CMD_CLEAR_FAULTS);
+    run_ms(20);
+    MT_ASSERT(!stack_port_armed());
+    MT_ASSERT(ctl_read16(BLADE_REG_FAULT) & BLADE_FAULT_OT_CONV);
+    fake_board_set_temps_dc(TEMP_WARN_CONV_DC - 1, 250);
+    run_ms(20);
+    ctl_command(BLADE_CMD_CLEAR_FAULTS);
+    run_ms(20);
+    MT_ASSERT(stack_port_armed());
+}
+
 static void a_blind_sensor_is_a_trip_not_a_warning(void) {
     armed_and_cool();
     fake_board_set_temps_dc(SENSE_TEMP_OPEN_DC, 250);
@@ -545,6 +594,7 @@ void run_supervisor_tests(void) {
     mt_run("supervisor: a warm converter alerts the sink once", a_warm_converter_alerts_the_sink_once);
     mt_run("supervisor: a warm receptacle alerts too", a_warm_receptacle_alerts_too);
     mt_run("supervisor: a trip reports over temperature", a_trip_reports_over_temperature);
+    mt_run("supervisor: a trip holds until under the warning level", a_trip_holds_until_under_the_warning_level);
     mt_run("supervisor: a blind sensor is a trip, not a warning", a_blind_sensor_is_a_trip_not_a_warning);
     mt_run("supervisor: a missing part is a fault", a_missing_part_is_a_fault);
     mt_run("supervisor: stack failures are faults", stack_failures_are_faults);

@@ -10,9 +10,11 @@
 #define CABLE_DEFAULT_MA    3000u
 
 // Temperature limits, tenths of a degree. A reading past either one for
-// 50 ms switches the port off and latches the fault. A sensor that reads
-// open or shorted counts as past its limit: a port that cannot see its
-// temperature does not run.
+// 50 ms switches the port off and latches the fault, and the fault comes
+// back after every clear until the reading is under the warning level
+// below, so a port that tripped stays off until it has cooled. A sensor
+// that reads open or shorted counts as past its limit: a port that cannot
+// see its temperature does not run.
 #define TEMP_LIMIT_CONV_DC  1000 // board copper at the converter
 #define TEMP_LIMIT_PLUG_DC  700  // receptacle shell
 
