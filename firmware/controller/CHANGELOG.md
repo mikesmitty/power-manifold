@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.19.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.18.0...controller-firmware-v0.19.0) (2026-10-15)
+
+
+### Features
+
+* **controller:** set port limits in watts and report the contract kind ([0f31d33](https://github.com/mikesmitty/power-manifold/commit/0f31d3302be129d7b6eb71274cbde295a08c0e9d))
+
+
+### Bug Fixes
+
+* **controller:** wait out a blade's held fault and keep reading dark blades ([12b1ed6](https://github.com/mikesmitty/power-manifold/commit/12b1ed6c4855a4cc66946b0cbe9f3b2b18a132a2))
+
 ## [0.18.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.17.0...controller-firmware-v0.18.0) (2026-10-14)
 
 
