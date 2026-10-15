@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.4.1...charger-module-firmware-v0.5.0) (2026-10-15)
+
+
+### Features
+
+* **charger-module:** offer SPR AVS and take the port limit in watts ([3ad128a](https://github.com/mikesmitty/power-manifold/commit/3ad128ad53d8d045c69af8f2a13acd02e17125cd))
+
+
+### Bug Fixes
+
+* **charger-module:** keep a port that tripped hot off until it cools ([4d5b4f9](https://github.com/mikesmitty/power-manifold/commit/4d5b4f90ec300f485f6548654ecc51949c2976e8))
+
 ## [0.4.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.4.0...charger-module-firmware-v0.4.1) (2026-10-14)
 
 
