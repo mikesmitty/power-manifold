@@ -115,9 +115,13 @@ priority alone.
   Assistant sensors per port carry them), and carries its own
   over-current, over-voltage and thermal protection. A fault takes the port down on the
   blade and stays latched, ALERT# low with it, until the controller has
-  recorded it: the engine drops EN, clears the latch and re-probes after
-  the cooldown, and a fault whose cause persists (a hot receptacle) comes
-  straight back and repeats the cycle. A blade whose MCU restarts (its
+  recorded it: the engine drops EN and clears the latch. After the
+  cooldown it reads the blade's fault word again. A blade that has raised
+  it again (a temperature trip holds until the reading is under its
+  warning level) is left dark and looked at again a cooldown later, with
+  nothing new recorded; otherwise the port is re-probed. A fault that only
+  shows with the port powered (a short in the cable) comes straight back
+  after the re-probe and repeats the cycle. A blade whose MCU restarts (its
   watchdog, a brown-out on the slot's 5 V) comes back unconfigured — or,
   once set to boot through its ROM bootloader, in that bootloader; either
   way the port notices, goes back through the probe (via a
@@ -283,7 +287,9 @@ whose limit the certification depends on. Those four temperatures are
 fixed, sit well under the blade's own trips (100 °C converter, 70 °C
 receptacle), and are provisional until the blades have been measured in the
 closed chassis; a port without a reading (a gen-2 blade, an empty slot,
-an open thermistor) takes no part. In auto the fan stays on until all
+an open thermistor) takes no part. A blade whose port is off, switched off
+or shut off by a fault, is still read, so one that was hot keeps the fan
+running while it cools. In auto the fan stays on until all
 three rules are clear. `on` and `off` are manual overrides, but `off`
 keeps the temperature rule: overheating is a safety matter, so no setting
 turns it off. Under a manual `off` the rule runs without the anti-flap

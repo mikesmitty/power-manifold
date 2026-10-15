@@ -155,15 +155,29 @@ static void test_fault_is_cleared_after_the_controller_saw_it(void) {
     MT_ASSERT_EQ(sim_blade_clear_count(0), 2);
     MT_ASSERT(sim_blade_faults(0) & BLADE_FAULT_OT_PLUG);
 
-    // still hot at the end of the cooldown: the re-probe finds it again
+    // still hot at the end of each cooldown: the blade holds the fault, so
+    // the port stays dark and nothing new is reported; the latch is cleared
+    // for the next look
+    int states = evt_count(EVT_STATE_CHANGE, 0);
     tick_ms(5200);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
-    MT_ASSERT(evt_count(EVT_FAULT, 0) >= 2);
+    MT_ASSERT_EQ(sim_blade_clear_count(0), 3);
+    tick_ms(5200);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
+    MT_ASSERT_EQ(sim_blade_clear_count(0), 4);
+    MT_ASSERT(!sim_en(0));
+    MT_ASSERT_EQ(sim_en_change_count(0), en_changes + 1);
+    MT_ASSERT_EQ(evt_count(EVT_FAULT, 0), 1);
+    MT_ASSERT_EQ(evt_count(EVT_STATE_CHANGE, 0), states);
 
-    // cooled down: the next re-probe clears the latch and the port comes back
+    // cooled down: the next look still finds what the blade latched before
+    // it cooled, and the one after finds the latch clear and tries the port
     sim_set_blade_fault(0, 0);
     tick_ms(5200);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
+    tick_ms(5200);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE); // sink still attached
+    MT_ASSERT_EQ(evt_count(EVT_FAULT, 0), 1);
     MT_ASSERT_EQ(sim_blade_faults(0), 0);
     MT_ASSERT_EQ(budget_port_reservation(0), 60000);
 }
@@ -376,10 +390,49 @@ static void test_a_pulled_blade_forgets_its_generation(void) {
     MT_ASSERT_EQ(sim_ina_alert_ma(0), 6250);
 }
 
-// The blade's thermometers are reported in telemetry while the port is
-// powered: modelled from the load by the sim, pinned by the script, an open
-// NTC passed through as "none"; a gen-2 blade and a port that is off have
-// no reading.
+// Switched off, a gen-3 blade is still read: its temperatures stay in
+// telemetry while it cools, survive a few missed reads, and go once it has
+// stopped answering or left the slot.
+static void test_switched_off_blade_is_still_read(void) {
+    support_reset(360000);
+    seat3(0);
+    tick(2);
+    sim_attach(0, 20000, 3000);
+    sim_set_temps(0, 800, 600);
+    tick(2);
+    engine_cmd_t c = {.op = CMD_PORT_DISABLE, .port = 0};
+    port_fsm_cmd(0, &c);
+    tick(1);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED);
+    MT_ASSERT(!sim_en(0));
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 800);
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, 600);
+
+    sim_set_temps(0, 500, 400); // cooling
+    tick(1);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 500);
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, 400);
+
+    sim_set_blade_ok(0, false); // a few missed reads: the last values stand
+    tick(3);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 500);
+    tick(20); // not answering at all: nothing to show
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, PORT_TEMP_NONE);
+    sim_set_blade_ok(0, true);
+    tick(1);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 500);
+
+    sim_set_present(0, false); // removed: the readings go with the blade
+    tick(1);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_ABSENT);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, PORT_TEMP_NONE);
+    MT_ASSERT_EQ(tele.port[0].gen, 0);
+}
+
+// The blade's thermometers are reported in telemetry: modelled from the
+// load by the sim, pinned by the script, an open NTC passed through as
+// "none", still read while the port is switched off; a gen-2 blade has no
+// reading.
 static void test_thermometers_reach_telemetry(void) {
     support_reset(360000);
     seat3(0);
@@ -406,7 +459,8 @@ static void test_thermometers_reach_telemetry(void) {
     port_fsm_cmd(0, &c);
     tick(1);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED);
-    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, PORT_TEMP_NONE);
+    MT_ASSERT_EQ(tele.port[0].temp_conv_dc, 985);
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, PORT_TEMP_NONE);
 
     sim_model_temps(0);
     c.op = CMD_PORT_ENABLE;
@@ -444,4 +498,5 @@ void run_blade3_tests(void) {
     mt_run("blade3: mixed chassis sheds across generations", test_mixed_chassis_sheds_across_generations);
     mt_run("blade3: a pulled blade forgets its generation", test_a_pulled_blade_forgets_its_generation);
     mt_run("blade3: thermometers reach telemetry", test_thermometers_reach_telemetry);
+    mt_run("blade3: a switched-off blade is still read", test_switched_off_blade_is_still_read);
 }

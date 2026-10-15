@@ -1,3 +1,4 @@
+#include "blade_regs.h"
 #include "fan_policy.h"
 #include "manifold.h"
 #include "microtest.h"
@@ -268,6 +269,51 @@ static void test_blade_without_a_reading_does_not_count(void) {
     MT_ASSERT(!sim_fan());
 }
 
+// A blade that trips hot takes its port down and holds it there until it
+// has cooled; its temperatures stay in sight the whole time, so the fan
+// keeps running through the cool-down.
+static void test_a_tripped_blade_holds_the_fan_while_it_cools(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    sim_set_temps(0, 300, 720); // receptacle past its trip
+    tick(2);
+    MT_ASSERT(sim_fan());
+    sim_set_blade_fault(0, BLADE_FAULT_OT_PLUG);
+    tick(1);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, 720);
+
+    sim_set_temps(0, 300, 500); // cooling, still over the off temperature
+    tick_ms(FAN_MIN_HOLD_MS + 100);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_FAULT);
+    MT_ASSERT_EQ(tele.port[0].temp_plug_dc, 500);
+    MT_ASSERT(sim_fan());
+
+    sim_set_temps(0, 300, 449); // under it
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
+// The same for a port switched off while its blade was hot.
+static void test_a_blade_switched_off_hot_holds_the_fan(void) {
+    support_reset(360000);
+    seat_gen3_lightly_loaded(0);
+    sim_set_temps(0, 300, 600);
+    tick(2);
+    MT_ASSERT(sim_fan());
+    engine_cmd_t c = {.op = CMD_PORT_DISABLE, .port = 0};
+    port_fsm_cmd(0, &c);
+
+    sim_set_temps(0, 300, 500); // cooling, still over the off temperature
+    tick_ms(FAN_MIN_HOLD_MS + 100);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_DISABLED);
+    MT_ASSERT(sim_fan());
+
+    sim_set_temps(0, 300, 449);
+    tick(2);
+    MT_ASSERT(!sim_fan());
+}
+
 static void test_hot_receptacle_turns_the_fan_on(void) {
     support_reset(360000);
     seat_gen3_lightly_loaded(0);
@@ -356,6 +402,9 @@ void run_fan_tests(void) {
     mt_run("fan: a hot blade overrides manual off", test_hot_blade_overrides_manual_off);
     mt_run("fan: manual off ignores the load rules", test_manual_off_ignores_the_load_rules);
     mt_run("fan: a hot receptacle turns it on", test_hot_receptacle_turns_the_fan_on);
+    mt_run("fan: a tripped blade holds the fan while it cools",
+           test_a_tripped_blade_holds_the_fan_while_it_cools);
+    mt_run("fan: a blade switched off hot holds the fan", test_a_blade_switched_off_hot_holds_the_fan);
     mt_run("fan: a hot receptacle overrides manual off",
            test_hot_receptacle_overrides_manual_off);
 }

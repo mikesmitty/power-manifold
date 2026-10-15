@@ -160,14 +160,55 @@ static void power_down(uint8_t i, port_state_t next) {
     enter(i, next);
 }
 
+// Carries a blade's temperatures into the port's status, which power_down
+// has emptied.
+static void keep_temps(uint8_t i, const blade_status_t *from) {
+    ctx[i].st.has_temps = from->has_temps;
+    ctx[i].st.temp_conv_dc = from->temp_conv_dc;
+    ctx[i].st.temp_plug_dc = from->temp_plug_dc;
+    ctx[i].st.temp_mcu_dc = from->temp_mcu_dc;
+}
+
 // The caller has the port's mux channel selected (or found that it could
 // not, in which case the blade is beyond reach anyway).
 static void fault(uint8_t i, uint32_t now_ms, uint16_t fault_bits, uint32_t detail) {
     ctx[i].fault_bits = fault_bits ? fault_bits : ctx[i].fault_bits;
     emit(EVT_FAULT, i, fault_bits, detail);
+    blade_status_t was = ctx[i].st;
     power_down(i, PORT_STATE_FAULT);
+    if (fault_bits) keep_temps(i, &was); // the blade's own fault, read just now
     blade_faulted(ctx[i].gen);
     ctx[i].cooldown_until_ms = now_ms + FAULT_COOLDOWN_MS;
+}
+
+// A gen-3 blade still answers with EN low. While its port is dark, faulted
+// or switched off, its temperatures are read on every tick, so the fan's
+// temperature rule and every surface keep seeing a blade that was hot when
+// its port went off. For a faulted port the same read tells, at the end of
+// the cooldown, whether the blade still holds a fault, such as a
+// temperature trip that has not cooled off yet or a sensor that reads
+// nothing. A read that fails leaves the last temperatures in place, as it
+// does on a powered port, until SILENT_POLLS_MAX of them in a row.
+static bool poll_dark(uint8_t i) {
+    if (ctx[i].gen != BLADE_GEN_3) return false;
+    blade_status_t st;
+    memset(&st, 0, sizeof(st));
+    if (!tca9548a_select(i) || !blade_poll(ctx[i].gen, false, &st)) {
+        if (ctx[i].silent_polls < SILENT_POLLS_MAX) ctx[i].silent_polls++;
+        else ctx[i].st.has_temps = false;
+        return false;
+    }
+    ctx[i].silent_polls = 0;
+    keep_temps(i, &st);
+    return st.fault_bits != 0;
+}
+
+// Switches the port off, for the owner or for the port's own charged or
+// sleep rule. The blade's temperatures carry over (poll_dark).
+static void switch_off(uint8_t i) {
+    blade_status_t was = ctx[i].st;
+    power_down(i, PORT_STATE_DISABLED);
+    if (ctx[i].gen == BLADE_GEN_3) keep_temps(i, &was);
 }
 
 static void start_probe(uint8_t i) {
@@ -537,7 +578,7 @@ static void unthrottle(uint8_t i) {
 static void auto_off(uint8_t i, uint32_t why) {
     emit(EVT_CHARGE, i, CHARGE_AUTO_OFF, why);
     ctx[i].admin_enabled = false;
-    power_down(i, PORT_STATE_DISABLED);
+    switch_off(i);
 }
 
 // Charge-complete detection and the sleep timer, every tick while a sink is
@@ -842,11 +883,22 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         }
         break;
 
-    case PORT_STATE_FAULT:
+    case PORT_STATE_FAULT: {
         if (!present) { power_down(i, PORT_STATE_ABSENT); break; }
+        bool holds = poll_dark(i);
         if (p->held) break; // until reseated, re-enabled or told to update
-        if (p->admin_enabled && now_ms >= p->cooldown_until_ms) start_probe(i);
+        if (!p->admin_enabled || now_ms < p->cooldown_until_ms) break;
+        if (holds && !p->update_rewrite) {
+            // Still tripped: the port stays dark and nothing new is
+            // reported. The latch is cleared so the next look, a cooldown
+            // later, shows whether the blade raises it again.
+            blade_faulted(p->gen);
+            p->cooldown_until_ms = now_ms + FAULT_COOLDOWN_MS;
+            break;
+        }
+        start_probe(i);
         break;
+    }
 
     case PORT_STATE_UPDATE:
         if (!present) { power_down(i, PORT_STATE_ABSENT); break; }
@@ -868,8 +920,9 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
         break;
 
     case PORT_STATE_DISABLED:
-        if (!present) enter(i, PORT_STATE_ABSENT);
+        if (!present) power_down(i, PORT_STATE_ABSENT); // the readings go with the blade
         else if (p->admin_enabled) start_probe(i);
+        else poll_dark(i);
         break;
 
     default:
@@ -942,7 +995,7 @@ void port_fsm_cmd(uint8_t i, const engine_cmd_t *cmd) {
         break;
     case CMD_PORT_DISABLE:
         ctx[i].admin_enabled = false;
-        if (ctx[i].state != PORT_STATE_ABSENT) power_down(i, PORT_STATE_DISABLED);
+        if (ctx[i].state != PORT_STATE_ABSENT) switch_off(i);
         break;
     case CMD_PORT_HARD_RESET:
         if (powered && tca9548a_select(i)) blade_hard_reset(ctx[i].gen);
