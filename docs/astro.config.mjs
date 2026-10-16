@@ -13,7 +13,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Power Manifold',
-			description: 'A six-port USB-C power supply with per-port control, power sharing and Home Assistant support.',
+			description: 'A six-port USB-C® power supply with USB PD 3.2, per-port control, power sharing and Home Assistant support.',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/mikesmitty/power-manifold' },
 			],
@@ -21,6 +21,9 @@ export default defineConfig({
 				baseUrl: 'https://github.com/mikesmitty/power-manifold/edit/main/docs/',
 			},
 			customCss: ['./src/styles/custom.css'],
+			components: {
+				Footer: './src/components/Footer.astro',
+			},
 			plugins: [
 				starlightOpenAPI([
 					{

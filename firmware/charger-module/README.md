@@ -1,9 +1,10 @@
 # Power Manifold Charger Module Firmware
 
 Firmware for the STM32G071 on the gen-3 charger blade (`hardware/charger-module`
-from release 0.15.0 on). It runs the blade's USB-C port with ST's USB-PD
-stack, a TPS55288 converter and a TCPP02-M18 port protector, and serves a
-register file to the controller over the backplane.
+from release 0.15.0 on). It runs the blade's USB-C® port as a USB Power
+Delivery 3.2 source with ST's USB-PD stack, a TPS55288 converter and a
+TCPP02-M18 port protector, and serves a register file to the controller over
+the backplane.
 
 ## Quick start
 

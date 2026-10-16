@@ -1,0 +1,17 @@
+---
+// Starlight's own footer, then the trademark attribution USB-IF asks for on
+// any page that uses its word marks. It goes on every page.
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default><slot /></Default>
+<p class="trademarks">USB Type-C® and USB-C® are registered trademarks of USB Implementers Forum.</p>
+
+<style>
+	.trademarks {
+		margin-top: 2rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		text-align: center;
+	}
+</style>

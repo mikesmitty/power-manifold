@@ -141,7 +141,7 @@ Its event types are:
 | `inserted` / `removed` / `ready` | The controller found a port, lost contact with it, or the port finished starting up. |
 | `contract` | The device switched to a different voltage or current. |
 | `probe_failed` | A blade didn't respond while starting up. |
-| `pd_reset` | The port or the device reset the USB-C connection, which briefly cuts the device's power. The `text` attribute says which side did it and, if the port's offer had changed since the device was plugged in, how long before. |
+| `pd_reset` | The port or the device reset the USB-C® connection, which briefly cuts the device's power. The `text` attribute says which side did it and, if the port's offer had changed since the device was plugged in, how long before. |
 | `updated` | The blade's firmware was updated. |
 
 **Example: get a notification when a port faults.**

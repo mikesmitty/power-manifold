@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Power Manifold is a six-port managed USB Power Delivery (USB-PD) power supply. Six charger blades and a management card plug into a backplane. Each blade runs its own USB-C port. A Raspberry Pi RP2350 on the management card supervises all six through an I2C multiplexer, divides the chassis power budget between them by priority, drives the status lights, and serves the network interfaces.
+Power Manifold is a six-port managed USB Power Delivery 3.2 (USB-PD) power supply. Six charger blades and a management card plug into a backplane. Each blade runs its own USB-C® port. A Raspberry Pi RP2350 on the management card supervises all six through an I2C multiplexer, divides the chassis power budget between them by priority, drives the status lights, and serves the network interfaces.
 
 The [user guide](/guide/web-interface/) and [integrations](/integrations/http-api/) pages are the reference for every operator-facing surface. [Controller internals](/developers/controller/internals/) and the [charger blade firmware](/developers/charger-module/overview/) pages cover the firmware in more depth.
 

@@ -43,9 +43,10 @@ order. This stops six devices from starting all at once.
 The voltage cap is the highest voltage a port offers. Choose 5, 9, 12, 15
 or 20 V. The default is 20 V, which offers everything.
 
-Besides the fixed voltages, a port offers two ranges in which the device
-chooses its own voltage: PPS (Programmable Power Supply) and SPR AVS
-(Adjustable Voltage Supply). The cap applies to them as well:
+Each port is a USB Power Delivery 3.2 source. Besides the fixed voltages, it
+offers two ranges in which the device chooses its own voltage: PPS
+(Programmable Power Supply) and SPR AVS (Adjustable Voltage Supply). The cap
+applies to them as well:
 
 | Cap | PPS | SPR AVS |
 |---|---|---|
@@ -60,7 +61,7 @@ which goes slightly above 20 V.
 Use a lower cap to protect a device that shouldn't get a high voltage. For
 example:
 
-- **5 V** for a device with a USB-C trigger board or adapter that you don't
+- **5 V** for a device with a USB-C® trigger board or adapter that you don't
   fully trust.
 - **9 V** to limit the charging power of a phone.
 

@@ -2,10 +2,10 @@
 
 ![Power Manifold chassis from the front right](docs/public/hero.webp)
 
-A six-port USB-C power supply: up to 100 W per port from one 24 V supply,
-with per-port control, priority-based power sharing and Home Assistant
-support. This repository holds the hardware (KiCad), the firmware and the
-documentation site.
+A six-port USB-C® power supply: USB Power Delivery 3.2, up to 100 W per port
+from one 24 V supply, with per-port control, priority-based power sharing
+and Home Assistant support. This repository holds the hardware (KiCad), the
+firmware and the documentation site.
 
 **Documentation:** <https://docs.powermanifold.io/>
 
@@ -74,3 +74,5 @@ Power Manifold is a trademark of Idle Curiosity LLC. The licenses above cover
 the designs, code and documentation, not the name: a product built or modified
 from this repository may say it is based on Power Manifold, but may not be sold
 or distributed under that name.
+
+USB Type-C® and USB-C® are registered trademarks of USB Implementers Forum.
