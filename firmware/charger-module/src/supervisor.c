@@ -279,6 +279,7 @@ void supervisor_run(void) {
     if (leaving) return;
     hw_watchdog_feed();
     uint32_t now = hw_ms();
+    hw_backplane_watch(now);
 
     follow_en(now);
     if (take_controller_input() || watch_controller(now)) return; // the MCU is resetting

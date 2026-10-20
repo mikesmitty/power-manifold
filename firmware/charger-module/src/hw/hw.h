@@ -44,3 +44,6 @@ void hw_led(bool on);
 // Around the main loop's calls into the register file
 void hw_backplane_lock(void);
 void hw_backplane_unlock(void);
+// Once per main loop turn: lets go of a backplane bus that its master
+// abandoned in the middle of a byte (backplane.c)
+void hw_backplane_watch(uint32_t now_ms);

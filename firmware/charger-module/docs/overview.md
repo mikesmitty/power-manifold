@@ -136,7 +136,7 @@ table with the component references.
 | PB3 | LED | green, low = lit |
 | PB4 | TCPP_EN sense | low while an over-voltage comparator holds the line |
 | PB5 | ALERT# | slot B15, open drain |
-| PB6 / PB7 | SCL / SDA | I2C1 slave, slot A14 / B14 |
+| PB6 / PB7 | SCL / SDA | I2C1 slave, slot A14 / B14; reset after SDA has been held low with SCL high for 50 ms |
 | PB8 | EN | slot B16, input |
 | PB10 / PB11 | USB_SCL / USB_SDA | I2C2 master, private bus |
 | PB12 | CONVERTER_FLT | TPS55288 FB/INT, low = fault |

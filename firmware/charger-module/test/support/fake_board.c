@@ -190,6 +190,7 @@ void hw_program_boot_via_loader(void) {
 }
 void hw_backplane_lock(void) {}
 void hw_backplane_unlock(void) {}
+void hw_backplane_watch(uint32_t now_ms) { (void)now_ms; }
 bool hw_converter_fault(void) { return conv_flt; }
 
 // dac.h
