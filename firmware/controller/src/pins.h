@@ -15,6 +15,13 @@
 // a W6100-EVB-Pico2 drops into the dev socket unchanged, and the controller
 // card copies the same mapping so firmware carries over.
 
+// The board header, which defines PWRMAN_CONTROLLER_CARD, comes in through
+// pico.h. Without this, a file that included pins.h before any SDK header got
+// the Pico 2 W map on the card (the input voltage monitor did, 2026-10-19).
+#if __has_include("pico.h")
+#include "pico.h"
+#endif
+
 #ifdef PWRMAN_CONTROLLER_CARD
 // hardware/controller, from the KiCad netlist (2026-09-09)
 #define PIN_EXP_RST_N   1  // TCA9539 reset, via Q1 (2N7002, 100k gate pull-down)
