@@ -2,6 +2,7 @@
 
 #include "usbpd_core.h"
 #include "usbpd_dpm_conf.h"
+#include "usbpd_dpm_core.h"
 #include "usbpd_dpm_user.h"
 #include "usbpd_pwr_if.h"
 
@@ -23,8 +24,10 @@ static void inform_identity(uint8_t PortNum, USBPD_SOPType_TypeDef SOPType,
             blade_capabilities_stale = true;
         break;
     case SVDM_CABLE_NO_PD_CAPABLE:
-        // Ra with nothing behind it: no e-marker to keep powered
+        // Ra with nothing behind it: no e-marker to keep powered, and none
+        // to power again after a hard reset
         (void)USBPD_DPM_PE_VconnPwr(PortNum, USBPD_DISABLE);
+        DPM_Params[PortNum].VconnStatus = USBPD_FALSE;
         break;
     default:
         break;

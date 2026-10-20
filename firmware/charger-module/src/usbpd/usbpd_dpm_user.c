@@ -105,9 +105,7 @@ void USBPD_DPM_UserCableDetection(uint8_t PortNum, USBPD_CAD_EVENT State) {
         break;
     default: // detached
         port_detach();
-        (void)USBPD_PWR_IF_VBUSDisable(PortNum);
-        if (DPM_Params[PortNum].VconnStatus == USBPD_TRUE)
-            (void)USBPD_DPM_PE_VconnPwr(PortNum, USBPD_DISABLE);
+        (void)USBPD_PWR_IF_VBUSDisable(PortNum); // and VCONN, if it was on
         break;
     }
 }

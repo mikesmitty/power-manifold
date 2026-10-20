@@ -36,12 +36,18 @@ USBPD_StatusTypeDef USBPD_PWR_IF_SupplyReady(uint8_t PortNum, USBPD_VSAFE_Status
     return mv > USBPD_PWR_HIGH_VBUS_THRESHOLD ? USBPD_OK : USBPD_ERROR;
 }
 
+// VCONN goes with VBUS when the stack found a cable's Ra at attach: it sets
+// VconnStatus and the CC pin for VCONN before calling here. The e-marker it
+// powers answers the stack's Discover Identity (SOP'), and only that answer
+// lets the port offer 5 A. A hard reset takes both down and back up.
 USBPD_StatusTypeDef USBPD_PWR_IF_VBUSEnable(uint8_t PortNum) {
-    return HW_IF_PWR_Enable(PortNum, USBPD_ENABLE, CCNONE, USBPD_FALSE, USBPD_PORTPOWERROLE_SRC);
+    return HW_IF_PWR_Enable(PortNum, USBPD_ENABLE, DPM_Params[PortNum].VconnCCIs,
+                            DPM_Params[PortNum].VconnStatus, USBPD_PORTPOWERROLE_SRC);
 }
 
 USBPD_StatusTypeDef USBPD_PWR_IF_VBUSDisable(uint8_t PortNum) {
-    return HW_IF_PWR_Enable(PortNum, USBPD_DISABLE, CCNONE, USBPD_FALSE, USBPD_PORTPOWERROLE_SRC);
+    return HW_IF_PWR_Enable(PortNum, USBPD_DISABLE, DPM_Params[PortNum].VconnCCIs,
+                            DPM_Params[PortNum].VconnStatus, USBPD_PORTPOWERROLE_SRC);
 }
 
 USBPD_FunctionalState USBPD_PWR_IF_VBUSIsEnabled(uint8_t PortNum) {
