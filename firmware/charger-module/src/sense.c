@@ -18,7 +18,8 @@ uint32_t sense_rail_mv(uint16_t raw, uint32_t vdda_mv) {
 }
 
 uint32_t sense_iana_ma(uint16_t raw, uint32_t vdda_mv) {
-    return (pin_uv(raw, vdda_mv) + IANA_UV_PER_MA / 2) / IANA_UV_PER_MA;
+    uint64_t nuv_per_ma = (uint64_t)IANA_UV_PER_MA * IANA_GAIN_PER_MILLE; // nV per mA
+    return (uint32_t)(((uint64_t)pin_uv(raw, vdda_mv) * 1000u + nuv_per_ma / 2) / nuv_per_ma);
 }
 
 // ADC counts every 5 degC from -40 to 125:

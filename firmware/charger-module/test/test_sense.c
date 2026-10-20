@@ -28,8 +28,8 @@ static void divider_scaling(void) {
 }
 
 static void port_current(void) {
-    // 5 A x 7 mOhm x 42 = 1.47 V
-    long ma = (long)sense_iana_ma(counts(1470, 3300), 3300);
+    // 5 A x 7 mOhm x 42 = 1.47 V nominal, 3.5 % more on the measured gain
+    long ma = (long)sense_iana_ma(counts(1521, 3300), 3300);
     MT_ASSERT(labs(ma - 5000) <= 5);
     MT_ASSERT_EQ(sense_iana_ma(0, 3300), 0);
 }

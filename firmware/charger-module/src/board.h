@@ -75,6 +75,11 @@
 // Analog scaling
 #define SENSE_DIV_NUM       11      // (100k + 10k) / 10k, VBUS_SENSE and VOUT_SENSE
 #define IANA_UV_PER_MA      294     // 42 V/V x 7 mOhm (R27)
+// The IANA chain's gain as measured, per mille of the nominal one. The six
+// blades on the bench read 2.2 to 4.8 % high at 5 A against an FNB58
+// (2026-10-20); this is the middle of that spread, which puts every one of
+// them within about 1.3 %.
+#define IANA_GAIN_PER_MILLE 1035
 #define CONV_SHUNT_UOHM     10000   // R28, TPS55288 ISP/ISN
 #define NTC_PULLUP_OHM      10000   // R12, R16
 
