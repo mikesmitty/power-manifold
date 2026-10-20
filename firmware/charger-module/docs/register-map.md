@@ -88,8 +88,8 @@ blade's part of it.
 table, at 0xC0, the linker places a 16-byte header — magic, version,
 protocol, length — that the controller reads out of a blade sitting in the
 bootloader to decide whether to start what is there or replace it. The
-image carries no checksum: the controller holds the reference copy and asks
-the bootloader for the CRC of the flash. `build/charger-module.bin` is the
+image carries no checksum: the controller holds the reference copy and reads
+the flash back to compare. `build/charger-module.bin` is the
 image, and what the controller bundles.
 
 **Getting to the bootloader.** A blank chip boots into it (the flash's
@@ -111,8 +111,9 @@ rewrites under it.
 
 **What the bootloader is** (AN2606 Rev 70, section 48 and the timing
 tables): ID 0xB4 at 0x1FFF6FFE for V11.4, the current one, speaking I2C
-protocol V1.2, which has the no-stretch commands and the checksum the
-controller uses. It answers within 25 µs of being addressed, 0.4 ms after
+protocol V1.2, which has the no-stretch commands the controller uses. Its
+checksum command, also V1.2, held the clock and never answered on the
+blade's G071, so the controller does not use it. It answers within 25 µs of being addressed, 0.4 ms after
 reset, and resets the chip when the host pauses for 1 s between two
 frames of one command. It refreshes the independent watchdog only if the
 option bytes start it in hardware; the firmware's own is not running

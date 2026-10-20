@@ -15,7 +15,7 @@ enum {
     S_VERSION, S_ID, S_INSPECT,
     S_ERASE, S_ERASE_WAIT, S_ERASE_SETTLE,
     S_WRITE, S_WRITE_WAIT,
-    S_CRC, S_CRC_WAIT, S_READBACK,
+    S_READBACK,
     S_GO,
 };
 
@@ -23,7 +23,7 @@ typedef struct {
     uint8_t  step, tries, fail;
     uint16_t waits;
     uint8_t  mode;    // blade_update_mode_t
-    bool     no_stretch, has_crc, wrote, rewritten;
+    bool     no_stretch, wrote, rewritten;
     uint32_t chunk;   // the page being erased, then the position in the write (or read-back) order
     uint32_t length;  // bytes of image on the blade once done
     uint32_t version; // UPDATE_VERSION() of it
@@ -32,18 +32,6 @@ typedef struct {
 } update_t;
 
 static update_t u[NUM_PORTS];
-
-uint32_t blade_image_crc(const uint8_t *data, uint32_t size, uint32_t len) {
-    uint32_t crc = 0xFFFFFFFFu;
-    for (uint32_t i = 0; i + 4 <= len; i += 4) {
-        uint32_t w = 0;
-        for (int b = 3; b >= 0; b--) w = w << 8 | (i + b < size ? data[i + b] : 0xFFu);
-        crc ^= w;
-        for (int b = 0; b < 32; b++)
-            crc = (crc & 0x80000000u) ? (crc << 1) ^ 0x04C11DB7u : crc << 1;
-    }
-    return crc;
-}
 
 static uint32_t chunks(const update_t *p) {
     return (p->length + STBOOT_CHUNK - 1) / STBOOT_CHUNK;
@@ -92,9 +80,12 @@ static blade_update_status_t wait_more(update_t *p, uint8_t why) {
     return BLADE_UPDATE_BUSY;
 }
 
+// The flash is read back and compared with the bundle. The bootloader's
+// checksum command (protocol V1.2) is not used: on the blade's G071 it held
+// the clock for longer than 200 ms and never answered (bench, 2026-10-19).
 static void start_verify(update_t *p) {
     p->chunk = 0;
-    next(p, p->has_crc ? S_CRC : S_READBACK);
+    next(p, S_READBACK);
 }
 
 // Not what was sent: once more from the erase, then give up
@@ -103,15 +94,6 @@ static blade_update_status_t verify_failed(update_t *p) {
     p->rewritten = true;
     p->chunk = 0;
     next(p, S_ERASE);
-    return BLADE_UPDATE_BUSY;
-}
-
-static blade_update_status_t crc_result(update_t *p) {
-    uint32_t crc;
-    if (stboot_checksum_result(&crc) != STBOOT_OK) return retry(p, UPDATE_FAIL_VERIFY);
-    if (crc != blade_image_crc(blade_bundle_data(), blade_bundle_size(), p->length))
-        return verify_failed(p);
-    next(p, S_GO);
     return BLADE_UPDATE_BUSY;
 }
 
@@ -133,7 +115,6 @@ blade_update_status_t blade_update_step(uint8_t port) {
         if (stboot_version(&v) != STBOOT_OK) return retry(p, UPDATE_FAIL_SILENT);
         if ((v >> 4) != 1) return fail(p, UPDATE_FAIL_CHIP); // this driver speaks protocol 1.x
         p->no_stretch = v >= STBOOT_PROTOCOL_MIN_NS;
-        p->has_crc = v >= STBOOT_PROTOCOL_MIN_CRC;
         next(p, S_ID);
         return BLADE_UPDATE_BUSY;
     }
@@ -224,18 +205,7 @@ blade_update_status_t blade_update_step(uint8_t port) {
         else if (r == STBOOT_BUSY) return wait_more(p, UPDATE_FAIL_WRITE);
         else { p->step = S_WRITE; return retry(p, UPDATE_FAIL_WRITE); } // the same chunk again
         return BLADE_UPDATE_BUSY;
-    case S_CRC:
-        r = stboot_checksum(BLADE_IMAGE_BASE, p->length);
-        if (r == STBOOT_OK) return crc_result(p);
-        if (r == STBOOT_BUSY) { next(p, S_CRC_WAIT); return BLADE_UPDATE_BUSY; }
-        return retry(p, UPDATE_FAIL_VERIFY);
-    case S_CRC_WAIT:
-        r = stboot_poll();
-        if (r == STBOOT_OK) return crc_result(p);
-        if (r == STBOOT_BUSY) return wait_more(p, UPDATE_FAIL_VERIFY);
-        p->step = S_CRC;
-        return retry(p, UPDATE_FAIL_VERIFY);
-    case S_READBACK: { // no checksum command: compare the flash chunk by chunk
+    case S_READBACK: { // compare the flash chunk by chunk
         uint8_t want_bytes[STBOOT_CHUNK];
         uint32_t off = p->chunk * STBOOT_CHUNK;
         if (off >= p->length) { next(p, S_GO); return BLADE_UPDATE_BUSY; }
@@ -262,8 +232,6 @@ uint8_t blade_update_pct(uint8_t port) {
         uint32_t total = chunks(p);
         return (uint8_t)(total ? (p->chunk * 100) / total : 0);
     }
-    case S_CRC:
-    case S_CRC_WAIT:
     case S_READBACK:
     case S_GO:
         return 100;

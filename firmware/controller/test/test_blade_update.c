@@ -65,18 +65,6 @@ static bool flash_holds_bundle(uint8_t slot) {
     return true;
 }
 
-static void test_crc_matches_the_stm32_unit(void) {
-    // the CRC unit's well-known results for one and two zero words
-    static const uint8_t zero[8] = {0};
-    MT_ASSERT_EQ(blade_image_crc(zero, 4, 4), 0xC704DD7Bu);
-    MT_ASSERT_EQ(blade_image_crc(zero, 8, 8), 0x6904BB59u);
-    static const uint8_t w[4] = {0x78, 0x56, 0x34, 0x12}; // 0x12345678, least significant byte first
-    MT_ASSERT_EQ(blade_image_crc(w, 4, 4), 0xDF8A8A2Bu);
-    // bytes past the data are the erased flash's 0xFF
-    static const uint8_t ff[4] = {0xFF, 0xFF, 0xFF, 0xFF};
-    MT_ASSERT_EQ(blade_image_crc(zero, 0, 4), blade_image_crc(ff, 4, 4));
-}
-
 // A blank blade (or one that lost its image) is programmed with the bundle,
 // the first page last, and started.
 static void test_blank_blade_is_programmed(void) {
@@ -364,7 +352,7 @@ static void test_a_silent_blade_keeps_its_power(void) {
     g_settings.blade_watch_s = 120;
     fake_bundle_make(0, 2, 0, IMAGE_LEN);
     seat3(0);
-    settle(0, 100);
+    settle(0, 200);
     sim_attach(0, 20000, 3000);
     tick(3);
     MT_ASSERT_EQ(port_state(0), PORT_STATE_ACTIVE);
@@ -602,7 +590,6 @@ static void test_watch_setting_and_gen2(void) {
 }
 
 void run_blade_update_tests(void) {
-    mt_run("update: the CRC matches the STM32 unit", test_crc_matches_the_stm32_unit);
     mt_run("update: a blank blade is programmed", test_blank_blade_is_programmed);
     mt_run("update: a matching image is started", test_matching_image_is_started);
     mt_run("update: another version is rewritten", test_other_version_is_rewritten);

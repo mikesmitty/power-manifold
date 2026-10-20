@@ -244,8 +244,8 @@ blank, reset into it, or set to boot through it — and takes it through a
 trip (`updating` in the state column, with a progress percentage): read the
 bootloader's version and the chip's ID, read the image header out of the
 flash, then either start what is there (it is the bundled version, and the
-bootloader's checksum of the flash matches the bundle), or erase and write
-the bundle, check it the same way and start it. That port is already dark,
+flash, read back, matches the bundle), or erase and write the bundle, check
+it the same way and start it. That port is already dark,
 so the trip interrupts no output.
 
 A blade *running* its firmware has to be sent to the bootloader, and that

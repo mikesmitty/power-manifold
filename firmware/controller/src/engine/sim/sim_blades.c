@@ -68,7 +68,6 @@ typedef struct {
     uint32_t goes;         // Go commands accepted
     uint32_t erases, writes; // erase passes (each starts at the first page) and write commands
     uint32_t cut_after_writes; // a power cut lands after this many more write commands (0 = none)
-    uint32_t crc_len;      // the range of the checksum command in progress
     uint8_t  flash[SIM_FLASH_SIZE];
     uint32_t src_caps;
     uint32_t hard_resets;
@@ -784,27 +783,6 @@ stboot_result_t stboot_write(uint32_t addr, const uint8_t *data, size_t n, bool 
     s->writes++;
     s->busy_polls = no_stretch ? 1 : 0;
     return busy_or_ok(s);
-}
-
-stboot_result_t stboot_checksum(uint32_t addr, uint32_t len) {
-    sim_slot_t *s = loader3();
-    if (!s) return STBOOT_SILENT;
-    if (addr < BLADE_IMAGE_BASE || len == 0 || len & 3 || addr - BLADE_IMAGE_BASE + len > SIM_FLASH_SIZE)
-        return STBOOT_NACK;
-    s->crc_len = len;
-    s->busy_polls = SIM_BUSY_POLLS;
-    return STBOOT_BUSY;
-}
-
-// The CRC as the controller computes it (blade_update.c): the model of
-// the CRC unit both sides share
-uint32_t blade_image_crc(const uint8_t *data, uint32_t size, uint32_t len);
-
-stboot_result_t stboot_checksum_result(uint32_t *crc) {
-    const sim_slot_t *s = loader3();
-    if (!s) return STBOOT_SILENT;
-    *crc = blade_image_crc(s->flash, s->crc_len, s->crc_len);
-    return STBOOT_OK;
 }
 
 stboot_result_t stboot_go(uint32_t addr) {
