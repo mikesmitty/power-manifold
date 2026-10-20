@@ -116,6 +116,8 @@ typedef struct {
     uint8_t  auth_read;        // 1: reading status, faults, certificate details and /metrics also needs the API token, once one is stored
     // -- added in layout version 23 --
     uint8_t  port_limit_w[NUM_PORTS]; // per-port power limit in watts, PORT_LIMIT_MIN_W to PORT_LIMIT_MAX_W (manifold.h)
+    // -- added in layout version 24 --
+    uint8_t  contract_steps;   // 1: every voltage step a PPS or SPR AVS sink takes is a contract event, not only a change of object (port_fsm.c)
     uint32_t crc; // must remain last
 } settings_t;
 

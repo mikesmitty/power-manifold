@@ -76,6 +76,7 @@ static void print_help(void) {
            "  mqtt <host> [port user pass] set MQTT broker (empty host disables)\n"
            "  mqtt tls on|off|unverified   TLS to the broker: verified against the installed certificate, else Let's Encrypt\n"
            "  mqtt ca [clear]              the installed broker certificate (install one from the web UI)\n"
+           "  mqtt steps [on|off]          a contract event for every voltage step a PPS or SPR AVS device takes\n"
            "  ip dhcp | ip static <addr> <mask> <gw>\n"
            "                               addressing (wired link if a W6100 is fitted, else WiFi)\n"
            "  dns <addr>|auto              resolver override (auto: DHCP's, or the gateway when static)\n"
@@ -564,6 +565,18 @@ static void run_line(char *l) {
             mqtt_reconnect();
             printf("mqtt: link %s ('save' to persist; reconnects now)\n", mqtt_tls_mode_str());
             if (mqtt_tls_blocker()) printf("mqtt: %s\n", mqtt_tls_blocker());
+            return;
+        }
+        if (host && !strcmp(host, "steps")) {
+            const char *v = strtok_r(NULL, " \t", &save);
+            if (v && (!strcmp(v, "on") || !strcmp(v, "off"))) {
+                g_settings.contract_steps = !strcmp(v, "on");
+                printf("mqtt steps: %s ('save' to persist; applies at once)\n", v);
+            } else if (v) {
+                printf("usage: mqtt steps [on|off]\n");
+            } else {
+                printf("mqtt steps: %s\n", g_settings.contract_steps ? "on" : "off");
+            }
             return;
         }
         if (host && !strcmp(host, "ca")) {

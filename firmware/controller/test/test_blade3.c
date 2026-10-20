@@ -166,6 +166,31 @@ static void test_moves_inside_an_apdo_are_not_events(void) {
     MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->code, 7);
 }
 
+// With contract_steps on, every step inside the object is an event too
+static void test_contract_steps_makes_every_move_an_event(void) {
+    support_reset(360000);
+    g_settings.contract_steps = 1;
+    seat3(0);
+    tick(2);
+    sim_set_apdo(0, PORT_CONTRACT_AVS);
+    sim_attach(0, 9000, 5000);
+    tick(2);
+    for (uint16_t mv = 9100; mv <= 12000; mv += 100) {
+        sim_attach(0, mv, 5000);
+        tick(1);
+    }
+    tick(1);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 31);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->code, 6);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->arg, 60000);
+
+    g_settings.contract_steps = 0; // takes effect at the next step
+    sim_attach(0, 12100, 5000);
+    tick(2);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60500);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 31);
+}
+
 // On a fixed object a new current is a new contract, as before
 static void test_a_fixed_objects_new_current_is_an_event(void) {
     support_reset(360000);
@@ -603,6 +628,7 @@ void run_blade3_tests(void) {
     mt_run("blade3: attach, contract, telemetry, detach", test_attach_contract_and_telemetry);
     mt_run("blade3: PPS contract at 21 V", test_pps_contract_at_21v);
     mt_run("blade3: moves inside an APDO are not events", test_moves_inside_an_apdo_are_not_events);
+    mt_run("blade3: contract_steps makes every move inside an APDO an event", test_contract_steps_makes_every_move_an_event);
     mt_run("blade3: a fixed object's new current is an event", test_a_fixed_objects_new_current_is_an_event);
     mt_run("blade3: a throttled port offers its watts at every voltage", test_a_throttled_port_offers_its_watts_at_every_voltage);
     mt_run("blade3: the bus cap is a power", test_the_bus_cap_is_a_power);

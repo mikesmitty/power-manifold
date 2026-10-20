@@ -36,6 +36,7 @@ commands described in [Building](building.md#fake-blade-mode-no-backplane-needed
 | `mqtt <host> [port user pass]` | broker; an empty host disables MQTT |
 | `mqtt tls on\|off\|unverified` | TLS to the broker, verified against the installed certificate or the built-in Let's Encrypt roots |
 | `mqtt ca` / `mqtt ca clear` | the installed broker certificate (install one from the page or the API) |
+| `mqtt steps [on\|off]` | a `contract` event for every voltage step a PPS or SPR AVS device takes, not only when it switches to that range or away from it (default off) |
 | `ip dhcp` / `ip static <addr> <mask> <gw>` | addressing: the wired link if a W6100 is present, else WiFi |
 | `dns <addr>\|auto` | resolver override |
 | `ntp <host>\|auto` | time server override |

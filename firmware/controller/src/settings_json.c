@@ -81,7 +81,7 @@ size_t settings_json_build(char *out, size_t cap, const settings_t *s,
         size_t n = der_to_pem(s->mqtt_ca, s->mqtt_ca_len, out + off, cap - off, "\\n");
         off = n ? off + n : cap; // 0 = it did not fit: the check at the end reports that
     }
-    off = putf(out, cap, off, "\",");
+    off = putf(out, cap, off, "\",\"contract_steps\":%s,", s->contract_steps ? "true" : "false");
     off = putf(out, cap, off, "\"syslog_port\":%u,\"charged_mw\":%u,\"charged_min\":%u,",
                s->syslog_port, s->charged_mw, s->charged_min);
     // the bus-voltage trim belongs to this unit's divider: shown, never backed up
@@ -264,6 +264,7 @@ const char *settings_json_apply(const char *body, settings_t *s, bool via_setup,
         s->mqtt_tls = !tls ? MQTT_TLS_OFF : verify ? MQTT_TLS_VERIFIED : MQTT_TLS_UNVERIFIED;
     }
     if (json_get_bool(body, "auth_read", &b)) s->auth_read = b;
+    if (json_get_bool(body, "contract_steps", &b)) s->contract_steps = b;
     if (json_get_bool(body, "update_auto", &b)) s->update_auto = b;
     // whether a certificate is installed is the HTTP server's check
     if (json_get_bool(body, "https", &b)) s->https = b;

@@ -242,6 +242,7 @@ input[type=checkbox]{width:auto;accent-color:var(--ink)}
     <div class="two"><label>User<input id="muser" name="muser" maxlength="32"></label><label>Password<input id="mpass" name="mpass" type="password" maxlength="64"></label></div>
     <label>Connection<span class="h">TLS checks the broker against the certificate below, or the Let's Encrypt roots when none is installed</span><select id="mtls" name="mtls"><option value="plain">Plain</option><option value="tls">TLS</option><option value="unverified">TLS, unverified</option></select></label>
     <label>Broker certificate<span class="h">PEM, up to 2 KB, for a broker not issued by Let's Encrypt. Blank: Let's Encrypt.</span><textarea id="mca" name="mca" rows="3" spellcheck="false"></textarea></label>
+    <label>Voltage step events<span class="h">A PPS or SPR AVS device sets its own voltage, often in 0.1 V steps. Off: a contract event only when it switches to that range or away from it.</span><select id="msteps" name="msteps"><option value="off">Off</option><option value="on">On: every step</option></select></label>
    </fieldset>
    <fieldset><legend>Power and fan</legend>
     <label>Chassis budget (W)<input id="bud" name="bud" inputmode="numeric" pattern="[0-9]+" title="{{STR(BUDGET_MIN_W)}} to {{STR(BUDGET_MAX_W)}}" required></label>
@@ -420,7 +421,7 @@ async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr
  if(r.status==401){const w=await why(r);F.hidden=true;LK.hidden=w!=BT;
   M.textContent=w==BT?(sessionStorage.tok?'Token rejected. ':'')+'Enter the API token to edit settings.':cap(w);return null;}
  const d=await r.json();LK.hidden=true;F.hidden=false;
- for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';F.uauto.value=d.update_auto?'on':'off';
+ for(const k in KEYS)F[k].value=d[KEYS[k]];F.mtls.value=!d.mqtt_tls?'plain':d.mqtt_tls_verify?'tls':'unverified';F.uauto.value=d.update_auto?'on':'off';F.msteps.value=d.contract_steps?'on':'off';
  ar=d.auth_read;F.aread.value=ar?'on':'off';F.https.value=d.https?'on':'off';tlsLoad();if(rl){rl=0;tick();flLoad();}
  PN.forEach((e,i)=>e.value=d.port_names[i]||'');PL.forEach((e,i)=>e.value=d.port_limits_w[i]);PB.forEach((e,i)=>e.value=d.port_boot[i]);
  PV.forEach((e,i)=>e.value=d.port_max_v[i]);PA.forEach((e,i)=>e.checked=!!d.port_auto_off[i]);PS.forEach((e,i)=>e.value=d.port_sleep_min[i]);
@@ -428,7 +429,7 @@ async function cfgLoad(){let r;try{r=await fetch('/api/v1/settings',{headers:hdr
  F.mpass.placeholder=d.mqtt_pass_set?'(unchanged)':'(none)';F.atok.placeholder=d.token_set?'(unchanged)':'required';F.atok.required=!d.token_set;
  M.textContent=d.token_set?'':'Setup: choose an API token to finish. It locks the API and this panel, so keep a copy.';return d;}
 F.onsubmit=async e=>{e.preventDefault();const b={};for(const k in KEYS)b[KEYS[k]]=NUM[k]?+F[k].value.replace('\u2212','-'):F[k].value;b.mqtt_port=b.mqtt_port||1883;
- b.update_auto=F.uauto.value=='on';b.auth_read=F.aread.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_w=PL.map(e=>+e.value);
+ b.update_auto=F.uauto.value=='on';b.contract_steps=F.msteps.value=='on';b.auth_read=F.aread.value=='on';b.https=F.https.value=='on';b.mqtt_tls=F.mtls.value!='plain';b.mqtt_tls_verify=F.mtls.value!='unverified';b.port_names=PN.map(e=>e.value.trim());b.port_limits_w=PL.map(e=>+e.value);
  b.port_boot=PB.map(e=>e.value);b.port_max_v=PV.map(e=>+e.value);b.port_auto_off=PA.map(e=>e.checked?1:0);b.port_sleep_min=PS.map(e=>+e.value);
  b.led_night=F.lns.value&&F.lne.value?F.lns.value+'-'+F.lne.value:'';if(F.mpass.value)b.mqtt_pass=F.mpass.value;if(F.atok.value)b.token=F.atok.value;
  let r,d={};try{r=await fetch('/api/v1/settings',{method:'POST',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(b)});d=await r.json();}catch(e){}

@@ -286,7 +286,7 @@ the same keys, so you can edit an export and post it back.
 | --- | --- |
 | Device | `name`, `token`, `auth_read` (`true`: also require the token to read status, faults, certificate details and `/metrics`) |
 | Wi-Fi | `wifi_ssid`, `wifi_pass` |
-| MQTT | `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`, `mqtt_tls_verify`, `mqtt_ca` (PEM) |
+| MQTT | `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `mqtt_tls`, `mqtt_tls_verify`, `mqtt_ca` (PEM), `contract_steps` (`true`: a `contract` event for every voltage step a PPS or SPR AVS device takes) |
 | Network | `ip_mode`, `ip`, `netmask`, `gateway`, `dns`, `ntp_server`, `hostnames`, `syslog_host`, `syslog_port`, `update_url`, `https` |
 | Updates | `update_auto` (`true`: new releases install by themselves) |
 | Power | `budget_w`, `fan_mode`, `fan_on_w`, `fan_off_w`, `fan_on_ma`, `charged_mw`, `charged_min` |

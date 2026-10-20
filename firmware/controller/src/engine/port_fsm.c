@@ -730,10 +730,11 @@ static void track_contract(uint8_t i) {
     ctx[i].contract_mw = want;
     // A PPS or AVS sink sets its own voltage inside the object it chose, as
     // often as it likes, and a sweep makes a new contract every 0.1 V. Only
-    // a different object is an event; the telemetry follows the voltage.
+    // a different object is an event, unless the contract_steps setting asks
+    // for every step; the telemetry follows the voltage either way.
     uint8_t pdo = ctx[i].st.selected_pdo;
     bool apdo = ctx[i].st.contract == PORT_CONTRACT_PPS || ctx[i].st.contract == PORT_CONTRACT_AVS;
-    if (apdo && !first && pdo == ctx[i].told_pdo) return;
+    if (apdo && !first && pdo == ctx[i].told_pdo && !g_settings.contract_steps) return;
     ctx[i].told_pdo = pdo;
     emit(EVT_CONTRACT, i, pdo, want);
 }

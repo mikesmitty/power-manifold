@@ -68,6 +68,7 @@ static void fill(settings_t *s) {
     s->vin_cal = 1023;
     s->https = 1;
     s->auth_read = 1;
+    s->contract_steps = 1;
     for (int i = 0; i < NUM_PORTS; i++) {
         snprintf(s->port_name[i], sizeof(s->port_name[i]), "Slot %d <b>&", i + 1);
         s->port_limit_w[i] = (uint8_t)(20u + 10u * (uint32_t)i);
@@ -99,6 +100,7 @@ static void test_round_trip(void) {
     MT_ASSERT(strstr(json, "vin_cal") == NULL); // a backup leaves the trim out
     MT_ASSERT(strstr(json, "\"https\"") == NULL); // and HTTPS, whose certificate stays behind
     MT_ASSERT(strstr(json, "\"auth_read\":true") != NULL);
+    MT_ASSERT(strstr(json, "\"contract_steps\":true") != NULL);
     MT_ASSERT(strstr(json, "blade_auto_update") == NULL); // a setting since removed
     MT_ASSERT(strstr(json, "\"update_auto\":false") != NULL);
     MT_ASSERT(strstr(json, "\"blade_watch_s\":0") != NULL);

@@ -13,7 +13,7 @@
 // this against a pair of sectors in RAM.
 
 #define SETTINGS_SLOTS      2
-#define SETTINGS_VERSION    23
+#define SETTINGS_VERSION    24
 
 // Each older layout ended where the next version's fields begin, with its
 // crc 4-byte aligned right after the last field. Accepting them means
@@ -42,6 +42,7 @@
 #define SETTINGS_V20_PAYLOAD ALIGN4(offsetof(settings_t, https))
 #define SETTINGS_V21_PAYLOAD ALIGN4(offsetof(settings_t, auth_read))
 #define SETTINGS_V22_PAYLOAD ALIGN4(offsetof(settings_t, port_limit_w))
+#define SETTINGS_V23_PAYLOAD ALIGN4(offsetof(settings_t, contract_steps))
 _Static_assert(SETTINGS_V1_PAYLOAD == 376, "settings v1 layout moved");
 _Static_assert(SETTINGS_V2_PAYLOAD == 380, "settings v2 layout moved");
 _Static_assert(SETTINGS_V3_PAYLOAD == 384, "settings v3 layout moved");
@@ -68,7 +69,8 @@ _Static_assert(SETTINGS_V19_PAYLOAD == 2976, "settings v19 layout moved");
 _Static_assert(SETTINGS_V20_PAYLOAD == 3036, "settings v20 layout moved");
 _Static_assert(SETTINGS_V21_PAYLOAD == 3036, "settings v21 layout moved"); // https fit in v20's padding
 _Static_assert(SETTINGS_V22_PAYLOAD == 3036, "settings v22 layout moved"); // auth_read fit in v20's padding
-_Static_assert(offsetof(settings_t, crc) == 3044, "settings v23 layout moved");
+_Static_assert(SETTINGS_V23_PAYLOAD == 3044, "settings v23 layout moved");
+_Static_assert(offsetof(settings_t, crc) == 3044, "settings v24 layout moved"); // contract_steps fit in v23's padding
 _Static_assert(sizeof(settings_t) <= SETTINGS_SECTOR_SIZE, "settings record outgrew its sector");
 
 // Fan auto-policy defaults, shared by fresh defaults and version upgrades
@@ -123,6 +125,7 @@ static const settings_t *slot_ptr(uint32_t base, int i) {
 static uint32_t record_payload_len(const settings_t *s) {
     switch (s->version) {
     case SETTINGS_VERSION: return payload_len();
+    case 23:               return SETTINGS_V23_PAYLOAD;
     case 22:               return SETTINGS_V22_PAYLOAD;
     case 21:               return SETTINGS_V21_PAYLOAD;
     case 20:               return SETTINGS_V20_PAYLOAD;
@@ -298,6 +301,7 @@ void settings_load(void) {
                 g_settings.port_limit_w[i] = (uint8_t)w;
             }
         }
+        if (g_settings.version < 24) g_settings.contract_steps = 0;
         g_settings.version = SETTINGS_VERSION;
     } else {
         settings_defaults();

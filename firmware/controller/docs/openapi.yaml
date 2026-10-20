@@ -1545,6 +1545,12 @@ components:
             The broker's CA certificate as PEM, up to 2048 bytes as DER; empty
             for none. Without one a verified link trusts the Let's Encrypt
             roots.
+        contract_steps:
+          type: boolean
+          description: |
+            A contract event for every voltage step a PPS or SPR AVS sink
+            takes. Off, the event comes only when the sink switches to that
+            range or away from it.
         ip_mode:
           type: string
           enum: [dhcp, static]
