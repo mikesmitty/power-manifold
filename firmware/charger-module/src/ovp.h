@@ -14,6 +14,12 @@
 // Order on a voltage change: the threshold always covers the higher of the
 // two voltages while the output moves. Rising: threshold first, then the
 // converter. Falling: converter first, threshold once VBUS has arrived.
+//
+// With the switch open, the threshold covers whatever the converter output
+// still holds (never under the 5 V level), and comes down to the 5 V level
+// only once that output is at 5 V, just before the switch closes. An empty
+// receptacle discharges in milliseconds, the converter output (about 260 uF)
+// far slower, and the comparator watches the converter output.
 
 #define OVP_MARGIN_PCT  120 // trip at 1.2 x the contract voltage
 

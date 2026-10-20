@@ -26,6 +26,15 @@ static void set_threshold(uint32_t trip_mv) {
     dac_set(ovp_dac_code(trip_mv, meter_vdda_mv()));
 }
 
+// With the VBUS switch open the threshold sits over whatever the converter
+// output holds now, never under the 5 V level. The comparator watches that
+// output, which drains far slower than an empty receptacle: lowered under
+// the charge still on it, the threshold tripped the port with nothing wrong.
+// It comes down to the 5 V level once the output is there (power_vbus_on).
+static void cover_vout(void) {
+    set_threshold(ovp_transition_mv(meter_vout_mv(), POWER_VSAFE5V_MV));
+}
+
 static bool tripped(void) {
     return port_up && (hw_ovp_trip_latched() || !hw_tcpp_en_sense());
 }
@@ -82,7 +91,7 @@ void power_init(void) {
 }
 
 power_result_t power_port_up(void) {
-    set_threshold(ovp_threshold_mv(POWER_VSAFE5V_MV));
+    cover_vout();
     hw_tcpp_en(true);
     hw_delay_ms(TCPP_EN_SETTLE_MS);
     hw_ovp_trip_clear(); // whatever the line did on its way up
@@ -142,7 +151,7 @@ power_result_t power_vbus_on(void) {
     if (!conv_ready) return POWER_NOT_READY;
     uint32_t t0 = hw_ms();
     contracted = false;
-    set_threshold(ovp_threshold_mv(POWER_VSAFE5V_MV));
+    cover_vout();
     if (!tps55288_set_mv(POWER_VSAFE5V_MV) || !tps55288_set_limit_ma(limit_for(typec_ma)))
         return POWER_BUS;
 
@@ -162,6 +171,7 @@ power_result_t power_vbus_on(void) {
         power_shutdown();
         return r;
     }
+    set_threshold(ovp_threshold_mv(POWER_VSAFE5V_MV)); // the output is at 5 V now
 
     // Then the switch. The TCPP02's gate drive and C31, drain to gate, set
     // how fast VBUS rises, which keeps the inrush into the sink's
@@ -206,8 +216,8 @@ power_result_t power_vbus_off(void) {
     power_result_t w = write_tcpp();
     if (r == POWER_OK) r = w;
     if (r == POWER_OK && !conv_ok) r = POWER_BUS;
-    // the threshold comes down only once the voltage it covered has gone
-    if (r == POWER_OK || !was_mv) set_threshold(ovp_threshold_mv(POWER_VSAFE5V_MV));
+    // the threshold comes down only as far as the converter output has
+    if (r == POWER_OK || !was_mv) cover_vout();
     return r;
 }
 

@@ -12,12 +12,14 @@
 //     and VBUS follows it while the switch is closed;
 //   - without forced PWM it falls only into a sink's load through the closed
 //     switch;
-//   - with the switch open it falls only through a discharge path;
+//   - with the switch open it falls only through a discharge path, within
+//     milliseconds once nothing is plugged in (fake_board_set_empty);
 //   - the comparator trips the moment the converter output is above the
 //     threshold the DAC holds, and the trip is remembered.
 
 void fake_board_reset(void);
 void fake_board_set_load(bool loaded);        // a sink drawing current: VBUS follows downward in PFM too
+void fake_board_set_empty(bool empty);        // nothing plugged in: only the blade's own capacitance on VBUS
 void fake_board_set_vdda_mv(uint32_t mv);
 void fake_board_set_vout_mv(uint32_t mv);     // charge left on the converter output
 void fake_board_fit_tcpp02(bool fitted);

@@ -10,12 +10,13 @@
 
 #define SLEW_MV_PER_MS       2500 // the converter's, TPS55288_SR_2V5_PER_MS
 #define DISCHARGE_MV_PER_MS  100
+#define EMPTY_DISCHARGE_MV_PER_MS 10000 // the receptacle alone: gone in ~2 ms (bench)
 
 static uint32_t now_ms;
 static uint32_t vdda_mv;
 static uint16_t dac_code;
 static bool en_drive, held, latched;
-static bool loaded, stuck, port_flt, conv_flt, tcpp_fitted;
+static bool loaded, empty, stuck, port_flt, conv_flt, tcpp_fitted;
 static bool en_line, alert;
 static int16_t temp_conv, temp_plug;
 static unsigned feeds;
@@ -37,7 +38,7 @@ void fake_board_reset(void) {
     vdda_mv = 3300;
     dac_code = 0;
     en_drive = held = latched = false;
-    loaded = stuck = port_flt = conv_flt = false;
+    loaded = empty = stuck = port_flt = conv_flt = false;
     tcpp_fitted = true;
     en_line = alert = false;
     temp_conv = temp_plug = 250;
@@ -50,6 +51,7 @@ void fake_board_reset(void) {
 }
 
 void fake_board_set_load(bool l) { loaded = l; }
+void fake_board_set_empty(bool e) { empty = e; }
 void fake_board_set_en(bool high) { en_line = high; }
 void fake_board_set_temps_dc(int16_t conv, int16_t plug) {
     temp_conv = conv;
@@ -154,7 +156,7 @@ static void step_ms(void) {
     if (closed) {
         vbus_mv = vout_mv;
     } else if ((ctrl & TCPP02_CTRL_VBUSD) || loaded) {
-        vbus_mv = toward(vbus_mv, 0, DISCHARGE_MV_PER_MS);
+        vbus_mv = toward(vbus_mv, 0, empty ? EMPTY_DISCHARGE_MV_PER_MS : DISCHARGE_MV_PER_MS);
     }
     if (vbus_mv > peak_mv) peak_mv = vbus_mv;
     comparator();

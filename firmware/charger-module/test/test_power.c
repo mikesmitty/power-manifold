@@ -42,10 +42,21 @@ static void port_comes_up_in_hibernate(void) {
     MT_ASSERT(!power_vbus_is_on());
 }
 
+// Charge left on the converter output, with the switch open: the threshold
+// goes over it instead of tripping on it
+static void port_up_over_leftover_charge(void) {
+    fake_board_reset();
+    power_init();
+    fake_board_set_vout_mv(15000);
+    MT_ASSERT_EQ(power_port_up(), POWER_OK);
+    MT_ASSERT(fake_board_trip_mv() > 15000);
+    MT_ASSERT(!fake_board_comparator_tripped());
+}
+
 static void port_up_with_the_line_held(void) {
     fake_board_reset();
     power_init();
-    fake_board_set_vout_mv(9000); // above the 5 V threshold: the comparator holds TCPP_EN
+    fake_board_set_vout_mv(24000); // over the ceiling: the comparator holds TCPP_EN
     MT_ASSERT_EQ(power_port_up(), POWER_TRIPPED);
     MT_ASSERT(power_poll_faults() & BLADE_FAULT_OVP);
 }
@@ -196,6 +207,27 @@ static void vbus_off_discharges(void) {
     MT_ASSERT(!fake_board_closed_early());
 }
 
+// Unplugged at 20 V: the empty receptacle is at 0 V within milliseconds,
+// while the converter output still holds most of its charge. The threshold
+// stays over that charge (bench, 2026-10-19: lowered to the 5 V level here,
+// it tripped the port), and plugging straight back in starts cleanly.
+static void unplugged_at_20v(void) {
+    bring_up();
+    (void)power_vbus_on();
+    (void)power_set(20000, 3000, false);
+    fake_board_set_empty(true);
+    MT_ASSERT_EQ(power_vbus_off(), POWER_OK);
+    MT_ASSERT(fake_board_vout_mv() > 15000);
+    MT_ASSERT(fake_board_trip_mv() > fake_board_vout_mv());
+    MT_ASSERT(!fake_board_comparator_tripped());
+    MT_ASSERT(!(power_poll_faults() & BLADE_FAULT_OVP));
+
+    MT_ASSERT_EQ(power_vbus_on(), POWER_OK);
+    MT_ASSERT(!fake_board_comparator_tripped());
+    MT_ASSERT(!fake_board_closed_early());
+    MT_ASSERT_EQ(fake_board_trip_mv() / 100, 59); // the 5 V threshold, once the output got there
+}
+
 static void vbus_off_without_the_converter(void) {
     bring_up();
     (void)power_vbus_on();
@@ -277,6 +309,7 @@ static void vconn_follows_the_cable(void) {
 
 void run_power_tests(void) {
     mt_run("power: the port comes up in hibernate", port_comes_up_in_hibernate);
+    mt_run("power: port up over leftover charge", port_up_over_leftover_charge);
     mt_run("power: port up with TCPP_EN held", port_up_with_the_line_held);
     mt_run("power: port up without a TCPP02", port_up_without_a_tcpp02);
     mt_run("power: nothing without the converter", nothing_without_the_converter);
@@ -291,6 +324,7 @@ void run_power_tests(void) {
     mt_run("power: a small fixed current gets the limit floor", small_fixed_current_gets_the_floor);
     mt_run("power: no contract without VBUS", set_needs_vbus);
     mt_run("power: VBUS off discharges to vSafe0V", vbus_off_discharges);
+    mt_run("power: unplugged at 20 V", unplugged_at_20v);
     mt_run("power: VBUS off with the converter in shutdown", vbus_off_without_the_converter);
     mt_run("power: over-voltage trip", over_voltage_trip);
     mt_run("power: a trip is remembered", trip_is_remembered);
