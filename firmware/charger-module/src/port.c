@@ -131,7 +131,9 @@ void port_report(regmap_live_t *live) {
                      : contract.kind == PDO_AVS ? BLADE_CONTRACT_AVS
                                                 : BLADE_CONTRACT_FIXED;
     live->contract_mv = contract.mv;
-    live->contract_ma = contract.op_ma;
+    // At the top of a power-limited PPS range the port holds less than the
+    // sink asked for (pdo_check_request). The report gives what it delivers.
+    live->contract_ma = contract.op_ma < contract.limit_ma ? contract.op_ma : contract.limit_ma;
 }
 
 void port_source_info(uint32_t sido[2]) {

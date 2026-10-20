@@ -123,6 +123,22 @@ static void pps_contract_is_reported(void) {
                               BLADE_ST_CONTRACT | BLADE_ST_PPS);
     MT_ASSERT_EQ(live.contract, BLADE_CONTRACT_PPS);
     MT_ASSERT_EQ(live.contract_mv, 12340);
+    MT_ASSERT_EQ(live.contract_ma, 1500);
+}
+
+static void power_limited_pps_reports_the_limit(void) {
+    port_init();
+    (void)port_set_limits(100, BLADE_MAX_MV_ALL);
+    port_attach();
+    (void)port_set_cable_ma(5000);
+    // 21 V at 5 A would be 105 W: the port holds 100 W / 21 V
+    MT_ASSERT(port_request(pps_rdo(7, 21000, 5000)));
+    port_delivered();
+    MT_ASSERT_EQ(port_contract()->op_ma, 5000);
+    regmap_live_t live = {0};
+    port_report(&live);
+    MT_ASSERT_EQ(live.contract_mv, 21000);
+    MT_ASSERT_EQ(live.contract_ma, 4761);
 }
 
 static void avs_contract_is_reported(void) {
@@ -218,6 +234,7 @@ void run_port_tests(void) {
     mt_run("port: request to contract", request_to_contract);
     mt_run("port: a rejected request keeps the contract", rejected_request_keeps_the_contract);
     mt_run("port: a PPS contract is reported", pps_contract_is_reported);
+    mt_run("port: a power-limited PPS contract reports the limit", power_limited_pps_reports_the_limit);
     mt_run("port: an AVS contract is reported", avs_contract_is_reported);
     mt_run("port: Source_Info", source_info);
     mt_run("port: hard reset and detach", hard_reset_and_detach);

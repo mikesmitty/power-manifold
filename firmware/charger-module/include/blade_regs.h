@@ -47,7 +47,7 @@
 #define BLADE_REG_PDO         0x11 // object position of the contract, 0 = none
 #define BLADE_REG_FAULT       0x12 // u16, BLADE_FAULT_*, latched until BLADE_CMD_CLEAR_FAULTS
 #define BLADE_REG_CONTRACT_MV 0x14 // u16
-#define BLADE_REG_CONTRACT_MA 0x16 // u16, the operating current the sink asked for
+#define BLADE_REG_CONTRACT_MA 0x16 // u16, the operating current the sink asked for, or the port's lower limit
 // PD hard resets since the MCU started, each count wrapping at 256. Sent:
 // the blade's policy engine gave up on the sink (no answer to new source
 // capabilities in time, a protocol error). Received: the sink sent one.

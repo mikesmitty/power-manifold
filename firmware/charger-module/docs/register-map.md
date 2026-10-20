@@ -27,7 +27,7 @@ takes effect together at its end.
 | 0x10 | STATUS | R | attached, contract, PPS, VBUS on, 5 A cable, configured, fault, EN |
 | 0x11 | PDO | R | object position of the contract |
 | 0x12 | FAULT | R, u16 | latched until the clear command |
-| 0x14 / 0x16 | CONTRACT_MV / CONTRACT_MA | R, u16 | |
+| 0x14 / 0x16 | CONTRACT_MV / CONTRACT_MA | R, u16 | CONTRACT_MA is the current the sink asked for, or less at the top of a power-limited PPS range, where the port holds the power limit |
 | 0x18 / 0x19 | HR_SENT / HR_RECEIVED | R, u8 | PD hard resets since the MCU started, sent by the blade and by the sink, each wrapping at 256 |
 | 0x1A | CONTRACT | R, u8 | the kind of contract: 0 none, 1 fixed, 2 PPS, 3 SPR AVS |
 | 0x20 / 0x22 / 0x24 | VBUS_MV / IOUT_MA / VOUT_MV | R, u16 | |

@@ -18,7 +18,7 @@ typedef struct {
     uint8_t  pdo;         // object position of the contract, 0 = none
     uint16_t faults;      // BLADE_FAULT_*, latched on the blade
     uint16_t contract_mv;
-    uint16_t contract_ma; // the operating current the sink asked for
+    uint16_t contract_ma; // the operating current the sink asked for, or the port's lower limit
     uint8_t  contract;    // BLADE_CONTRACT_*
     uint8_t  hr_sent;     // PD hard resets the blade sent, wrapping (0 on a blade without the counters)
     uint8_t  hr_received; // ...and the sink sent
