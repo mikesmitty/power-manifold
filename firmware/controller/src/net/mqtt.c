@@ -50,7 +50,7 @@
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
 #define PORT_PROTECT     (PORT_SENSOR_N + 13) // retracted: the setting was removed
 #define PORT_ENTITIES    (PORT_SENSOR_N + 14)
-#define CHASSIS_ENTITIES 20
+#define CHASSIS_ENTITIES 21
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -235,6 +235,9 @@ static void handle_command(const char *topic, const char *data) {
             g_settings.charged_mw = (uint16_t)mw;
             settings_save_later();
         }
+    } else if (strcmp(sub, "/contract_steps/set") == 0) {
+        g_settings.contract_steps = !strcasecmp(data, "ON");
+        settings_save_later();
     } else if (strcmp(sub, "/charged_min/set") == 0) {
         int min = atoi(data);
         if (data[0] >= '0' && data[0] <= '9' && min >= 1 && min <= 255) {
@@ -365,7 +368,7 @@ static const char *const SUBS[] = {
     "port/+/boot/set", "port/+/autooff/set", "port/+/sleep/set", "charged_mw/set",
     "charged_min/set", "fan/set",            "budget/set",       "led/set",
     "update/latest",   "update/set",         "improv/set",       "update/auto/set",
-    "blades/set",
+    "blades/set",     "contract_steps/set",
 };
 #define N_SUBS (sizeof(SUBS) / sizeof(SUBS[0]))
 static unsigned sub_idx;  // next SUBS entry to send
@@ -797,6 +800,20 @@ static void publish_update_auto_switch(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+// Every voltage step a PPS or SPR AVS sink takes as a contract event. It is
+// listed with the diagnostics: it is for watching a sink, and a sweep makes
+// an event for each 0.1 V.
+static void publish_contract_steps_switch(void) {
+    discovery_config_topic("switch", "contract_steps");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Voltage step events\",\"uniq_id\":\"pwrman_%s_contract_steps\","
+             "\"cmd_t\":\"~/contract_steps/set\",\"stat_t\":\"~/status\","
+             "\"val_tpl\":\"{{ value_json.contract_steps }}\",\"ic\":\"mdi:stairs\","
+             "\"ent_cat\":\"diagnostic\",\"avty_t\":\"~/availability\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 // Check for updates asks the update source now instead of at the daily
 // check. Postpone and Skip act on automatic installs only.
 static void publish_update_button(const char *action, const char *name, const char *icon) {
@@ -978,6 +995,9 @@ static void discovery_publish(int i) {
     case 18:
         publish_update_button("check", "Check for updates", "mdi:refresh");
         break;
+    case 19:
+        publish_contract_steps_switch();
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -1081,7 +1101,7 @@ static void publish_telemetry(void) {
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
              "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
              "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\","
-             "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_w\":%lu}",
+             "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_w\":%lu,\"contract_steps\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -1091,7 +1111,7 @@ static void publish_telemetry(void) {
              n_problems ? "ON" : "OFF", problems_json, g_settings.charged_mw,
              g_settings.charged_min, led_mode_name(led_sched_current()),
              vin_fitted() ? "true" : "false",
-             vin_mv() / 1000.0, (unsigned long)bus_cap_w());
+             vin_mv() / 1000.0, (unsigned long)bus_cap_w(), g_settings.contract_steps ? "ON" : "OFF");
     publish(topic_buf, payload_buf, 0, 1);
     publish_blade_state(&t);
 

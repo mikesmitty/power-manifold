@@ -12,7 +12,7 @@ const STATUS = {
 	total_w: 110.42, reserved_w: 202.0, budget_w: 240.0, headroom_w: 38.0, energy_kwh: 17.85,
 	fan: 'ON', fan_mode: 'auto', alert: false, rssi: -58, uptime_s: 274620, led: 48,
 	fw: '0.12.0', boot: 'power-on', problem: 'OFF', problems: '', charged_mw: 500, charged_min: 10,
-	led_mode: 'normal', vin: true, vin_v: 24.06, ceiling_w: 0,
+	led_mode: 'normal', vin: true, vin_v: 24.06, ceiling_w: 0, contract_steps: 'OFF',
 };
 const TELEMETRY = {
 	state: 'active', gen: 3, v: 20.021, i: 2.712, p: 54.3, e: 6.211, pdo: 5, contract: 'fixed',
@@ -44,6 +44,7 @@ const TREE: (Leaf | Branch)[] = [
 	{ name: 'led/set', dir: 'in', note: 'light brightness, 0–255' },
 	{ name: 'charged_mw/set', dir: 'in', note: 'a device is considered charged when its power draw is below this many mW…' },
 	{ name: 'charged_min/set', dir: 'in', note: '…for this many minutes' },
+	{ name: 'contract_steps/set', dir: 'in', note: 'ON: a contract event for every voltage step a PPS or SPR AVS device takes' },
 	{ name: 'improv/set', dir: 'in', note: 'open: Wi-Fi setup for ten minutes' },
 	{
 		name: 'update/',

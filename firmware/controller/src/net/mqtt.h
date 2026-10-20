@@ -21,6 +21,7 @@
 //   base/port/N/sleep/set      command: minutes after attach to switch off (0 = never)
 //   base/charged_mw/set        command: charged = draw under this (mW, 0 = off)...
 //   base/charged_min/set       command: ...for this many minutes
+//   base/contract_steps/set    command: ON/OFF — a contract event for every PPS or AVS voltage step
 //   base/fan/set               command: auto/on/off (legacy ON/OFF accepted)
 //   base/budget/set            command: chassis budget in watts
 //   base/event                 engine events, QoS 1: {"port":N,"event":"state|fault|

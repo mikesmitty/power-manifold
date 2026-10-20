@@ -92,6 +92,7 @@ entity IDs don't change.
 | **Check for updates** | Asks for a new release now instead of at the daily check. |
 | **Blade firmware** | Shows an update while a blade's firmware update waits for its device to be unplugged or switched off. **Install** updates those blades now, and their devices lose power for a few seconds. See [Blade firmware](/guide/updates/#blade-firmware). |
 | **Automatic updates** | On: new releases install by themselves. See [Automatic updates](/guide/updates/#automatic-updates). |
+| **Voltage step events** | A diagnostic switch, off by default. On: every voltage step a PPS or SPR AVS device takes fires a `contract` [event](#automations), one for each 0.1 V when a device sweeps its voltage. |
 | **Postpone update 7 days**, **Skip this update** | Hold back automatic installs for a week, or for the release now offered. The card's own **Skip** does not reach the controller; see [Skipping an update](#skipping-an-update). |
 
 ## Skipping an update
@@ -139,7 +140,7 @@ Its event types are:
 | `throttled` / `restored` | The port was turned down for the budget, or got its power back. |
 | `fault` | The port shut itself off. The `text` attribute says why. |
 | `inserted` / `removed` / `ready` | The controller found a port, lost contact with it, or the port finished starting up. |
-| `contract` | The device switched to a different voltage or current. On PPS or SPR AVS, where the device [chooses its own voltage](/guide/port-settings/#voltage-cap), the event comes when it switches to that range or away from it; its voltage changes inside the range show in the port's sensors instead. Set **Voltage step events** to **On** in Settings to get an event for every step as well. |
+| `contract` | The device switched to a different voltage or current. On PPS or SPR AVS, where the device [chooses its own voltage](/guide/port-settings/#voltage-cap), the event comes when it switches to that range or away from it; its voltage changes inside the range show in the port's sensors instead. Turn on the **Voltage step events** switch, or the setting of the same name on the web page, to get an event for every step as well. |
 | `probe_failed` | A blade didn't respond while starting up. |
 | `pd_reset` | The port or the device reset the USB-C® connection, which briefly cuts the device's power. The `text` attribute says which side did it and, if the port's offer had changed since the device was plugged in, how long before. |
 | `updated` | The blade's firmware was updated. |

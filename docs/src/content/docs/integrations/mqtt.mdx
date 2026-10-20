@@ -37,7 +37,8 @@ Ports are numbered 1 to 6.
 `charged_mw`, `charged_min`, the input voltage `vin_v` (`vin` is false
 when it isn't measured), and `ceiling_w` (60 while [low input voltage caps
 the ports](/guide/troubleshooting/#ports-capped-at-60-w),
-else 0).
+else 0), and `contract_steps` (`ON` while every voltage step a PPS or SPR
+AVS device takes is a `contract` event).
 
 **`port/<n>/telemetry` fields:** `state`, `gen` (blade generation), `v`,
 `i`, `p`, `e` (kWh), `contract_w`, `pdo`, `contract` (`fixed`, `pps`,
@@ -71,6 +72,7 @@ saved a few seconds after the last change.
 | `fan/set` | `auto`, `on` or `off` |
 | `led/set` | light brightness, 0–255 |
 | `charged_mw/set`, `charged_min/set` | when a device counts as charged |
+| `contract_steps/set` | `ON`: a `contract` event for every voltage step a PPS or SPR AVS device takes; `OFF` (the default): only when it switches to that range or away from it |
 | `improv/set` | `open`: open Wi-Fi setup for ten minutes |
 | `update/set` | `install`: install the newest known release; `check`: ask for a new release now instead of at the daily check; `postpone` or `skip`: hold back [automatic installs](/guide/updates/#automatic-updates) for 7 days, or for the release now offered |
 | `blades/set` | `install`: update every blade whose update is waiting now; their devices lose power for a few seconds |
