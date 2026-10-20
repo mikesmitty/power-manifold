@@ -300,8 +300,8 @@ void supervisor_run(void) {
     }
 
     hw_alert(alerting);
-    // heartbeat: a short flash every second, a fast blink on a fault
-    hw_led(alerting ? (now % 200) < 100 : (now % 1000) < 50);
+    // heartbeat: a 5 ms flash every three seconds, a fast blink on a fault
+    hw_led(alerting ? (now % 200) < 100 : (now % 3000) < 5);
 
     if (now - report_ms >= REPORT_MS) {
         report_ms = now;
