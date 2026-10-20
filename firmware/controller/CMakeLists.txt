@@ -204,9 +204,12 @@ target_include_directories(controller PRIVATE
 
 target_link_libraries(controller pico_rand) # setup secret for the web UI
 
+# The SDK keeps 4 slots for shared interrupt handlers. The card fills five:
+# USB takes two, the Wi-Fi module, the blade alert line and the W6100 one each.
 target_compile_definitions(controller PRIVATE
     PICO_STACK_SIZE=16384
     PICO_CORE1_STACK_SIZE=4096
+    PICO_MAX_SHARED_IRQ_HANDLERS=8
 )
 
 target_link_libraries(controller
