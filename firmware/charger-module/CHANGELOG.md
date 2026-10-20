@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.5.0...charger-module-firmware-v0.5.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **charger-module:** flash the heartbeat for 5 ms every three seconds ([8002ebd](https://github.com/mikesmitty/power-manifold/commit/8002ebd7588cd4ce2fbd822fba3a45e12d8b38fa))
+* **charger-module:** keep the OVP threshold over the converter's charge ([d95f71c](https://github.com/mikesmitty/power-manifold/commit/d95f71ca34ca720d2718db08410d948cc6a6e737))
+* **charger-module:** power the cable's e-marker so a 5 A cable is found ([3fab45b](https://github.com/mikesmitty/power-manifold/commit/3fab45b3950c2d91b0c0c3575bb556e2dda32941))
+* **charger-module:** read no port current while the VBUS switch is open ([26c71ea](https://github.com/mikesmitty/power-manifold/commit/26c71eac89d35ab4fb1a6d29aa8535793dde91f3))
+* **controller:** check a blade's image by reading it back ([23fe726](https://github.com/mikesmitty/power-manifold/commit/23fe7269b5aa723ab156bc619187bd5b28f93e05))
+
 ## [0.5.0](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.4.1...charger-module-firmware-v0.5.0) (2026-10-15)
 
 
