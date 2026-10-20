@@ -518,7 +518,7 @@ static void publish_port_sensor(unsigned port, const sensor_spec_t *s) {
 
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s %s\",\"uniq_id\":\"pwrman_%s_%s\","
-             "\"stat_t\":\"~/port/%u/telemetry\",\"avail_t\":\"~/availability\","
+             "\"stat_t\":\"~/port/%u/telemetry\",\"avty_t\":\"~/availability\","
              "%s%s\"val_tpl\":\"%s\",\"dev\":%s}",
              base, port_label(port), s->name, uid, object, port, extras, attrs, s->template,
              device_json);
@@ -556,7 +556,7 @@ static void publish_port_button(unsigned port, const char *action,
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s %s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"cmd_t\":\"~/port/%u/set\",\"pl_prs\":\"%s\","
-             "\"avail_t\":\"~/availability\",\"ent_cat\":\"config\",\"dev\":%s}",
+             "\"avty_t\":\"~/availability\",\"ent_cat\":\"config\",\"dev\":%s}",
              base, port_label(port), label, uid, object, port, action, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -571,7 +571,7 @@ static void publish_port_number(unsigned port) {
              "\"stat_t\":\"~/port/%u/telemetry\","
              "\"val_tpl\":\"{{ value_json.prio }}\","
              "\"min\":0,\"max\":255,\"step\":1,\"mode\":\"box\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, port_label(port), uid, object, port, port, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -586,7 +586,7 @@ static void publish_port_limit_number(unsigned port) {
              "\"stat_t\":\"~/port/%u/telemetry\","
              "\"val_tpl\":\"{{ value_json.limit_w }}\",\"unit_of_meas\":\"W\",\"dev_cla\":\"power\","
              "\"min\":%d,\"max\":%d,\"step\":1,\"mode\":\"box\",\"ic\":\"mdi:flash\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, port_label(port), uid, object, port, port, PORT_LIMIT_MIN_W, PORT_LIMIT_MAX_W,
              device_json);
     publish(topic_buf, payload_buf, 1, 1);
@@ -602,7 +602,7 @@ static void publish_port_volt_select(unsigned port) {
              "\"val_tpl\":\"{{ value_json.max_v }} V\","
              "\"ops\":[\"5 V\",\"9 V\",\"12 V\",\"15 V\",\"20 V\"],"
              "\"ic\":\"mdi:flash\",\"ent_cat\":\"config\","
-             "\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, port_label(port), uid, object, port, port, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -616,7 +616,7 @@ static void publish_port_boot_select(unsigned port) {
              "\"cmd_t\":\"~/port/%u/boot/set\",\"stat_t\":\"~/port/%u/telemetry\","
              "\"val_tpl\":\"{{ value_json.boot }}\",\"ops\":[\"on\",\"off\",\"last\"],"
              "\"ic\":\"mdi:power-settings\",\"ent_cat\":\"config\","
-             "\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, port_label(port), uid, object, port, port, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -636,7 +636,7 @@ static void publish_port_event(unsigned port) {
              port);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s events\",\"uniq_id\":\"pwrman_%s_%s\","
-             "\"stat_t\":\"~/event\",\"avail_t\":\"~/availability\","
+             "\"stat_t\":\"~/event\",\"avty_t\":\"~/availability\","
              "\"event_types\":" EVENT_KINDS_JSON ",\"val_tpl\":\"%s\","
              "\"ic\":\"mdi:usb-port\",\"dev\":%s}",
              base, port_label(port), uid, object, tpl, device_json);
@@ -652,7 +652,7 @@ static void publish_port_charging_sensor(unsigned port) {
     discovery_config_topic("binary_sensor", object);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s charging\",\"uniq_id\":\"pwrman_%s_%s\","
-             "\"stat_t\":\"~/port/%u/telemetry\",\"avail_t\":\"~/availability\","
+             "\"stat_t\":\"~/port/%u/telemetry\",\"avty_t\":\"~/availability\","
              "\"dev_cla\":\"battery_charging\",\"val_tpl\":\"{{ 'ON' if value_json.state in "
              "['active', 'throttled'] and not value_json.charged else 'OFF' }}\",\"dev\":%s}",
              base, port_label(port), uid, object, port, device_json);
@@ -668,7 +668,7 @@ static void publish_port_autooff_switch(unsigned port) {
              "\"cmd_t\":\"~/port/%u/autooff/set\",\"stat_t\":\"~/port/%u/telemetry\","
              "\"val_tpl\":\"{{ 'ON' if value_json.auto_off else 'OFF' }}\","
              "\"ic\":\"mdi:battery-check\",\"ent_cat\":\"config\","
-             "\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, port_label(port), uid, object, port, port, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -690,7 +690,7 @@ static void publish_port_sleep_number(unsigned port) {
              "\"cmd_t\":\"~/port/%u/sleep/set\",\"stat_t\":\"~/port/%u/telemetry\","
              "\"val_tpl\":\"{{ value_json.sleep_min }}\",\"unit_of_meas\":\"min\","
              "\"min\":0,\"max\":%d,\"step\":5,\"mode\":\"box\",\"ic\":\"mdi:timer-outline\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, port_label(port), uid, object, port, port, PORT_SLEEP_MAX_MIN, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -702,7 +702,7 @@ static void publish_charged_numbers(int which) {
              "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"cmd_t\":\"~/%s/set\",\"stat_t\":\"~/status\",\"val_tpl\":\"{{ value_json.%s }}\","
              "\"unit_of_meas\":\"%s\",\"min\":%d,\"max\":%d,\"step\":%d,\"mode\":\"box\","
-             "\"ic\":\"%s\",\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ic\":\"%s\",\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, which ? "Charged after" : "Charged below", uid, object, object, object,
              which ? "min" : "mW", which ? 1 : 0, which ? 255 : 20000, which ? 1 : 100,
              which ? "mdi:timer-sand" : "mdi:battery-charging-low", device_json);
@@ -716,7 +716,7 @@ static void publish_port_switch(unsigned port) {
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"cmd_t\":\"~/port/%u/set\",\"stat_t\":\"~/port/%u/telemetry\","
-             "\"avail_t\":\"~/availability\","
+             "\"avty_t\":\"~/availability\","
              "\"val_tpl\":\"{{ 'OFF' if value_json.state == 'disabled' else 'ON' }}\","
              "\"dev\":%s}",
              base, port_label(port), uid, object, port, port, device_json);
@@ -729,7 +729,7 @@ static void publish_chassis_sensor(const char *object, const char *name,
     discovery_config_topic("sensor", object);
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
-             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\","
+             "\"stat_t\":\"~/status\",\"avty_t\":\"~/availability\","
              "\"dev_cla\":\"%s\",\"unit_of_meas\":\"%s\",%s\"val_tpl\":\"%s\","
              "\"dev\":%s}",
              base, name, uid, object, dev_cla, unit, extra, tpl, device_json);
@@ -744,7 +744,7 @@ static void publish_budget_number(void) {
              "\"stat_t\":\"~/status\",\"val_tpl\":\"{{ value_json.budget_w | round(0) }}\","
              "\"min\":%d,\"max\":%d,\"step\":1,\"mode\":\"box\","
              "\"dev_cla\":\"power\",\"unit_of_meas\":\"W\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, uid, BUDGET_MIN_W, BUDGET_MAX_W, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -757,7 +757,7 @@ static void publish_led_number(void) {
              "\"stat_t\":\"~/status\",\"val_tpl\":\"{{ value_json.led }}\","
              "\"min\":0,\"max\":255,\"step\":1,\"mode\":\"slider\","
              "\"ic\":\"mdi:led-on\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -768,7 +768,7 @@ static void publish_update_entity(void) {
              "{\"~\":\"%s\",\"name\":\"Firmware\",\"uniq_id\":\"pwrman_%s_fw\","
              "\"stat_t\":\"~/update/state\",\"cmd_t\":\"~/update/set\","
              "\"pl_inst\":\"install\",\"dev_cla\":\"firmware\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -782,7 +782,7 @@ static void publish_blade_update_entity(void) {
              "{\"~\":\"%s\",\"name\":\"Blade firmware\",\"uniq_id\":\"pwrman_%s_blade_fw\","
              "\"stat_t\":\"~/blades/state\",\"cmd_t\":\"~/blades/set\","
              "\"pl_inst\":\"install\",\"dev_cla\":\"firmware\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -792,7 +792,7 @@ static void publish_update_auto_switch(void) {
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"Automatic updates\",\"uniq_id\":\"pwrman_%s_update_auto\","
              "\"cmd_t\":\"~/update/auto/set\",\"stat_t\":\"~/update/auto\",\"ic\":\"mdi:update\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -806,7 +806,7 @@ static void publish_update_button(const char *action, const char *name, const ch
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
              "\"cmd_t\":\"~/update/set\",\"pl_prs\":\"%s\",\"ic\":\"%s\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, name, uid, object, action, icon, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -817,7 +817,7 @@ static void publish_improv_button(void) {
              "{\"~\":\"%s\",\"name\":\"Open Wi-Fi setup\","
              "\"uniq_id\":\"pwrman_%s_improv\",\"cmd_t\":\"~/improv/set\","
              "\"pl_prs\":\"open\",\"ic\":\"mdi:wifi-cog\","
-             "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
@@ -826,7 +826,7 @@ static void publish_boot_sensor(void) {
     discovery_config_topic("sensor", "boot");
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"Last boot reason\",\"uniq_id\":\"pwrman_%s_boot\","
-             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\","
+             "\"stat_t\":\"~/status\",\"avty_t\":\"~/availability\","
              "\"val_tpl\":\"{{ value_json.boot }}\",\"ic\":\"mdi:restart\","
              "\"ent_cat\":\"diagnostic\",\"dev\":%s}",
              base, uid, device_json);
@@ -837,7 +837,7 @@ static void publish_problem_sensor(void) {
     discovery_config_topic("binary_sensor", "problem");
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"Problem\",\"uniq_id\":\"pwrman_%s_problem\","
-             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\",\"dev_cla\":\"problem\","
+             "\"stat_t\":\"~/status\",\"avty_t\":\"~/availability\",\"dev_cla\":\"problem\","
              "\"val_tpl\":\"{{ value_json.problem }}\",\"json_attr_t\":\"~/status\","
              "\"json_attr_tpl\":\"{{ {'detail': value_json.problems} | tojson }}\","
              "\"ent_cat\":\"diagnostic\",\"dev\":%s}",
@@ -849,7 +849,7 @@ static void publish_led_mode_sensor(void) {
     discovery_config_topic("sensor", "led_mode");
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"LED mode\",\"uniq_id\":\"pwrman_%s_led_mode\","
-             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\","
+             "\"stat_t\":\"~/status\",\"avty_t\":\"~/availability\","
              "\"val_tpl\":\"{{ value_json.led_mode }}\",\"ic\":\"mdi:brightness-6\","
              "\"ent_cat\":\"diagnostic\",\"dev\":%s}",
              base, uid, device_json);
@@ -861,7 +861,7 @@ static void publish_fan_select(void) {
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"Fan\",\"uniq_id\":\"pwrman_%s_fan_mode\","
              "\"cmd_t\":\"~/fan/set\",\"stat_t\":\"~/status\","
-             "\"avail_t\":\"~/availability\",\"ops\":[\"auto\",\"on\",\"off\"],"
+             "\"avty_t\":\"~/availability\",\"ops\":[\"auto\",\"on\",\"off\"],"
              "\"val_tpl\":\"{{ value_json.fan_mode }}\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
@@ -878,7 +878,7 @@ static void publish_optional_entity(bool present, const char *component, const c
     }
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"%s\",\"uniq_id\":\"pwrman_%s_%s\","
-             "\"stat_t\":\"~/status\",\"avail_t\":\"~/availability\",%s"
+             "\"stat_t\":\"~/status\",\"avty_t\":\"~/availability\",%s"
              "\"val_tpl\":\"%s\",\"dev\":%s}",
              base, name, uid, object, extra, tpl, device_json);
     publish(topic_buf, payload_buf, 1, 1);
