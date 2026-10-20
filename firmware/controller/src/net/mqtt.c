@@ -90,6 +90,7 @@ static uint16_t in_len;
 
 static unsigned latest_seq_sent; // update_latest_seq() as of the last update/state published
 static int progress_sent = -1;   // update_progress() as of the last update/state published
+static int auto_sent = -1;       // g_settings.update_auto as of the last update/auto published
 
 static char topic_buf[160];
 static char payload_buf[1024]; // largest: a port's event entity config
@@ -171,12 +172,19 @@ static void publish_update_state(void) {
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"installed_version\":\"%s\",\"latest_version\":\"%s\","
              "\"release_url\":\"" RELEASE_NOTES_URL "%s\",\"in_progress\":%s,"
-             "\"update_percentage\":%s,\"auto\":\"%s\"}",
-             FW_VERSION, latest, latest, progress >= 0 ? "true" : "false", pct,
-             g_settings.update_auto ? "ON" : "OFF");
+             "\"update_percentage\":%s}",
+             FW_VERSION, latest, latest, progress >= 0 ? "true" : "false", pct);
     publish(topic_buf, payload_buf, 1, 1);
     latest_seq_sent = update_latest_seq();
     progress_sent = progress;
+}
+
+// The Automatic updates switch has a topic of its own: Home Assistant's
+// update entity rejects a state with any key it does not know.
+static void publish_update_auto(void) {
+    snprintf(topic_buf, sizeof(topic_buf), "%s/update/auto", base);
+    publish(topic_buf, g_settings.update_auto ? "ON" : "OFF", 1, 1);
+    auto_sent = g_settings.update_auto;
 }
 
 static void handle_command(const char *topic, const char *data) {
@@ -302,7 +310,7 @@ static void handle_command(const char *topic, const char *data) {
     } else if (strcmp(sub, "/update/auto/set") == 0) {
         g_settings.update_auto = !strcasecmp(data, "ON");
         settings_save_later();
-        publish_update_state();
+        publish_update_auto();
     } else if (strcmp(sub, "/update/set") == 0) {
         char e[96];
         if (!strcasecmp(data, "check")) {
@@ -397,6 +405,7 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         sub_idx = 0; // command topics follow, one per SUBACK (subscribe_step)
         sub_inflight = false;
         publish_update_state();
+        publish_update_auto();
         blade_state_sent[0] = '\0'; // the next telemetry publishes it again
         printf("mqtt: connected to %s (%s)\n", g_settings.mqtt_host, mqtt_tls_mode_str());
     } else {
@@ -782,8 +791,7 @@ static void publish_update_auto_switch(void) {
     discovery_config_topic("switch", "update_auto");
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"Automatic updates\",\"uniq_id\":\"pwrman_%s_update_auto\","
-             "\"cmd_t\":\"~/update/auto/set\",\"stat_t\":\"~/update/state\","
-             "\"val_tpl\":\"{{ value_json.auto }}\",\"ic\":\"mdi:update\","
+             "\"cmd_t\":\"~/update/auto/set\",\"stat_t\":\"~/update/auto\",\"ic\":\"mdi:update\","
              "\"ent_cat\":\"config\",\"avail_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
@@ -1248,6 +1256,7 @@ void mqtt_poll(uint32_t now_ms) {
         subscribe_step();
         if (subscribed()) discovery_step();
         if (update_latest_seq() != latest_seq_sent) publish_update_state(); // the daily check found one
+        if ((int)g_settings.update_auto != auto_sent) publish_update_auto(); // set on the page or the console
         if (now_ms - last_telemetry_ms >= TELEMETRY_MS) {
             last_telemetry_ms = now_ms;
             publish_telemetry();
