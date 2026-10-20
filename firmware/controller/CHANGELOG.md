@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.19.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.19.0...controller-firmware-v0.19.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **controller:** check a blade's image by reading it back ([23fe726](https://github.com/mikesmitty/power-manifold/commit/23fe7269b5aa723ab156bc619187bd5b28f93e05))
+* **controller:** give every file the card's pin map ([0260399](https://github.com/mikesmitty/power-manifold/commit/0260399487d5a439174777ec84717c9b5f9eba8f))
+* **controller:** let the bus divider settle before the first reading ([4010339](https://github.com/mikesmitty/power-manifold/commit/4010339e886b36e4e07f996dad2f8abc1904efd2))
+* **controller:** make room for the card's fifth shared interrupt handler ([ee2e301](https://github.com/mikesmitty/power-manifold/commit/ee2e301c8fbe6adc3242b816d54ec061ddbfe73a))
+
 ## [0.19.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.18.0...controller-firmware-v0.19.0) (2026-10-15)
 
 
