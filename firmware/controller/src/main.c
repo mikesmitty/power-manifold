@@ -28,6 +28,10 @@
 #include "vin.h"
 
 #define WATCHDOG_TIMEOUT_MS 5000
+// From just before core 1 is launched until the engine is first alive: the
+// warm probes, a blade started from its bootloader and the network bring-up
+// all fit well inside it
+#define STARTUP_WATCHDOG_MS 8000
 
 // Try-before-you-buy: a trial image commits itself once the engine heartbeat
 // has been fresh for this long without a break and, when WiFi is configured,
@@ -93,8 +97,18 @@ int main(void) {
         printf("bus: %s at power-up, ports capped at %u W\n", vin_status_str(), BUS_CAP_W);
     }
 
+    // Startup has a watchdog of its own, until the main loop takes over with
+    // the engine alive. Without it a start that hangs leaves every port
+    // unsupervised, and dark after a cold start, until someone cuts the
+    // power: on the bench core 0 waited for ever on a core 1 that had
+    // locked up before the launch (2026-10-20).
+    watchdog_enable(STARTUP_WATCHDOG_MS, true);
+
     // Core 1: charger management engine (sole owner of I2C/expander/LEDs).
     // Launched before any networking so power supervision never waits on it.
+    // It is reset first, so the launch finds it waiting in the bootrom
+    // whatever state it is in.
+    multicore_reset_core1();
     multicore_launch_core1(engine_main);
 
     cli_init();
@@ -111,9 +125,10 @@ int main(void) {
            FW_VERSION, flash_map_slot_name(),
            flash_map_update_pending() ? ", TRIAL" : "", boot_text);
 
-    // Arm the watchdog only once the engine has proven alive; afterwards it is
-    // fed only while BOTH cores make progress (this loop running + engine
-    // heartbeat fresh), so either core stalling reboots the system.
+    // The startup watchdog runs until the engine has proven alive; then the
+    // watchdog is armed again with its running timeout, and fed only while
+    // BOTH cores make progress (this loop running + engine heartbeat fresh),
+    // so either core stalling reboots the system.
     bool wd_armed = false;
     bool boot_logged = false; // one fault-log record per boot, once flash writes are safe
     bool trial = flash_map_update_pending();
