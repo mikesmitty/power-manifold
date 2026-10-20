@@ -409,6 +409,10 @@ bool tca9548a_deselect_all(void) {
     return true;
 }
 
+int tca9548a_take_freed(void) {
+    return -1; // the sim has no lines to hold
+}
+
 void tca9548a_hw_reset(void) {
     // a hardware reset clears whatever was hanging the bus
     mux_resets++;

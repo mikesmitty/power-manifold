@@ -73,7 +73,20 @@ An expander that does not answer is not reset straight away. The mux is
 reset after half a second, which frees a blade segment holding the bus and
 does not affect port power. The expander itself is reset only after five
 seconds without an answer, and its EN pattern is written back immediately.
+Either is logged once, `probe: bus stuck` for the first and `probe:
+expander reset` for the second, and again only after the expander has
+answered for a minute. Every mux reset also resets the RP2350's I2C block.
 See [Keeping ports powered](#keeping-ports-powered).
+
+A device left halfway through a byte holds SDA low for good. This
+happens to a blade when the controller restarts in the middle of reading
+it, and the bus is then stuck whenever the mux connects that blade's
+channel. So before and after every channel switch, `tca9548a_select`
+checks the lines. If SDA is low while SCL is high, it pulses SCL up to
+nine times, each pulse ending in a STOP, until the device lets go, and
+then resets the I2C block. Each device freed this way is logged as `probe:
+bus held` on its port. A gen-3 blade also lets go of the line itself after
+50 ms.
 
 Behind the mux and the expander, port *n* (1-based wherever the firmware
 talks to a person) is mux channel *n*−1, EN on P0(*n*−1), PRSNT# on

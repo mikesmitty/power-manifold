@@ -36,6 +36,8 @@ static inline uint8_t blade_gen_number(blade_gen_t g) { return g == BLADE_GEN_LO
 #define PROBE_FAIL_NONE    7 // nothing answered on the channel
 #define PROBE_FAIL_UPDATE  8 // a trip through the ROM bootloader failed; the arg says how (UPDATE_FAIL_*)
 #define PROBE_FAIL_SILENT  9 // a powered blade stopped answering; it is left powered and polled on
+#define PROBE_FAIL_HELD   10 // a device held the data line low and was clocked free (tca9548a_select)
+#define PROBE_FAIL_STUCK  11 // chassis: the expander stopped answering and the mux was reset
 
 typedef struct {
     bool     attached;

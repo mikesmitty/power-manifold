@@ -8,6 +8,7 @@
 #include "pico/flash.h"
 #include "pico/stdlib.h"
 
+#include "blade.h"
 #include "budget.h"
 #include "fan_policy.h"
 #include "flash_map.h"
@@ -37,9 +38,17 @@ static volatile bool exp_irq;
 // reset, and before the expander itself is
 #define EXP_FAILS_MUX_RESET 5
 #define EXP_FAILS_RECOVER   50
+// Expander reads that have to succeed in a row before a stuck bus is
+// logged again: a minute
+#define EXP_OKS_QUIET       600
 
 static bool present[NUM_PORTS];
 static uint8_t exp_fail_streak;
+static uint16_t exp_ok_streak;
+// A stuck bus is logged once, when it starts, and again only after a quiet
+// minute. A blade holding its segment brought the mux reset round about
+// once a second, and a record each time filled the fault log.
+static bool stuck_logged, recover_logged;
 static bool warm_start;   // see engine_main
 static uint8_t adopted;   // ports kept powered through the start
 
@@ -83,22 +92,30 @@ static void refresh_presence(void) {
         // between the pulse and the write, which a running port will
         // notice; it is the last resort, not the first.
         exp_fail_streak++;
+        exp_ok_streak = 0;
         if (exp_fail_streak % EXP_FAILS_MUX_RESET == 0) {
             tca9548a_hw_reset();
-            if (exp_fail_streak == EXP_FAILS_MUX_RESET) {
-                engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT};
+            if (!stuck_logged) {
+                stuck_logged = true;
+                engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT,
+                                  .code = PROBE_FAIL_STUCK};
                 ipc_evt_push(&e);
             }
         }
         if (exp_fail_streak >= EXP_FAILS_RECOVER) {
             exp_fail_streak = 0;
             tca9539_recover();
-            engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT, .code = 5};
-            ipc_evt_push(&e);
+            if (!recover_logged) {
+                recover_logged = true;
+                engine_evt_t e = {.type = EVT_PROBE_FAIL, .port = CHASSIS_EVT_PORT, .code = 5};
+                ipc_evt_push(&e);
+            }
         }
         return;
     }
     exp_fail_streak = 0;
+    if (exp_ok_streak < EXP_OKS_QUIET && ++exp_ok_streak == EXP_OKS_QUIET)
+        stuck_logged = recover_logged = false;
     // A blade that reads as gone costs its port its power that tick, and
     // the read has nothing guarding it against a flipped bit. One that
     // says a seated blade has left is asked again, and only what both
@@ -294,6 +311,14 @@ void engine_main(void) {
         memset(&t, 0, sizeof(t));
         for (uint8_t i = 0; i < NUM_PORTS; i++)
             port_fsm_tick(i, present[i], now_ms, &t.port[i]);
+
+        // a device the mux driver clocked free: whose it was goes in the log
+        int held = tca9548a_take_freed();
+        if (held >= 0) {
+            engine_evt_t e = {.type = EVT_PROBE_FAIL, .code = PROBE_FAIL_HELD,
+                              .port = held < NUM_PORTS ? (uint8_t)held : CHASSIS_EVT_PORT};
+            ipc_evt_push(&e);
+        }
 
         for (uint8_t i = 0; i < NUM_PORTS; i++) {
             t.total_mw += t.port[i].power_mw;

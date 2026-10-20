@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "blade.h"
 #include "boot_reason.h"
 #include "blade_regs.h"
 #include "fault_text.h"
@@ -134,6 +135,12 @@ static void test_fault_text(void) {
     r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = 9};
     fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "probe: stopped answering"));
+    r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = PROBE_FAIL_HELD};
+    fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "probe: bus held"));
+    r = (fault_rec_t){.type = EVT_PROBE_FAIL, .code = PROBE_FAIL_STUCK};
+    fault_text(&r, buf, sizeof(buf));
+    MT_ASSERT(!strcmp(buf, "probe: bus stuck"));
     r = (fault_rec_t){.type = EVT_PD_RESET, .code = PD_RESET_RECEIVED, .arg = PD_RESET_NO_READV};
     fault_text(&r, buf, sizeof(buf));
     MT_ASSERT(!strcmp(buf, "PD hard reset by the device"));

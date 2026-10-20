@@ -38,7 +38,8 @@ size_t fault_text(const fault_rec_t *r, char *buf, size_t cap) {
         "ovp", "ocp", "vconn-ocp", "cc-ovp", "port-otp", "conv-scp", "conv-ocp", "conv-ovp",
         "conv-hot", "plug-hot", "bus", "vbus", "pd"};
     static const char *const PROBE[] = {"?", "mux", "ina226", "mpq4242", "enable", "expander reset",
-                                        "blade", "no answer", "update", "stopped answering"};
+                                        "blade", "no answer", "update", "stopped answering",
+                                        "bus held", "bus stuck"};
     // UPDATE_FAIL_* (blade_update.h): the detail of a failed bootloader trip
     static const char *const UPDATE[] = {"?", "bootloader silent", "wrong chip", "no image", "erase",
                                          "write", "verify", "crash loop", "not taking"};
