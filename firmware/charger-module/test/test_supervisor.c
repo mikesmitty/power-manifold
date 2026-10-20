@@ -182,6 +182,20 @@ static void new_limits_go_to_the_sink(void) {
     MT_ASSERT(stack_port_armed());
 }
 
+// The current monitor's output is meaningless with the switch open
+static void the_current_reads_zero_with_the_switch_open(void) {
+    boot();
+    en_high();
+    ctl_configure(60, BLADE_MAX_MV_ALL, true);
+    run_ms(200);
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_IOUT_MA), 0);
+    MT_ASSERT_EQ(power_cc_mode(TCPP02_NORMAL), POWER_OK);
+    MT_ASSERT_EQ(power_vbus_on(), POWER_OK);
+    fake_board_set_load(true);
+    run_ms(20);
+    MT_ASSERT_EQ(ctl_read16(BLADE_REG_IOUT_MA), 1000);
+}
+
 static void a_sink_without_a_contract_gets_the_limit_too(void) {
     boot();
     en_high();
@@ -586,6 +600,7 @@ void run_supervisor_tests(void) {
     mt_run("supervisor: a ceiling of zero is off", a_ceiling_of_zero_is_off);
     mt_run("supervisor: port disable and EN low disarm", port_disable_and_en_low_disarm);
     mt_run("supervisor: new limits go to the sink", new_limits_go_to_the_sink);
+    mt_run("supervisor: the current reads zero with the switch open", the_current_reads_zero_with_the_switch_open);
     mt_run("supervisor: a sink without a contract gets the limit too", a_sink_without_a_contract_gets_the_limit_too);
     mt_run("supervisor: commands reach the stack", commands_reach_the_stack);
     mt_run("supervisor: an over-voltage trip takes the port down", over_voltage_trip_takes_the_port_down);

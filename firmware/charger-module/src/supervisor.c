@@ -219,7 +219,10 @@ supervisor_temp_t supervisor_temperature(void) {
 static void sample(void) {
     live.vbus_mv = (uint16_t)meter_vbus_mv();
     live.vout_mv = (uint16_t)meter_vout_mv();
-    live.iout_ma = (uint16_t)meter_iout_ma();
+    // The TCPP02 measures across R27 on the connector side. With the switch
+    // open no current can flow there, and its output means nothing (474 mA
+    // on the bench), so an open switch reads 0.
+    live.iout_ma = power_vbus_is_on() ? (uint16_t)meter_iout_ma() : 0;
     live.temp_conv_dc = meter_temp_conv_dc();
     live.temp_plug_dc = meter_temp_plug_dc();
     live.temp_mcu_dc = meter_temp_mcu_dc();

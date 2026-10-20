@@ -200,7 +200,12 @@ void dac_set(uint16_t code) {
 uint32_t meter_vdda_mv(void) { return vdda_mv; }
 uint32_t meter_vbus_mv(void) { return vbus_mv; }
 uint32_t meter_vout_mv(void) { return vout_mv; }
-uint32_t meter_iout_ma(void) { return loaded ? 1000 : 0; }
+// The TCPP02's current monitor with the switch open: both ends of R27 sit
+// near 0 V and the output means nothing (it read 474 mA on the bench).
+uint32_t meter_iout_ma(void) {
+    if (!(tcpp_ctrl() & TCPP02_CTRL_GDP)) return 474;
+    return loaded ? 1000 : 0;
+}
 int16_t meter_temp_conv_dc(void) { return temp_conv; }
 int16_t meter_temp_plug_dc(void) { return temp_plug; }
 int16_t meter_temp_mcu_dc(void) { return 300; }
