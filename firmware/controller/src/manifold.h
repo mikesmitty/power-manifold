@@ -197,7 +197,7 @@ typedef struct {
 typedef enum {
     EVT_STATE_CHANGE, // code = new port_state_t, arg = old
     EVT_FAULT,        // code = PORT_FAULT_* bits, arg = INA226 alert flag (gen 2) or the blade's raw word (PORT_FAULT_ARG_GEN3)
-    EVT_CONTRACT,     // code = selected PDO, arg = contract mW
+    EVT_CONTRACT,     // code = selected PDO, arg = contract mW; not for a PPS or AVS sink's moves inside its object
     EVT_PROBE_FAIL,   // code = which probe step failed
     EVT_THROTTLE,     // code = THROTTLE_*, arg = granted/restored mW
     EVT_BOOT,         // core 0 only, fault-log record: code = boot_reason_t | core << 8, arg = pc

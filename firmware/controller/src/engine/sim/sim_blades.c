@@ -45,6 +45,7 @@ typedef struct {
     bool     attached;     // sink plugged into the port
     uint16_t req_mv;       // sink's ask
     uint32_t req_ma;
+    uint8_t  apdo;         // gen 3: the object the sink asks on, PORT_CONTRACT_PPS / _AVS (else the fixed ones)
     uint32_t adv_ma;       // gen 2: advertised (programmed) current ceiling
     uint8_t  adv_w;        // gen 3: power limit, BLADE_REG_MAX_W as stored
     uint16_t adv_mv;       // voltage cap: highest PDO offered
@@ -148,6 +149,8 @@ static uint32_t contract_mw(const sim_slot_t *s) {
 
 static uint8_t pdo_of(const sim_slot_t *s) {
     if (!s->attached || s->con_mv == 0) return 0;
+    if (s->gen == 3 && s->apdo == PORT_CONTRACT_AVS) return 6;
+    if (s->gen == 3 && s->apdo == PORT_CONTRACT_PPS) return 7;
     if (s->con_mv <= 5000) return 1;
     if (s->con_mv <= 9000) return 2;
     if (s->con_mv <= 12000) return 3;
@@ -311,6 +314,10 @@ void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma) {
     s->req_mv = req_mv;
     s->req_ma = req_ma;
     renegotiate(s);
+}
+
+void sim_set_apdo(uint8_t slot, uint8_t contract) {
+    slots[slot].apdo = contract;
 }
 
 void sim_pd_hard_reset(uint8_t slot, bool by_sink) {
@@ -652,7 +659,10 @@ bool blade3_read_status(blade3_status_t *st) {
                            (s->faults ? BLADE_ST_FAULT : 0) |
                            (s->en ? BLADE_ST_EN : 0));
     st->pdo = contract ? pdo_of(s) : 0;
-    st->contract = !contract ? BLADE_CONTRACT_NONE : pdo_of(s) == 7 ? BLADE_CONTRACT_PPS : BLADE_CONTRACT_FIXED;
+    st->contract = !contract         ? BLADE_CONTRACT_NONE
+                   : pdo_of(s) == 7 ? BLADE_CONTRACT_PPS
+                   : pdo_of(s) == 6 ? BLADE_CONTRACT_AVS
+                                    : BLADE_CONTRACT_FIXED;
     st->faults = s->faults;
     st->contract_mv = contract ? s->con_mv : 0;
     st->contract_ma = contract ? (uint16_t)s->con_ma : 0;

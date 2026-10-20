@@ -139,7 +139,7 @@ Its event types are:
 | `throttled` / `restored` | The port was turned down for the budget, or got its power back. |
 | `fault` | The port shut itself off. The `text` attribute says why. |
 | `inserted` / `removed` / `ready` | The controller found a port, lost contact with it, or the port finished starting up. |
-| `contract` | The device switched to a different voltage or current. |
+| `contract` | The device switched to a different voltage or current. On PPS or SPR AVS, where the device [chooses its own voltage](/guide/port-settings/#voltage-cap), the event comes when it switches to that range or away from it; its voltage changes inside the range show in the port's sensors instead. |
 | `probe_failed` | A blade didn't respond while starting up. |
 | `pd_reset` | The port or the device reset the USB-C® connection, which briefly cuts the device's power. The `text` attribute says which side did it and, if the port's offer had changed since the device was plugged in, how long before. |
 | `updated` | The blade's firmware was updated. |

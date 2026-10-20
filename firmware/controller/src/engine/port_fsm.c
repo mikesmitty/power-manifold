@@ -87,6 +87,7 @@ typedef struct {
     bool     low_side;       // ...and that side is "under the floor"
     bool     charged;
     uint32_t contract_mw;
+    uint8_t  told_pdo;       // the object the last EVT_CONTRACT named
     uint32_t denied_mw;      // contract that budget refused; unthrottle target
     uint32_t granted_w;      // power limit currently programmed
     uint32_t readv_ms;       // when the attached sink was last sent new capabilities, 0 = not since it attached
@@ -717,6 +718,7 @@ static void track_contract(uint8_t i) {
     uint32_t want = ctx[i].st.contract_mw;
     if (want < BUDGET_BASE_RESERVE_MW) want = BUDGET_BASE_RESERVE_MW;
     if (want == ctx[i].contract_mw) return;
+    bool first = ctx[i].contract_mw == 0; // since the sink attached, or the port came up
 
     if (!budget_try_reserve(i, want)) {
         shed_lower_priority(i, want);
@@ -726,7 +728,14 @@ static void track_contract(uint8_t i) {
         }
     }
     ctx[i].contract_mw = want;
-    emit(EVT_CONTRACT, i, ctx[i].st.selected_pdo, want);
+    // A PPS or AVS sink sets its own voltage inside the object it chose, as
+    // often as it likes, and a sweep makes a new contract every 0.1 V. Only
+    // a different object is an event; the telemetry follows the voltage.
+    uint8_t pdo = ctx[i].st.selected_pdo;
+    bool apdo = ctx[i].st.contract == PORT_CONTRACT_PPS || ctx[i].st.contract == PORT_CONTRACT_AVS;
+    if (apdo && !first && pdo == ctx[i].told_pdo) return;
+    ctx[i].told_pdo = pdo;
+    emit(EVT_CONTRACT, i, pdo, want);
 }
 
 // Administrative state at power-up, per the port's boot policy (settings)

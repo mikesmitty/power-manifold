@@ -111,6 +111,75 @@ static void test_pps_contract_at_21v(void) {
     MT_ASSERT_EQ(tele.port[0].contract, PORT_CONTRACT_FIXED);
 }
 
+// A sink on the AVS or PPS object moves its own voltage, 0.1 V at a time in
+// a sweep. The budget follows every step; only a different object is a
+// contract event.
+static void test_moves_inside_an_apdo_are_not_events(void) {
+    support_reset(360000);
+    seat3(0);
+    tick(2);
+    sim_set_apdo(0, PORT_CONTRACT_AVS);
+    sim_attach(0, 9000, 5000);
+    tick(2);
+    MT_ASSERT_EQ(tele.port[0].contract, PORT_CONTRACT_AVS);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 1);
+    const engine_evt_t *e = evt_last(EVT_CONTRACT, 0);
+    MT_ASSERT_EQ(e->code, 6);
+    MT_ASSERT_EQ(e->arg, 45000);
+
+    for (uint16_t mv = 9100; mv <= 20000; mv += 100) { // up, one request a tick
+        sim_attach(0, mv, 5000);
+        tick(1);
+    }
+    for (uint16_t mv = 19900; mv >= 12000; mv -= 100) { // and down
+        sim_attach(0, mv, 5000);
+        tick(1);
+    }
+    tick(1);
+    MT_ASSERT_EQ(budget_port_reservation(0), 60000); // 12 V at 5 A
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 1);
+
+    sim_set_apdo(0, PORT_CONTRACT_FIXED); // the fixed 12 V object
+    sim_attach(0, 12000, 3000);
+    tick(2);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 2);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->code, 3);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->arg, 36000);
+
+    sim_set_apdo(0, PORT_CONTRACT_PPS); // back to an adjustable object: a new one
+    sim_attach(0, 11000, 3000);
+    tick(2);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 3);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->code, 7);
+    sim_attach(0, 11020, 3000);
+    tick(2);
+    MT_ASSERT_EQ(budget_port_reservation(0), 33060);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 3);
+
+    // the same object again after the sink was unplugged is a new contract
+    sim_detach(0);
+    tick(2);
+    evt_clear();
+    sim_attach(0, 11020, 3000);
+    tick(2);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 1);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->code, 7);
+}
+
+// On a fixed object a new current is a new contract, as before
+static void test_a_fixed_objects_new_current_is_an_event(void) {
+    support_reset(360000);
+    seat3(0);
+    tick(2);
+    sim_attach(0, 20000, 3000);
+    tick(2);
+    sim_attach(0, 20000, 1500);
+    tick(2);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 0), 2);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->code, 5);
+    MT_ASSERT_EQ(evt_last(EVT_CONTRACT, 0)->arg, 30000);
+}
+
 // The budget turns a port down in watts: the sink gets the same power
 // whichever voltage it picks, up to 5 A
 static void test_a_throttled_port_offers_its_watts_at_every_voltage(void) {
@@ -533,6 +602,8 @@ void run_blade3_tests(void) {
     mt_run("blade3: port is dark until configured", test_port_is_dark_until_configured);
     mt_run("blade3: attach, contract, telemetry, detach", test_attach_contract_and_telemetry);
     mt_run("blade3: PPS contract at 21 V", test_pps_contract_at_21v);
+    mt_run("blade3: moves inside an APDO are not events", test_moves_inside_an_apdo_are_not_events);
+    mt_run("blade3: a fixed object's new current is an event", test_a_fixed_objects_new_current_is_an_event);
     mt_run("blade3: a throttled port offers its watts at every voltage", test_a_throttled_port_offers_its_watts_at_every_voltage);
     mt_run("blade3: the bus cap is a power", test_the_bus_cap_is_a_power);
     mt_run("blade3: throttle needs no src_cap", test_throttle_needs_no_src_cap);
