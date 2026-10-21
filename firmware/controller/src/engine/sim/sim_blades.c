@@ -43,6 +43,8 @@ typedef struct {
     uint32_t clears;       // gen 3: BLADE_CMD_CLEAR_FAULTS received
     uint32_t cfg_writes;   // gen 3: configuration transfers received
     bool     attached;     // sink plugged into the port
+    bool     slow_sink;    // gen 3: answers new capabilities only at sim_sink_answer
+    bool     answer_due;   // ...and has some it has not answered yet
     uint16_t req_mv;       // sink's ask
     uint32_t req_ma;
     uint8_t  apdo;         // gen 3: the object the sink asks on, PORT_CONTRACT_PPS / _AVS (else the fixed ones)
@@ -128,6 +130,16 @@ static void renegotiate(sim_slot_t *s) {
         adv = s->con_mv > 20000 ? mpq4242_pdo_current_cap_ma(21000, s->adv_ma, 50) : s->adv_ma;
     }
     s->con_ma = s->req_ma < adv ? s->req_ma : adv;
+}
+
+// New capabilities reach the sink. A slow sink keeps the contract it has
+// until the script lets it answer; a port going dark ends it at once.
+static void readvertise(sim_slot_t *s) {
+    if (s->slow_sink && s->attached && s->con_ma && armed3(s)) {
+        s->answer_due = true;
+        return;
+    }
+    renegotiate(s);
 }
 
 static void set_en(sim_slot_t *s, bool on) {
@@ -329,7 +341,19 @@ void sim_pd_hard_reset(uint8_t slot, bool by_sink) {
 
 void sim_detach(uint8_t slot) {
     slots[slot].attached = false;
+    slots[slot].answer_due = false;
     renegotiate(&slots[slot]);
+}
+
+void sim_set_slow_sink(uint8_t slot, bool slow) {
+    slots[slot].slow_sink = slow;
+}
+
+void sim_sink_answer(uint8_t slot) {
+    sim_slot_t *s = &slots[slot];
+    if (!s->answer_due) return;
+    s->answer_due = false;
+    renegotiate(s);
 }
 
 void sim_set_mpq_fault(uint8_t slot, uint8_t fault_bits) {
@@ -705,7 +729,7 @@ bool blade3_write_config(const blade3_config_t *c) {
     s->watch_s = c->watch_s;
     s->configured = true;
     s->cfg_writes++;
-    renegotiate(s); // the blade re-advertises whenever its table changes
+    readvertise(s); // the blade re-advertises whenever its table changes
     return true;
 }
 
@@ -715,7 +739,7 @@ bool blade3_command(uint8_t cmd) {
     switch (cmd) {
     case BLADE_CMD_SRC_CAP:
         s->src_caps++;
-        renegotiate(s);
+        readvertise(s);
         break;
     case BLADE_CMD_HARD_RESET:
         s->hard_resets++;

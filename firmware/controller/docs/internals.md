@@ -17,7 +17,9 @@ The firmware runs on two cores. **Only core 1 accesses the backplane.**
   (worst priority first, 15 W floor); only if that isn't enough does the
   newcomer get clamped. A port is turned down by lowering its power limit,
   so its sink gets the same power whichever voltage it uses. Throttled ports recover automatically when budget
-  frees up, highest priority first. Per-port priority: `port <n> priority`
+  frees up, highest priority first. Until a sink answers its port's new
+  offer, the arbiter keeps the port's share at what it offered, for up to a
+  second, instead of acting on the contract the sink had before. Per-port priority: `port <n> priority`
   in the CLI (0 = highest, default = port number).
 - **Core 0 — management** (`src/net/`, `src/cli.c`): lwIP over CYW43 WiFi
   and/or a WIZnet W6100 wired Ethernet controller (DHCP or a static

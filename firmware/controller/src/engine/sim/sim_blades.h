@@ -42,6 +42,8 @@ uint32_t sim_blade_flash_version(uint8_t slot); // major << 16 | minor << 8 | pa
 void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma); // sink plugs in
 void sim_set_apdo(uint8_t slot, uint8_t contract); // gen 3: the sink asks on the PPS or AVS object (PORT_CONTRACT_*), PORT_CONTRACT_FIXED on the fixed ones; from its next ask (sim_attach again moves it along the object)
 void sim_detach(uint8_t slot);
+void sim_set_slow_sink(uint8_t slot, bool slow); // gen 3: the sink answers new capabilities only when sim_sink_answer says so (else at once)
+void sim_sink_answer(uint8_t slot);
 void sim_pd_hard_reset(uint8_t slot, bool by_sink); // gen 3: a PD hard reset, counted the way the blade counts it
 
 // fault injection

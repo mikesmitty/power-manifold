@@ -272,6 +272,87 @@ static void test_throttle_needs_no_src_cap(void) {
     MT_ASSERT_EQ(budget_port_reservation(1), 100000);
 }
 
+// A sink takes some time to answer new capabilities, and until it does it
+// reports the contract it had. A throttled port is turned down once, not on
+// every tick until the sink answers.
+static void test_a_slow_sink_is_throttled_once(void) {
+    support_reset(120000);
+    g_settings.port_priority[0] = 0;
+    g_settings.port_priority[1] = 1;
+    seat3(0);
+    seat3(1);
+    tick(2);
+    sim_attach(1, 20000, 5000); // 100 W
+    tick(2);
+    sim_set_slow_sink(1, true);
+    evt_clear();
+
+    sim_attach(0, 20000, 5000); // 100 W: port 2 is turned down to 20 W
+    tick(10);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(sim_advertised_w(1), 20);
+    MT_ASSERT_EQ(sim_contract_mw(1), 100000); // not answered yet
+    MT_ASSERT_EQ(evt_count(EVT_THROTTLE, 1), 1);
+    MT_ASSERT_EQ(budget_port_reservation(1), 20000);
+    MT_ASSERT_EQ(budget_port_reservation(0), 100000);
+
+    sim_sink_answer(1);
+    tick(2);
+    MT_ASSERT_EQ(sim_contract_mw(1), 20000);
+    MT_ASSERT_EQ(evt_count(EVT_THROTTLE, 1), 1);
+    MT_ASSERT_EQ(budget_port_reservation(1), 20000);
+}
+
+// A restored port keeps the watts it claimed while its sink answers, so no
+// other port can take them first. A sink that never answers keeps its old
+// contract, and after a while the budget holds only that.
+static void test_a_restore_keeps_its_claim_until_the_sink_answers(void) {
+    support_reset(120000);
+    g_settings.port_priority[0] = 0;
+    g_settings.port_priority[1] = 1;
+    seat3(0);
+    seat3(1);
+    tick(2);
+    sim_attach(1, 20000, 5000);
+    tick(2);
+    sim_attach(0, 20000, 5000);
+    tick(3);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_THROTTLED);
+    MT_ASSERT_EQ(sim_contract_mw(1), 20000);
+    sim_set_slow_sink(1, true);
+    evt_clear();
+
+    sim_detach(0);
+    tick(10);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(sim_advertised_w(1), 100);
+    MT_ASSERT_EQ(sim_contract_mw(1), 20000); // not answered yet
+    MT_ASSERT_EQ(budget_port_reservation(1), 100000);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 1), 0);
+
+    sim_sink_answer(1);
+    tick(2);
+    MT_ASSERT_EQ(sim_contract_mw(1), 100000);
+    MT_ASSERT_EQ(budget_port_reservation(1), 100000);
+    MT_ASSERT_EQ(evt_count(EVT_CONTRACT, 1), 0); // the contract it was restored to: "restored" said so
+    MT_ASSERT_EQ(evt_count(EVT_THROTTLE, 1), 1);
+    MT_ASSERT_EQ(evt_last(EVT_THROTTLE, 1)->code, THROTTLE_RESTORED);
+
+    // the same again, with a sink that never answers
+    sim_attach(0, 20000, 5000);
+    tick(3);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_THROTTLED);
+    sim_sink_answer(1);
+    tick(2);
+    sim_detach(0);
+    tick(10);
+    MT_ASSERT_EQ(budget_port_reservation(1), 100000);
+    tick_ms(1000);
+    MT_ASSERT_EQ(port_state(1), PORT_STATE_ACTIVE);
+    MT_ASSERT_EQ(sim_contract_mw(1), 20000);
+    MT_ASSERT_EQ(budget_port_reservation(1), 20000);
+}
+
 static void test_fault_is_cleared_after_the_controller_saw_it(void) {
     support_reset(360000);
     seat3(0);
@@ -633,6 +714,9 @@ void run_blade3_tests(void) {
     mt_run("blade3: a throttled port offers its watts at every voltage", test_a_throttled_port_offers_its_watts_at_every_voltage);
     mt_run("blade3: the bus cap is a power", test_the_bus_cap_is_a_power);
     mt_run("blade3: throttle needs no src_cap", test_throttle_needs_no_src_cap);
+    mt_run("blade3: a slow sink is throttled once", test_a_slow_sink_is_throttled_once);
+    mt_run("blade3: a restore keeps its claim until the sink answers",
+           test_a_restore_keeps_its_claim_until_the_sink_answers);
     mt_run("blade3: fault is cleared after the controller saw it", test_fault_is_cleared_after_the_controller_saw_it);
     mt_run("blade3: OCP trip through the alert line", test_ocp_trip_through_the_alert_line);
     mt_run("blade3: blade restart reconfigures without an EN cut", test_blade_restart_reconfigures_without_an_en_cut);

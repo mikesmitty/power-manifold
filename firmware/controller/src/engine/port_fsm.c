@@ -59,6 +59,12 @@
 // than this between two polls is in a loop, and a few events say so.
 #define PD_RESET_EVENTS_MAX 4
 
+// How long the budget waits for a sink to answer new capabilities before it
+// takes the contract the sink still reports as the one it keeps. A sink
+// answers within milliseconds, and a voltage change settles within half a
+// second.
+#define RENEGOTIATE_WAIT_MS 1000
+
 typedef struct {
     port_state_t state;
     blade_gen_t gen;         // which generation answered the probe
@@ -91,6 +97,9 @@ typedef struct {
     uint32_t denied_mw;      // contract that budget refused; unthrottle target
     uint32_t granted_w;      // power limit currently programmed
     uint32_t readv_ms;       // when the attached sink was last sent new capabilities, 0 = not since it attached
+    bool     renegotiating;  // the sink was sent new capabilities and has not answered yet:
+    uint32_t renego_from_mw; // ...it still reports the contract it had then
+    uint32_t renego_until_ms; // ...until this, at the latest (RENEGOTIATE_WAIT_MS)
     bool     hr_seen;        // the blade's hard-reset counts below are a baseline (cleared by a new probe)
     uint8_t  hr_sent, hr_received;
     blade_status_t st;       // what the blade last reported
@@ -121,9 +130,16 @@ static uint32_t offer_mw(uint8_t i, uint32_t w) {
 // Program the blade's limits. With a sink attached a gen-3 blade sends it
 // new capabilities whenever its table changes (a gen-2 part when asked to),
 // and the moment is kept: a hard reset soon after it is reported against it.
+// The budget waits for the sink's answer (track_contract).
 static bool set_limits(uint8_t i, uint32_t w, uint32_t mv, bool readvertise) {
-    if (ctx[i].st.attached) ctx[i].readv_ms = clock_ms ? clock_ms : 1;
-    return blade_set_limits(ctx[i].gen, w, mv, readvertise);
+    port_ctx_t *p = &ctx[i];
+    if (p->st.attached) p->readv_ms = clock_ms ? clock_ms : 1;
+    if (p->st.attached && readvertise) {
+        p->renegotiating = true;
+        p->renego_from_mw = p->st.contract_mw;
+        p->renego_until_ms = clock_ms + RENEGOTIATE_WAIT_MS;
+    }
+    return blade_set_limits(p->gen, w, mv, readvertise);
 }
 
 
@@ -350,6 +366,7 @@ static void warm_probe_failed(uint8_t i, uint32_t now_ms, uint16_t fail) {
 static void attach_begin(uint8_t i, uint32_t now_ms) {
     ctx[i].attached_at_ms = now_ms;
     ctx[i].readv_ms = 0;
+    ctx[i].renegotiating = false;
     ctx[i].side_since_ms = now_ms;
     ctx[i].low_side = false;
     ctx[i].charged = false;
@@ -715,6 +732,18 @@ static bool poll_powered(uint8_t i, bool present, uint32_t now_ms) {
 }
 
 static void track_contract(uint8_t i) {
+    // Until the sink answers new capabilities, the contract it reports is
+    // the one it had before them, not a new ask. A throttle or a restore
+    // has already set the port's reservation to what it offered, and taking
+    // the old contract instead would throttle the port again on every tick,
+    // or hand a restored port's watts back before its sink could ask for
+    // them.
+    if (ctx[i].renegotiating) {
+        if (ctx[i].st.contract_mw == ctx[i].renego_from_mw &&
+            (int32_t)(clock_ms - ctx[i].renego_until_ms) < 0)
+            return;
+        ctx[i].renegotiating = false;
+    }
     uint32_t want = ctx[i].st.contract_mw;
     if (want < BUDGET_BASE_RESERVE_MW) want = BUDGET_BASE_RESERVE_MW;
     if (want == ctx[i].contract_mw) return;
