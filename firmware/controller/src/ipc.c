@@ -1,6 +1,7 @@
 #include "ipc.h"
 
 #include "hardware/sync.h"
+#include "pico/multicore.h"
 #include "pico/time.h"
 #include "pico/util/queue.h"
 
@@ -67,4 +68,8 @@ bool ipc_engine_alive(void) {
     if (!heartbeat_seen) return false;
     uint32_t age = to_ms_since_boot(get_absolute_time()) - heartbeat_ms;
     return age < (HEARTBEAT_FRESH_US / 1000);
+}
+
+void ipc_engine_park(void) {
+    multicore_lockout_start_timeout_us(500 * 1000);
 }

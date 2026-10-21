@@ -23,3 +23,10 @@ void ipc_snapshot_read(telemetry_t *t);          // core 0
 // engine heartbeat; core 0 feeds the hardware watchdog only while this is fresh
 void ipc_engine_heartbeat(void);
 bool ipc_engine_alive(void);
+
+// Core 0, just before a restart it makes itself: parks core 1 between two I2C
+// transactions (engine/i2c_txn.h) and leaves it there. A restart in the
+// middle of one leaves the device holding SDA, which the next start clocks
+// free and logs as `probe: bus held`. Gives up after half a second, as
+// flash_safe_execute does, and the restart goes ahead either way.
+void ipc_engine_park(void);

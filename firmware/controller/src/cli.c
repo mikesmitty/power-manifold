@@ -1099,6 +1099,7 @@ static void run_line(char *l) {
         // feeding the watchdog (it reloads the countdown every pass).
         printf("rebooting\n");
         sleep_ms(20); // let the console flush
+        ipc_engine_park();
         boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);
         watchdog_reboot(0, 0, 0);
     } else if (!strcmp(cmd, "bootsel")) {

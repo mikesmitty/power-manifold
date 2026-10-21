@@ -4,6 +4,7 @@
 
 #include "blade_image.h"
 #include "blade_regs.h"
+#include "i2c_txn.h"
 #include "pins.h"
 
 #define ADDR BLADE_LOADER_I2C_ADDR
@@ -17,11 +18,17 @@
 #define STRETCH_TIMEOUT_US (200 * 1000)
 
 static bool send(const uint8_t *buf, size_t n) {
-    return i2c_write_timeout_us(I2C_BUS, ADDR, buf, n, false, FRAME_TIMEOUT_US) == (int)n;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR, buf, n, false, FRAME_TIMEOUT_US) == (int)n;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static bool receive(uint8_t *buf, size_t n, uint32_t timeout_us) {
-    return i2c_read_timeout_us(I2C_BUS, ADDR, buf, n, false, timeout_us) == (int)n;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_read_timeout_us(I2C_BUS, ADDR, buf, n, false, timeout_us) == (int)n;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static stboot_result_t ack(uint32_t timeout_us) {

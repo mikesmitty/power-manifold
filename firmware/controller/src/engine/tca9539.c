@@ -4,6 +4,7 @@
 #include "hardware/i2c.h"
 #include "pico/time.h"
 
+#include "i2c_txn.h"
 #include "pins.h"
 #include "rst_line.h"
 
@@ -17,18 +18,22 @@ static uint16_t output_cache;
 
 static bool write_reg16(uint8_t reg, uint16_t val) {
     uint8_t buf[3] = {reg, (uint8_t)(val & 0xFF), (uint8_t)(val >> 8)};
-    return i2c_write_timeout_us(I2C_BUS, ADDR_TCA9539, buf, 3, false,
-                                I2C_TIMEOUT_US) == 3;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR_TCA9539, buf, 3, false,
+                                   I2C_TIMEOUT_US) == 3;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static bool read_reg16(uint8_t reg, uint16_t *val) {
     uint8_t lo_hi[2];
-    if (i2c_write_timeout_us(I2C_BUS, ADDR_TCA9539, &reg, 1, true,
-                             I2C_TIMEOUT_US) != 1)
-        return false;
-    if (i2c_read_timeout_us(I2C_BUS, ADDR_TCA9539, lo_hi, 2, false,
-                            I2C_TIMEOUT_US) != 2)
-        return false;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR_TCA9539, &reg, 1, true,
+                                   I2C_TIMEOUT_US) == 1 &&
+              i2c_read_timeout_us(I2C_BUS, ADDR_TCA9539, lo_hi, 2, false,
+                                  I2C_TIMEOUT_US) == 2;
+    i2c_txn_end(t);
+    if (!ok) return false;
     *val = (uint16_t)lo_hi[0] | ((uint16_t)lo_hi[1] << 8);
     return true;
 }

@@ -2,6 +2,7 @@
 
 #include "hardware/i2c.h"
 
+#include "i2c_txn.h"
 #include "pins.h"
 
 #define REG_CONFIG      0x00
@@ -34,18 +35,22 @@
 
 static bool write_reg(uint8_t reg, uint16_t val) {
     uint8_t buf[3] = {reg, (uint8_t)(val >> 8), (uint8_t)(val & 0xFF)};
-    return i2c_write_timeout_us(I2C_BUS, ADDR_INA226, buf, 3, false,
-                                I2C_TIMEOUT_US) == 3;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR_INA226, buf, 3, false,
+                                   I2C_TIMEOUT_US) == 3;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static bool read_reg(uint8_t reg, uint16_t *val) {
     uint8_t buf[2];
-    if (i2c_write_timeout_us(I2C_BUS, ADDR_INA226, &reg, 1, true,
-                             I2C_TIMEOUT_US) != 1)
-        return false;
-    if (i2c_read_timeout_us(I2C_BUS, ADDR_INA226, buf, 2, false,
-                            I2C_TIMEOUT_US) != 2)
-        return false;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR_INA226, &reg, 1, true,
+                                   I2C_TIMEOUT_US) == 1 &&
+              i2c_read_timeout_us(I2C_BUS, ADDR_INA226, buf, 2, false,
+                                  I2C_TIMEOUT_US) == 2;
+    i2c_txn_end(t);
+    if (!ok) return false;
     *val = ((uint16_t)buf[0] << 8) | buf[1];
     return true;
 }

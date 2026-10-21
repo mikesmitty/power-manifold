@@ -2,6 +2,7 @@
 
 #include "hardware/i2c.h"
 
+#include "i2c_txn.h"
 #include "manifold.h"
 #include "pins.h"
 
@@ -35,11 +36,13 @@ static struct { uint8_t reg, val; } verify_shadow[VERIFY_REGS];
 static unsigned verify_n;
 
 static bool reg_read(uint8_t reg, uint8_t *val) {
-    if (i2c_write_timeout_us(I2C_BUS, ADDR_MPQ4242, &reg, 1, true,
-                             I2C_TIMEOUT_US) != 1)
-        return false;
-    return i2c_read_timeout_us(I2C_BUS, ADDR_MPQ4242, val, 1, false,
-                               I2C_TIMEOUT_US) == 1;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR_MPQ4242, &reg, 1, true,
+                                   I2C_TIMEOUT_US) == 1 &&
+              i2c_read_timeout_us(I2C_BUS, ADDR_MPQ4242, val, 1, false,
+                                  I2C_TIMEOUT_US) == 1;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static bool reg_write(uint8_t reg, uint8_t val) {
@@ -56,8 +59,11 @@ static bool reg_write(uint8_t reg, uint8_t val) {
         return true;
     }
     uint8_t buf[2] = {reg, val};
-    return i2c_write_timeout_us(I2C_BUS, ADDR_MPQ4242, buf, 2, false,
-                                I2C_TIMEOUT_US) == 2;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR_MPQ4242, buf, 2, false,
+                                   I2C_TIMEOUT_US) == 2;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static bool reg_set_bit(uint8_t reg, uint8_t bit, bool on) {

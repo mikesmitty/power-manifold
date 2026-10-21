@@ -4,6 +4,7 @@
 #include "hardware/i2c.h"
 #include "pico/time.h"
 
+#include "i2c_txn.h"
 #include "pins.h"
 #include "rst_line.h"
 
@@ -76,8 +77,11 @@ void tca9548a_init(void) {
 }
 
 static bool write_ctrl(uint8_t mask) {
-    return i2c_write_timeout_us(I2C_BUS, ADDR_TCA9548A, &mask, 1, false,
-                                I2C_TIMEOUT_US) == 1;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, ADDR_TCA9548A, &mask, 1, false,
+                                   I2C_TIMEOUT_US) == 1;
+    i2c_txn_end(t);
+    return ok;
 }
 
 bool tca9548a_select(uint8_t channel) {

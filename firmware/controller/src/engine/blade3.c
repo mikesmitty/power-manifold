@@ -2,18 +2,24 @@
 
 #include "hardware/i2c.h"
 
+#include "i2c_txn.h"
 #include "pins.h"
 
 #define I2C_TIMEOUT_US (2 * 1000)
 
 static bool read_regs(uint8_t reg, uint8_t *buf, size_t n) {
-    if (i2c_write_timeout_us(I2C_BUS, BLADE_I2C_ADDR, &reg, 1, true, I2C_TIMEOUT_US) != 1)
-        return false;
-    return i2c_read_timeout_us(I2C_BUS, BLADE_I2C_ADDR, buf, n, false, I2C_TIMEOUT_US) == (int)n;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, BLADE_I2C_ADDR, &reg, 1, true, I2C_TIMEOUT_US) == 1 &&
+              i2c_read_timeout_us(I2C_BUS, BLADE_I2C_ADDR, buf, n, false, I2C_TIMEOUT_US) == (int)n;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static bool write_regs(const uint8_t *buf, size_t n) { // buf[0] is the register
-    return i2c_write_timeout_us(I2C_BUS, BLADE_I2C_ADDR, buf, n, false, I2C_TIMEOUT_US) == (int)n;
+    bool t = i2c_txn_begin();
+    bool ok = i2c_write_timeout_us(I2C_BUS, BLADE_I2C_ADDR, buf, n, false, I2C_TIMEOUT_US) == (int)n;
+    i2c_txn_end(t);
+    return ok;
 }
 
 static uint16_t u16(const uint8_t *p) {

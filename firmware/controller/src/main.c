@@ -68,6 +68,7 @@ static void factory_reset(void) {
     if (!https_wipe()) printf("https: wipe failed\n");
     fault_log_clear();
     sleep_ms(20);
+    ipc_engine_park();
     boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);
     watchdog_reboot(0, 0, 0);
     for (;;) tight_loop_contents();
@@ -244,6 +245,7 @@ int main(void) {
             if (settings_save_pending()) settings_save();
             printf("http: rebooting\n");
             sleep_ms(20);
+            ipc_engine_park();
             boot_reason_mark(BOOT_REQUESTED, 0, 0, 0, 0);
             watchdog_reboot(0, 0, 0);
         }
@@ -318,6 +320,7 @@ int main(void) {
             if (trial && now_ms >= UPDATE_DEADLINE_MS && !blade_trip_running()) {
                 printf("update: never became healthy; reverting to previous image\n");
                 sleep_ms(50);
+                ipc_engine_park();
                 boot_reason_mark(BOOT_TRIAL_REVERT, 0, 0, 0, 0);
                 watchdog_reboot(0, 0, 0);
             }

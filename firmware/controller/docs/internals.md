@@ -90,6 +90,16 @@ then resets the I2C block. Each device freed this way is logged as `probe:
 bus held` on its port. A gen-3 blade also lets go of the line itself after
 50 ms.
 
+Core 0 parks core 1 for every flash write it makes (an update image, a
+slot commit, settings, the fault log), for as long as a sector erase
+takes. Parked halfway through a transaction, the SDK's transfer wakes up
+past its deadline, gives up on bytes that had gone through and leaves the
+device holding SDA. So each I2C transaction masks the interrupt the park
+arrives on (`i2c_txn.h`), and core 0 waits until the transaction is over.
+Before a restart it makes itself (an update, a reboot, a factory reset, a
+trial image given up on), core 0 parks core 1 the same way, so the restart
+does not cut a transaction off either.
+
 Behind the mux and the expander, port *n* (1-based wherever the firmware
 talks to a person) is mux channel *n*−1, EN on P0(*n*−1), PRSNT# on
 P1(*n*−1) and pixel *n* of the light-bar chain (pixel 0 is the chassis
