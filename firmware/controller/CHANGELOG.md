@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.20.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.0...controller-firmware-v0.20.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **controller:** report update progress to Home Assistant during a download ([b1ae992](https://github.com/mikesmitty/power-manifold/commit/b1ae992203089627b8ad7b7d0899e7f9e37887b6))
+* **controller:** stop flash writes and restarts from cutting off I2C transfers ([3c7c2d2](https://github.com/mikesmitty/power-manifold/commit/3c7c2d25492877f6a0b2aaeadec9c0a2561d5b90))
+* **controller:** wait for a sink's answer before acting on its old contract ([6b72bec](https://github.com/mikesmitty/power-manifold/commit/6b72bec323fc55d8f2da955cf84013999ae107e9))
+
 ## [0.20.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.19.1...controller-firmware-v0.20.0) (2026-10-21)
 
 
