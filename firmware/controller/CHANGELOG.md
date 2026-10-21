@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.20.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.19.1...controller-firmware-v0.20.0) (2026-10-21)
+
+
+### Features
+
+* **controller:** add a setting for a contract event on every PPS or AVS step ([44fba52](https://github.com/mikesmitty/power-manifold/commit/44fba52a35a94544717591cebe6c445c89c4fbad))
+* **controller:** add a Voltage step events switch to Home Assistant ([1781fb0](https://github.com/mikesmitty/power-manifold/commit/1781fb0545e82b8ecb4e384fc33e83d21be337b2))
+
+
+### Bug Fixes
+
+* **charger-module:** report a power-limited PPS contract at the port's limit ([a157e23](https://github.com/mikesmitty/power-manifold/commit/a157e2380d77d43554750cc1e80b041e3923b9e5))
+* **controller:** clock a held I2C bus free and log a stuck bus once ([b3e1897](https://github.com/mikesmitty/power-manifold/commit/b3e1897e4643b52355f0ecb5a26f4f817ad33a69))
+* **controller:** give the automatic updates switch its own MQTT topic ([f0fdfef](https://github.com/mikesmitty/power-manifold/commit/f0fdfefdbf31696f468ac572b34f86168c7c9f03))
+* **controller:** list the Voltage step events switch under configuration ([b3b4256](https://github.com/mikesmitty/power-manifold/commit/b3b42562b2989ddbe338110555e4dfc7e13012a5))
+* **controller:** name the availability topic so Home Assistant uses it ([b2f9627](https://github.com/mikesmitty/power-manifold/commit/b2f96270e9eaf717e8c5e1a469046404bbc5a250))
+* **controller:** raise a contract event only when the sink picks another object ([e158bae](https://github.com/mikesmitty/power-manifold/commit/e158bae2fa677dcc89df893a94ee0fad4304ec6d))
+* **controller:** reset core 1 before its launch and guard startup with the watchdog ([27e4f7f](https://github.com/mikesmitty/power-manifold/commit/27e4f7f5f2e499dbb1e8940ccb48ba8f2910202a))
+
 ## [0.19.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.19.0...controller-firmware-v0.19.1) (2026-10-20)
 
 
