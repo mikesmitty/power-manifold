@@ -800,16 +800,15 @@ static void publish_update_auto_switch(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
-// Every voltage step a PPS or SPR AVS sink takes as a contract event. It is
-// listed with the diagnostics: it is for watching a sink, and a sweep makes
-// an event for each 0.1 V.
+// Every voltage step a PPS or SPR AVS sink takes as a contract event, a
+// setting like the others under the device's configuration
 static void publish_contract_steps_switch(void) {
     discovery_config_topic("switch", "contract_steps");
     snprintf(payload_buf, sizeof(payload_buf),
              "{\"~\":\"%s\",\"name\":\"Voltage step events\",\"uniq_id\":\"pwrman_%s_contract_steps\","
              "\"cmd_t\":\"~/contract_steps/set\",\"stat_t\":\"~/status\","
              "\"val_tpl\":\"{{ value_json.contract_steps }}\",\"ic\":\"mdi:stairs\","
-             "\"ent_cat\":\"diagnostic\",\"avty_t\":\"~/availability\",\"dev\":%s}",
+             "\"ent_cat\":\"config\",\"avty_t\":\"~/availability\",\"dev\":%s}",
              base, uid, device_json);
     publish(topic_buf, payload_buf, 1, 1);
 }
