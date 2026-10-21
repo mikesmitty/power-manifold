@@ -1,6 +1,6 @@
 #pragma once
 
-#define FW_VERSION "0.5.1" // x-release-please-version
+#define FW_VERSION "0.5.2" // x-release-please-version
 // FW_MAJOR / FW_MINOR / FW_PATCH are parsed out of FW_VERSION by
 // cmake/version.cmake and passed on the command line.
 
