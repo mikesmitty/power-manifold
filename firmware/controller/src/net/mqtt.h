@@ -49,6 +49,12 @@ const char *mqtt_problem(void);
 // persistent fault log so logging never depends on broker health.
 void mqtt_event(const engine_evt_t *e);
 
+// An image is being written: report its progress to Home Assistant's update
+// entity, at most once a second, and 100 % at once. The download paths call
+// this from lwIP's context as each piece arrives; while a download keeps that
+// context busy writing flash, mqtt_poll rarely gets the network lock.
+void mqtt_update_progress(void);
+
 // A port label changed: re-run discovery so Home Assistant picks up the new
 // entity names (unique ids are unchanged, so entity ids stay put).
 void mqtt_names_changed(void);

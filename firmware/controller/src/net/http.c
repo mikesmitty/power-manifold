@@ -921,6 +921,7 @@ static void update_feed(conn_t *c, struct pbuf *p, uint16_t skip) {
         update_feed_bytes(c, (const uint8_t *)q->payload + skip, (uint32_t)(q->len - skip));
         skip = 0;
     }
+    mqtt_update_progress();
 }
 
 // A refused upload is answered at once. Closing while its body still

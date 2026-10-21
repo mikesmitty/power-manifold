@@ -9,6 +9,7 @@
 #include "lwip/apps/http_client.h"
 
 #include "http_url.h"
+#include "mqtt.h"
 #include "net.h"
 #include "update.h"
 
@@ -35,6 +36,7 @@ static err_t recv_cb(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t err
     }
     altcp_recved(pcb, p->tot_len);
     pbuf_free(p);
+    mqtt_update_progress();
     return ERR_OK;
 }
 
@@ -90,6 +92,7 @@ static void result_cb(void *arg, httpc_result_t res, u32_t rx_len,
         return;
     }
     update_schedule_reboot(1000);
+    mqtt_update_progress();
     printf("update: %lu bytes -> slot %s (v%s); trial reboot in 1s\n",
            (unsigned long)update_bytes(), update_slot_name(),
            update_version_str());

@@ -90,6 +90,7 @@ static uint16_t in_len;
 
 static unsigned latest_seq_sent; // update_latest_seq() as of the last update/state published
 static int progress_sent = -1;   // update_progress() as of the last update/state published
+static uint32_t progress_ms;     // when that update/state went out
 static int auto_sent = -1;       // g_settings.update_auto as of the last update/auto published
 
 static char topic_buf[160];
@@ -177,6 +178,16 @@ static void publish_update_state(void) {
     publish(topic_buf, payload_buf, 1, 1);
     latest_seq_sent = update_latest_seq();
     progress_sent = progress;
+    progress_ms = to_ms_since_boot(get_absolute_time());
+}
+
+void mqtt_update_progress(void) {
+    if (!mqtt_is_connected()) return;
+    int progress = update_progress();
+    if (progress == progress_sent) return;
+    if (progress != 100 &&
+        to_ms_since_boot(get_absolute_time()) - progress_ms < TELEMETRY_MS) return;
+    publish_update_state();
 }
 
 // The Automatic updates switch has a topic of its own: Home Assistant's
@@ -1279,7 +1290,7 @@ void mqtt_poll(uint32_t now_ms) {
         if (now_ms - last_telemetry_ms >= TELEMETRY_MS) {
             last_telemetry_ms = now_ms;
             publish_telemetry();
-            if (update_progress() != progress_sent) publish_update_state(); // at most once a second
+            mqtt_update_progress(); // a download also calls it, where this loop can't get in
         }
         break;
 
