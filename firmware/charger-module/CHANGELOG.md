@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.5.1...charger-module-firmware-v0.5.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **charger-module:** let go of a backplane bus its master abandoned ([efe0c2f](https://github.com/mikesmitty/power-manifold/commit/efe0c2f39324b08265f90d1e46fa6e1d861861c7))
+* **charger-module:** report a power-limited PPS contract at the port's limit ([a157e23](https://github.com/mikesmitty/power-manifold/commit/a157e2380d77d43554750cc1e80b041e3923b9e5))
+* **charger-module:** scale the port current reading by its measured gain ([b007f2c](https://github.com/mikesmitty/power-manifold/commit/b007f2c94eedc55f51ff9678ca11fe719f651875))
+
 ## [0.5.1](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.5.0...charger-module-firmware-v0.5.1) (2026-10-20)
 
 
