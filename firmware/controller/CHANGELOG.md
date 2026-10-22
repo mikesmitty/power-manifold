@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.2](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.1...controller-firmware-v0.20.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **controller:** check blade images with the bootloader's checksum again ([489ecec](https://github.com/mikesmitty/power-manifold/commit/489ececcb6f6064048d2dc9bf7bd6f6d1826317c))
+
 ## [0.20.1](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.0...controller-firmware-v0.20.1) (2026-10-21)
 
 
