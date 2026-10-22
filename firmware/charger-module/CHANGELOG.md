@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.5.2...charger-module-firmware-v0.5.3) (2026-10-22)
+
+
+### Bug Fixes
+
+* **controller:** check blade images with the bootloader's checksum again ([489ecec](https://github.com/mikesmitty/power-manifold/commit/489ececcb6f6064048d2dc9bf7bd6f6d1826317c))
+
 ## [0.5.2](https://github.com/mikesmitty/power-manifold/compare/charger-module-firmware-v0.5.1...charger-module-firmware-v0.5.2) (2026-10-21)
 
 
