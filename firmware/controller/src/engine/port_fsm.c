@@ -807,6 +807,7 @@ void port_fsm_init(void) {
     memset(ctx, 0, sizeof(ctx));
     hold_updates = false;
     ceiling_w = 0;
+    blade_update_init();
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
         ctx[i].state = PORT_STATE_ABSENT;
         ctx[i].admin_enabled = boot_enabled(i);

@@ -15,6 +15,7 @@ enum {
     S_VERSION, S_ID, S_INSPECT,
     S_ERASE, S_ERASE_WAIT, S_ERASE_SETTLE,
     S_WRITE, S_WRITE_WAIT,
+    S_CRC, S_CRC_WAIT, S_CRC_RESULT,
     S_READBACK,
     S_GO,
 };
@@ -23,7 +24,8 @@ typedef struct {
     uint8_t  step, tries, fail;
     uint16_t waits;
     uint8_t  mode;    // blade_update_mode_t
-    bool     no_stretch, wrote, rewritten;
+    bool     no_stretch, has_crc, wrote, rewritten;
+    bool     crc_differed; // the checksum disagreed: the read-back under way decides
     uint32_t chunk;   // the page being erased, then the position in the write (or read-back) order
     uint32_t length;  // bytes of image on the blade once done
     uint32_t version; // UPDATE_VERSION() of it
@@ -32,6 +34,27 @@ typedef struct {
 } update_t;
 
 static update_t u[NUM_PORTS];
+
+// Set once the bootloader's checksum command misbehaves; every image is
+// read back from then on.
+static bool crc_unusable;
+
+uint32_t blade_image_crc(const uint8_t *data, uint32_t size, uint32_t len) {
+    uint32_t crc = 0xFFFFFFFFu;
+    for (uint32_t i = 0; i + 4 <= len; i += 4) {
+        uint32_t w = 0;
+        for (int b = 3; b >= 0; b--) w = w << 8 | (i + b < size ? data[i + b] : 0xFFu);
+        crc ^= w;
+        for (int b = 0; b < 32; b++)
+            crc = (crc & 0x80000000u) ? (crc << 1) ^ 0x04C11DB7u : crc << 1;
+    }
+    return crc;
+}
+
+// The checksum command takes whole words; past the image the flash is erased
+static uint32_t crc_len(const update_t *p) {
+    return (p->length + 3u) & ~3u;
+}
 
 static uint32_t chunks(const update_t *p) {
     return (p->length + STBOOT_CHUNK - 1) / STBOOT_CHUNK;
@@ -80,12 +103,24 @@ static blade_update_status_t wait_more(update_t *p, uint8_t why) {
     return BLADE_UPDATE_BUSY;
 }
 
-// The flash is read back and compared with the bundle. The bootloader's
-// checksum command (protocol V1.2) is not used: on the blade's G071 it held
-// the clock for longer than 200 ms and never answered (bench, 2026-10-19).
-static void start_verify(update_t *p) {
+static void start_readback(update_t *p) {
     p->chunk = 0;
     next(p, S_READBACK);
+}
+
+// The bootloader's checksum (protocol V1.2) where it has one, else the
+// flash read back and compared with the bundle. A checksum that does not
+// match, or a command that misbehaves, is settled by the read-back.
+static void start_verify(update_t *p) {
+    p->crc_differed = false;
+    if (p->has_crc && !crc_unusable) next(p, S_CRC);
+    else start_readback(p);
+}
+
+static blade_update_status_t crc_misbehaved(update_t *p) {
+    crc_unusable = true;
+    start_readback(p);
+    return BLADE_UPDATE_BUSY;
 }
 
 // Not what was sent: once more from the erase, then give up
@@ -95,6 +130,10 @@ static blade_update_status_t verify_failed(update_t *p) {
     p->chunk = 0;
     next(p, S_ERASE);
     return BLADE_UPDATE_BUSY;
+}
+
+void blade_update_init(void) {
+    crc_unusable = false;
 }
 
 void blade_update_begin(uint8_t port, blade_update_mode_t mode) {
@@ -115,6 +154,7 @@ blade_update_status_t blade_update_step(uint8_t port) {
         if (stboot_version(&v) != STBOOT_OK) return retry(p, UPDATE_FAIL_SILENT);
         if ((v >> 4) != 1) return fail(p, UPDATE_FAIL_CHIP); // this driver speaks protocol 1.x
         p->no_stretch = v >= STBOOT_PROTOCOL_MIN_NS;
+        p->has_crc = v >= STBOOT_PROTOCOL_MIN_CRC;
         next(p, S_ID);
         return BLADE_UPDATE_BUSY;
     }
@@ -205,10 +245,36 @@ blade_update_status_t blade_update_step(uint8_t port) {
         else if (r == STBOOT_BUSY) return wait_more(p, UPDATE_FAIL_WRITE);
         else { p->step = S_WRITE; return retry(p, UPDATE_FAIL_WRITE); } // the same chunk again
         return BLADE_UPDATE_BUSY;
+    case S_CRC:
+        r = stboot_checksum(BLADE_IMAGE_BASE, crc_len(p));
+        if (r == STBOOT_OK || r == STBOOT_BUSY) next(p, S_CRC_WAIT);
+        else if (r == STBOOT_NACK) return crc_misbehaved(p);
+        else return retry(p, UPDATE_FAIL_VERIFY);
+        return BLADE_UPDATE_BUSY;
+    case S_CRC_WAIT:
+        r = stboot_poll();
+        if (r == STBOOT_OK) next(p, S_CRC_RESULT);
+        else if (r != STBOOT_BUSY || ++p->waits >= WAIT_MAX) return crc_misbehaved(p);
+        return BLADE_UPDATE_BUSY;
+    case S_CRC_RESULT: {
+        uint32_t crc;
+        if (stboot_checksum_result(&crc) != STBOOT_OK) return crc_misbehaved(p);
+        if (crc != blade_image_crc(blade_bundle_data(), blade_bundle_size(), crc_len(p))) {
+            p->crc_differed = true; // the read-back decides, and rewrites if it differs
+            start_readback(p);
+            return BLADE_UPDATE_BUSY;
+        }
+        next(p, S_GO);
+        return BLADE_UPDATE_BUSY;
+    }
     case S_READBACK: { // compare the flash chunk by chunk
         uint8_t want_bytes[STBOOT_CHUNK];
         uint32_t off = p->chunk * STBOOT_CHUNK;
-        if (off >= p->length) { next(p, S_GO); return BLADE_UPDATE_BUSY; }
+        if (off >= p->length) {
+            if (p->crc_differed) crc_unusable = true; // the flash was right: the checksum is not
+            next(p, S_GO);
+            return BLADE_UPDATE_BUSY;
+        }
         uint32_t n = image_bytes(p, off, want_bytes);
         if (stboot_read(BLADE_IMAGE_BASE + off, buf, n) != STBOOT_OK) return retry(p, UPDATE_FAIL_VERIFY);
         if (memcmp(buf, want_bytes, n) != 0) return verify_failed(p);
@@ -232,6 +298,9 @@ uint8_t blade_update_pct(uint8_t port) {
         uint32_t total = chunks(p);
         return (uint8_t)(total ? (p->chunk * 100) / total : 0);
     }
+    case S_CRC:
+    case S_CRC_WAIT:
+    case S_CRC_RESULT:
     case S_READBACK:
     case S_GO:
         return 100;

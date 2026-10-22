@@ -122,6 +122,21 @@ stboot_result_t stboot_write(uint32_t addr, const uint8_t *data, size_t n, bool 
     return ack(no_stretch ? FRAME_TIMEOUT_US : STRETCH_TIMEOUT_US);
 }
 
+stboot_result_t stboot_checksum(uint32_t addr, uint32_t len) {
+    stboot_result_t r = command(0xA1);
+    if (r != STBOOT_OK) return r;
+    if ((r = send_u32(addr)) != STBOOT_OK) return r;
+    return send_u32(len);
+}
+
+stboot_result_t stboot_checksum_result(uint32_t *crc) {
+    uint8_t d[5]; // most significant byte first, then the XOR of the four
+    if (!receive(d, 5, FRAME_TIMEOUT_US)) return STBOOT_SILENT;
+    if ((uint8_t)(d[0] ^ d[1] ^ d[2] ^ d[3]) != d[4]) return STBOOT_SILENT;
+    *crc = (uint32_t)d[0] << 24 | (uint32_t)d[1] << 16 | (uint32_t)d[2] << 8 | d[3];
+    return STBOOT_OK;
+}
+
 stboot_result_t stboot_go(uint32_t addr) {
     stboot_result_t r = command(0x21);
     if (r != STBOOT_OK) return r;

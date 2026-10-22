@@ -4,6 +4,7 @@
 
 #include "blade3.h"
 #include "blade_image.h"
+#include "blade_update.h"
 #include "ina226.h"
 #include "mpq4242.h"
 #include "pins.h"
@@ -28,6 +29,8 @@
 // configured it, it offers its power limit at every voltage (up to 5 A),
 // it re-advertises by itself when its limits change, and a fault takes the
 // port down and stays latched until BLADE_CMD_CLEAR_FAULTS.
+
+enum { CRC_NONE, CRC_COMPUTING, CRC_READY }; // sim_slot_t.crc_step
 
 typedef struct {
     bool     present;
@@ -67,6 +70,10 @@ typedef struct {
     bool     boot_opt_stuck;  // the boot-option command resets the blade without the option taking
     bool     locked_up;    // started with no image: a HardFault loop until power is cut
     uint8_t  busy_polls;   // BUSY answers left on the flash operation in progress
+    uint8_t  crc_mode;     // sim_crc_mode_t
+    uint8_t  crc_step;     // the checksum command in progress (CRC_*)
+    uint32_t crc_len;      // its range
+    uint32_t checksums, reads; // checksum and Read Memory commands answered
     uint8_t  crashes_left; // the firmware crashes this many more starts
     uint32_t goes;         // Go commands accepted
     uint32_t erases, writes; // erase passes (each starts at the first page) and write commands
@@ -227,6 +234,7 @@ static void mcu_reset(sim_slot_t *s, bool from_go) {
     s->faults = BLADE_FAULT_RESET;
     s->hr_sent = s->hr_received = 0;
     s->busy_polls = 0;
+    s->crc_step = CRC_NONE;
     s->loader = !from_go && (s->boot_via_loader || flash_page0_empty(s));
     s->locked_up = false;
     if (!s->loader) {
@@ -312,6 +320,9 @@ uint32_t sim_blade_go_count(uint8_t slot) { return slots[slot].goes; }
 uint8_t  sim_blade_watch_s(uint8_t slot) { return slots[slot].watch_s; }
 uint32_t sim_blade_erase_count(uint8_t slot) { return slots[slot].erases; }
 uint32_t sim_blade_write_count(uint8_t slot) { return slots[slot].writes; }
+uint32_t sim_blade_checksum_count(uint8_t slot) { return slots[slot].checksums; }
+uint32_t sim_blade_read_count(uint8_t slot) { return slots[slot].reads; }
+void sim_blade_set_crc_mode(uint8_t slot, sim_crc_mode_t mode) { slots[slot].crc_mode = (uint8_t)mode; }
 const uint8_t *sim_blade_flash(uint8_t slot) { return slots[slot].flash; }
 uint32_t sim_blade_flash_version(uint8_t slot) {
     const sim_slot_t *s = &slots[slot];
@@ -788,10 +799,11 @@ stboot_result_t stboot_id(uint16_t *pid) {
 }
 
 stboot_result_t stboot_read(uint32_t addr, uint8_t *buf, size_t n) {
-    const sim_slot_t *s = loader3();
+    sim_slot_t *s = loader3();
     if (!s) return STBOOT_SILENT;
     if (addr < BLADE_IMAGE_BASE || addr - BLADE_IMAGE_BASE + n > SIM_FLASH_SIZE) return STBOOT_NACK;
     memcpy(buf, s->flash + (addr - BLADE_IMAGE_BASE), n);
+    s->reads++;
     return STBOOT_OK;
 }
 
@@ -823,6 +835,32 @@ stboot_result_t stboot_write(uint32_t addr, const uint8_t *data, size_t n, bool 
     return busy_or_ok(s);
 }
 
+// As AN4221 draws it: the range is acknowledged, the status answers BUSY
+// while the CRC unit runs and ACK once it is done, and only then does the
+// result come. Read before that ACK, the real bootloader holds the clock
+// until its own timeout resets it; here the read just gets nothing.
+stboot_result_t stboot_checksum(uint32_t addr, uint32_t len) {
+    sim_slot_t *s = loader3();
+    if (!s) return STBOOT_SILENT;
+    if (s->crc_mode == SIM_CRC_REFUSED) return STBOOT_NACK;
+    if (addr < BLADE_IMAGE_BASE || len == 0 || len & 3 || addr - BLADE_IMAGE_BASE + len > SIM_FLASH_SIZE)
+        return STBOOT_NACK;
+    s->crc_len = len;
+    s->crc_step = CRC_COMPUTING;
+    s->busy_polls = SIM_BUSY_POLLS;
+    s->checksums++;
+    return STBOOT_OK;
+}
+
+stboot_result_t stboot_checksum_result(uint32_t *crc) {
+    sim_slot_t *s = loader3();
+    if (!s || s->crc_step != CRC_READY) return STBOOT_SILENT;
+    s->crc_step = CRC_NONE;
+    *crc = blade_image_crc(s->flash, s->crc_len, s->crc_len);
+    if (s->crc_mode == SIM_CRC_WRONG) *crc ^= 1u;
+    return STBOOT_OK;
+}
+
 stboot_result_t stboot_go(uint32_t addr) {
     sim_slot_t *s = loader3();
     if (!s) return STBOOT_SILENT;
@@ -835,6 +873,8 @@ stboot_result_t stboot_go(uint32_t addr) {
 stboot_result_t stboot_poll(void) {
     sim_slot_t *s = loader3();
     if (!s) return STBOOT_SILENT;
+    if (s->crc_step == CRC_COMPUTING && s->crc_mode == SIM_CRC_SILENT) return STBOOT_SILENT;
     if (s->busy_polls) s->busy_polls--;
+    if (!s->busy_polls && s->crc_step == CRC_COMPUTING) s->crc_step = CRC_READY;
     return busy_or_ok(s);
 }

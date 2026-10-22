@@ -52,9 +52,18 @@ typedef enum {
     BLADE_UPDATE_REWRITE, // the bundle is written whatever the blade holds
 } blade_update_mode_t;
 
+// At engine start: images are checked by the bootloader's checksum again
+// until it misbehaves (blade_update.c reads them back from then on).
+void blade_update_init(void);
 void blade_update_begin(uint8_t port, blade_update_mode_t mode);
 blade_update_status_t blade_update_step(uint8_t port);
 uint8_t  blade_update_pct(uint8_t port);     // of the image written, 0-100
 uint8_t  blade_update_fail(uint8_t port);    // UPDATE_FAIL_*, after FAILED
 bool     blade_update_wrote(uint8_t port);   // after STARTED: the bundle was programmed (else what was found was started)
 uint32_t blade_update_version(uint8_t port); // after STARTED: UPDATE_VERSION() of what runs
+
+// The STM32 CRC unit's checksum of `len` bytes of an image, as the
+// bootloader's checksum command computes it: CRC-32 (0x04C11DB7) from
+// 0xFFFFFFFF over 32-bit words, no reflection, each word's bytes least
+// significant first. Bytes past `size` are the erased flash's 0xFF.
+uint32_t blade_image_crc(const uint8_t *data, uint32_t size, uint32_t len);

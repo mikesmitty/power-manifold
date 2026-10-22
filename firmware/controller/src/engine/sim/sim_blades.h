@@ -37,6 +37,15 @@ void sim_blade_set_boot_opt_stuck(uint8_t slot, bool stuck); // the boot-option 
 bool sim_blade_watch_expire(uint8_t slot); // the blade's watch runs out: into the bootloader if EN is low and a watch is set
 uint32_t sim_blade_erase_count(uint8_t slot);
 uint32_t sim_blade_write_count(uint8_t slot);
+uint32_t sim_blade_checksum_count(uint8_t slot); // bootloader checksum commands accepted
+uint32_t sim_blade_read_count(uint8_t slot);     // bootloader Read Memory commands answered
+typedef enum {
+    SIM_CRC_WORKS,   // the checksum command as AN4221 describes it
+    SIM_CRC_REFUSED, // refused, as by a bootloader without it
+    SIM_CRC_SILENT,  // accepted, then no status ever answers
+    SIM_CRC_WRONG,   // answers, with a CRC that is not the flash's
+} sim_crc_mode_t;
+void sim_blade_set_crc_mode(uint8_t slot, sim_crc_mode_t mode);
 const uint8_t *sim_blade_flash(uint8_t slot);
 uint32_t sim_blade_flash_version(uint8_t slot); // major << 16 | minor << 8 | patch, 0xFFFFFFFF without an image
 void sim_attach(uint8_t slot, uint16_t req_mv, uint32_t req_ma); // sink plugs in

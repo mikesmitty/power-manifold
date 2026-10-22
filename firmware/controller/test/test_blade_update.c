@@ -65,6 +65,18 @@ static bool flash_holds_bundle(uint8_t slot) {
     return true;
 }
 
+static void test_crc_matches_the_stm32_unit(void) {
+    // the CRC unit's well-known results for one and two zero words
+    static const uint8_t zero[8] = {0};
+    MT_ASSERT_EQ(blade_image_crc(zero, 4, 4), 0xC704DD7Bu);
+    MT_ASSERT_EQ(blade_image_crc(zero, 8, 8), 0x6904BB59u);
+    static const uint8_t w[4] = {0x78, 0x56, 0x34, 0x12}; // 0x12345678, least significant byte first
+    MT_ASSERT_EQ(blade_image_crc(w, 4, 4), 0xDF8A8A2Bu);
+    // bytes past the data are the erased flash's 0xFF
+    static const uint8_t ff[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    MT_ASSERT_EQ(blade_image_crc(zero, 0, 4), blade_image_crc(ff, 4, 4));
+}
+
 // A blank blade (or one that lost its image) is programmed with the bundle,
 // the first page last, and started.
 static void test_blank_blade_is_programmed(void) {
@@ -117,6 +129,9 @@ static void test_matching_image_is_started(void) {
     MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
     MT_ASSERT_EQ(sim_blade_write_count(0), 0);
     MT_ASSERT_EQ(sim_blade_go_count(0), 1);
+    // checked by the bootloader's checksum: the header is the only read
+    MT_ASSERT_EQ(sim_blade_checksum_count(0), 1);
+    MT_ASSERT_EQ(sim_blade_read_count(0), 1);
     const engine_evt_t *e = evt_last(EVT_UPDATE, 0);
     MT_ASSERT(e != NULL);
     MT_ASSERT_EQ(e->code, UPDATE_STARTED);
@@ -130,6 +145,60 @@ static void test_matching_image_is_started(void) {
     MT_ASSERT_EQ(sim_blade_go_count(0), 2);
     MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
 }
+
+// The same version label over different code: the checksum differs, the
+// read-back finds where, and the bundle is written over it.
+static void test_a_checksum_that_differs_is_rewritten(void) {
+    support_reset(360000);
+    static uint8_t img[IMAGE_LEN];
+    memcpy(img, fake_bundle_make(0, 2, 0, IMAGE_LEN), IMAGE_LEN);
+    img[IMAGE_LEN - 10] ^= 0x5A; // past the header
+    sim_set_gen(0, 3);
+    sim_blade_flash_image(0, img, IMAGE_LEN);
+    sim_blade_set_boot_via_loader(0, true);
+    sim_set_present(0, true);
+
+    settle(0, 300);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT(flash_holds_bundle(0));
+    MT_ASSERT_EQ(sim_blade_erase_count(0), 1);
+    MT_ASSERT_EQ(sim_blade_checksum_count(0), 2); // the mismatch, then the new image
+    MT_ASSERT_EQ(sim_blade_go_count(0), 1);
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 0);
+}
+
+// A bootloader whose checksum command misbehaves, refused, never done, or
+// wrong about a flash the read-back finds right: the image is read back
+// instead, and the command is not tried again.
+static void check_a_misbehaving_checksum(sim_crc_mode_t mode) {
+    support_reset(360000);
+    const uint8_t *img = fake_bundle_make(0, 2, 0, IMAGE_LEN);
+    sim_set_gen(0, 3);
+    sim_blade_flash_image(0, img, IMAGE_LEN);
+    sim_blade_set_boot_via_loader(0, true);
+    sim_blade_set_crc_mode(0, mode);
+    sim_set_present(0, true);
+
+    settle(0, 300);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(sim_blade_erase_count(0), 0);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 1);
+    MT_ASSERT(sim_blade_read_count(0) > 1); // the whole image, read back
+    MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, 0), 0);
+    uint32_t tried = sim_blade_checksum_count(0);
+
+    // the next trip goes straight to the read-back
+    sim_blade_restart(0);
+    tick(12); // its silence is noticed after ten polls
+    settle(0, 300);
+    MT_ASSERT_EQ(port_state(0), PORT_STATE_IDLE);
+    MT_ASSERT_EQ(sim_blade_go_count(0), 2);
+    MT_ASSERT_EQ(sim_blade_checksum_count(0), tried);
+}
+
+static void test_a_refused_checksum_is_read_back(void) { check_a_misbehaving_checksum(SIM_CRC_REFUSED); }
+static void test_a_silent_checksum_is_read_back(void) { check_a_misbehaving_checksum(SIM_CRC_SILENT); }
+static void test_a_wrong_checksum_is_read_back(void) { check_a_misbehaving_checksum(SIM_CRC_WRONG); }
 
 // A running blade on another version is sent to its bootloader and
 // rewritten. There is no setting to keep what it holds.
@@ -590,8 +659,13 @@ static void test_watch_setting_and_gen2(void) {
 }
 
 void run_blade_update_tests(void) {
+    mt_run("update: the CRC matches the STM32 unit", test_crc_matches_the_stm32_unit);
     mt_run("update: a blank blade is programmed", test_blank_blade_is_programmed);
     mt_run("update: a matching image is started", test_matching_image_is_started);
+    mt_run("update: a checksum that differs is rewritten", test_a_checksum_that_differs_is_rewritten);
+    mt_run("update: a refused checksum is read back", test_a_refused_checksum_is_read_back);
+    mt_run("update: a silent checksum is read back", test_a_silent_checksum_is_read_back);
+    mt_run("update: a wrong checksum is read back", test_a_wrong_checksum_is_read_back);
     mt_run("update: another version is rewritten", test_other_version_is_rewritten);
     mt_run("update: the boot option is programmed once", test_boot_option_is_programmed_once);
     mt_run("update: a stuck option leaves the port working", test_a_stuck_option_leaves_the_port_working);
