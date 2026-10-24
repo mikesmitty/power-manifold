@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.3](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.2...controller-firmware-v0.20.3) (2026-10-24)
+
+
+### Bug Fixes
+
+* **controller:** take blades through their bootloaders one at a time ([cd25477](https://github.com/mikesmitty/power-manifold/commit/cd254770742bf4982112748a3986fb40d53cccc7))
+
 ## [0.20.2](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.1...controller-firmware-v0.20.2) (2026-10-22)
 
 
