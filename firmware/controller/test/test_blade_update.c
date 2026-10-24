@@ -113,6 +113,33 @@ static void test_blank_blade_is_programmed(void) {
     MT_ASSERT(sim_en(0)); // powered the normal way afterwards
 }
 
+// Blades found in their bootloaders together are written one at a time:
+// the second is not touched until the first has been started.
+static void test_bootloader_trips_take_turns(void) {
+    support_reset(360000);
+    fake_bundle_make(0, 2, 0, IMAGE_LEN);
+    for (uint8_t s = 0; s < 3; s++) {
+        sim_set_gen(s, 3);
+        sim_blade_erase(s);
+        sim_set_present(s, true);
+    }
+    int overlapped = 0;
+    for (int k = 0; k < 600; k++) {
+        tick(1);
+        int mid_trip = 0;
+        for (uint8_t s = 0; s < 3; s++)
+            if (sim_blade_in_loader(s) && sim_blade_erase_count(s) > 0) mid_trip++;
+        if (mid_trip > 1) overlapped++;
+    }
+    MT_ASSERT_EQ(overlapped, 0);
+    for (uint8_t s = 0; s < 3; s++) {
+        MT_ASSERT_EQ(port_state(s), PORT_STATE_IDLE);
+        MT_ASSERT(flash_holds_bundle(s));
+        MT_ASSERT_EQ(sim_blade_erase_count(s), 1);
+        MT_ASSERT_EQ(evt_count(EVT_PROBE_FAIL, s), 0);
+    }
+}
+
 // A blade set to boot through its bootloader and holding the bundled
 // version is checked and started, nothing written.
 static void test_matching_image_is_started(void) {
@@ -661,6 +688,7 @@ static void test_watch_setting_and_gen2(void) {
 void run_blade_update_tests(void) {
     mt_run("update: the CRC matches the STM32 unit", test_crc_matches_the_stm32_unit);
     mt_run("update: a blank blade is programmed", test_blank_blade_is_programmed);
+    mt_run("update: bootloader trips take turns", test_bootloader_trips_take_turns);
     mt_run("update: a matching image is started", test_matching_image_is_started);
     mt_run("update: a checksum that differs is rewritten", test_a_checksum_that_differs_is_rewritten);
     mt_run("update: a refused checksum is read back", test_a_refused_checksum_is_read_back);

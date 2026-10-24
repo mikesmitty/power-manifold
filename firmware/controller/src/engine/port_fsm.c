@@ -107,6 +107,13 @@ typedef struct {
 
 static port_ctx_t ctx[NUM_PORTS];
 static bool hold_updates; // port_fsm_hold_updates
+// The port whose blade's bootloader the controller is talking to, or -1.
+// The trips take turns: with two of them stepped in the same tick, a
+// bootloader asked something a fraction of a millisecond after another one
+// on the next channel now and then held SDA once it had answered, and
+// blades written together logged a `probe: bus held` every few polls. One
+// at a time logged none.
+static int8_t loader_port = -1;
 static uint32_t ceiling_w;  // chassis-wide power limit from port_fsm_set_ceiling, 0 = none
 static uint32_t clock_ms;   // the time of the tick in progress, or of the last one for a command
 
@@ -164,6 +171,7 @@ static void emit(uint8_t type, uint8_t port, uint16_t code, uint32_t arg) {
 
 static void enter(uint8_t i, port_state_t next) {
     if (ctx[i].state == next) return;
+    if (loader_port == (int8_t)i) loader_port = -1; // its trip is over, however it ended
     emit(EVT_STATE_CHANGE, i, (uint16_t)next, (uint16_t)ctx[i].state);
     ctx[i].state = next;
 }
@@ -806,6 +814,7 @@ static void sync_limit(uint8_t i) {
 void port_fsm_init(void) {
     memset(ctx, 0, sizeof(ctx));
     hold_updates = false;
+    loader_port = -1;
     ceiling_w = 0;
     blade_update_init();
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
@@ -950,6 +959,8 @@ void port_fsm_tick(uint8_t i, bool present, uint32_t now_ms,
 
     case PORT_STATE_UPDATE:
         if (!present) { power_down(i, PORT_STATE_ABSENT); break; }
+        if (loader_port >= 0 && loader_port != (int8_t)i) break; // its turn comes when that trip ends
+        loader_port = (int8_t)i;
         if (!tca9548a_select(i)) break; // transient; the bootloader waits
         switch (blade_update_step(i)) {
         case BLADE_UPDATE_BUSY:

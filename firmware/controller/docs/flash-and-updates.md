@@ -250,6 +250,14 @@ settled by reading the flash back and comparing it, and if the checksum
 command misbehaves, every image is read back until the controller next
 starts. That port is already dark, so the trip interrupts no output.
 
+Blades found in their bootloaders together, as every blade set to boot
+through its bootloader is when the chassis powers up, take their trips one
+at a time in port order, and the rest stay dark until their turn comes.
+Two bootloaders spoken to by turns, a command to one a fraction of a
+millisecond after a command to the other, now and then left the second
+holding SDA after it had answered. Writing all six blades takes about
+forty seconds.
+
 A blade *running* its firmware has to be sent to the bootloader, and that
 takes its port down for the few seconds the trip lasts. The controller does
 this in two cases: the firmware is not the bundled version (always: the
