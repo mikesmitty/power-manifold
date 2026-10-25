@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/mikesmitty/power-manifold/compare/backplane-backer-v0.1.3...backplane-backer-v0.1.4) (2026-10-25)
+
+
+### Bug Fixes
+
+* **backplane-backer:** expand cutouts for 7mm posts ([e2b2863](https://github.com/mikesmitty/power-manifold/commit/e2b2863b4ca0762476cc8f059041e414773230ea))
+
 ## [0.1.3](https://github.com/mikesmitty/power-manifold/compare/backplane-backer-v0.1.2...backplane-backer-v0.1.3) (2026-09-29)
 
 
