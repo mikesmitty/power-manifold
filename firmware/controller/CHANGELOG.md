@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.4](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.3...controller-firmware-v0.20.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **controller:** stop a full MQTT ring from losing queued messages ([e79f7e4](https://github.com/mikesmitty/power-manifold/commit/e79f7e44e4e209242b83c9f265e882c58e11da65))
+
 ## [0.20.3](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.2...controller-firmware-v0.20.3) (2026-10-24)
 
 
