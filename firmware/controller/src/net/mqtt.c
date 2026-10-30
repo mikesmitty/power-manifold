@@ -8,6 +8,7 @@
 #include "pico/unique_id.h"
 
 #include "lwip/apps/mqtt.h"
+#include "lwip/apps/mqtt_priv.h"
 #include "lwip/dns.h"
 
 #include "boot_reason_hw.h"
@@ -22,6 +23,7 @@
 #include "led_sched.h"
 #include "manifold.h"
 #include "eth.h"
+#include "mqtt_ring.h"
 #include "mqtt_tls.h"
 #include "net.h"
 #include "ota_pull.h"
@@ -140,8 +142,12 @@ static void discovery_cb(void *arg, err_t err) {
 static void publish(const char *topic, const char *payload, uint8_t qos,
                     uint8_t retain) {
     if (!client) return;
-    err_t err = mqtt_publish(client, topic, payload, (uint16_t)strlen(payload), qos, retain,
-                             disc_publishing ? discovery_cb : NULL, NULL);
+    size_t len = strlen(payload);
+    bool room = mqtt_ring_takes(client->output.put, client->output.get, MQTT_OUTPUT_RINGBUF_SIZE,
+                                mqtt_publish_wire_len(strlen(topic), len, qos));
+    err_t err = room ? mqtt_publish(client, topic, payload, (uint16_t)len, qos, retain,
+                                    disc_publishing ? discovery_cb : NULL, NULL)
+                     : ERR_MEM;
     if (disc_publishing) {
         disc_inflight = err == ERR_OK;
         if (err != ERR_OK && discovery_idx > 0) discovery_idx--; // retry next tick

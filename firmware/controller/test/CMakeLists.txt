@@ -64,6 +64,7 @@ add_executable(engine_tests
     test_led_sched.c
     test_leds.c
     test_log_ring.c
+    test_mqtt_ring.c
     test_pem.c
     test_port_fsm.c
     test_blade3.c
