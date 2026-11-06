@@ -34,10 +34,9 @@ that never takes the release keeps trusting the old key.
 
 ## Signing
 
-The release workflow signs both released builds (the Pico 2 W's
-`controller.bin` and the controller card's) with Cloud KMS
-(`.github/workflows/release-please.yml`) and checks the result against the
-keys here before publishing it. It reads two variables from the
+The release workflow signs the controller card's `controller.bin` with
+Cloud KMS (`.github/workflows/release-please.yml`) and checks the result
+against the keys here before publishing it. It reads two variables from the
 `firmware-signing` environment:
 
 | Variable | Value |

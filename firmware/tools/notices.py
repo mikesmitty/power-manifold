@@ -23,7 +23,6 @@ cannot go out without its notices.
 Usage:
   notices.py controller --sdk ~/pico-sdk \\
       --map firmware/controller/build/controller.elf.map \\
-      --map firmware/controller/build-pico2w/controller.elf.map \\
       --blade-map firmware/charger-module/build/charger-module.map \\
       --out controller-notices.txt
   notices.py charger-module --map firmware/charger-module/build/charger-module.map \\

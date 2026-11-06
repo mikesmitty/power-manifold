@@ -6,7 +6,7 @@ downloads are HTTPS-only behind a redirect; this sits between the two.
 
 | Path | Answer |
 |---|---|
-| `/controller/<x.y.z>/<board>/controller.signed.bin` | the signed image of release `controller-firmware-v<x.y.z>` for a board: `pwrman_controller_card`, or `pico2_w` while that stand-in is still built |
+| `/controller/<x.y.z>/<board>/controller.signed.bin` | the signed image of release `controller-firmware-v<x.y.z>` for a board: `pwrman_controller_card`, or `pico2_w` for older releases that still carry the Pico 2 W build |
 | `/controller/<board>/latest.json` | `{"version":"x.y.z","url":"http://fw.powermanifold.io/controller/<x.y.z>/<board>/controller.signed.bin"}`: the newest release, once its signed image for the board exists |
 
 Nothing else is served. The newest version is read from this repository's

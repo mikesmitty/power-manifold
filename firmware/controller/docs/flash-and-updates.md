@@ -96,8 +96,8 @@ either bump `FW_VERSION` locally or target a slot explicitly with
 ## OTA push
 
 Push the release's `controller.signed.bin` to the update endpoint
-(a Pico 2 W stand-in takes `controller-pico2w.signed.bin`; the image names
-its board and the other one refuses it):
+(the image names its board, and a controller on any other board refuses
+it):
 
 ```
 curl --data-binary @controller.signed.bin http://<name>.local/api/v1/update
