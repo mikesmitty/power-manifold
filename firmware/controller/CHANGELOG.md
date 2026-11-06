@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.4...controller-firmware-v0.21.0) (2026-11-06)
+
+
+### Features
+
+* **controller:** show the network links up instead of a wired-link problem ([f3c0e13](https://github.com/mikesmitty/power-manifold/commit/f3c0e135cb7bd4e3da6f9455ffe164f56142a298))
+
 ## [0.20.4](https://github.com/mikesmitty/power-manifold/compare/controller-firmware-v0.20.3...controller-firmware-v0.20.4) (2026-10-30)
 
 
