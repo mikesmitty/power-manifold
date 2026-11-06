@@ -4,6 +4,8 @@
     "local>mikesmitty/renovate-config",
     ":maintainLockFilesMonthly"
   ],
+  "description": "Every update in this repository waits for the start of each month",
+  "schedule": ["* 0-3 1 * *"],
   "packageRules": [
     {
       "description": "The docs site is not a released package: its dependency updates are chores, never feat/fix/breaking (the shared preset marks every v0.x update as feat!)",
@@ -11,10 +13,9 @@
       "commitMessagePrefix": "chore(docs):"
     },
     {
-      "description": "The docs site only builds static pages, so its updates wait for one grouped pull request at the start of each month",
+      "description": "The docs site only builds static pages, so its updates come as one grouped pull request",
       "matchFileNames": ["docs/**"],
-      "groupName": "docs dependencies",
-      "schedule": ["* 0-3 1 * *"]
+      "groupName": "docs dependencies"
     }
   ],
   "lockFileMaintenance": {
