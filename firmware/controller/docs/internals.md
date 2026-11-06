@@ -340,11 +340,11 @@ over WiFi. Its MAC is locally administered, derived from the RP2350's
 unique ID. When both links are up the wired one holds the default route and
 WiFi stands by; replies always leave on the interface that owns their
 address. `info` shows `eth:` link speed and address, and the status JSON
-carries `"eth"`. The driver is verified against an emulated chip in the
-host tests (`test_w6100.c`) and has run on a WIZnet W6100-EVB-Pico2 in the
-management socket: link, DHCP, mDNS and the web UI over a cable. The
-wired-beside-WiFi switchover has so far only run in the host tests, since
-the EVB has no radio.
+carries `"eth"`. `net_link_str()` names the links that are up (`ethernet`,
+`wifi`, `both` or `none`) for the status JSON's `net.link`, the MQTT status
+message and the *Network* sensor in Home Assistant. The driver is verified
+against an emulated chip in the host tests (`test_w6100.c`) and has run on a WIZnet W6100-EVB-Pico2 in the
+management socket: link, DHCP, mDNS and the web UI over a cable.
 
 ## API description
 
