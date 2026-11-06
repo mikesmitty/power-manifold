@@ -309,6 +309,11 @@ bool net_up(void) {
     return eth_up() || wifi_up();
 }
 
+const char *net_link_str(void) {
+    bool eth = eth_up(), wifi = wifi_up();
+    return eth && wifi ? "both" : eth ? "ethernet" : wifi ? "wifi" : "none";
+}
+
 // Live link state rather than net_poll's bookkeeping: callers that run
 // before net_poll in the same pass (improv's redirect URL) would otherwise
 // see 0.0.0.0 on the pass a link came up.

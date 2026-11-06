@@ -52,7 +52,7 @@
 #define PORT_TEMP_FIRST  (PORT_SENSOR_N + 11) // the two thermometer entities
 #define PORT_PROTECT     (PORT_SENSOR_N + 13) // retracted: the setting was removed
 #define PORT_ENTITIES    (PORT_SENSOR_N + 14)
-#define CHASSIS_ENTITIES 21
+#define CHASSIS_ENTITIES 22
 #define N_DISCOVERY      (NUM_PORTS * PORT_ENTITIES + CHASSIS_ENTITIES)
 
 typedef enum {
@@ -878,6 +878,19 @@ static void publish_problem_sensor(void) {
     publish(topic_buf, payload_buf, 1, 1);
 }
 
+// Which links are up, shown and never raised as a problem
+static void publish_link_sensor(void) {
+    discovery_config_topic("sensor", "link");
+    snprintf(payload_buf, sizeof(payload_buf),
+             "{\"~\":\"%s\",\"name\":\"Network\",\"uniq_id\":\"pwrman_%s_link\","
+             "\"stat_t\":\"~/status\",\"avty_t\":\"~/availability\","
+             "\"val_tpl\":\"{{ {'ethernet': 'Ethernet', 'wifi': 'Wi-Fi', "
+             "'both': 'Ethernet and Wi-Fi'}.get(value_json.link, 'None') }}\","
+             "\"ic\":\"mdi:lan-connect\",\"ent_cat\":\"diagnostic\",\"dev\":%s}",
+             base, uid, device_json);
+    publish(topic_buf, payload_buf, 1, 1);
+}
+
 static void publish_led_mode_sensor(void) {
     discovery_config_topic("sensor", "led_mode");
     snprintf(payload_buf, sizeof(payload_buf),
@@ -1014,6 +1027,9 @@ static void discovery_publish(int i) {
     case 19:
         publish_contract_steps_switch();
         break;
+    case 20:
+        publish_link_sensor();
+        break;
     default:
         // retire the fan switch this select replaced from older firmware
         discovery_config_topic("switch", "fan");
@@ -1117,7 +1133,7 @@ static void publish_telemetry(void) {
              "\"fan_mode\":\"%s\",\"alert\":%s,\"rssi\":%ld,\"uptime_s\":%lu,"
              "\"led\":%u,\"fw\":\"%s\",\"boot\":\"%s\",\"problem\":\"%s\",\"problems\":\"%s\","
              "\"charged_mw\":%u,\"charged_min\":%u,\"led_mode\":\"%s\","
-             "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_w\":%lu,\"contract_steps\":\"%s\"}",
+             "\"vin\":%s,\"vin_v\":%.2f,\"ceiling_w\":%lu,\"contract_steps\":\"%s\",\"link\":\"%s\"}",
              t.total_mw / 1000.0, t.reserved_mw / 1000.0, t.budget_mw / 1000.0,
              headroom / 1000.0, t.energy_mwh / 1e6, t.fan_on ? "ON" : "OFF",
              t.fan_auto ? "auto" : (t.fan_on ? "on" : "off"),
@@ -1127,7 +1143,8 @@ static void publish_telemetry(void) {
              n_problems ? "ON" : "OFF", problems_json, g_settings.charged_mw,
              g_settings.charged_min, led_mode_name(led_sched_current()),
              vin_fitted() ? "true" : "false",
-             vin_mv() / 1000.0, (unsigned long)bus_cap_w(), g_settings.contract_steps ? "ON" : "OFF");
+             vin_mv() / 1000.0, (unsigned long)bus_cap_w(), g_settings.contract_steps ? "ON" : "OFF",
+             net_link_str());
     publish(topic_buf, payload_buf, 0, 1);
     publish_blade_state(&t);
 

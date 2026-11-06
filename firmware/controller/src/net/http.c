@@ -50,7 +50,7 @@
 #define HTTPS_PORT      443
 #define MAX_CONNS       4
 #define REQ_MAX         6144 // browser headers + a full settings export posted back, broker certificate included
-#define STATUS_JSON_MAX 4288 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the bus voltage, the chassis light, the board ID and MACs, and the update and net blocks, worst case
+#define STATUS_JSON_MAX 4320 // six ports with escaped labels, generation, thermometers, update progress and flags, the problem text, the bus voltage, the chassis light, the board ID and MACs, and the update and net blocks (with the links up), worst case
 #define HDR_MAX         128  // the status line + our three headers
 #define RESP_MAX        (STATUS_JSON_MAX + HDR_MAX)
 #define POLL_INTERVAL   1    // tcp_poll units of 500ms
@@ -317,10 +317,10 @@ static void build_net_json(char *out, size_t cap) {
                      : mqtt_waiting_for_clock()  ? "waiting_for_clock"
                                                  : "connecting";
     snprintf(out, cap,
-             "\"net\":{\"up\":%s,\"ip\":%s,\"netmask\":%s,\"gateway\":%s,\"dns\":%s,\"ntp\":%s,"
-             "\"time_synced\":%s,\"mqtt\":\"%s\",\"mqtt_problem\":%s},",
-             up ? "true" : "false", ip, mask, gw, dns, ntp, net_epoch() ? "true" : "false", mqtt,
-             problem);
+             "\"net\":{\"up\":%s,\"link\":\"%s\",\"ip\":%s,\"netmask\":%s,\"gateway\":%s,\"dns\":%s,"
+             "\"ntp\":%s,\"time_synced\":%s,\"mqtt\":\"%s\",\"mqtt_problem\":%s},",
+             up ? "true" : "false", net_link_str(), ip, mask, gw, dns, ntp,
+             net_epoch() ? "true" : "false", mqtt, problem);
 }
 
 static void build_status_json(char *out, size_t cap) {
@@ -337,7 +337,7 @@ static void build_status_json(char *out, size_t cap) {
 #if PWRMAN_NET_ETH
     snprintf(ethf, sizeof(ethf), "\"eth\":\"%s\",", eth_status_str());
 #endif
-    static char updf[320], netf[512]; // static: IRQ stack
+    static char updf[320], netf[576]; // static: IRQ stack
     build_update_json(updf, sizeof(updf));
     build_net_json(netf, sizeof(netf));
     char vinf[16]; // a number, or null on a board without the divider

@@ -37,6 +37,9 @@ const char *net_ip4_str(uint32_t addr_nbo); // "" for 0; static buffer
 bool net_ip4_mask_valid(uint32_t mask_nbo);
 bool net_available(void);      // lwIP running
 bool net_up(void);             // some link up with an address
+// The links up with an address: "ethernet", "wifi", "both" or "none". With
+// both up, Ethernet carries the traffic and Wi-Fi stands by.
+const char *net_link_str(void);
 // The links get this long after power-up to come up before the controller
 // treats having no address as a problem. Ethernet waits for DHCP and Wi-Fi
 // has to join first, so without it every boot would flash the no-network

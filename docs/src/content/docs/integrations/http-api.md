@@ -239,7 +239,9 @@ the unix time `postponed_until`; or `skipped`) and `skipped` (the version
 that does not install automatically, or `null`).
 
 **Status, `net`:** what the controller is using now, which can differ
-from the settings: `up`, `ip`, `netmask`, `gateway`, `dns`, `ntp`,
+from the settings: `up`, `link` (the connections that are online:
+`ethernet`, `wifi`, `both` or `none`; with both, Ethernet carries the
+traffic), `ip`, `netmask`, `gateway`, `dns`, `ntp`,
 `time_synced`, `mqtt` (`off`, `connecting`, `waiting_for_clock` or
 `connected`) and `mqtt_problem` (why a TLS link to the broker cannot
 connect, such as a broker certificate that does not carry the broker's

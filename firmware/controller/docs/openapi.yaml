@@ -1397,10 +1397,16 @@ components:
       description: |
         The network as the controller uses it now, which can differ from the
         settings. Addresses are `null` while the network is down.
-      required: [up, ip, netmask, gateway, dns, ntp, time_synced, mqtt, mqtt_problem]
+      required: [up, link, ip, netmask, gateway, dns, ntp, time_synced, mqtt, mqtt_problem]
       properties:
         up:
           type: boolean
+        link:
+          type: string
+          enum: [ethernet, wifi, both, none]
+          description: |
+            The links that are up with an address. With both up, Ethernet
+            carries the traffic and Wi-Fi stands by.
         ip:
           type: [string, 'null']
         netmask:
@@ -1830,6 +1836,7 @@ components:
           skipped: null
         net:
           up: true
+          link: ethernet
           ip: 192.168.1.40
           netmask: 255.255.255.0
           gateway: 192.168.1.1

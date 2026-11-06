@@ -38,7 +38,8 @@ Ports are numbered 1 to 6.
 when it isn't measured), and `ceiling_w` (60 while [low input voltage caps
 the ports](/guide/troubleshooting/#ports-capped-at-60-w),
 else 0), and `contract_steps` (`ON` while every voltage step a PPS or SPR
-AVS device takes is a `contract` event).
+AVS device takes is a `contract` event), and `link` (the connections that
+are online: `ethernet`, `wifi` or `both`).
 
 **`port/<n>/telemetry` fields:** `state`, `gen` (blade generation), `v`,
 `i`, `p`, `e` (kWh), `contract_w`, `pdo`, `contract` (`fixed`, `pps`,

@@ -6,7 +6,6 @@
 #include "bus_cap.h"
 #include "flash_map.h"
 #include "ipc.h"
-#include "net/eth.h"
 #include "net/https.h"
 #include "net/net.h"
 #include "settings.h"
@@ -58,11 +57,6 @@ unsigned health_problems(const telemetry_t *t, char *buf, size_t cap) {
     if (flash_map_update_pending()) {
         n = put(buf, cap, n, count ? "; " : "");
         n = put(buf, cap, n, "trial firmware uncommitted");
-        count++;
-    }
-    if (eth_present() && !eth_link() && net_up()) {
-        n = put(buf, cap, n, count ? "; " : "");
-        n = put(buf, cap, n, "wired link down, on WiFi");
         count++;
     }
     const char *tls = https_problem(net_epoch());
